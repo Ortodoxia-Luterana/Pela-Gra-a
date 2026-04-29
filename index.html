@@ -488,6 +488,7 @@ const PLAYER_EXPANSION_COST=40;
 const SEMINARY_MONTHLY_COST=0.5;
 const SEMINARY_SUBSIDY_PER_STUDENT=0.15;
 const SEMINARY_YEARS=7;
+const CHURCH_SUBSIDY_MONTHS=60;
 
 // eventos revisados: decisões sem gabarito visível antes do clique e efeitos ligados a G.mods.
 const EVENTS=[
@@ -562,7 +563,7 @@ function addChurch(stateId, denom, members=8, level=1, foundedYear=G.year){
   const cityPool=(STATE_CITIES[stateId]||[STATES[stateId].name]);
   const city=arguments[6]||cityPool.find(c=>!usedCities.includes(c))||STATES[stateId].name;
   const type=arguments[5]||'congregacao';
-  const church={denom,members,level,foundedYear,foundingChurch:slot.churches.length===0,pastorId:null,secondPastorId:null,struggleMonths:0,struggling:false,subsidized:false,solventMonths:0,overloadSince:null,offerRate:0.5+Math.random()*0.4,city,type,organicBias:(Math.random()-0.5)*0.035,organicPulse:(Math.random()-0.5)*0.04,localGrowthMod:0,localGrowthUntil:0};
+  const church={denom,members,level,foundedYear,foundingChurch:slot.churches.length===0,pastorId:null,secondPastorId:null,struggleMonths:0,struggling:false,subsidized:false,solventMonths:0,overloadSince:null,offerRate:0.5+Math.random()*0.4,city,type,organicBias:(Math.random()-0.5)*0.025,organicPulse:(Math.random()-0.5)*0.03};
   slot.churches.push(church);
   syncDenomMembers(stateId,denom);
   return church;
@@ -642,8 +643,8 @@ function pastoralStatus(stateId,index){
   const p=pastorForChurch(stateId,index);
   if(!p)return {label:'Sem pastor',memberMult:0.35,offerMult:0.5};
   if(ch.secondPastorId)return {label:'Dois pastores',memberMult:1.1,offerMult:1.05};
-  if(p.isOnRoute&&p.assignedChurchIndex===index)return {label:'Pastor em rota',memberMult:0.8,offerMult:0.85};
-  if(p.isOnRoute&&p.routeChurchIndex===index)return {label:'Atendida em rota',memberMult:0.65,offerMult:0.7};
+  if(p.isOnRoute&&p.assignedChurchIndex===index)return {label:'Pastor próprio',memberMult:1,offerMult:1};
+  if(p.isOnRoute&&p.routeChurchIndex===index)return {label:'Pastor responsável',memberMult:1,offerMult:1};
   return {label:'Pastor próprio',memberMult:1,offerMult:1};
 }
 
@@ -691,17 +692,22 @@ function churchOrganicMemberRate(stateId,index){
   const receptivityScore=Math.max(0.65,Math.min(1.45,(state.modifiers&&state.modifiers.receptivity)||1));
   const pastorScore=Math.max(0.45,Math.min(1.35,pastoral.memberMult+0.15));
   const health=doctrineScore*missionScore*youthScore*receptivityScore*pastorScore;
-  const base=isMission?0.18:0.28;
-  const memberMomentum=Math.min(isMission?1.1:2.4,Math.max(0,ch.members)*(isMission?0.0045:0.0065));
-  const heritageStart=(stateId==='RS'&&ch.foundingChurch&&G.year<1910)?0.45:0;
-  const temporaryLocal=(ch.localGrowthUntil&&G.year<=ch.localGrowthUntil)?(ch.localGrowthMod||0):0;
+  const base=isMission?0.12:0.18;
+  const memberMomentum=Math.min(isMission?0.65:1.15,Math.max(0,ch.members)*(isMission?0.0032:0.0042));
   const overloadPenalty=(ch.members>=300&&!ch.secondPastorId)?(1.2+Math.min(3.2,(ch.members-300)*0.018)):0;
   const noPastorPenalty=!pastorForChurch(stateId,index)?0.65:0;
-  const routePenalty=(pastoral.label==='Atendida em rota')?0.28:0;
-  const randomField=(ch.organicBias||0)+(ch.organicPulse||0);
-  const rate=((base+memberMomentum)*health)+heritageStart+temporaryLocal+randomField-overloadPenalty-noPastorPenalty-routePenalty;
-  if(ch.members>=300&&!ch.secondPastorId)return Math.max(-1.5,Math.min(0.12,rate));
-  return Math.max(-1.2,Math.min(5.0,rate));
+    const randomField=(ch.organicBias||0)+(ch.organicPulse||0);
+  const rate=((base+memberMomentum)*health)+randomField-overloadPenalty-noPastorPenalty;
+  if(ch.members>=300&&!ch.secondPastorId)return Math.max(-1.5,Math.min(0.08,rate));
+  return Math.max(-1.2,Math.min(2.2,rate));
+}
+function churchMemberTrendReason(stateId,index){
+  const ch=G.states[stateId].denomData.IELB.churches[index];
+  if(!pastorForChurch(stateId,index))return 'sem pastor';
+  const ps=pastoralStatus(stateId,index);
+  if(ch.members>=300&&!ch.secondPastorId)return 'sobrecarga pastoral';
+  if(G.doc<70)return 'doutrina fraca';
+  return 'crescimento orgânico';
 }
 function totalOrganicMemberRate(){
   return ALL_STATES.reduce((sum,id)=>sum+G.states[id].denomData.IELB.churches.reduce((a,_,i)=>a+churchOrganicMemberRate(id,i),0),0);
@@ -830,8 +836,12 @@ function processPlayerMonthlyChurches(){
     G.states[id].denomData.IELB.churches.forEach((ch,i)=>{
       const bal=churchInternalBalance(id,i);
       ch._lastDeficit=bal.deficit;
+      if(ch.subsidized){
+        ch.subsidyMonths=(ch.subsidyMonths||0)+1;
+        if(ch.subsidyMonths>=CHURCH_SUBSIDY_MONTHS){ch.subsidized=false;ch.subsidyMonths=0;setTick('Subsídio de '+(ch.city||STATES[id].name)+' encerrado após revisão de 5 anos.');}
+      }
       if(bal.deficit>0.01){ch.struggleMonths=(ch.struggleMonths||0)+1;if(ch.struggleMonths===3)setTick('Congregação em '+STATES[id].name+' com dificuldades financeiras.');}
-      else {ch.struggleMonths=0;if(ch.subsidized){ch.solventMonths=(ch.solventMonths||0)+1;if(ch.solventMonths>=2){ch.subsidized=false;setTick('Congregação em '+STATES[id].name+' voltou ao auto-sustento.');}} ch.struggling=false;}
+      else {ch.struggleMonths=0;if(ch.subsidized){ch.solventMonths=(ch.solventMonths||0)+1;if(ch.solventMonths>=2){ch.subsidized=false;ch.subsidyMonths=0;setTick('Congregação em '+STATES[id].name+' voltou ao auto-sustento.');}} ch.struggling=false;}
       ch.organicPulse=(Math.random()-0.5)*0.04;
       const nowMembers=ch.members;
       if(ch._stagnationWindowStart===undefined){ch._stagnationWindowStart=nowMembers;ch._stagnationMonths=0;}
@@ -898,26 +908,12 @@ function processAnnualYear(){
   const uncovered=uncoveredChurches().length;
   if(uncovered)lines.push(uncovered+' congregações estão sem pastor. Você tem '+G.availablePastors.length+' pastores disponíveis.');
   G.annualDecisions=churchesNeedingAnnualDecision();
-  maybeQueueLocalChurchEvent();
   setTick(lines.join(' | '));
   if(G.eventQueue.length)processEventQueue();
   else if(G.annualDecisions.length)showChurchDecision(G.annualDecisions.shift());
 }
-function randomIelbChurchRef(){
-  const refs=[];
-  ALL_STATES.forEach(id=>G.states[id].denomData.IELB.churches.forEach((ch,index)=>refs.push({stateId:id,index,ch})));
-  if(!refs.length)return null;
-  return refs[Math.floor(Math.random()*refs.length)];
-}
-function maybeQueueLocalChurchEvent(){
-  if(G.year<1906||Math.random()>0.55)return;
-  const target=randomIelbChurchRef();
-  if(!target)return;
-  const goodEarly=target.stateId==='RS'&&G.year<1910&&Math.random()<0.35;
-  const roll=Math.random();
-  let kind=goodEarly?'heritage':roll<0.28?'openDoor':roll<0.58?'strain':roll<0.8?'migration':'conflict';
-  G.eventQueue.push({type:'localChurch',kind,stateId:target.stateId,index:target.index});
-}
+
+
 function randRange(min,max){return min+Math.random()*(max-min);}
 function seminaryEnrollmentForYear(y){return y<1930?randInt(2,6):y<1950?randInt(5,12):y<1970?randInt(10,25):randInt(20,40);}
 function clearPastorFromChurches(p){
@@ -1378,7 +1374,8 @@ function renderRight(){
       row.innerHTML='<span style="font-weight:600;color:#2a1800">'+typeLabel+' — '+(c.city||STATES[id].name)+'</span>'
         +'<span style="font-size:12px;color:#7a6a40">'+Math.floor(c.members)+' membros · oferta '+Math.round((c.offerRate||0.7)*100)+'%</span>'
         +'<span style="font-size:12px;color:#7a6a40">'+ps.label+': '+pastorName+(c.secondPastorId?' + '+(getPastor(c.secondPastorId)?getPastor(c.secondPastorId).name:'2º pastor'):'')+'</span>'
-        +'<span style="font-size:12px;font-weight:600;color:'+balColor+'">'+balText+(c.subsidized?' · subsidiada':'')+'</span>'
+        +'<span style="font-size:12px;font-weight:600;color:'+balColor+'">'+balText+(c.subsidized?' · subsidiada '+(c.subsidyMonths||0)+'/'+CHURCH_SUBSIDY_MONTHS:'')+'</span>'
+        +'<span style="font-size:11px;color:'+(churchOrganicMemberRate(id,i)<0?'#c62828':'#7a6a40')+'">Membros/mês: '+fmtRate(churchOrganicMemberRate(id,i),2)+' · '+churchMemberTrendReason(id,i)+'</span>'
         +(c.type==='missao'?'<span style="font-size:11px;color:#7a6a40">Promoção: '+Math.floor(c.members)+'/50 membros</span>':'')
         +(c.struggleMonths>=3?'<span style="font-size:11px;color:#c62828">Dificuldade há '+c.struggleMonths+' meses</span>':'');
       body.appendChild(row);
@@ -1514,7 +1511,6 @@ function processEventQueue(){
     const next=G.eventQueue.shift();
     if(next.type==='formation')showFormationModal(next);
     else if(next.type==='subsidy')showSubsidyModal(next);
-    else if(next.type==='localChurch')showLocalChurchEvent(next);
     return;
   }
   if(G.annualDecisions.length)showChurchDecision(G.annualDecisions.shift());
@@ -1587,33 +1583,7 @@ function showSecondPastorModal(stateId,index,fromAnnual=false){
   modal.classList.add('show');
 }
 
-function showLocalChurchEvent(ev){
-  const ch=G.states[ev.stateId].denomData.IELB.churches[ev.index];
-  if(!ch)return processEventQueue();
-  G.paused=true;document.getElementById('pausebtn').textContent='▶ Retomar';
-  const modal=document.getElementById('modal');
-  const tag=document.getElementById('m-tag');tag.textContent='CAMPO LOCAL';tag.className=ev.kind==='strain'||ev.kind==='conflict'?'warn':'good';
-  const place=(ch.city||STATES[ev.stateId].name)+', '+STATES[ev.stateId].name;
-  const data={
-    heritage:{title:'Famílias luteranas na região',txt:'Famílias de origem luterana se aproximam do trabalho em '+place+'. O campo parece pronto para uma visita pastoral cuidadosa.',a:'Organizar visitas e catequese',b:'Receber aos poucos'},
-    openDoor:{title:'Porta aberta na comunidade',txt:'Uma oportunidade inesperada aparece em '+place+'. Há interesse real, mas ele pode esfriar se não houver acompanhamento.',a:'Investir acompanhamento',b:'Observar sem gastar recursos'},
-    migration:{title:'Mudança de famílias',txt:'Famílias chegam e saem da região de '+place+'. A comunidade pode ganhar novo fôlego ou perder contato com alguns membros.',a:'Acolher e reorganizar contatos',b:'Deixar a comunidade se ajustar'},
-    strain:{title:'Período difícil no campo',txt:'O trabalho em '+place+' passa por cansaço, distância ou resistência local. A comunidade precisa de atenção.',a:'Fazer esforço pastoral extra',b:'Aguardar o período passar'},
-    conflict:{title:'Tensão na comunidade',txt:'Surge uma tensão interna em '+place+'. Se for ignorada, pode reduzir crescimento e ofertas por um tempo.',a:'Tratar com ensino e visitação',b:'Evitar desgaste agora'}
-  }[ev.kind];
-  document.getElementById('m-title').textContent=data.title;
-  document.getElementById('m-yr').textContent='Relatório local de '+G.year;
-  document.getElementById('m-txt').textContent=data.txt;
-  const ref=document.getElementById('m-ref');ref.style.display='none';
-  const mc=document.getElementById('m-choices');mc.innerHTML='';
-  const active=document.createElement('button');active.className='mcbtn';active.textContent=data.a+' (15 Fé)';active.disabled=G.fe<15;
-  active.onclick=()=>{G.fe-=15;ch.localGrowthMod=(ev.kind==='strain'||ev.kind==='conflict')?0.18:0.55;ch.localGrowthUntil=G.year+2;if(ev.kind==='heritage'||ev.kind==='openDoor')ch.members+=randInt(2,6);closeDecisionModal('A comunidade foi acompanhada. O efeito local dura alguns anos.');};
-  mc.appendChild(active);
-  const passive=document.createElement('button');passive.className='mcbtn';passive.textContent=data.b;
-  passive.onclick=()=>{ch.localGrowthMod=(ev.kind==='strain'||ev.kind==='conflict')?-0.45:(ev.kind==='migration'?0.05:0.18);ch.localGrowthUntil=G.year+1;closeDecisionModal('A decisão foi registrada. O campo seguirá seu curso por um tempo.');};
-  mc.appendChild(passive);
-  modal.classList.add('show');
-}
+
 
 function showChurchDecision(item){
   if(item.reason==='secondPastor')return showSecondPastorModal(item.stateId,item.index,true);
@@ -1645,12 +1615,9 @@ function showChurchDecision(item){
       ch._stagnationWindowStart=ch.members;
       ch._stagnationMonths=0;
       ch.failedEvangelismAttempts=0;
-      const previousLocal=ch.localGrowthMod||0;
-      ch.localGrowthMod=Math.max(previousLocal,0.45);
-      ch.localGrowthUntil=Math.max(ch.localGrowthUntil||0,G.year+2);
       const d=n/ch.members;
       ch.offerRate=Math.max(0.15,Math.min(1,ch.offerRate*(1-d*0.25)+0.02));
-      closeDecisionModal('Campanha bem-sucedida: +'+n+' membros. O campo ganhou novo fôlego por alguns anos. Taxa de oferta: '+Math.round(ch.offerRate*100)+'%.');
+      closeDecisionModal('Campanha bem-sucedida: +'+n+' membros. Taxa de oferta: '+Math.round(ch.offerRate*100)+'%.');
     }else{
       ch.failedEvangelismAttempts=(ch.failedEvangelismAttempts||0)+1;
       if(ch.failedEvangelismAttempts>=5&&totalChurches('IELB')>1){
@@ -1662,7 +1629,7 @@ function showChurchDecision(item){
       }
     }
   };mc.appendChild(evang);
-  if(!stagnant){const sub=document.createElement('button');sub.className='mcbtn';sub.textContent='Enviar subsídio contínuo';sub.onclick=()=>{ch.subsidized=true;ch.solventMonths=0;closeDecisionModal('A IELB subsidiará esta '+kind+' até ela voltar ao auto-sustento.');};mc.appendChild(sub);}
+  if(!stagnant){const sub=document.createElement('button');sub.className='mcbtn';sub.textContent='Enviar subsídio por 5 anos';sub.onclick=()=>{ch.subsidized=true;ch.subsidyMonths=0;ch.solventMonths=0;closeDecisionModal('A IELB subsidiará esta '+kind+' por 5 anos. Depois disso haverá revisão.');};mc.appendChild(sub);}
   if(stagnant){const skip=document.createElement('button');skip.className='mcbtn';skip.textContent='Pular por enquanto';skip.onclick=()=>{closeDecisionModal('A decisão foi adiada. Se não houver crescimento, ela voltará no próximo relatório anual.');};mc.appendChild(skip);}
   const totalIelb=totalChurches('IELB');
   if(totalIelb>1){const close=document.createElement('button');close.className='mcbtn';close.textContent='Encerrar este ponto';close.onclick=()=>{closeChurch(item.stateId,item.index);closeDecisionModal('O ponto foi encerrado. O pastor voltou a ficar disponível.');};mc.appendChild(close);}

@@ -1,0 +1,10 @@
+{
+  "name": "cultivando-ssr",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "start": "node --no-warnings server.js",
+    "dev": "node --no-warnings server.js"
+  }
+}

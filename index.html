@@ -223,7 +223,7 @@ body{font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;background:
 <body>
 
 <div id="top">
-  <div id="brand">✝ Pela Graça — IELB 1904 <span id="version-tag">v1.2</span></div>
+  <div id="brand">✝ Pela Graça — IELB 1904 <span id="version-tag">v1.3</span></div>
   <div id="datebox">Janeiro 1904</div>
   <div class="res"><div class="res-lbl">Fé</div><div><div class="res-val" id="r-fe">20</div><div class="res-rate" id="rr-fe">+0/s</div></div></div>
   <div class="res"><div class="res-lbl">Ofertas</div><div><div class="res-val" id="r-of">5</div><div class="res-rate" id="rr-of">+0/s</div></div></div>
@@ -489,6 +489,7 @@ const SEMINARY_MONTHLY_COST=0.5;
 const SEMINARY_SUBSIDY_PER_STUDENT=0.15;
 const SEMINARY_YEARS=7;
 const CHURCH_SUBSIDY_MONTHS=60;
+const RESOURCE_CAP=10000000;
 
 // eventos revisados: decisões sem gabarito visível antes do clique e efeitos ligados a G.mods.
 const EVENTS=[
@@ -1394,7 +1395,7 @@ function promoteMissionToChurch(id,index,wasPaused){
   setTick('Missão em '+(ch.city||STATES[id].name)+' organizada como congregação — Pastor '+p.name+' responsável.');
   closeMissionCityModal(wasPaused);
 }
-function culto(){if(generalActionBlocked())return;G.fe=Math.min(G.fe+4,9999);setTick('Culto realizado.');updateRes();renderRight();}
+function culto(){if(generalActionBlocked())return;G.fe=Math.min(G.fe+4,RESOURCE_CAP);setTick('Culto realizado.');updateRes();renderRight();}
 function ielbChurchRefs(){
   const refs=[];
   ALL_STATES.forEach(id=>G.states[id].denomData.IELB.churches.forEach((ch,index)=>refs.push({id,index,ch})));
@@ -1421,7 +1422,7 @@ function catecismo(){
   if(generalActionBlocked())return;
   if(G.fe<25){setTick('Fé insuficiente.');return;}
   G.fe-=25;
-  G.fi=Math.min(G.fi+5,9999);
+  G.fi=Math.min(G.fi+5,RESOURCE_CAP);
   addMembersToIelbChurches(5,G.sel!=='BR'?G.sel:null);
   recalc();
   setTick('Catecismo concluído: +5 membros integrados às comunidades.');
@@ -1887,9 +1888,9 @@ const MONTH_SECS=1;
 function loop(now){
   if(!G.paused){
     const dt=Math.min((now-lastT)/1000,0.15)*G.speed;
-    G.fe=Math.min(G.fe+G.rateFe*dt,9999);G.of=Math.min(G.of+G.rateOf*dt,9999);
+    G.fe=Math.min(G.fe+G.rateFe*dt,RESOURCE_CAP);G.of=Math.min(G.of+G.rateOf*dt,RESOURCE_CAP);
     const memberGain=G.rateFi*dt;
-    G.fi=Math.max(0,Math.min(G.fi+memberGain,9999));
+    G.fi=Math.max(0,Math.min(G.fi+memberGain,RESOURCE_CAP));
     applyOrganicMemberGrowth(dt);
     let rd=false;
     ALL_STATES.forEach(id=>{

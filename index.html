@@ -664,12 +664,20 @@ function churchPastorLoad(stateId,index){
   const p=pastorForChurch(stateId,index);
   return p?pastorMemberLoad(p,stateId):0;
 }
+function isLargestPastorAssignment(stateId,index,p=null){
+  const pastor=p||pastorForChurch(stateId,index);
+  if(!pastor)return false;
+  const assignments=pastorAssignments(pastor,stateId);
+  if(!assignments.length)return false;
+  const maxMembers=Math.max(...assignments.map(r=>Math.max(0,r.ch.members||0)));
+  return assignments.some(r=>r.index===index&&Math.max(0,r.ch.members||0)>=maxMembers);
+}
 function churchNeedsPastorRelief(stateId,index){
   const ch=G.states[stateId].denomData.IELB.churches[index];
   if(!ch||ch.secondPastorId)return false;
   if(ch.type==='congregacao'&&ch.members>=300)return true;
   const p=pastorForChurch(stateId,index);
-  return !!p&&pastorMemberLoad(p,stateId)>=300;
+  return !!p&&pastorMemberLoad(p,stateId)>=300&&isLargestPastorAssignment(stateId,index,p);
 }
 function churchInfluenceMult(stateId,index){
   if(!churchNeedsPastorRelief(stateId,index))return 1;
@@ -757,11 +765,11 @@ function churchOrganicMemberRate(stateId,index){
   const base=isMission?0.12:0.18;
   const memberMomentum=Math.min(isMission?0.65:1.15,Math.max(0,ch.members)*(isMission?0.0032:0.0042));
   const overloadMembers=Math.max(ch.members,churchPastorLoad(stateId,index));
-  const overloadPenalty=churchNeedsPastorRelief(stateId,index)?(1.2+Math.min(3.2,(overloadMembers-300)*0.018)):0;
+  const overloadPenalty=churchNeedsPastorRelief(stateId,index)?(0.55+Math.min(1.1,(overloadMembers-300)*0.006)):0;
   const noPastorPenalty=!pastorForChurch(stateId,index)?0.65:0;
     const randomField=(ch.organicBias||0)+(ch.organicPulse||0);
   const rate=((base+memberMomentum)*health)+randomField-overloadPenalty-noPastorPenalty;
-  if(churchNeedsPastorRelief(stateId,index))return Math.max(-1.5,Math.min(0.08,rate));
+  if(churchNeedsPastorRelief(stateId,index))return Math.max(-0.5,Math.min(0.08,rate));
   return Math.max(-1.2,Math.min(2.2,rate));
 }
 function churchMemberTrendReason(stateId,index){

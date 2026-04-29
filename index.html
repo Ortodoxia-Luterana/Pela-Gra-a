@@ -123,7 +123,7 @@ body{font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;background:
 .state-marker.ielb{filter:drop-shadow(0 0 1200px rgba(21,101,192,0.55));}
 .event-result{font-size:13px;line-height:1.55;border:1px solid #c8b890;background:#f5f0e8;border-radius:3px;padding:10px 12px;color:#3a2e18;}
 .event-result.good{border-color:#2e7d32;background:#f0f8f0;}
-.event-result.bad{border-color:#c62828;background:#fdf0f0;}
+.event-result.bad{border-color:#c62828;background:#ffe2e2;color:#5f1010;}
 #start-screen{position:fixed;inset:0;z-index:1500;background:rgba(28,22,10,0.82);display:flex;align-items:center;justify-content:center;padding:24px;}
 #start-card{width:min(620px,94vw);background:#faf8f3;border:2px solid #8a6a20;border-radius:5px;box-shadow:0 12px 48px rgba(0,0,0,0.32);padding:22px 24px;color:#2a1800;}
 #start-card h1{font-size:24px;line-height:1.15;margin-bottom:8px;color:#4a3200;}
@@ -144,7 +144,7 @@ body{font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;background:
 .state-marker.ielb{filter:drop-shadow(0 0 1200px rgba(21,101,192,0.55));}
 .event-result{font-size:13px;line-height:1.55;border:1px solid #c8b890;background:#f5f0e8;border-radius:3px;padding:10px 12px;color:#3a2e18;}
 .event-result.good{border-color:#2e7d32;background:#f0f8f0;}
-.event-result.bad{border-color:#c62828;background:#fdf0f0;}
+.event-result.bad{border-color:#c62828;background:#ffe2e2;color:#5f1010;}
 
 @media (max-width: 820px){
   body{height:auto;min-height:100vh;overflow:auto;}
@@ -598,7 +598,11 @@ function seedOpeningPastor(){
   const p=makePastor(1904);
   p.name='Jacob Broders';
   assignPastorToChurch(p,'RS',0);
-  setTick('Pastor '+p.name+' atende a primeira congregação no Rio Grande do Sul.');
+  const p2=makePastor(1904);
+  p2.name='João Kunstmann';
+  const p3=makePastor(1904);
+  p3.name='Frederico Brutschin';
+  setTick('Pastor '+p.name+' atende a primeira congregação no Rio Grande do Sul. Mais 2 pastores estão disponíveis para novos campos.');
 }
 function getPastor(id){return G.pastors.find(p=>p.id===id);}
 function removeAvailablePastor(id){G.availablePastors=G.availablePastors.filter(pid=>pid!==id);}
@@ -900,7 +904,7 @@ function processPlayerMonthlyChurches(){
         if(ch.subsidyMonths>=CHURCH_SUBSIDY_MONTHS){ch.subsidized=false;ch.subsidyMonths=0;setTick('Subsídio de '+(ch.city||STATES[id].name)+' encerrado após revisão de 5 anos.');}
       }
       if(bal.deficit>0.01){ch.struggleMonths=(ch.struggleMonths||0)+1;if(ch.struggleMonths===3)setTick('Congregação em '+STATES[id].name+' com dificuldades financeiras.');}
-      else {ch.struggleMonths=0;if(ch.subsidized){ch.solventMonths=(ch.solventMonths||0)+1;if(ch.solventMonths>=2){ch.subsidized=false;ch.subsidyMonths=0;setTick('Congregação em '+STATES[id].name+' voltou ao auto-sustento.');}} ch.struggling=false;}
+      else {ch.struggleMonths=0;ch.failedStewardshipAttempts=0;if(ch.subsidized){ch.solventMonths=(ch.solventMonths||0)+1;if(ch.solventMonths>=2){ch.subsidized=false;ch.subsidyMonths=0;setTick('Congregação em '+STATES[id].name+' voltou ao auto-sustento.');}} ch.struggling=false;}
       ch.organicPulse=(Math.random()-0.5)*0.04;
       const nowMembers=ch.members;
       if(ch._stagnationWindowStart===undefined){ch._stagnationWindowStart=nowMembers;ch._stagnationMonths=0;}
@@ -1347,6 +1351,7 @@ function promoteMissionToChurch(id,index,wasPaused){
   ch._stagnationWindowStart=ch.members;
   ch._stagnationMonths=0;
   ch.failedEvangelismAttempts=0;
+  ch.failedStewardshipAttempts=0;
   ch.struggleMonths=0;
   recalc();redrawDots();renderLeft();renderRight();updateRes();
   setTick('Missão em '+(ch.city||STATES[id].name)+' organizada como congregação — Pastor '+p.name+' responsável.');
@@ -1404,7 +1409,7 @@ function assignAvailablePastorAction(id,i,second=false){
   recalc();renderLeft();renderRight();updateRes();setTick('Pastor '+p.name+' enviado para a Igreja '+(i+1)+' em '+STATES[id].name+'.');
 }
 
-function churchIntervention(id,i){const ch=G.states[id].denomData.IELB.churches[i];if(G.fe<20||G.of<20)return;G.fe-=20;G.of-=20;if(Math.random()<0.6){const newMembers=randInt(5,15);ch.members+=newMembers;ch.struggleMonths=0;ch.struggling=false;const dilution=newMembers/ch.members;ch.offerRate=Math.max(0.15,ch.offerRate*(1-dilution*0.4));setTick('Campanha em '+STATES[id].name+': +'+newMembers+' membros. Taxa de oferta: '+Math.round(ch.offerRate*100)+'%.');}else setTick('A campanha não surtiu efeito suficiente em '+STATES[id].name+'.');recalc();renderLeft();renderRight();updateRes();}
+function churchIntervention(id,i){const ch=G.states[id].denomData.IELB.churches[i];if(G.fe<20)return;G.fe-=20;if(Math.random()<0.6){const newMembers=randInt(5,15);ch.members+=newMembers;ch.struggleMonths=0;ch.struggling=false;const dilution=newMembers/ch.members;ch.offerRate=Math.max(0.15,ch.offerRate*(1-dilution*0.4));setTick('Campanha em '+STATES[id].name+': +'+newMembers+' membros. Taxa de oferta: '+Math.round(ch.offerRate*100)+'%.');}else setTick('A campanha não surtiu efeito suficiente em '+STATES[id].name+'.');recalc();renderLeft();renderRight();updateRes();}
 function togglePause(){G.paused=!G.paused;document.getElementById('pausebtn').textContent=G.paused?'▶ Retomar':'⏸ Pausar';renderRight();}
 function setSpeed(speed){G.speed=speed;['speedhalfbtn','speedbtn','speedfastbtn'].forEach(id=>{const b=document.getElementById(id);if(b)b.classList.remove('active-speed');});const activeId=speed===0.5?'speedhalfbtn':speed===2?'speedfastbtn':'speedbtn';const active=document.getElementById(activeId);if(active)active.classList.add('active-speed');}
 function toggleSpeed(){setSpeed(G.speed===1?2:1);}
@@ -1498,15 +1503,13 @@ function checkCampaignGoal(){
 }
 
 // IA rival: mesma lógica básica da IELB, mas automatizada.
-// A cada mês cada denominação pode executar no máximo uma ação: crescer membros,
-// subir nível, abrir outra igreja no mesmo estado ou fundar em novo estado.
+// A cada mês cada denominação avalia uma ação; sem cooldown artificial, o recurso acumulado decide o ritmo.
 function rivalStrategicTurn(){
   ensureScheduledFoundations();
   DENOM_KEYS.forEach(d=>{
     if(d==='IELB'||d==='CAT'||!G.foundedDenoms.has(d)) return;
     const info=DENOMS[d];
     info.resource+=(0.75+Math.sqrt(Math.max(0,totalMembers(d)))*0.05+totalChurches(d)*0.22)*info.growth;
-    if(info.cooldown>0){info.cooldown--;return;}
     const present=ALL_STATES.filter(id=>churchCount(id,d)>0);
     if(!present.length) return;
     if(info.resource>12&&totalChurches(d)>rivalAdminCapacity(d)){
@@ -1519,7 +1522,7 @@ function rivalStrategicTurn(){
       const candidates=ALL_STATES.filter(id=>churchCount(id,d)===0).sort((a,b)=>stateOpportunity(b,d)-stateOpportunity(a,d));
       const target=weightedPick(candidates.slice(0,7));
       const cost=rivalCost(d,'newState',target);
-      if(target&&info.resource>=cost){addChurch(target,d,profileMembers(d),1,G.year);info.resource-=cost;info.cooldown=2;return;}
+      if(target&&info.resource>=cost){addChurch(target,d,profileMembers(d),1,G.year);info.resource-=cost;return;}
     }
     const target=weightedPick(present.slice().sort((a,b)=>stateOpportunity(b,d)-stateOpportunity(a,d)).slice(0,6));
     if(!target)return;
@@ -1527,14 +1530,14 @@ function rivalStrategicTurn(){
     const ch=slot.churches[Math.floor(Math.random()*slot.churches.length)];
     if(action==='sameState'){
       const cost=rivalCost(d,'sameState',target);
-      if(info.resource>=cost){addChurch(target,d,profileMembers(d)*1.1,1,G.year);info.resource-=cost;info.cooldown=2;return;}
+      if(info.resource>=cost){addChurch(target,d,profileMembers(d)*1.1,1,G.year);info.resource-=cost;return;}
     }
     if(action==='level'&&ch&&ch.level<5){
       const cost=rivalCost(d,'level',target,ch);
-      if(info.resource>=cost){ch.level++;ch.members+=Math.max(1,profileMembers(d)*0.18);info.resource-=cost;info.cooldown=1;return;}
+      if(info.resource>=cost){ch.level++;ch.members+=Math.max(1,profileMembers(d)*0.18);info.resource-=cost;return;}
     }
     const growCost=rivalCost(d,'members',target,ch);
-    if(ch&&info.resource>=growCost){ch.members+=Math.max(1,profileMembers(d)*0.28);info.resource-=growCost;info.cooldown=1;}
+    if(ch&&info.resource>=growCost){ch.members+=Math.max(1,profileMembers(d)*0.28);info.resource-=growCost;}
   });
   recalc();buildLegend();redrawDots();renderLeft();renderRight();
 }
@@ -1627,7 +1630,7 @@ function showSubsidyModal(ev){
   };
   mc.appendChild(yes);
   const no=document.createElement('button');no.className='mcbtn';no.textContent='Negar o pedido';
-  no.onclick=()=>{closeDecisionModal('Pedido negado. Os seminaristas continuarão sem apoio financeiro institucional.');};
+  no.onclick=()=>{closeDecisionModal('Pedido negado. Os seminaristas continuarão sem apoio financeiro institucional.','bad');};
   mc.appendChild(no);
   modal.classList.add('show');
 }
@@ -1656,7 +1659,7 @@ function showSecondPastorModal(stateId,index,fromAnnual=false){
     mc.appendChild(send);
   }
   const skip=document.createElement('button');skip.className='mcbtn';skip.textContent=fromAnnual?'Pular por enquanto':'Cancelar';
-  skip.onclick=()=>{ch.lastSecondPastorDecisionYear=G.year;closeDecisionModal(fromAnnual?'A decisão foi adiada. A necessidade volta no próximo relatório anual se a sobrecarga continuar.':'Nenhum pastor foi enviado agora.');};
+  skip.onclick=()=>{ch.lastSecondPastorDecisionYear=G.year;closeDecisionModal(fromAnnual?'A decisão foi adiada. A necessidade volta no próximo relatório anual se a sobrecarga continuar.':'Nenhum pastor foi enviado agora.','bad');};
   mc.appendChild(skip);
   modal.classList.add('show');
 }
@@ -1680,42 +1683,98 @@ function showChurchDecision(item){
     ? 'Esta '+kind+' tem '+Math.floor(ch.members)+' membros e cresceu menos de 10 membros nos últimos 3 anos. Ela ainda pode estar pagando as contas, mas o campo estacionou.'
     : 'Esta '+kind+' tem '+Math.floor(ch.members)+' membros e não consegue se sustentar há '+ch.struggleMonths+' meses. Déficit mensal estimado: '+bal.deficit.toFixed(2)+' Ofertas. Taxa de oferta atual: '+Math.round((ch.offerRate||0.7)*100)+'%.';
   const ref=document.getElementById('m-ref');
-  if(stagnant){ref.style.display='block';ref.textContent='Tentativas de evangelismo sem fruto: '+(ch.failedEvangelismAttempts||0)+'/5.';}
-  else ref.style.display='none';
+  if(stagnant){ref.style.display='block';ref.textContent='Tentativas de evangelismo sem fruto: '+(ch.failedEvangelismAttempts||0)+'/3.';}
+  else {ref.style.display='block';ref.textContent='Tentativas de mordomia cristã sem efeito: '+(ch.failedStewardshipAttempts||0)+'/2.';}
   const mc=document.getElementById('m-choices');mc.innerHTML='';
-  const evang=document.createElement('button');evang.className='mcbtn';evang.textContent='Campanha de evangelismo (20 Fé + 20 Ofertas | 60% de chance)';evang.disabled=G.fe<20||G.of<20;evang.onclick=()=>{
-    G.fe-=20;G.of-=20;
-    if(Math.random()<0.6){
-      const n=randInt(8,18);
-      ch.members+=n;
-      ch.struggleMonths=0;
-      ch.stagnantMonths=0;
-      ch._stagnationWindowStart=ch.members;
-      ch._stagnationMonths=0;
-      ch.failedEvangelismAttempts=0;
-      const d=n/ch.members;
-      ch.offerRate=Math.max(0.15,Math.min(1,ch.offerRate*(1-d*0.25)+0.02));
-      closeDecisionModal('Campanha bem-sucedida: +'+n+' membros. Taxa de oferta: '+Math.round(ch.offerRate*100)+'%.');
-    }else{
-      ch.failedEvangelismAttempts=(ch.failedEvangelismAttempts||0)+1;
-      if(ch.failedEvangelismAttempts>=5&&totalChurches('IELB')>1){
-        const city=ch.city||STATES[item.stateId].name;
-        closeChurch(item.stateId,item.index);
-        closeDecisionModal('Depois de cinco campanhas sem fruto, a direção decidiu encerrar o ponto em '+city+'.');
+  if(!stagnant&&(ch.failedStewardshipAttempts||0)>=2){
+    showDeficitFinalChoice(item,kind);
+    modal.classList.add('show');
+    return;
+  }
+  if(stagnant){
+    const evang=document.createElement('button');evang.className='mcbtn';evang.textContent='Campanha de evangelismo (20 Fé | 60% de chance)';evang.disabled=G.fe<20;evang.onclick=()=>{
+      G.fe-=20;
+      if(Math.random()<0.6){
+        const n=randInt(8,18);
+        ch.members+=n;
+        ch.struggleMonths=0;
+        ch.stagnantMonths=0;
+        ch._stagnationWindowStart=ch.members;
+        ch._stagnationMonths=0;
+        ch.failedEvangelismAttempts=0;
+        const d=n/ch.members;
+        ch.offerRate=Math.max(0.15,Math.min(1,ch.offerRate*(1-d*0.25)+0.02));
+        closeDecisionModal('Campanha bem-sucedida: +'+n+' membros. Taxa de oferta: '+Math.round(ch.offerRate*100)+'%.');
       }else{
-        closeDecisionModal('A campanha não surtiu efeito suficiente. Tentativas sem fruto: '+(ch.failedEvangelismAttempts||0)+'/5.');
+        ch.failedEvangelismAttempts=(ch.failedEvangelismAttempts||0)+1;
+        if(ch.failedEvangelismAttempts>=3&&totalChurches('IELB')>1){
+          const city=ch.city||STATES[item.stateId].name;
+          closeChurch(item.stateId,item.index);
+          closeDecisionModal('Depois de três campanhas sem fruto, a direção decidiu encerrar o ponto em '+city+'.','bad');
+        }else{
+          closeDecisionModal('A campanha não surtiu efeito suficiente. Tentativas sem fruto: '+(ch.failedEvangelismAttempts||0)+'/3.','bad');
+        }
       }
-    }
-  };mc.appendChild(evang);
-  if(!stagnant){const sub=document.createElement('button');sub.className='mcbtn';sub.textContent='Enviar subsídio por 5 anos';sub.onclick=()=>{ch.subsidized=true;ch.subsidyMonths=0;ch.solventMonths=0;closeDecisionModal('A IELB subsidiará esta '+kind+' por 5 anos. Depois disso haverá revisão.');};mc.appendChild(sub);}
-  if(stagnant){const skip=document.createElement('button');skip.className='mcbtn';skip.textContent='Pular por enquanto';skip.onclick=()=>{closeDecisionModal('A decisão foi adiada. Se não houver crescimento, ela voltará no próximo relatório anual.');};mc.appendChild(skip);}
+    };mc.appendChild(evang);
+  }else{
+    const stewardship=document.createElement('button');stewardship.className='mcbtn';stewardship.textContent='Anúncio de mordomia cristã (20 Fé | 60% de chance)';stewardship.disabled=G.fe<20;stewardship.onclick=()=>{
+      G.fe-=20;
+      if(Math.random()<0.6){
+        const gain=0.08+Math.random()*0.1;
+        ch.offerRate=Math.max(0.15,Math.min(1,(ch.offerRate||0.7)+gain));
+        ch.struggleMonths=Math.max(0,(ch.struggleMonths||0)-4);
+        ch.solventMonths=0;
+        ch.failedStewardshipAttempts=0;
+        closeDecisionModal('O anúncio de mordomia cristã fortaleceu o compromisso da comunidade. Taxa de oferta: '+Math.round(ch.offerRate*100)+'%.');
+      }else{
+        ch.failedStewardshipAttempts=(ch.failedStewardshipAttempts||0)+1;
+        ch.struggleMonths=(ch.struggleMonths||0)+1;
+        if(ch.failedStewardshipAttempts>=2){
+          showDeficitFinalChoice(item,kind);
+        }else{
+          closeDecisionModal('O apelo de mordomia cristã ainda não mudou o caixa da missão. Tentativas sem efeito: '+ch.failedStewardshipAttempts+'/2.','bad');
+        }
+      }
+    };mc.appendChild(stewardship);
+  }
+  if(stagnant){const skip=document.createElement('button');skip.className='mcbtn';skip.textContent='Pular por enquanto';skip.onclick=()=>{closeDecisionModal('A decisão foi adiada. Se não houver crescimento, ela voltará no próximo relatório anual.','bad');};mc.appendChild(skip);}
   const totalIelb=totalChurches('IELB');
-  if(totalIelb>1){const close=document.createElement('button');close.className='mcbtn';close.textContent='Encerrar este ponto';close.onclick=()=>{closeChurch(item.stateId,item.index);closeDecisionModal('O ponto foi encerrado. O pastor voltou a ficar disponível.');};mc.appendChild(close);}
+  if(stagnant&&totalIelb>1){const close=document.createElement('button');close.className='mcbtn';close.textContent='Encerrar este ponto';close.onclick=()=>{closeChurch(item.stateId,item.index);closeDecisionModal('O ponto foi encerrado. O pastor voltou a ficar disponível.','bad');};mc.appendChild(close);}
   modal.classList.add('show');
 }
-function closeDecisionModal(msg){
+function showDeficitFinalChoice(item,kind){
+  const ch=item.ch;
   const mc=document.getElementById('m-choices');mc.innerHTML='';
-  const result=document.createElement('div');result.className='event-result good';result.textContent=msg;mc.appendChild(result);
+  const result=document.createElement('div');
+  result.className='event-result bad';
+  result.textContent='A mordomia cristã foi anunciada duas vezes sem mudar o caixa. Agora a IELB precisa subsidiar esta '+kind+' ou encerrar o ponto.';
+  mc.appendChild(result);
+  const sub=document.createElement('button');
+  sub.className='mcbtn';
+  sub.textContent='Pedir subsídio direto à IELB por 5 anos';
+  sub.onclick=()=>{
+    ch.subsidized=true;
+    ch.subsidyMonths=0;
+    ch.solventMonths=0;
+    ch.failedStewardshipAttempts=0;
+    closeDecisionModal('A IELB subsidiará esta '+kind+' por 5 anos. Depois disso haverá revisão.');
+  };
+  mc.appendChild(sub);
+  if(totalChurches('IELB')>1){
+    const close=document.createElement('button');
+    close.className='mcbtn';
+    close.textContent='Encerrar este ponto de missão';
+    close.onclick=()=>{
+      const city=ch.city||STATES[item.stateId].name;
+      closeChurch(item.stateId,item.index);
+      closeDecisionModal('O ponto em '+city+' foi encerrado após duas tentativas de mordomia cristã sem efeito.','bad');
+    };
+    mc.appendChild(close);
+  }
+}
+function closeDecisionModal(msg,type='good'){
+  const mc=document.getElementById('m-choices');mc.innerHTML='';
+  const result=document.createElement('div');result.className='event-result '+(type==='bad'?'bad':'good');result.textContent=msg;mc.appendChild(result);
   const btn=document.createElement('button');btn.className='mcbtn';btn.textContent='Continuar';btn.onclick=()=>{document.getElementById('modal').classList.remove('show');G.paused=false;document.getElementById('pausebtn').textContent='⏸ Pausar';recalc();renderLeft();renderRight();redrawDots();updateRes();processEventQueue();};mc.appendChild(btn);
   recalc();updateRes();renderLeft();renderRight();redrawDots();
 }

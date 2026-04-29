@@ -1267,26 +1267,43 @@ function showMissionCityModal(id){
   const tag=document.getElementById('m-tag');tag.textContent='MISSÃO';tag.className='good';
   document.getElementById('m-title').textContent='Abrir mais um ponto de missão no estado';
   document.getElementById('m-yr').textContent=STATES[id].name;
-  document.getElementById('m-txt').textContent='Escolha a cidade e se a missão ficará sob responsabilidade de um pastor já ativo no estado ou de um pastor disponível dedicado.';
+  document.getElementById('m-txt').textContent='Escolha a cidade onde a missão será aberta.';
   const ref=document.getElementById('m-ref');ref.style.display='block';ref.textContent='Custo: '+cost+' Ofertas + 10 Membros';
   const mc=document.getElementById('m-choices');mc.innerHTML='';
   missionCityOptions(id).forEach(city=>{
-    if(route){
-      const routed=routePastorForNewChurch(id,city);
-      const b=document.createElement('button');b.className='mcbtn';b.textContent=city+' — encarregar '+routed.name+' (já ativo no estado)';
-      b.onclick=()=>commitMissionPoint(id,city,wasPaused,'route');
-      mc.appendChild(b);
-    }
-    if(dedicated){
-      const b=document.createElement('button');b.className='mcbtn';b.textContent=city+' — enviar '+dedicated.name+' (pastor disponível)';
-      b.onclick=()=>commitMissionPoint(id,city,wasPaused,'dedicated');
-      mc.appendChild(b);
-    }
+    const b=document.createElement('button');b.className='mcbtn';b.textContent=city;
+    b.onclick=()=>showMissionPastorChoice(id,city,wasPaused);
+    mc.appendChild(b);
   });
   const cancel=document.createElement('button');cancel.className='mcbtn';cancel.textContent='Cancelar';cancel.onclick=()=>closeMissionCityModal(wasPaused);mc.appendChild(cancel);
   modal.classList.add('show');
 }
 function openMission(id){showMissionCityModal(id);}
+function showMissionPastorChoice(id,city,wasPaused){
+  const cost=PLAYER_EXPANSION_COST;
+  const route=routePastorForNewChurch(id,city);
+  const dedicated=availablePastor();
+  const modal=document.getElementById('modal');
+  const tag=document.getElementById('m-tag');tag.textContent='MISSÃO';tag.className='good';
+  document.getElementById('m-title').textContent='Definir pastor da missão';
+  document.getElementById('m-yr').textContent=city+', '+STATES[id].name;
+  document.getElementById('m-txt').textContent='Escolha se este ponto ficará com um pastor já em atividade no estado ou com um novo pastor disponível.';
+  const ref=document.getElementById('m-ref');ref.style.display='block';ref.textContent='Custo: '+cost+' Ofertas + 10 Membros';
+  const mc=document.getElementById('m-choices');mc.innerHTML='';
+  if(route){
+    const b=document.createElement('button');b.className='mcbtn';b.textContent='Usar pastor já em atividade';
+    b.onclick=()=>commitMissionPoint(id,city,wasPaused,'route');
+    mc.appendChild(b);
+  }
+  if(dedicated){
+    const b=document.createElement('button');b.className='mcbtn';b.textContent='Enviar um novo pastor disponível';
+    b.onclick=()=>commitMissionPoint(id,city,wasPaused,'dedicated');
+    mc.appendChild(b);
+  }
+  const back=document.createElement('button');back.className='mcbtn';back.textContent='Voltar para cidades';back.onclick=()=>showMissionCityModal(id);mc.appendChild(back);
+  const cancel=document.createElement('button');cancel.className='mcbtn';cancel.textContent='Cancelar';cancel.onclick=()=>closeMissionCityModal(wasPaused);mc.appendChild(cancel);
+  modal.classList.add('show');
+}
 function commitMissionPoint(id,city,wasPaused,mode='route'){
   const slot=G.states[id].denomData.IELB;
   const cost=PLAYER_EXPANSION_COST;

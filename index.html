@@ -669,7 +669,7 @@ function churchNeedsPastorRelief(stateId,index){
   if(!ch||ch.secondPastorId)return false;
   if(ch.type==='congregacao'&&ch.members>=300)return true;
   const p=pastorForChurch(stateId,index);
-  return !!p&&pastorMemberLoad(p,stateId)>=300&&p.assignedChurchIndex!==index;
+  return !!p&&pastorMemberLoad(p,stateId)>=300;
 }
 function churchInfluenceMult(stateId,index){
   if(!churchNeedsPastorRelief(stateId,index))return 1;
@@ -1258,7 +1258,8 @@ function showMissionCityModal(id){
   const slot=G.states[id].denomData.IELB;
   const cost=PLAYER_EXPANSION_COST;
   const route=routePastorForNewChurch(id);
-  if(G.of<cost||G.fi<10||!route)return;
+  const dedicated=availablePastor();
+  if(G.of<cost||G.fi<10||(!route&&!dedicated))return;
   const wasPaused=G.paused;
   G.paused=true;
   document.getElementById('pausebtn').textContent='▶ Retomar';
@@ -1266,29 +1267,40 @@ function showMissionCityModal(id){
   const tag=document.getElementById('m-tag');tag.textContent='MISSÃO';tag.className='good';
   document.getElementById('m-title').textContent='Abrir mais um ponto de missão no estado';
   document.getElementById('m-yr').textContent=STATES[id].name;
-  document.getElementById('m-txt').textContent='O pastor encarregado será definido automaticamente pela igreja mais próxima dentro deste estado.';
+  document.getElementById('m-txt').textContent='Escolha a cidade e se a missão ficará sob responsabilidade de um pastor já ativo no estado ou de um pastor disponível dedicado.';
   const ref=document.getElementById('m-ref');ref.style.display='block';ref.textContent='Custo: '+cost+' Ofertas + 10 Membros';
   const mc=document.getElementById('m-choices');mc.innerHTML='';
   missionCityOptions(id).forEach(city=>{
-    const b=document.createElement('button');b.className='mcbtn';b.textContent=city;
-    b.onclick=()=>commitMissionPoint(id,city,wasPaused);
-    mc.appendChild(b);
+    if(route){
+      const routed=routePastorForNewChurch(id,city);
+      const b=document.createElement('button');b.className='mcbtn';b.textContent=city+' — encarregar '+routed.name+' (já ativo no estado)';
+      b.onclick=()=>commitMissionPoint(id,city,wasPaused,'route');
+      mc.appendChild(b);
+    }
+    if(dedicated){
+      const b=document.createElement('button');b.className='mcbtn';b.textContent=city+' — enviar '+dedicated.name+' (pastor disponível)';
+      b.onclick=()=>commitMissionPoint(id,city,wasPaused,'dedicated');
+      mc.appendChild(b);
+    }
   });
   const cancel=document.createElement('button');cancel.className='mcbtn';cancel.textContent='Cancelar';cancel.onclick=()=>closeMissionCityModal(wasPaused);mc.appendChild(cancel);
   modal.classList.add('show');
 }
 function openMission(id){showMissionCityModal(id);}
-function commitMissionPoint(id,city,wasPaused){
+function commitMissionPoint(id,city,wasPaused,mode='route'){
   const slot=G.states[id].denomData.IELB;
   const cost=PLAYER_EXPANSION_COST;
-  const route=routePastorForNewChurch(id,city);
-  if(!route||G.of<cost||G.fi<10){closeMissionCityModal(wasPaused);return;}
+  const route=mode==='dedicated'?null:routePastorForNewChurch(id,city);
+  const dedicated=mode==='dedicated'?availablePastor():null;
+  const pastor=dedicated||route;
+  if(!pastor||G.of<cost||G.fi<10){closeMissionCityModal(wasPaused);return;}
   G.of-=cost;G.fi-=10;
   const ch=addChurch(id,'IELB',12,1,G.year,'missao',city);
   const idx=slot.churches.indexOf(ch);
-  addPastorRoute(route,idx);ch.pastorId=route.id;
+  if(dedicated)assignPastorToChurch(dedicated,id,idx);
+  else {addPastorRoute(route,idx);ch.pastorId=route.id;}
   recalc();redrawDots();renderLeft();renderRight();updateRes();
-  setTick('Ponto de missão aberto em '+ch.city+', '+STATES[id].name+' — Pastor '+route.name+' encarregado.');
+  setTick('Ponto de missão aberto em '+ch.city+', '+STATES[id].name+' — Pastor '+pastor.name+(dedicated?' dedicado ao novo campo.':' encarregado.'));
   closeMissionCityModal(wasPaused);
 }
 function stateMissionIndexes(id){return G.states[id].denomData.IELB.churches.map((ch,i)=>ch.type==='missao'?i:null).filter(i=>i!==null);}
@@ -1432,8 +1444,8 @@ function renderRight(){
   }
   if(ielbC.length){
     const cost=PLAYER_EXPANSION_COST;
-    const canRoute=!!routePastorForNewChurch(id);
-    addBtn(body,'Abrir mais um ponto de missão no estado','Custo: '+cost+' Ofertas + 10 Membros','miss',()=>openMission(id),G.of<cost||G.fi<10||!canRoute);
+    const canOpenMission=!!routePastorForNewChurch(id)||!!availablePastor();
+    addBtn(body,'Abrir mais um ponto de missão no estado','Custo: '+cost+' Ofertas + 10 Membros','miss',()=>openMission(id),G.of<cost||G.fi<10||!canOpenMission);
     const promoOptions=missionPromotionOptions(id);
     if(promoOptions.length){
       const promoReady=promoOptions.some(o=>o.ready);
@@ -1641,6 +1653,8 @@ function showSecondPastorModal(stateId,index,fromAnnual=false){
   const currentPastor=pastorForChurch(stateId,index);
   const load=currentPastor?pastorMemberLoad(currentPastor,stateId):ch.members;
   const needsOwnPastor=ch.type==='missao'&&currentPastor&&pastorRouteIndexes(currentPastor).includes(index);
+  const loadOverloaded=currentPastor&&load>=300&&!ch.secondPastorId;
+  const ownLarge=ch.type==='congregacao'&&ch.members>=300&&!ch.secondPastorId;
   G.paused=true;document.getElementById('pausebtn').textContent='▶ Retomar';
   const modal=document.getElementById('modal');
   const tag=document.getElementById('m-tag');tag.textContent='PASTORADO';tag.className='warn';
@@ -1648,7 +1662,9 @@ function showSecondPastorModal(stateId,index,fromAnnual=false){
   document.getElementById('m-yr').textContent=(ch.city||STATES[stateId].name)+' — '+Math.floor(ch.members)+' membros | carga pastoral: '+Math.floor(load);
   document.getElementById('m-txt').textContent=needsOwnPastor
     ? 'O pastor '+currentPastor.name+' ja atende comunidades que somam '+Math.floor(load)+' membros. Envie um pastor para ficar encarregado desta missao.'
-    : 'Esta congregação passou de 300 membros e já está pesada demais para apenas um pastor. Enviar um segundo pastor reduz a sobrecarga pastoral.';
+    : (loadOverloaded&&!ownLarge
+      ? 'O pastor '+currentPastor.name+' atende comunidades que somam '+Math.floor(load)+' membros. Enviar um segundo pastor para esta comunidade reduz a sobrecarga pastoral.'
+      : 'Esta congregação passou de 300 membros e já está pesada demais para apenas um pastor. Enviar um segundo pastor reduz a sobrecarga pastoral.');
   const ref=document.getElementById('m-ref');ref.style.display='block';
   const p=availablePastor();
   ref.textContent=p?'Pastor disponível: '+p.name+' | Custo: '+PASTOR_SEND_COST+' Ofertas':'Nenhum pastor disponível agora. Você pode pular e voltar quando houver formatura.';

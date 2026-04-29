@@ -1,0 +1,261 @@
+﻿#campaign-bar {
+  height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-bottom: 1px solid #b88a2a;
+  background: #fffaf0;
+  color: #3a2500;
+  font: 12px system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  flex-shrink: 0;
+}
+
+#campaign-bar .bar-link {
+  color: #0b58b0;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+#campaign-bar label {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: #8a5a00;
+}
+
+#campaign-bar select,
+#campaign-bar button {
+  height: 24px;
+  border: 1px solid #c8a46a;
+  background: #fff;
+  color: #2a1800;
+  border-radius: 3px;
+  padding: 0 8px;
+  font: inherit;
+}
+
+#campaign-bar button {
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#save-status {
+  margin-left: auto;
+  color: #2e7d32;
+}
+
+#save-status.bad {
+  color: #c62828;
+}
+
+.site-page {
+  min-height: 100vh;
+  margin: 0;
+  background: #efe8d8;
+  color: #2a1800;
+  font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+}
+
+.auth-wrap {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.auth-card {
+  width: min(420px, 94vw);
+  border: 1px solid #b88a2a;
+  background: #fffaf0;
+  border-radius: 6px;
+  padding: 24px;
+  box-shadow: 0 16px 42px rgba(42, 24, 0, .14);
+}
+
+.auth-card h1,
+.dashboard h1 {
+  margin: 0 0 6px;
+  font-size: 28px;
+}
+
+.auth-card p,
+.dashboard p {
+  margin: 0 0 18px;
+  color: #73551e;
+}
+
+.auth-form {
+  display: grid;
+  gap: 12px;
+}
+
+.auth-form label {
+  display: grid;
+  gap: 6px;
+  font-weight: 700;
+  color: #6b4a08;
+}
+
+.auth-form input,
+.create-save input {
+  height: 38px;
+  border: 1px solid #c8a46a;
+  border-radius: 4px;
+  padding: 0 10px;
+  font: inherit;
+  background: #fff;
+  color: #2a1800;
+}
+
+.auth-form button,
+.create-link,
+.dash-head button,
+.slot-actions a,
+.slot-actions button {
+  min-height: 36px;
+  border: 1px solid #8a5a00;
+  border-radius: 4px;
+  background: #8a5a00;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  padding: 0 12px;
+  cursor: pointer;
+}
+
+.create-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.auth-link {
+  display: inline-block;
+  margin-top: 14px;
+  color: #0b58b0;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.form-error {
+  border: 1px solid #c62828;
+  background: #ffe2e2;
+  color: #5f1010;
+  border-radius: 4px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+}
+
+.dashboard {
+  width: min(900px, 94vw);
+  margin: 0 auto;
+  padding: 32px 0;
+}
+
+.dash-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.slot-card {
+  min-height: 190px;
+  border: 1px solid #b88a2a;
+  background: #fffaf0;
+  border-radius: 6px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.slot-card h2 {
+  margin: 0 0 10px;
+  color: #8a5a00;
+  font-size: 15px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.slot-card strong {
+  display: block;
+  font-size: 22px;
+  margin-bottom: 8px;
+}
+
+.slot-card span {
+  color: #73551e;
+}
+
+.create-save {
+  display: grid;
+  gap: 10px;
+}
+
+.slot-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.slot-actions a {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.slot-actions .icon-danger {
+  width: 42px;
+  height: 38px;
+  padding: 0;
+  background: #fff;
+  color: #c62828;
+  border-color: #c62828;
+  font-size: 28px;
+  line-height: 1;
+}
+
+@media (max-width: 720px) {
+  .dashboard {
+    width: min(480px, 94vw);
+    padding: 18px 0;
+  }
+
+  .slot-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dash-head {
+    display: grid;
+    gap: 10px;
+  }
+
+  .slot-card {
+    min-height: 150px;
+  }
+
+  .slot-actions {
+    align-items: stretch;
+  }
+
+  .slot-actions a {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .auth-card {
+    padding: 18px;
+  }
+}
+

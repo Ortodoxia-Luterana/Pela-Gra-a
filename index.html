@@ -579,7 +579,7 @@ const PASTOR_FIRST=['Johann','Frederico','Carlos','Henrique','Guilherme','Ernest
 const PASTOR_LAST=['Müller','Schmidt','Weber','Hoffmann','Schneider','Klein','Reuter','Bartz','Bräunig','Heine','Meyer','Krause'];
 function pastorName(){return PASTOR_FIRST[randInt(0,PASTOR_FIRST.length-1)]+' '+PASTOR_LAST[randInt(0,PASTOR_LAST.length-1)];}
 function makePastor(year){
-  const p={id:G.nextPastorId++,name:pastorName(),graduationYear:year,age:25,yearsOfMinistry:0,retirementYear:year+30,assignedStateId:null,assignedChurchIndex:null,isOnRoute:false,routeChurchIndex:null,alive:true,retired:false};
+  const p={id:G.nextPastorId++,name:pastorName(),graduationYear:year,age:25,yearsOfMinistry:0,retirementYear:year+30,assignedStateId:null,assignedChurchIndex:null,isOnRoute:false,routeChurchIndex:null,routeChurchIndexes:[],alive:true,retired:false};
   G.pastors.push(p);G.availablePastors.push(p.id);return p;
 }
 function planSeminaryOpening(mode){
@@ -604,13 +604,13 @@ function getPastor(id){return G.pastors.find(p=>p.id===id);}
 function removeAvailablePastor(id){G.availablePastors=G.availablePastors.filter(pid=>pid!==id);}
 function releasePastor(p){
   if(!p)return;
-  p.assignedStateId=null;p.assignedChurchIndex=null;p.isOnRoute=false;p.routeChurchIndex=null;
+  p.assignedStateId=null;p.assignedChurchIndex=null;p.isOnRoute=false;p.routeChurchIndex=null;p.routeChurchIndexes=[];
   if(p.alive&&!p.retired&&!G.availablePastors.includes(p.id))G.availablePastors.push(p.id);
 }
 function assignPastorToChurch(p,stateId,churchIndex){
   if(!p)return false;
   removeAvailablePastor(p.id);
-  p.assignedStateId=stateId;p.assignedChurchIndex=churchIndex;p.isOnRoute=false;p.routeChurchIndex=null;
+  p.assignedStateId=stateId;p.assignedChurchIndex=churchIndex;p.isOnRoute=false;p.routeChurchIndex=null;p.routeChurchIndexes=[];
   const ch=G.states[stateId].denomData.IELB.churches[churchIndex];
   if(ch){if(ch.pastorId&&ch.pastorId!==p.id)ch.secondPastorId=p.id;else ch.pastorId=p.id;}
   return true;
@@ -618,7 +618,59 @@ function assignPastorToChurch(p,stateId,churchIndex){
 function availablePastor(){const id=G.availablePastors[0];return id?getPastor(id):null;}
 function activePastors(){return G.pastors.filter(p=>p.alive&&!p.retired&&(p.assignedStateId||G.availablePastors.includes(p.id)));}
 function pastorForChurch(stateId,index){
-  return G.pastors.find(p=>p.alive&&!p.retired&&p.assignedStateId===stateId&&(p.assignedChurchIndex===index||p.routeChurchIndex===index));
+  return G.pastors.find(p=>p.alive&&!p.retired&&p.assignedStateId===stateId&&(p.assignedChurchIndex===index||pastorRouteIndexes(p).includes(index)));
+}
+function pastorRouteIndexes(p){
+  if(!p)return [];
+  const list=Array.isArray(p.routeChurchIndexes)?p.routeChurchIndexes.slice():[];
+  if(p.routeChurchIndex!==null&&p.routeChurchIndex!==undefined&&!list.includes(p.routeChurchIndex))list.push(p.routeChurchIndex);
+  return list.filter(i=>i!==null&&i!==undefined);
+}
+function setPastorRoutes(p,indexes){
+  if(!p)return;
+  p.routeChurchIndexes=[...new Set((indexes||[]).filter(i=>i!==null&&i!==undefined))];
+  p.routeChurchIndex=p.routeChurchIndexes.length?p.routeChurchIndexes[0]:null;
+  p.isOnRoute=p.routeChurchIndexes.length>0;
+}
+function addPastorRoute(p,index){
+  if(!p)return;
+  const list=pastorRouteIndexes(p);
+  if(!list.includes(index))list.push(index);
+  setPastorRoutes(p,list);
+}
+function removePastorRoute(p,index){
+  if(!p)return;
+  setPastorRoutes(p,pastorRouteIndexes(p).filter(i=>i!==index));
+}
+function pastorAssignments(p,stateId=null){
+  if(!p||!p.alive||p.retired)return [];
+  const sid=stateId||p.assignedStateId;
+  if(!sid||p.assignedStateId!==sid)return [];
+  const slot=G.states[sid]?.denomData.IELB;
+  if(!slot)return [];
+  const indexes=[];
+  if(p.assignedChurchIndex!==null&&p.assignedChurchIndex!==undefined)indexes.push(p.assignedChurchIndex);
+  pastorRouteIndexes(p).forEach(i=>indexes.push(i));
+  return [...new Set(indexes)].map(index=>({stateId:sid,index,ch:slot.churches[index]})).filter(r=>r.ch);
+}
+function pastorMemberLoad(p,stateId=null){
+  return pastorAssignments(p,stateId).reduce((sum,r)=>sum+Math.max(0,r.ch.members||0),0);
+}
+function churchPastorLoad(stateId,index){
+  const p=pastorForChurch(stateId,index);
+  return p?pastorMemberLoad(p,stateId):0;
+}
+function churchNeedsPastorRelief(stateId,index){
+  const ch=G.states[stateId].denomData.IELB.churches[index];
+  if(!ch||ch.secondPastorId)return false;
+  if(ch.type==='congregacao'&&ch.members>=300)return true;
+  const p=pastorForChurch(stateId,index);
+  return !!p&&pastorMemberLoad(p,stateId)>=300&&p.assignedChurchIndex!==index;
+}
+function churchInfluenceMult(stateId,index){
+  if(!churchNeedsPastorRelief(stateId,index))return 1;
+  const over=Math.max(0,churchPastorLoad(stateId,index)-300);
+  return Math.max(0.48,0.74-Math.min(0.26,over*0.0012));
 }
 function cityDistance(stateId,fromCity,toCity){
   const coords=CITY_COORDS[stateId]||{};
@@ -630,11 +682,13 @@ function cityDistance(stateId,fromCity,toCity){
   return 999;
 }
 function routePastorForNewChurch(stateId,targetCity=null){
-  const candidates=G.pastors.filter(p=>p.alive&&!p.retired&&p.assignedStateId===stateId&&!p.isOnRoute&&p.assignedChurchIndex!==null);
+  const candidates=G.pastors.filter(p=>p.alive&&!p.retired&&p.assignedStateId===stateId&&p.assignedChurchIndex!==null);
   if(!targetCity||candidates.length<=1)return candidates[0]||null;
   return candidates.sort((a,b)=>{
     const ca=G.states[stateId].denomData.IELB.churches[a.assignedChurchIndex]?.city;
     const cb=G.states[stateId].denomData.IELB.churches[b.assignedChurchIndex]?.city;
+    const loadDiff=pastorMemberLoad(a,stateId)-pastorMemberLoad(b,stateId);
+    if(Math.abs(loadDiff)>1)return loadDiff;
     return cityDistance(stateId,ca,targetCity)-cityDistance(stateId,cb,targetCity);
   })[0]||null;
 }
@@ -643,8 +697,9 @@ function pastoralStatus(stateId,index){
   const p=pastorForChurch(stateId,index);
   if(!p)return {label:'Sem pastor',memberMult:0.35,offerMult:0.5};
   if(ch.secondPastorId)return {label:'Dois pastores',memberMult:1.1,offerMult:1.05};
+  if(churchNeedsPastorRelief(stateId,index))return {label:'Pastor sobrecarregado',memberMult:0.68,offerMult:0.82};
   if(p.isOnRoute&&p.assignedChurchIndex===index)return {label:'Pastor próprio',memberMult:1,offerMult:1};
-  if(p.isOnRoute&&p.routeChurchIndex===index)return {label:'Pastor responsável',memberMult:1,offerMult:1};
+  if(pastorRouteIndexes(p).includes(index))return {label:'Pastor responsável',memberMult:1,offerMult:1};
   return {label:'Pastor próprio',memberMult:1,offerMult:1};
 }
 
@@ -662,9 +717,12 @@ function recalcInfluence(){
       const churches=slot.churches.length;
       const memberPower=slot.churches.reduce((sum,c,i)=>{
         const scale=i===0?1:1/(1+i*0.18);
-        return sum+Math.pow(Math.max(0,c.members),0.86)*(1+c.level*0.18)*scale;
+        const pastoralPower=d==='IELB'?churchInfluenceMult(id,i):1;
+        return sum+Math.pow(Math.max(0,c.members),0.86)*(1+c.level*0.18)*scale*pastoralPower;
       },0);
-      const networkPower=churches ? (churches*18+Math.sqrt(slot.members)*2.6) : 0;
+      const overloaded=d==='IELB'?slot.churches.filter((_,i)=>churchNeedsPastorRelief(id,i)).length:0;
+      const networkMult=overloaded?Math.max(0.62,1-overloaded*0.08):1;
+      const networkPower=churches ? (churches*18+Math.sqrt(slot.members)*2.6)*networkMult : 0;
       const doctrineFactor=d==='IELB'
         ? Math.max(0.82,Math.min(1.1,0.9+(G.doc/100)*0.14+(G.mods.doctrineGrowth-1)*0.08))
         : 1;
@@ -694,18 +752,19 @@ function churchOrganicMemberRate(stateId,index){
   const health=doctrineScore*missionScore*youthScore*receptivityScore*pastorScore;
   const base=isMission?0.12:0.18;
   const memberMomentum=Math.min(isMission?0.65:1.15,Math.max(0,ch.members)*(isMission?0.0032:0.0042));
-  const overloadPenalty=(ch.members>=300&&!ch.secondPastorId)?(1.2+Math.min(3.2,(ch.members-300)*0.018)):0;
+  const overloadMembers=Math.max(ch.members,churchPastorLoad(stateId,index));
+  const overloadPenalty=churchNeedsPastorRelief(stateId,index)?(1.2+Math.min(3.2,(overloadMembers-300)*0.018)):0;
   const noPastorPenalty=!pastorForChurch(stateId,index)?0.65:0;
     const randomField=(ch.organicBias||0)+(ch.organicPulse||0);
   const rate=((base+memberMomentum)*health)+randomField-overloadPenalty-noPastorPenalty;
-  if(ch.members>=300&&!ch.secondPastorId)return Math.max(-1.5,Math.min(0.08,rate));
+  if(churchNeedsPastorRelief(stateId,index))return Math.max(-1.5,Math.min(0.08,rate));
   return Math.max(-1.2,Math.min(2.2,rate));
 }
 function churchMemberTrendReason(stateId,index){
   const ch=G.states[stateId].denomData.IELB.churches[index];
   if(!pastorForChurch(stateId,index))return 'sem pastor';
   const ps=pastoralStatus(stateId,index);
-  if(ch.members>=300&&!ch.secondPastorId)return 'sobrecarga pastoral';
+  if(churchNeedsPastorRelief(stateId,index))return 'sobrecarga pastoral';
   if(G.doc<70)return 'doutrina fraca';
   return 'crescimento orgânico';
 }
@@ -922,7 +981,7 @@ function clearPastorFromChurches(p){
     churches.forEach(ch=>{if(ch.pastorId===p.id)ch.pastorId=null;if(ch.secondPastorId===p.id)ch.secondPastorId=null;});
   }
   removeAvailablePastor(p.id);
-  p.assignedStateId=null;p.assignedChurchIndex=null;p.isOnRoute=false;p.routeChurchIndex=null;
+  p.assignedStateId=null;p.assignedChurchIndex=null;p.isOnRoute=false;p.routeChurchIndex=null;p.routeChurchIndexes=[];
 }
 function uncoveredChurches(){
   const list=[];ALL_STATES.forEach(id=>G.states[id].denomData.IELB.churches.forEach((ch,i)=>{if(!pastorForChurch(id,i))list.push({stateId:id,index:i,ch});}));
@@ -932,7 +991,7 @@ function churchesNeedingAnnualDecision(){
   const total=totalChurches('IELB');
   const list=[];
   ALL_STATES.forEach(id=>G.states[id].denomData.IELB.churches.forEach((ch,i)=>{
-    if(ch.type==='congregacao'&&ch.members>=300&&!ch.secondPastorId&&ch.lastSecondPastorDecisionYear!==G.year)list.push({stateId:id,index:i,ch,reason:'secondPastor'});
+    if(churchNeedsPastorRelief(id,i)&&ch.lastSecondPastorDecisionYear!==G.year)list.push({stateId:id,index:i,ch,reason:'secondPastor'});
     else if((ch.struggleMonths||0)>=6&&!ch.subsidized&&total>1)list.push({stateId:id,index:i,ch,reason:'deficit'});
     else if((ch.stagnantMonths||0)>=36&&((ch.members-(ch._stagnationWindowStart||ch.members))<10)&&total>1&&ch.lastStagnationDecisionYear!==G.year)list.push({stateId:id,index:i,ch,reason:'stagnant'});
   }));
@@ -1141,13 +1200,13 @@ function addBtn(p,lbl,note,cls,fn,dis,bid){const b=document.createElement('butto
 
 function churchPlantCost(id){return Math.max(35,G.states[id].denomData.IELB.churches.length*35+totalChurches('IELB')*4);}
 function generalActionBlocked(){if(!G.paused)return false;setTick('O jogo está pausado. Retome o tempo para realizar culto e catecismo.');return true;}
-function sendMission(id){const slot=G.states[id].denomData.IELB;const p=availablePastor();if(!p){setTick('Sem pastores disponíveis. Aguarde as próximas formaturas.');return;}if(G.of<PASTOR_SEND_COST||G.fi<10||slot.cooldown>0)return;G.of-=PASTOR_SEND_COST;G.fi-=10;removeAvailablePastor(p.id);p.assignedStateId=id;p.assignedChurchIndex=null;G.states[id].missionary=true;G.states[id].missionProg=0;G.states[id].missionPastorId=p.id;slot.cooldown=PLAYER_MISSION_COOLDOWN;redrawDots();renderLeft();renderRight();updateRes();setTick('Pastor '+p.name+' enviado para '+STATES[id].name+'. A implantação levará tempo.');}
+function sendMission(id){const slot=G.states[id].denomData.IELB;const p=availablePastor();if(!p){setTick('Sem pastores disponíveis. Aguarde as próximas formaturas.');return;}if(G.of<PASTOR_SEND_COST||G.fi<10)return;G.of-=PASTOR_SEND_COST;G.fi-=10;removeAvailablePastor(p.id);p.assignedStateId=id;p.assignedChurchIndex=null;G.states[id].missionary=true;G.states[id].missionProg=0;G.states[id].missionPastorId=p.id;redrawDots();renderLeft();renderRight();updateRes();setTick('Pastor '+p.name+' enviado para '+STATES[id].name+'. A implantação levará tempo.');}
 function newDedicatedChurch(id){showChurchCityModal(id);}
 function showChurchCityModal(id){
   const slot=G.states[id].denomData.IELB;
   const cost=PLAYER_EXPANSION_COST;
   const p=availablePastor();
-  if(G.of<cost||G.fi<10||slot.cooldown>0||!p)return;
+  if(G.of<cost||G.fi<10||!p)return;
   const wasPaused=G.paused;
   G.paused=true;
   document.getElementById('pausebtn').textContent='▶ Retomar';
@@ -1170,12 +1229,11 @@ function commitDedicatedChurch(id,city,wasPaused){
   const slot=G.states[id].denomData.IELB;
   const cost=PLAYER_EXPANSION_COST;
   const p=availablePastor();
-  if(!p||G.of<cost||G.fi<10||slot.cooldown>0){closeMissionCityModal(wasPaused);return;}
+  if(!p||G.of<cost||G.fi<10){closeMissionCityModal(wasPaused);return;}
   G.of-=cost;G.fi-=10;
   const ch=addChurch(id,'IELB',12,1,G.year,'missao',city);
   const idx=slot.churches.indexOf(ch);
   assignPastorToChurch(p,id,idx);
-  slot.cooldown=PLAYER_PLANT_COOLDOWN;
   recalc();redrawDots();renderLeft();renderRight();updateRes();
   setTick('Missão aberta em '+ch.city+', '+STATES[id].name+' — Pastor '+p.name+' dedicado ao novo campo.');
   closeMissionCityModal(wasPaused);
@@ -1196,7 +1254,7 @@ function showMissionCityModal(id){
   const slot=G.states[id].denomData.IELB;
   const cost=PLAYER_EXPANSION_COST;
   const route=routePastorForNewChurch(id);
-  if(G.of<cost||G.fi<10||slot.cooldown>0||!route)return;
+  if(G.of<cost||G.fi<10||!route)return;
   const wasPaused=G.paused;
   G.paused=true;
   document.getElementById('pausebtn').textContent='▶ Retomar';
@@ -1220,12 +1278,11 @@ function commitMissionPoint(id,city,wasPaused){
   const slot=G.states[id].denomData.IELB;
   const cost=PLAYER_EXPANSION_COST;
   const route=routePastorForNewChurch(id,city);
-  if(!route||G.of<cost||G.fi<10||slot.cooldown>0){closeMissionCityModal(wasPaused);return;}
+  if(!route||G.of<cost||G.fi<10){closeMissionCityModal(wasPaused);return;}
   G.of-=cost;G.fi-=10;
   const ch=addChurch(id,'IELB',12,1,G.year,'missao',city);
   const idx=slot.churches.indexOf(ch);
-  route.isOnRoute=true;route.routeChurchIndex=idx;ch.pastorId=route.id;
-  slot.cooldown=PLAYER_PLANT_COOLDOWN;
+  addPastorRoute(route,idx);ch.pastorId=route.id;
   recalc();redrawDots();renderLeft();renderRight();updateRes();
   setTick('Ponto de missão aberto em '+ch.city+', '+STATES[id].name+' — Pastor '+route.name+' encarregado.');
   closeMissionCityModal(wasPaused);
@@ -1234,7 +1291,7 @@ function stateMissionIndexes(id){return G.states[id].denomData.IELB.churches.map
 function missionNeedsNewPastorForPromotion(id,index){
   const ch=G.states[id].denomData.IELB.churches[index];
   const p=ch&&ch.pastorId?getPastor(ch.pastorId):null;
-  return !p||p.routeChurchIndex===index;
+  return !p||pastorRouteIndexes(p).includes(index);
 }
 function missionPromotionOptions(id){
   return stateMissionIndexes(id).map(index=>{
@@ -1282,7 +1339,7 @@ function promoteMissionToChurch(id,index,wasPaused){
   if(!p){closeMissionCityModal(wasPaused);return;}
   G.of-=cost;
   const oldPastor=ch.pastorId?getPastor(ch.pastorId):null;
-  if(needsPastor&&oldPastor&&oldPastor.routeChurchIndex===index){oldPastor.isOnRoute=false;oldPastor.routeChurchIndex=null;}
+  if(needsPastor&&oldPastor&&pastorRouteIndexes(oldPastor).includes(index))removePastorRoute(oldPastor,index);
   ch.type='congregacao';
   ch.secondPastorId=null;
   if(needsPastor){ch.pastorId=null;assignPastorToChurch(p,id,index);}
@@ -1328,7 +1385,24 @@ function catecismo(){
   setTick('Catecismo concluído: +5 membros integrados às comunidades.');
   updateRes();renderLeft();renderRight();redrawDots();
 }
-function assignAvailablePastorAction(id,i,second=false){const p=availablePastor();if(!p||G.of<PASTOR_SEND_COST)return;G.of-=PASTOR_SEND_COST;const ch=G.states[id].denomData.IELB.churches[i];if(second&&ch.pastorId){removeAvailablePastor(p.id);p.assignedStateId=id;p.assignedChurchIndex=i;p.isOnRoute=false;p.routeChurchIndex=null;ch.secondPastorId=p.id;G.pastors.forEach(x=>{if(x.assignedStateId===id&&x.routeChurchIndex===i){x.isOnRoute=false;x.routeChurchIndex=null;}});ch.overloadSince=null;}else assignPastorToChurch(p,id,i);recalc();renderLeft();renderRight();updateRes();setTick('Pastor '+p.name+' enviado para a Igreja '+(i+1)+' em '+STATES[id].name+'.');}
+function assignAvailablePastorAction(id,i,second=false){
+  const p=availablePastor();
+  if(!p||G.of<PASTOR_SEND_COST)return;
+  G.of-=PASTOR_SEND_COST;
+  const ch=G.states[id].denomData.IELB.churches[i];
+  if(second&&ch.pastorId){
+    removeAvailablePastor(p.id);
+    p.assignedStateId=id;p.assignedChurchIndex=i;p.isOnRoute=false;p.routeChurchIndex=null;p.routeChurchIndexes=[];
+    ch.secondPastorId=p.id;
+    G.pastors.forEach(x=>{if(x.assignedStateId===id&&pastorRouteIndexes(x).includes(i))removePastorRoute(x,i);});
+    ch.overloadSince=null;
+  }else{
+    G.pastors.forEach(x=>{if(x.assignedStateId===id&&pastorRouteIndexes(x).includes(i))removePastorRoute(x,i);});
+    ch.pastorId=null;ch.secondPastorId=null;
+    assignPastorToChurch(p,id,i);
+  }
+  recalc();renderLeft();renderRight();updateRes();setTick('Pastor '+p.name+' enviado para a Igreja '+(i+1)+' em '+STATES[id].name+'.');
+}
 
 function churchIntervention(id,i){const ch=G.states[id].denomData.IELB.churches[i];if(G.fe<20||G.of<20)return;G.fe-=20;G.of-=20;if(Math.random()<0.6){const newMembers=randInt(5,15);ch.members+=newMembers;ch.struggleMonths=0;ch.struggling=false;const dilution=newMembers/ch.members;ch.offerRate=Math.max(0.15,ch.offerRate*(1-dilution*0.4));setTick('Campanha em '+STATES[id].name+': +'+newMembers+' membros. Taxa de oferta: '+Math.round(ch.offerRate*100)+'%.');}else setTick('A campanha não surtiu efeito suficiente em '+STATES[id].name+'.');recalc();renderLeft();renderRight();updateRes();}
 function togglePause(){G.paused=!G.paused;document.getElementById('pausebtn').textContent=G.paused?'▶ Retomar':'⏸ Pausar';renderRight();}
@@ -1349,13 +1423,12 @@ function renderRight(){
   addT(body,'Ações neste Estado');
   if(!st.missionary&&!ielbC.length){
     const firstCost=PLAYER_EXPANSION_COST;
-    addBtn(body,'Abrir missão neste estado','Pastor disponível | Custo: '+firstCost+' Ofertas + 10 Membros'+(ielbSlot.cooldown>0?' | '+ielbSlot.cooldown+' meses':''),'miss',()=>newDedicatedChurch(id),G.of<firstCost||G.fi<10||ielbSlot.cooldown>0||!G.availablePastors.length);
+    addBtn(body,'Abrir missão neste estado','Pastor disponível | Custo: '+firstCost+' Ofertas + 10 Membros','miss',()=>newDedicatedChurch(id),G.of<firstCost||G.fi<10||!G.availablePastors.length);
   }
   if(ielbC.length){
     const cost=PLAYER_EXPANSION_COST;
     const canRoute=!!routePastorForNewChurch(id);
-    const cooldownNote=ielbSlot.cooldown>0?' | '+ielbSlot.cooldown+' meses':'';
-    addBtn(body,'Abrir mais um ponto de missão no estado','Custo: '+cost+' Ofertas + 10 Membros'+cooldownNote,'miss',()=>openMission(id),G.of<cost||G.fi<10||ielbSlot.cooldown>0||!canRoute);
+    addBtn(body,'Abrir mais um ponto de missão no estado','Custo: '+cost+' Ofertas + 10 Membros','miss',()=>openMission(id),G.of<cost||G.fi<10||!canRoute);
     const promoOptions=missionPromotionOptions(id);
     if(promoOptions.length){
       const promoReady=promoOptions.some(o=>o.ready);
@@ -1380,7 +1453,7 @@ function renderRight(){
         +(c.struggleMonths>=3?'<span style="font-size:11px;color:#c62828">Dificuldade há '+c.struggleMonths+' meses</span>':'');
       body.appendChild(row);
       if(!pastorForChurch(id,i)&&G.availablePastors.length)addBtn(body,'Enviar pastor — '+(c.city||'Igreja '+(i+1)),'Custo: '+PASTOR_SEND_COST+' Ofertas','miss',()=>assignAvailablePastorAction(id,i),G.of<PASTOR_SEND_COST);
-      if(c.type==='congregacao'&&c.members>=300&&!c.secondPastorId)addBtn(body,'Enviar segundo pastor — '+(c.city||'Igreja '+(i+1)),G.availablePastors.length?'Custo: '+PASTOR_SEND_COST+' Ofertas':'Aguardando pastor disponível','miss',()=>showSecondPastorModal(id,i,false),!G.availablePastors.length||G.of<PASTOR_SEND_COST);
+      if(churchNeedsPastorRelief(id,i))addBtn(body,(c.type==='missao'?'Enviar pastor encarregado — ':'Enviar segundo pastor — ')+(c.city||'Igreja '+(i+1)),G.availablePastors.length?'Custo: '+PASTOR_SEND_COST+' Ofertas':'Aguardando pastor disponível','miss',()=>showSecondPastorModal(id,i,false),!G.availablePastors.length||G.of<PASTOR_SEND_COST);
     });
     addT(body,'Produção deste Estado');
     const mul=STATE_MULTI[id]||{fe:1,of:1};const tf=ielbC.reduce((a,c)=>a+c.members,0);
@@ -1562,23 +1635,28 @@ function showSubsidyModal(ev){
 function showSecondPastorModal(stateId,index,fromAnnual=false){
   const ch=G.states[stateId].denomData.IELB.churches[index];
   if(!ch)return;
+  const currentPastor=pastorForChurch(stateId,index);
+  const load=currentPastor?pastorMemberLoad(currentPastor,stateId):ch.members;
+  const needsOwnPastor=ch.type==='missao'&&currentPastor&&pastorRouteIndexes(currentPastor).includes(index);
   G.paused=true;document.getElementById('pausebtn').textContent='▶ Retomar';
   const modal=document.getElementById('modal');
   const tag=document.getElementById('m-tag');tag.textContent='PASTORADO';tag.className='warn';
-  document.getElementById('m-title').textContent='Segundo pastor necessário';
-  document.getElementById('m-yr').textContent=(ch.city||STATES[stateId].name)+' — '+Math.floor(ch.members)+' membros';
-  document.getElementById('m-txt').textContent='Esta congregação passou de 300 membros e já está pesada demais para apenas um pastor. Enviar um segundo pastor reduz a sobrecarga pastoral.';
+  document.getElementById('m-title').textContent=needsOwnPastor?'Pastor sobrecarregado':'Segundo pastor necessário';
+  document.getElementById('m-yr').textContent=(ch.city||STATES[stateId].name)+' — '+Math.floor(ch.members)+' membros | carga pastoral: '+Math.floor(load);
+  document.getElementById('m-txt').textContent=needsOwnPastor
+    ? 'O pastor '+currentPastor.name+' ja atende comunidades que somam '+Math.floor(load)+' membros. Envie um pastor para ficar encarregado desta missao.'
+    : 'Esta congregação passou de 300 membros e já está pesada demais para apenas um pastor. Enviar um segundo pastor reduz a sobrecarga pastoral.';
   const ref=document.getElementById('m-ref');ref.style.display='block';
   const p=availablePastor();
   ref.textContent=p?'Pastor disponível: '+p.name+' | Custo: '+PASTOR_SEND_COST+' Ofertas':'Nenhum pastor disponível agora. Você pode pular e voltar quando houver formatura.';
   const mc=document.getElementById('m-choices');mc.innerHTML='';
   if(p){
-    const send=document.createElement('button');send.className='mcbtn';send.textContent='Enviar segundo pastor';send.disabled=G.of<PASTOR_SEND_COST;
-    send.onclick=()=>{assignAvailablePastorAction(stateId,index,true);ch.lastSecondPastorDecisionYear=G.year;closeDecisionModal('Segundo pastor enviado para '+(ch.city||STATES[stateId].name)+'.');};
+    const send=document.createElement('button');send.className='mcbtn';send.textContent=needsOwnPastor?'Enviar pastor encarregado':'Enviar segundo pastor';send.disabled=G.of<PASTOR_SEND_COST;
+    send.onclick=()=>{assignAvailablePastorAction(stateId,index,!needsOwnPastor);ch.lastSecondPastorDecisionYear=G.year;closeDecisionModal((needsOwnPastor?'Pastor encarregado enviado para ':'Segundo pastor enviado para ')+(ch.city||STATES[stateId].name)+'.');};
     mc.appendChild(send);
   }
   const skip=document.createElement('button');skip.className='mcbtn';skip.textContent=fromAnnual?'Pular por enquanto':'Cancelar';
-  skip.onclick=()=>{ch.lastSecondPastorDecisionYear=G.year;closeDecisionModal(fromAnnual?'A decisão foi adiada. A necessidade volta no próximo relatório anual se continuar sem segundo pastor.':'Nenhum pastor foi enviado agora.');};
+  skip.onclick=()=>{ch.lastSecondPastorDecisionYear=G.year;closeDecisionModal(fromAnnual?'A decisão foi adiada. A necessidade volta no próximo relatório anual se a sobrecarga continuar.':'Nenhum pastor foi enviado agora.');};
   mc.appendChild(skip);
   modal.classList.add('show');
 }
@@ -1647,10 +1725,15 @@ function closeChurch(stateId,index){
   G.pastors.forEach(p=>{
     if(p.assignedStateId!==stateId)return;
     if(p.assignedChurchIndex===index)releasePastor(p);
-    else if(p.routeChurchIndex===index){p.isOnRoute=false;p.routeChurchIndex=null;}
+    else if(pastorRouteIndexes(p).includes(index))removePastorRoute(p,index);
   });
   slot.churches.splice(index,1);
-  G.pastors.forEach(p=>{if(p.assignedStateId===stateId){if(p.assignedChurchIndex>index)p.assignedChurchIndex--;if(p.routeChurchIndex>index)p.routeChurchIndex--;}});
+  G.pastors.forEach(p=>{
+    if(p.assignedStateId===stateId){
+      if(p.assignedChurchIndex>index)p.assignedChurchIndex--;
+      setPastorRoutes(p,pastorRouteIndexes(p).map(i=>i>index?i-1:i));
+    }
+  });
   syncDenomMembers(stateId,'IELB');
 }
 

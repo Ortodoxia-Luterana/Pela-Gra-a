@@ -310,7 +310,7 @@ body{font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;background:
         <li>Use a fé no <strong>Catecismo</strong> para aumentar membros. Mais membros geram mais fé, ofertas e crescimento.</li>
         <li>Junte ofertas e membros. Depois clique em um estado para <strong>enviar missionário</strong> onde ainda não há IELB.</li>
         <li>Toda nova presença começa como <strong>missão</strong>. Quando ela chegar a 50 membros, pode ser organizada como congregação.</li>
-        <li><strong>Elevar o nível da missão ou igreja</strong> aumenta a produção e ajuda o campo a crescer melhor. Missões de nível maior têm mais chance de sair da estagnação.</li>
+        <li><strong>Elevar o nível da missão</strong> ajuda o campo a crescer melhor antes de ser organizado como congregação.</li>
         <li>Não use toda oferta só para abrir igrejas. Se a manutenção pesar, a estabilidade cai e a campanha pode acabar.</li>
       </ol>
     </div>
@@ -1310,7 +1310,7 @@ function renderRight(){
         +(c.struggleMonths>=3?'<span style="font-size:11px;color:#c62828">Dificuldade há '+c.struggleMonths+' meses</span>':'');
       body.appendChild(row);
       if(!pastorForChurch(id,i)&&G.availablePastors.length)addBtn(body,'Enviar pastor — '+(c.city||'Igreja '+(i+1)),'Custo: '+PASTOR_SEND_COST+' Ofertas','miss',()=>assignAvailablePastorAction(id,i),G.of<PASTOR_SEND_COST);
-      if(c.level<5){const levelCost=c.type==='missao'?Math.round(c.level*28):Math.round(c.level*55);const levelLabel=c.type==='missao'?'Elevar nível da missão':'Fortalecer congregação';addBtn(body,levelLabel+' — '+(c.city||'Ponto '+(i+1)),'Nível '+c.level+' → '+(c.level+1)+' | Custo: '+levelCost+' Ofertas','miss',()=>levelPlayerPoint(id,i),G.of<levelCost);}
+      if(c.type==='missao'&&c.level<5){const levelCost=Math.round(c.level*28);addBtn(body,'Elevar nível da missão — '+(c.city||'Ponto '+(i+1)),'Nível '+c.level+' → '+(c.level+1)+' | Custo: '+levelCost+' Ofertas','miss',()=>levelPlayerPoint(id,i),G.of<levelCost);}
       if(c.type==='congregacao'&&c.members>=300&&!c.secondPastorId)addBtn(body,'Enviar segundo pastor — '+(c.city||'Igreja '+(i+1)),G.availablePastors.length?'Custo: '+PASTOR_SEND_COST+' Ofertas':'Aguardando pastor disponível','miss',()=>showSecondPastorModal(id,i,false),!G.availablePastors.length||G.of<PASTOR_SEND_COST);
     });
     addT(body,'Produção deste Estado');
@@ -1651,18 +1651,10 @@ function loop(now){
 initGame();bindMap();recalc();updateRes();buildLegend();redrawDots();selectBrazilOverview();setMobilePanel('info');
 requestAnimationFrame(t=>{lastT=t;loop(t);});
 
-function preventFastTapZoom(){
-  let lastTouchEnd=0;
-  document.addEventListener('touchend',e=>{
-    const now=Date.now();
-    if(now-lastTouchEnd<=320)e.preventDefault();
-    lastTouchEnd=now;
-  },{passive:false});
-  document.addEventListener('dblclick',e=>{
-    if(e.target.closest('button,.sbtn,.tbtn,.mcbtn,.mtab'))e.preventDefault();
-  },{passive:false});
+function preventPageZoom(){
+  document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});
 }
-preventFastTapZoom();
+preventPageZoom();
 </script>
 </body>
 </html>

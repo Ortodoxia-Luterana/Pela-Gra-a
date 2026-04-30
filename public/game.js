@@ -1410,7 +1410,7 @@ function showSubsidyModal(ev){
 }
 
 function showPastorExitModal(ev){
-  G.paused=true;document.getElementById('pausebtn').textContent='â–¶ Retomar';
+  G.paused=true;document.getElementById('pausebtn').textContent='▶ Retomar';
   const modal=document.getElementById('modal');
   const tag=document.getElementById('m-tag');
   const isDeath=ev.kind==='death';
@@ -1428,7 +1428,7 @@ function showPastorExitModal(ev){
   const btn=document.createElement('button');
   btn.className='mcbtn';
   btn.textContent='Continuar';
-  btn.onclick=()=>{document.getElementById('modal').classList.remove('show');G.paused=false;document.getElementById('pausebtn').textContent='â¸ Pausar';recalc();updateRes();renderLeft();renderRight();redrawDots();processEventQueue();};
+  btn.onclick=()=>{document.getElementById('modal').classList.remove('show');G.paused=false;document.getElementById('pausebtn').textContent='⏸ Pausar';recalc();updateRes();renderLeft();renderRight();redrawDots();processEventQueue();};
   mc.appendChild(btn);
   modal.classList.add('show');
 }

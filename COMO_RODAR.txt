@@ -1,0 +1,21 @@
+﻿Pela Graca - versao servidor com login
+
+Suba estes arquivos/pastas no servidor:
+- server.js
+- package.json
+- .gitignore
+- public/
+- data/
+
+Para rodar:
+1. Instale Node.js recente com suporte a node:sqlite.
+2. No terminal, dentro desta pasta, rode:
+   npm start
+3. Abra:
+   http://localhost:3000
+
+Observacoes:
+- O jogo com login usa public/game.js, public/game-body.html, public/game.css, public/persistence.js e public/site.css.
+- O banco fica em data/cultivando.sqlite.
+- Se o arquivo cultivando.sqlite nao for enviado por causa do .gitignore, mantenha a pasta data/ no servidor; o server.js cria as tabelas sozinho.
+- Nao precisa subir arquivos server.out.log, server.err.log ou server.detached.log.

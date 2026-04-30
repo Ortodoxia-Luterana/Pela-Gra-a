@@ -1581,7 +1581,7 @@ function showChurchDecision(item){
       }
     };mc.appendChild(stewardship);
   }
-  if(stagnant){const skip=document.createElement('button');skip.className='mcbtn';skip.textContent='Pular por enquanto';skip.onclick=()=>{closeDecisionModal('A decisão foi adiada. Se não houver crescimento, ela voltará no próximo relatório anual.','bad');};mc.appendChild(skip);}
+  const skip=document.createElement('button');skip.className='mcbtn';skip.textContent='Pular por enquanto';skip.onclick=()=>{closeDecisionModal(stagnant?'A decisão foi adiada. Se não houver crescimento, ela voltará no próximo relatório anual.':'A decisão foi adiada. Se o déficit continuar, ela voltará no próximo relatório anual.','bad');};mc.appendChild(skip);
   const totalIelb=totalChurches('IELB');
   if(stagnant&&totalIelb>1){const close=document.createElement('button');close.className='mcbtn';close.textContent='Encerrar este ponto';close.onclick=()=>{closeChurch(item.stateId,item.index);closeDecisionModal('O ponto foi encerrado. O pastor voltou a ficar disponível.','bad');};mc.appendChild(close);}
   modal.classList.add('show');

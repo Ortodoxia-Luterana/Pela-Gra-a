@@ -10,6 +10,23 @@
   const mode = detectMode();
   if (!mode) return;
 
+  function suppressOriginalGameScript() {
+    if (mode !== 'game') return;
+    const removeOldGame = function () {
+      document.querySelectorAll('script[src]').forEach(function (script) {
+        if (script.src && script.src.indexOf('/assets/game.js') !== -1) script.remove();
+      });
+    };
+    removeOldGame();
+    if (document.documentElement && window.MutationObserver) {
+      const observer = new MutationObserver(removeOldGame);
+      observer.observe(document.documentElement, { childList: true, subtree: true });
+      window.addEventListener('load', function () { setTimeout(function () { observer.disconnect(); }, 2000); }, { once: true });
+    }
+  }
+
+  suppressOriginalGameScript();
+
   const playlists = {
     login: ['/assets/audio/login.mp3', '/assets/audio/login.ogg'],
     game: [

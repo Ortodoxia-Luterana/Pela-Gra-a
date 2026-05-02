@@ -1,0 +1,12 @@
+Coloque as musicas nesta pasta com estes nomes:
+
+login.mp3       musica exclusiva da tela de login/cadastro
+login.ogg       opcional, alternativa para a musica de login
+
+game-1.mp3      primeira musica do jogo
+game-2.mp3      segunda musica do jogo
+game-3.mp3      terceira musica do jogo
+game-4.mp3      quarta musica do jogo
+
+No jogo, as quatro musicas rodam em sequencia e voltam para a primeira quando a quarta terminar.
+O navegador so permite tocar depois do primeiro clique/toque do jogador.

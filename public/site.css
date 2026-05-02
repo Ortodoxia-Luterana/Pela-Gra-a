@@ -111,6 +111,7 @@
 .auth-form button,
 .create-link,
 .dash-head button,
+.dash-actions a,
 .slot-actions a,
 .slot-actions button {
   min-height: 36px;
@@ -124,11 +125,20 @@
   cursor: pointer;
 }
 
-.create-link {
+.create-link,
+.dash-actions a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   text-decoration: none;
+}
+
+.dash-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .auth-link {
@@ -239,6 +249,10 @@
   .dash-head {
     display: grid;
     gap: 10px;
+  }
+
+  .dash-actions {
+    justify-content: flex-start;
   }
 
   .slot-card {

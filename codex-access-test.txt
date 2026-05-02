@@ -1,0 +1,3 @@
+Teste de acesso do Codex ao repositorio Ortodoxia-Luterana/Pela-Gra-a.
+
+Se este arquivo apareceu nesta branch, a integracao esta conseguindo editar o repositorio da organizacao.

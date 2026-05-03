@@ -29,6 +29,7 @@
     window.__saveBackupInstalled = true;
     const saveKey = 'pela-graca-save-backup-' + window.__SAVE_ID__;
     const originalFetch = window.fetch.bind(window);
+    const originalSendBeacon = navigator.sendBeacon ? navigator.sendBeacon.bind(navigator) : null;
 
     function readBackup() {
       try { return JSON.parse(localStorage.getItem(saveKey) || 'null'); } catch (error) { return null; }
@@ -42,6 +43,26 @@
       }
     }
 
+    function parseStateBody(body) {
+      try {
+        const text = typeof body === 'string' ? body : null;
+        if (!text) return null;
+        const payload = JSON.parse(text);
+        return payload && payload.state ? payload.state : null;
+      } catch (error) {
+        return null;
+      }
+    }
+
+    function saferBody(body) {
+      const state = parseStateBody(body);
+      if (!state) return body;
+      const backup = readBackup();
+      if (backup && stateScore(backup.state) > stateScore(state)) return JSON.stringify({ state: backup.state });
+      writeBackup(state);
+      return body;
+    }
+
     function isSaveUrl(input) {
       const url = typeof input === 'string' ? input : (input && input.url) || '';
       return url.indexOf('/api/saves/' + window.__SAVE_ID__) !== -1;
@@ -53,15 +74,7 @@
       if (!isSaveUrl(input)) return originalFetch(input, options);
 
       if ((method === 'PUT' || method === 'POST') && init.body) {
-        try {
-          const payload = JSON.parse(init.body);
-          const backup = readBackup();
-          if (payload && payload.state && backup && stateScore(backup.state) > stateScore(payload.state)) {
-            init.body = JSON.stringify({ state: backup.state });
-          } else if (payload && payload.state) {
-            writeBackup(payload.state);
-          }
-        } catch (error) {}
+        init.body = saferBody(init.body);
         return originalFetch(input, init);
       }
 
@@ -84,6 +97,14 @@
       } catch (error) {}
       return response;
     };
+
+    if (originalSendBeacon) {
+      navigator.sendBeacon = function (url, data) {
+        if (!isSaveUrl(String(url || ''))) return originalSendBeacon(url, data);
+        const body = saferBody(data);
+        return originalSendBeacon(url, body);
+      };
+    }
   }
 
   function suppressOriginalGameScript() {

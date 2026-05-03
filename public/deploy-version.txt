@@ -1,4 +1,4 @@
-deploy trigger: 2026-05-03 14:10 BRT
+deploy trigger: 2026-05-03 15:30 BRT
 latest mission cost hotfix loader: 273a882
 latest mission cost hotfix: 21f2b5b
 latest abrupt exit save guard: 59f541c

@@ -3,4 +3,4 @@ Deploy trigger for SquareWeb/GitHub integration.
 The game balance updates are already on main at commit e79f5701b64ca845655a6c12fa8836806271f627.
 This small public file was added to force a fresh deploy check.
 
-Updated: 2026-05-02
+Updated: 2026-05-03

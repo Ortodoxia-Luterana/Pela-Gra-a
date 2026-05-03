@@ -88,16 +88,30 @@
 
   function suppressOriginalGameScript() {
     if (mode !== 'game') return;
+
+    function scriptPointsToOldGame(script) {
+      if (!script || script.dataset && script.dataset.patchedGame === '1') return false;
+      if (script.src && script.src.indexOf('/assets/game.js') !== -1) return true;
+      for (let i = 0; i < script.attributes.length; i += 1) {
+        if (String(script.attributes[i].value || '').indexOf('/assets/game.js') !== -1) return true;
+      }
+      return false;
+    }
+
     const removeOldGame = function () {
-      document.querySelectorAll('script[src]').forEach(function (script) {
-        if (script.src && script.src.indexOf('/assets/game.js') !== -1) script.remove();
+      document.querySelectorAll('script').forEach(function (script) {
+        if (scriptPointsToOldGame(script)) {
+          script.type = 'text/plain';
+          script.remove();
+        }
       });
     };
+
     removeOldGame();
     if (document.documentElement && window.MutationObserver) {
       const observer = new MutationObserver(removeOldGame);
-      observer.observe(document.documentElement, { childList: true, subtree: true });
-      window.addEventListener('load', function () { setTimeout(function () { observer.disconnect(); }, 2000); }, { once: true });
+      observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'type', 'data-src', 'data-rocket-src'] });
+      window.addEventListener('load', function () { setTimeout(function () { removeOldGame(); observer.disconnect(); }, 5000); }, { once: true });
     }
   }
 

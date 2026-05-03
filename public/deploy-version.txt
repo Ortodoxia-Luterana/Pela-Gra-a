@@ -1,3 +1,4 @@
-deploy trigger: 2026-05-03 13:36 BRT
+deploy trigger: 2026-05-03 13:50 BRT
+latest abrupt exit save guard: 59f541c
 latest game script blocker: 61dd231
 latest autosave guard: 073c081

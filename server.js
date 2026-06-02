@@ -12,7 +12,7 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v2.4';
+const GAME_VERSION = 'v2.5';
 const STATE_NAMES = {
   AC: 'Acre', AL: 'Alagoas', AP: 'Amapa', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceara', DF: 'Distrito Federal', ES: 'Espirito Santo', GO: 'Goias',
   MA: 'Maranhao', MT: 'Mato Grosso', MS: 'Mato Grosso do Sul', MG: 'Minas Gerais', PA: 'Para', PB: 'Paraiba', PR: 'Parana', PE: 'Pernambuco',
@@ -254,7 +254,7 @@ function renderRankingPage(user) {
 <main class="ranking-page">
 <style>.ranking-page{max-width:1180px;margin:0 auto;padding:28px 16px 44px;color:#2b2114}.ranking-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}.ranking-head h1{margin:0 0 6px;font-size:28px}.ranking-head p{margin:0;color:#6d604c}.ranking-back{display:inline-flex;align-items:center;border:1px solid #b79250;color:#5c3700;text-decoration:none;padding:8px 12px;background:#fff8ea;font-weight:700}.ranking-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.ranking-card{border:1px solid #d7c29b;background:#fffdf8;border-radius:6px;overflow:hidden}.ranking-card h2{font-size:14px;letter-spacing:.08em;text-transform:uppercase;margin:0;padding:12px 14px;border-bottom:1px solid #ead8b4;color:#805200}.ranking-list{display:grid}.ranking-row{display:grid;grid-template-columns:32px 1fr auto;gap:10px;align-items:center;padding:10px 14px;border-bottom:1px solid #f0e5cf}.ranking-row:last-child{border-bottom:0}.ranking-pos{font-weight:800;color:#9d6a16}.ranking-name{font-weight:800}.ranking-meta{font-size:12px;color:#7a6a55}.ranking-score{font-weight:900;color:#1b5e20;text-align:right}.state-board{margin-top:14px}.state-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0}.state-item{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;padding:9px 12px;border-bottom:1px solid #f0e5cf}.state-code{font-weight:900;color:#805200}.ranking-updated{font-size:12px;color:#7a6a55;margin-top:12px}@media(max-width:900px){.ranking-grid{grid-template-columns:1fr}.state-grid{grid-template-columns:1fr}.ranking-head{display:block}.ranking-back{margin-top:12px}}</style>
 <header class="ranking-head"><div><h1>Ranking dos cadastrados</h1><p>Atualiza sozinho enquanto os jogadores salvam suas campanhas.</p><p>Jogador: ${escapeHtml(user.name)}</p></div><a class="ranking-back" href="/">Voltar</a></header>
-<section class="ranking-grid"><div class="ranking-card"><h2>Mais anos jogados</h2><div id="rank-years" class="ranking-list"></div></div><div class="ranking-card"><h2>Mais igrejas ate 2026</h2><div id="rank-churches" class="ranking-list"></div></div><div class="ranking-card"><h2>Mais acertos doutrinarios</h2><div id="rank-doctrine" class="ranking-list"></div></div></section>
+<section class="ranking-grid"><div class="ranking-card"><h2>Mais anos jogados</h2><div id="rank-years" class="ranking-list"></div></div><div class="ranking-card"><h2>Mais igrejas até 2026</h2><div id="rank-churches" class="ranking-list"></div></div><div class="ranking-card"><h2>Mais acertos doutrinários</h2><div id="rank-doctrine" class="ranking-list"></div></div></section>
 <section class="ranking-card state-board"><h2>Recorde de igrejas por estado</h2><div id="rank-states" class="state-grid"></div></section><div id="ranking-updated" class="ranking-updated"></div>
 <script>
 const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -330,8 +330,8 @@ function renderAuth(mode, error = '') {
     <p>${isRegister ? 'Crie seu acesso para entrar no hub, salvar campanhas e participar dos rankings.' : 'Entre para acessar o hub de jogos da comunidade.'}</p>
     ${error ? `<div class="form-error">${escapeHtml(error)}</div>` : ''}
     <form method="POST" action="${isRegister ? '/register' : '/login'}" class="auth-form">
-      <label>Nome de usuario
-        <input name="name" maxlength="40" autocomplete="username" placeholder="Digite seu nome de usuario" required>
+      <label>Nome de usuário
+        <input name="name" maxlength="40" autocomplete="username" placeholder="Digite seu nome de usuário" required>
       </label>
       <label>Senha
         <input name="pin" inputmode="numeric" pattern="\\d{4}" maxlength="4" autocomplete="${isRegister ? 'new-password' : 'current-password'}" placeholder="Senha de 4 digitos" required>
@@ -364,28 +364,28 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   const stickers = ['Rosa de Lutero','Confissao de Augsburgo','Seminario Concordia','Hora Luterana','Sola Scriptura','Soli Deo Gloria'];
   const ranking = rankingPayload();
   const rankingRows = (items, score, suffix = '') => items.length ? items.slice(0, 8).map((item, index) => `<div class="hub-rank-row"><b>${index + 1}</b><span>${escapeHtml(item.player)}</span><strong>${escapeHtml(score(item))}${suffix}</strong></div>`).join('') : '<p>Nenhum registro ainda.</p>';
-  const ielbRanking = selectedGame === 'pela-graca-1904' ? `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><div><p>Ranking do jogo</p><h3>Pela Graca 1904</h3></div><a href="/?section=ranking">Voltar</a></div><h4>Mais anos jogados</h4>${rankingRows(ranking.byYear, item => item.year)}<h4>Mais igrejas ate 2026</h4>${rankingRows(ranking.byChurches, item => item.totalChurches, ' igrejas')}<h4>Mais acertos doutrinarios</h4>${rankingRows(ranking.byDoctrine, item => item.doctrineCorrect, ' acertos')}</section>` : '';
+  const ielbRanking = selectedGame === 'pela-graca-1904' ? `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><div><p>Ranking do jogo</p><h3>Pela Graça 1904</h3></div><a href="/?section=ranking">Voltar</a></div><h4>Mais anos jogados</h4>${rankingRows(ranking.byYear, item => item.year)}<h4>Mais igrejas até 2026</h4>${rankingRows(ranking.byChurches, item => item.totalChurches, ' igrejas')}<h4>Mais acertos doutrinários</h4>${rankingRows(ranking.byDoctrine, item => item.doctrineCorrect, ' acertos')}</section>` : '';
   const nav = [
-    ['inicio', 'Inicio', '/'],
+    ['inicio', 'Início', '/'],
     ['jogos', 'Jogos', '/?section=jogos'],
     ['ranking', 'Ranking', '/?section=ranking'],
     ['medalhas', 'Medalhas', '/?section=medalhas'],
-    ['album', 'Album', '/?section=album'],
+    ['album', 'Álbum', '/?section=album'],
     ['loja', 'Loja', '/?section=loja'],
-    ['configuracoes', 'Configuracoes', '/?section=configuracoes']
+    ['configuracoes', 'Configurações', '/?section=configuracoes']
   ].map(([key, label, href]) => `<a class="${activeSection === key ? 'active' : ''}" href="${href}">${label}</a>`).join('');
   const gameCard = `<section class="ol-panel ol-games">
-    <article class="ol-game-card pela-cover"><div><span>Jogavel</span><h4>Pela Graca 1904</h4><p>Gerencie igrejas, forme pastores, responda perguntas doutrinarias e acompanhe a historia da IELB no Brasil.</p></div><a href="/play">Jogar</a></article>
+    <article class="ol-game-card pela-cover"><div><span>Jogável</span><h4>Pela Graça 1904</h4><p>Gerencie igrejas, forme pastores, responda perguntas doutrinárias e acompanhe a história da IELB no Brasil.</p></div><a href="/play">Jogar</a></article>
   </section>`;
   const rankCard = `<aside class="ol-panel ol-rank"><p>Seu rank geral</p><div class="rank-emblem">IHS</div><h3>Cavaleiro da Fe</h3><div class="rank-bar"><span style="width:${Math.min(100, Math.max(8, points / 10))}%"></span></div><a href="/?section=ranking">Ver ranking geral</a></aside>`;
   const sections = {
-    inicio: `<section class="ol-intro">Escolha um jogo, acompanhe seu rank geral e use o menu lateral para abrir medalhas, album, loja e configuracoes.</section>${gameCard}${rankCard}`,
-    jogos: `${gameCard}<section class="ol-panel"><div class="panel-head"><h3>Futuros jogos</h3></div><div class="future-games"><article>Espaco reservado para o proximo jogo da comunidade.</article><article>Espaco reservado para outro modo ou desafio.</article></div></section>`,
-    ranking: `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><h3>Ranking geral</h3></div><div class="hub-rank-row"><b>1</b><span>${escapeHtml(user.name)}</span><strong>${unlockedMedals} medalhas</strong></div></section><section class="ol-panel ol-ranking-hub"><div class="panel-head"><h3>Rankings por jogo</h3></div><div class="game-rank-list"><a href="/?section=ranking&game=pela-graca-1904"><span>Pela Graca 1904</span><strong>Ver ranking</strong></a></div></section>${ielbRanking}`,
+    inicio: `<section class="ol-intro">Escolha um jogo, acompanhe seu rank geral e use o menu lateral para abrir medalhas, álbum, loja e configurações.</section>${gameCard}${rankCard}`,
+    jogos: `${gameCard}<section class="ol-panel"><div class="panel-head"><h3>Futuros jogos</h3></div><div class="future-games"><article>Espaço reservado para o próximo jogo da comunidade.</article><article>Espaço reservado para outro modo ou desafio.</article></div></section>`,
+    ranking: `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><h3>Ranking geral</h3></div><div class="hub-rank-row"><b>1</b><span>${escapeHtml(user.name)}</span><strong>${unlockedMedals} medalhas</strong></div></section><section class="ol-panel ol-ranking-hub"><div class="panel-head"><h3>Rankings por jogo</h3></div><div class="game-rank-list"><a href="/?section=ranking&game=pela-graca-1904"><span>Pela Graça 1904</span><strong>Ver ranking</strong></a></div></section>${ielbRanking}`,
     medalhas: `<section class="ol-panel" id="medalhas"><div class="panel-head"><h3>Medalhas</h3></div><div class="medal-grid">${medals.map(([name, ok]) => `<article class="${ok ? '' : 'locked'}"><b>+</b><span>${name}</span></article>`).join('')}</div></section>`,
-    album: `<section class="ol-panel" id="album"><div class="panel-head"><h3>Album</h3><span>3/12 figurinhas</span></div><div class="album-grid">${stickers.map((name, i) => `<article class="${i < 3 ? '' : 'locked'}"><b>${i < 3 ? name.slice(0,2).toUpperCase() : '?'}</b><span>${i < 3 ? name : 'Figurinha bloqueada'}</span></article>`).join('')}</div></section>`,
+    album: `<section class="ol-panel" id="album"><div class="panel-head"><h3>Álbum</h3><span>3/12 figurinhas</span></div><div class="album-grid">${stickers.map((name, i) => `<article class="${i < 3 ? '' : 'locked'}"><b>${i < 3 ? name.slice(0,2).toUpperCase() : '?'}</b><span>${i < 3 ? name : 'Figurinha bloqueada'}</span></article>`).join('')}</div></section>`,
     loja: `<section class="ol-panel" id="loja"><div class="panel-head"><h3>Loja</h3></div><div class="shop-grid"><article><h4>Pacote Comum</h4><p>100 pontos</p><small>Maior chance de figurinhas comuns.</small><button disabled>Comprar em breve</button></article><article><h4>Pacote Raro</h4><p>250 pontos</p><small>Chance melhor de raras e especiais.</small><button disabled>Comprar em breve</button></article><article><h4>Pacote Lendario</h4><p>600 pontos</p><small>Chance alta de figurinhas raras e lendarias.</small><button disabled>Comprar em breve</button></article></div><div class="daily-wheel"><h4>Roleta diaria</h4><p>A cada 24h, o jogador podera tentar ganhar um pacote comum, raro ou lendario de graca.</p><button disabled>Disponivel em breve</button></div></section>`,
-    configuracoes: `<section class="ol-panel ol-settings" id="configuracoes"><div class="panel-head"><h3>Configuracoes</h3></div><div class="profile-box"><b>${escapeHtml(user.name).slice(0,2).toUpperCase()}</b><div><h4>${escapeHtml(user.name)}</h4><p>Perfil editavel e nome publico usado nos rankings.</p><button disabled>Editar perfil em breve</button></div></div><hr><p>Gerencie dados salvos por jogo.</p>${mainSave ? `<form method="POST" action="/saves/${encodeURIComponent(mainSave.id)}/delete" onsubmit="return confirm('Apagar o historico de Pela Graca 1904?')"><button>Apagar historico de Pela Graca 1904</button></form>` : '<a href="/play">Criar historico de Pela Graca 1904</a>'}</section>`
+    configuracoes: `<section class="ol-panel ol-settings" id="configuracoes"><div class="panel-head"><h3>Configurações</h3></div><div class="profile-box"><b>${escapeHtml(user.name).slice(0,2).toUpperCase()}</b><div><h4>${escapeHtml(user.name)}</h4><p>Perfil editável e nome público usado nos rankings.</p><button disabled>Editar perfil em breve</button></div></div><hr><p>Gerencie dados salvos por jogo.</p>${mainSave ? `<form method="POST" action="/saves/${encodeURIComponent(mainSave.id)}/delete" onsubmit="return confirm('Apagar o histórico de Pela Graça 1904?')"><button>Apagar histórico de Pela Graça 1904</button></form>` : '<a href="/play">Criar histórico de Pela Graça 1904</a>'}</section>`
   };
   return pageShell('Ortodoxia Luterana Gaming', `
 <main class="ol-hub">

@@ -12,7 +12,7 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v1.8';
+const GAME_VERSION = 'v1.9';
 const STATE_NAMES = {
   AC: 'Acre', AL: 'Alagoas', AP: 'Amapa', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceara', DF: 'Distrito Federal', ES: 'Espirito Santo', GO: 'Goias',
   MA: 'Maranhao', MT: 'Mato Grosso', MS: 'Mato Grosso do Sul', MG: 'Minas Gerais', PA: 'Para', PB: 'Paraiba', PR: 'Parana', PE: 'Pernambuco',
@@ -319,7 +319,7 @@ function renderAuth(mode, error = '') {
 <main class="ol-auth-screen">
   <section class="ol-auth-brand">
     <div class="ol-brand-lockup">
-      <img src="/assets/ortodoxia-luterana-comunidade.png" alt="Ortodoxia Luterana" class="ol-seal">
+      <img src="/assets/ortodoxia-luterana-logo.png" alt="Ortodoxia Luterana" class="ol-seal">
       <div class="ol-title"><span>Ortodoxia</span><span>Luterana</span><strong>Gaming</strong></div>
     </div>
     <blockquote>"Portanto, quer comais, quer bebais, ou facais outra coisa qualquer, fazei tudo para a gloria de Deus."<cite>1 Corintios 10:31</cite></blockquote>
@@ -352,7 +352,8 @@ function renderAuth(mode, error = '') {
 </main>`, 'login');
 }
 
-function renderDashboard(user, error = '') {
+function renderDashboard(user, error = '', section = 'inicio') {
+  const activeSection = ['inicio', 'jogos', 'medalhas', 'album', 'loja', 'perfil', 'configuracoes'].includes(section) ? section : 'inicio';
   const saves = new Map(getSavesByUser.all(user.id).map(save => [save.slot, save]));
   const mainSave = saves.get(1);
   const state = safeJsonParse(mainSave?.state_json, null);
@@ -364,32 +365,49 @@ function renderDashboard(user, error = '') {
     ['Guardiao Confessional', (state?.doc || 70) >= 85],
     ['Finalista de 2026', stats.year >= 2026]
   ];
+  const unlockedMedals = medals.filter(([, ok]) => ok).length;
+  const stickers = ['Rosa de Lutero','Confissao de Augsburgo','Seminario Concordia','Hora Luterana','Sola Scriptura','Soli Deo Gloria'];
+  const nav = [
+    ['inicio', 'Inicio', '/'],
+    ['jogos', 'Jogos', '/?section=jogos'],
+    ['ranking', 'Ranking', '/ranking'],
+    ['medalhas', 'Medalhas', '/?section=medalhas'],
+    ['album', 'Album', '/?section=album'],
+    ['loja', 'Loja', '/?section=loja'],
+    ['perfil', 'Perfil', '/?section=perfil'],
+    ['configuracoes', 'Configuracoes', '/?section=configuracoes']
+  ].map(([key, label, href]) => `<a class="${activeSection === key ? 'active' : ''}" href="${href}">${label}</a>`).join('');
+  const gameCard = `<section class="ol-panel ol-games">
+    <div class="panel-head"><div><p>Jogo disponivel</p><h3>Pela Graca 1904</h3></div><a href="/play">Jogar agora</a></div>
+    <article class="ol-game-card pela-cover"><div><span>Jogavel</span><h4>Pela Graca 1904</h4><p>Gerencie igrejas, forme pastores, responda perguntas doutrinarias e acompanhe a historia da IELB no Brasil.</p></div><a href="/play">Jogar</a></article>
+  </section>`;
+  const rankCard = `<aside class="ol-panel ol-rank"><p>Seu rank geral</p><div class="rank-emblem">IHS</div><h3>Cavaleiro da Fe</h3><div class="rank-bar"><span style="width:${Math.min(100, Math.max(8, points / 10))}%"></span></div><a href="/ranking">Ver ranking geral</a></aside>`;
+  const sections = {
+    inicio: `${gameCard}${rankCard}<section class="ol-panel"><div class="panel-head"><h3>Bem-vindo ao hub</h3></div><p>Escolha um jogo, acompanhe seu rank geral e use o menu lateral para abrir medalhas, album, loja, perfil e configuracoes.</p></section>`,
+    jogos: `${gameCard}<section class="ol-panel"><div class="panel-head"><h3>Proximos jogos</h3></div><p>Novos jogos da comunidade podem entrar aqui sem misturar os dados de Pela Graca 1904 com o painel central.</p></section>`,
+    medalhas: `<section class="ol-panel" id="medalhas"><div class="panel-head"><h3>Medalhas</h3></div><div class="medal-grid">${medals.map(([name, ok]) => `<article class="${ok ? '' : 'locked'}"><b>+</b><span>${name}</span></article>`).join('')}</div></section>`,
+    album: `<section class="ol-panel" id="album"><div class="panel-head"><h3>Album</h3><span>3/12 figurinhas</span></div><div class="album-grid">${stickers.map((name, i) => `<article class="${i < 3 ? '' : 'locked'}"><b>${i < 3 ? name.slice(0,2).toUpperCase() : '?'}</b><span>${i < 3 ? name : 'Figurinha bloqueada'}</span></article>`).join('')}</div></section>`,
+    loja: `<section class="ol-panel" id="loja"><div class="panel-head"><h3>Loja</h3></div><div class="shop-grid"><article><h4>Pacote Comum</h4><p>100 pontos</p><button disabled>Em breve</button></article><article><h4>Pacote Historico</h4><p>220 pontos</p><button disabled>Em breve</button></article></div></section>`,
+    perfil: `<section class="ol-panel" id="perfil"><div class="panel-head"><h3>Perfil</h3></div><div class="profile-box"><b>${escapeHtml(user.name).slice(0,2).toUpperCase()}</b><div><h4>${escapeHtml(user.name)}</h4><p>Rank geral: Cavaleiro da Fe</p><p>Nome publico usado nos rankings e no hub.</p></div></div></section>`,
+    configuracoes: `<section class="ol-panel ol-settings" id="configuracoes"><div class="panel-head"><h3>Configuracoes</h3></div><p>Gerencie perfil e dados salvos por jogo.</p>${mainSave ? `<form method="POST" action="/saves/${encodeURIComponent(mainSave.id)}/delete" onsubmit="return confirm('Apagar o historico de Pela Graca 1904?')"><button>Apagar historico de Pela Graca 1904</button></form>` : '<a href="/play">Criar historico de Pela Graca 1904</a>'}</section>`
+  };
   return pageShell('Ortodoxia Luterana Gaming', `
 <main class="ol-hub">
   <aside class="ol-sidebar">
-    <img src="/assets/ortodoxia-luterana-comunidade.png" alt="Ortodoxia Luterana">
+    <img src="/assets/ortodoxia-luterana-logo.png" alt="Ortodoxia Luterana">
     <h1>Ortodoxia Luterana <span>Gaming</span></h1>
-    <nav><a class="active" href="/">Inicio</a><a href="/play">Jogos</a><a href="/ranking">Ranking</a><a href="#medalhas">Medalhas</a><a href="#album">Album</a><a href="#loja">Loja</a><a href="#perfil">Perfil</a><a href="#configuracoes">Configuracoes</a></nav>
+    <nav>${nav}</nav>
     <p class="side-verse">"Fe que joga junto, permanece junto."</p>
   </aside>
   <section class="ol-hub-main">
     <header class="ol-topbar">
       <div><p>Painel de acesso</p><h2>Bem-vindo, ${escapeHtml(user.name)}</h2></div>
-      <div class="ol-stats"><article><span>Pontos</span><b>${points}</b></article><article><span>Igrejas</span><b>${stats.totalChurches}</b></article><article><span>Ano</span><b>${stats.year}</b></article></div>
+      <div class="ol-stats"><article><span>Pontos</span><b>${points}</b></article><article><span>Medalhas</span><b>${unlockedMedals}</b></article><article><span>Figurinhas</span><b>3/12</b></article></div>
       <form method="POST" action="/logout"><button>Sair</button></form>
     </header>
     ${error ? `<div class="form-error">${escapeHtml(error)}</div>` : ''}
     <div class="ol-hub-grid">
-      <section class="ol-panel ol-games">
-        <div class="panel-head"><div><p>Jogo disponivel</p><h3>Pela Graca 1904</h3></div><a href="/play">Jogar agora</a></div>
-        <article class="ol-game-card pela-cover"><div><span>Jogavel</span><h4>Pela Graca 1904</h4><p>Gerencie igrejas, forme pastores, responda perguntas doutrinarias e acompanhe a historia da IELB no Brasil.</p></div><a href="/play">Jogar</a></article>
-      </section>
-      <aside class="ol-panel ol-rank"><p>Seu rank</p><div class="rank-emblem">IHS</div><h3>Cavaleiro da Fe</h3><div class="rank-bar"><span style="width:${Math.min(100, Math.max(8, stats.totalChurches))}%"></span></div><a href="/ranking">Ver ranking geral</a></aside>
-      <section class="ol-panel" id="medalhas"><div class="panel-head"><h3>Medalhas</h3></div><div class="medal-grid">${medals.map(([name, ok]) => `<article class="${ok ? '' : 'locked'}"><b>+</b><span>${name}</span></article>`).join('')}</div></section>
-      <section class="ol-panel" id="album"><div class="panel-head"><h3>Album</h3><span>3/12 figurinhas</span></div><div class="album-grid">${['Rosa de Lutero','Confissao de Augsburgo','Seminario Concordia','Hora Luterana','Sola Scriptura','Soli Deo Gloria'].map((name, i) => `<article class="${i < 3 ? '' : 'locked'}"><b>${i < 3 ? name.slice(0,2).toUpperCase() : '?'}</b><span>${i < 3 ? name : 'Figurinha bloqueada'}</span></article>`).join('')}</div></section>
-      <section class="ol-panel" id="loja"><div class="panel-head"><h3>Loja</h3></div><div class="shop-grid"><article><h4>Pacote Comum</h4><p>100 pontos</p><button disabled>Em breve</button></article><article><h4>Pacote Historico</h4><p>220 pontos</p><button disabled>Em breve</button></article></div></section>
-      <section class="ol-panel" id="perfil"><div class="panel-head"><h3>Perfil</h3></div><div class="profile-box"><b>${escapeHtml(user.name).slice(0,2).toUpperCase()}</b><div><h4>${escapeHtml(user.name)}</h4><p>Rank geral: Cavaleiro da Fe</p><p>Pela Graca 1904: campanha em ${stats.year}</p></div></div></section>
-      <section class="ol-panel ol-settings" id="configuracoes"><div class="panel-head"><h3>Configuracoes</h3></div><p>Gerencie dados salvos por jogo.</p>${mainSave ? `<form method="POST" action="/saves/${encodeURIComponent(mainSave.id)}/delete" onsubmit="return confirm('Apagar o historico de Pela Graca 1904?')"><button>Apagar historico de Pela Graca 1904</button></form>` : '<a href="/play">Criar historico de Pela Graca 1904</a>'}</section>
+      ${sections[activeSection]}
     </div>
   </section>
 </main>`);
@@ -403,7 +421,7 @@ const server = http.createServer(async (req, res) => {
     const user = currentUser(req);
     if (url.pathname.startsWith('/api/')) { await handleApi(req, res, url, user); return; }
     if (!user) { redirect(res, '/login'); return; }
-    if (req.method === 'GET' && url.pathname === '/') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end(renderDashboard(user)); return; }
+    if (req.method === 'GET' && url.pathname === '/') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end(renderDashboard(user, '', url.searchParams.get('section') || 'inicio')); return; }
     if (req.method === 'GET' && url.pathname === '/play') {
       const requestedSaveId = url.searchParams.get('save');
       const save = requestedSaveId ? getSave.get(requestedSaveId, user.id) : hubSaveForUser(user);

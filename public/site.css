@@ -556,6 +556,8 @@ body.site-page::after {
 .ol-sidebar img {
   display: block;
   width: 138px;
+  aspect-ratio: 1;
+  object-fit: cover;
   margin: 0 auto;
   border-radius: 50%;
   border: 2px solid #c58a20;

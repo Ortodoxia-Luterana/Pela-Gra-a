@@ -12,7 +12,7 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v1.7';
+const GAME_VERSION = 'v1.8';
 const STATE_NAMES = {
   AC: 'Acre', AL: 'Alagoas', AP: 'Amapa', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceara', DF: 'Distrito Federal', ES: 'Espirito Santo', GO: 'Goias',
   MA: 'Maranhao', MT: 'Mato Grosso', MS: 'Mato Grosso do Sul', MG: 'Minas Gerais', PA: 'Para', PB: 'Paraiba', PR: 'Parana', PE: 'Pernambuco',
@@ -318,8 +318,10 @@ function renderAuth(mode, error = '') {
   return pageShell(isRegister ? 'Registrar' : 'Entrar', `
 <main class="ol-auth-screen">
   <section class="ol-auth-brand">
-    <img src="/assets/ortodoxia-luterana.svg" alt="Ortodoxia Luterana" class="ol-seal">
-    <div class="ol-title"><span>Ortodoxia</span><span>Luterana</span><strong>Gaming</strong></div>
+    <div class="ol-brand-lockup">
+      <img src="/assets/ortodoxia-luterana-comunidade.png" alt="Ortodoxia Luterana" class="ol-seal">
+      <div class="ol-title"><span>Ortodoxia</span><span>Luterana</span><strong>Gaming</strong></div>
+    </div>
     <blockquote>"Portanto, quer comais, quer bebais, ou facais outra coisa qualquer, fazei tudo para a gloria de Deus."<cite>1 Corintios 10:31</cite></blockquote>
     <div class="ol-values">
       <article><b>+</b><div><h2>Fe que joga junto</h2><p>Mais que jogos, cultivamos comunhao, valores cristaos e crescimento espiritual.</p></div></article>
@@ -333,7 +335,7 @@ function renderAuth(mode, error = '') {
     <p>${isRegister ? 'Crie seu acesso para entrar no hub, salvar campanhas e participar dos rankings.' : 'Entre para acessar o hub de jogos da comunidade.'}</p>
     ${error ? `<div class="form-error">${escapeHtml(error)}</div>` : ''}
     <form method="POST" action="${isRegister ? '/register' : '/login'}" class="auth-form">
-      <label>E-mail ou nome de usuario
+      <label>Nome de usuario
         <input name="name" maxlength="40" autocomplete="username" placeholder="Digite seu nome de usuario" required>
       </label>
       <label>Senha
@@ -365,7 +367,7 @@ function renderDashboard(user, error = '') {
   return pageShell('Ortodoxia Luterana Gaming', `
 <main class="ol-hub">
   <aside class="ol-sidebar">
-    <img src="/assets/ortodoxia-luterana.svg" alt="Ortodoxia Luterana">
+    <img src="/assets/ortodoxia-luterana-comunidade.png" alt="Ortodoxia Luterana">
     <h1>Ortodoxia Luterana <span>Gaming</span></h1>
     <nav><a class="active" href="/">Inicio</a><a href="/play">Jogos</a><a href="/ranking">Ranking</a><a href="#medalhas">Medalhas</a><a href="#album">Album</a><a href="#loja">Loja</a><a href="#perfil">Perfil</a><a href="#configuracoes">Configuracoes</a></nav>
     <p class="side-verse">"Fe que joga junto, permanece junto."</p>

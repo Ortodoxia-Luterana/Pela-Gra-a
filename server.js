@@ -12,7 +12,7 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v2.2';
+const GAME_VERSION = 'v2.3';
 const STATE_NAMES = {
   AC: 'Acre', AL: 'Alagoas', AP: 'Amapa', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceara', DF: 'Distrito Federal', ES: 'Espirito Santo', GO: 'Goias',
   MA: 'Maranhao', MT: 'Mato Grosso', MS: 'Mato Grosso do Sul', MG: 'Minas Gerais', PA: 'Para', PB: 'Paraiba', PR: 'Parana', PE: 'Pernambuco',
@@ -347,7 +347,7 @@ function renderAuth(mode, error = '') {
 </main>`, 'login');
 }
 
-function renderDashboard(user, error = '', section = 'inicio') {
+function renderDashboard(user, error = '', section = 'inicio', selectedGame = '') {
   const activeSection = ['inicio', 'jogos', 'ranking', 'medalhas', 'album', 'loja', 'configuracoes'].includes(section) ? section : 'inicio';
   const saves = new Map(getSavesByUser.all(user.id).map(save => [save.slot, save]));
   const mainSave = saves.get(1);
@@ -364,6 +364,7 @@ function renderDashboard(user, error = '', section = 'inicio') {
   const stickers = ['Rosa de Lutero','Confissao de Augsburgo','Seminario Concordia','Hora Luterana','Sola Scriptura','Soli Deo Gloria'];
   const ranking = rankingPayload();
   const rankingRows = (items, score, suffix = '') => items.length ? items.slice(0, 8).map((item, index) => `<div class="hub-rank-row"><b>${index + 1}</b><span>${escapeHtml(item.player)}</span><strong>${escapeHtml(score(item))}${suffix}</strong></div>`).join('') : '<p>Nenhum registro ainda.</p>';
+  const ielbRanking = selectedGame === 'pela-graca-1904' ? `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><div><p>Ranking do jogo</p><h3>Pela Graca 1904</h3></div><a href="/?section=ranking">Voltar</a></div><h4>Mais anos jogados</h4>${rankingRows(ranking.byYear, item => item.year)}<h4>Mais igrejas ate 2026</h4>${rankingRows(ranking.byChurches, item => item.totalChurches, ' igrejas')}<h4>Mais acertos doutrinarios</h4>${rankingRows(ranking.byDoctrine, item => item.doctrineCorrect, ' acertos')}</section>` : '';
   const nav = [
     ['inicio', 'Inicio', '/'],
     ['jogos', 'Jogos', '/?section=jogos'],
@@ -381,7 +382,7 @@ function renderDashboard(user, error = '', section = 'inicio') {
   const sections = {
     inicio: `<section class="ol-intro">Escolha um jogo, acompanhe seu rank geral e use o menu lateral para abrir medalhas, album, loja e configuracoes.</section>${gameCard}${rankCard}`,
     jogos: `${gameCard}<section class="ol-panel"><div class="panel-head"><h3>Futuros jogos</h3></div><div class="future-games"><article>Espaco reservado para o proximo jogo da comunidade.</article><article>Espaco reservado para outro modo ou desafio.</article></div></section>`,
-    ranking: `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><div><p>Ranking geral</p><h3>Medalhas e progresso do hub</h3></div></div><div class="hub-rank-row"><b>1</b><span>${escapeHtml(user.name)}</span><strong>${unlockedMedals} medalhas</strong></div><p>O ranking geral vai somar medalhas, pontos e conquistas de todos os jogos do hub.</p></section><section class="ol-panel ol-ranking-hub"><div class="panel-head"><div><p>Rankings por jogo</p><h3>Pela Graca 1904</h3></div></div><h4>Mais anos jogados</h4>${rankingRows(ranking.byYear, item => item.year)}<h4>Mais igrejas ate 2026</h4>${rankingRows(ranking.byChurches, item => item.totalChurches, ' igrejas')}<h4>Mais acertos doutrinarios</h4>${rankingRows(ranking.byDoctrine, item => item.doctrineCorrect, ' acertos')}</section>`,
+    ranking: `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><h3>Ranking geral</h3></div><div class="hub-rank-row"><b>1</b><span>${escapeHtml(user.name)}</span><strong>${unlockedMedals} medalhas</strong></div></section><section class="ol-panel ol-ranking-hub"><div class="panel-head"><h3>Rankings por jogo</h3></div><div class="game-rank-list"><a href="/?section=ranking&game=pela-graca-1904"><span>Pela Graca 1904</span><strong>Ver ranking</strong></a></div></section>${ielbRanking}`,
     medalhas: `<section class="ol-panel" id="medalhas"><div class="panel-head"><h3>Medalhas</h3></div><div class="medal-grid">${medals.map(([name, ok]) => `<article class="${ok ? '' : 'locked'}"><b>+</b><span>${name}</span></article>`).join('')}</div></section>`,
     album: `<section class="ol-panel" id="album"><div class="panel-head"><h3>Album</h3><span>3/12 figurinhas</span></div><div class="album-grid">${stickers.map((name, i) => `<article class="${i < 3 ? '' : 'locked'}"><b>${i < 3 ? name.slice(0,2).toUpperCase() : '?'}</b><span>${i < 3 ? name : 'Figurinha bloqueada'}</span></article>`).join('')}</div></section>`,
     loja: `<section class="ol-panel" id="loja"><div class="panel-head"><h3>Loja</h3></div><div class="shop-grid"><article><h4>Pacote Comum</h4><p>100 pontos</p><small>Maior chance de figurinhas comuns.</small><button disabled>Comprar em breve</button></article><article><h4>Pacote Raro</h4><p>250 pontos</p><small>Chance melhor de raras e especiais.</small><button disabled>Comprar em breve</button></article><article><h4>Pacote Lendario</h4><p>600 pontos</p><small>Chance alta de figurinhas raras e lendarias.</small><button disabled>Comprar em breve</button></article></div><div class="daily-wheel"><h4>Roleta diaria</h4><p>A cada 24h, o jogador podera tentar ganhar um pacote comum, raro ou lendario de graca.</p><button disabled>Disponivel em breve</button></div></section>`,
@@ -416,7 +417,7 @@ const server = http.createServer(async (req, res) => {
     const user = currentUser(req);
     if (url.pathname.startsWith('/api/')) { await handleApi(req, res, url, user); return; }
     if (!user) { redirect(res, '/login'); return; }
-    if (req.method === 'GET' && url.pathname === '/') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end(renderDashboard(user, '', url.searchParams.get('section') || 'inicio')); return; }
+    if (req.method === 'GET' && url.pathname === '/') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end(renderDashboard(user, '', url.searchParams.get('section') || 'inicio', url.searchParams.get('game') || '')); return; }
     if (req.method === 'GET' && url.pathname === '/play') {
       const requestedSaveId = url.searchParams.get('save');
       const save = requestedSaveId ? getSave.get(requestedSaveId, user.id) : hubSaveForUser(user);
@@ -425,7 +426,7 @@ const server = http.createServer(async (req, res) => {
       redirect(res, `/game?save=${encodeURIComponent(save.id)}`);
       return;
     }
-    if (req.method === 'GET' && url.pathname === '/ranking') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end(renderDashboard(user, '', 'ranking')); return; }
+    if (req.method === 'GET' && url.pathname === '/ranking') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end(renderDashboard(user, '', 'ranking', url.searchParams.get('game') || '')); return; }
     if (req.method === 'GET' && url.pathname === '/saves/new') {
       const slot = Number(url.searchParams.get('slot'));
       if (![1, 2].includes(slot) || getSaveSlot.get(user.id, slot)) { redirect(res, '/'); return; }

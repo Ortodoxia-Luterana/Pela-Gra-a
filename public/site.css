@@ -744,6 +744,28 @@ body.site-page::after {
   color: #f2c75f;
 }
 
+.game-rank-list {
+  display: grid;
+  gap: .75rem;
+}
+
+.game-rank-list a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid rgba(242, 199, 95, .28);
+  border-radius: 10px;
+  color: #eee8db;
+  background: rgba(12, 21, 31, .74);
+  padding: .95rem 1rem;
+  text-decoration: none;
+}
+
+.game-rank-list strong {
+  color: #f2c75f;
+}
+
 .ol-rank {
   text-align: center;
 }

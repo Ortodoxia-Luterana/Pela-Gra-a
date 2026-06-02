@@ -546,11 +546,22 @@ body.site-page::after {
 }
 
 .ol-sidebar nav a {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
   border: 1px solid transparent;
   border-radius: 7px;
   color: #a9a6a0;
   text-decoration: none;
   padding: .85rem 1rem;
+}
+
+.nav-icon {
+  display: grid;
+  place-items: center;
+  width: 1.35rem;
+  color: #d8d0c4;
+  font-weight: 900;
 }
 
 .ol-sidebar nav a.active,
@@ -574,7 +585,7 @@ body.site-page::after {
 
 .ol-topbar {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: 1fr auto auto auto;
   gap: 1rem;
   align-items: center;
   margin-bottom: 1.4rem;
@@ -625,6 +636,40 @@ body.site-page::after {
   font-size: 1.25rem;
 }
 
+.top-profile {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  min-width: 180px;
+  border: 1px solid rgba(255, 255, 255, .09);
+  border-radius: 10px;
+  color: #eee8db;
+  background: rgba(0, 0, 0, .28);
+  padding: .65rem .8rem;
+  text-decoration: none;
+}
+
+.top-profile b {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid #c58a20;
+  border-radius: 50%;
+  color: #f2c75f;
+  background: rgba(255, 255, 255, .06);
+}
+
+.top-profile span {
+  display: grid;
+  font-weight: 800;
+}
+
+.top-profile small {
+  color: #a9a6a0;
+  font-weight: 500;
+}
+
 .ol-hub-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 350px;
@@ -638,6 +683,78 @@ body.site-page::after {
   background: linear-gradient(90deg, rgba(197, 138, 32, .14), rgba(8, 15, 23, .52));
   padding: .95rem 1.1rem;
   line-height: 1.55;
+}
+
+.ol-live {
+  grid-column: 1 / 2;
+}
+
+#hub-live-feed {
+  display: grid;
+  gap: .8rem;
+}
+
+#hub-live-feed article,
+.ol-missions article {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap: .75rem;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+  padding: .7rem 0;
+}
+
+#hub-live-feed article:last-child,
+.ol-missions article:last-of-type {
+  border-bottom: 0;
+}
+
+#hub-live-feed b,
+.ol-missions b {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(242, 199, 95, .42);
+  border-radius: 50%;
+  color: #f2c75f;
+  background: rgba(255, 255, 255, .06);
+  font-size: .8rem;
+}
+
+#hub-live-feed span,
+.ol-missions span {
+  color: #eee8db;
+}
+
+#hub-live-feed small,
+.ol-missions strong {
+  color: #f2c75f;
+}
+
+.ol-missions {
+  grid-column: 1 / 2;
+}
+
+.ol-medal-preview,
+.ol-event {
+  grid-column: 2 / 3;
+}
+
+.ol-event {
+  min-height: 170px;
+  display: grid;
+  align-content: end;
+  background: linear-gradient(90deg, rgba(0, 0, 0, .48), rgba(0, 0, 0, .82)), url("/assets/pela-graca-1904-cover.png") center/cover;
+}
+
+.ol-event span {
+  color: #d8d0c4;
+}
+
+.ol-event button {
+  justify-self: start;
+  margin-top: .8rem;
 }
 
 .ol-panel {
@@ -906,6 +1023,13 @@ body.site-page::after {
 
   .ol-game-card {
     grid-template-columns: 1fr;
+  }
+
+  .ol-live,
+  .ol-missions,
+  .ol-medal-preview,
+  .ol-event {
+    grid-column: auto;
   }
 }
 

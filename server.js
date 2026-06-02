@@ -12,7 +12,7 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v2.1';
+const GAME_VERSION = 'v2.2';
 const STATE_NAMES = {
   AC: 'Acre', AL: 'Alagoas', AP: 'Amapa', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceara', DF: 'Distrito Federal', ES: 'Espirito Santo', GO: 'Goias',
   MA: 'Maranhao', MT: 'Mato Grosso', MS: 'Mato Grosso do Sul', MG: 'Minas Gerais', PA: 'Para', PB: 'Paraiba', PR: 'Parana', PE: 'Pernambuco',
@@ -323,11 +323,6 @@ function renderAuth(mode, error = '') {
       <div class="ol-title"><span>Ortodoxia</span><span>Luterana</span><strong>Gaming</strong></div>
     </div>
     <blockquote>"Portanto, quer comais, quer bebais, ou facais outra coisa qualquer, fazei tudo para a gloria de Deus."<cite>1 Corintios 10:31</cite></blockquote>
-    <div class="ol-values">
-      <article><b>+</b><div><h2>Fe que joga junto</h2><p>Mais que jogos, cultivamos comunhao, valores cristaos e crescimento espiritual.</p></div></article>
-      <article><b>#</b><div><h2>Comunidade responsavel</h2><p>Um ambiente seguro, acolhedor e guiado pela Palavra de Deus.</p></div></article>
-      <article><b>*</b><div><h2>Diversao com proposito</h2><p>Jogos que edificam, amizades que inspiram e historia para colecionar.</p></div></article>
-    </div>
   </section>
   <section class="ol-auth-card">
     <nav class="ol-auth-tabs"><a class="${isRegister ? '' : 'active'}" href="/login">Entrar</a><a class="${isRegister ? 'active' : ''}" href="/register">Registrar</a></nav>

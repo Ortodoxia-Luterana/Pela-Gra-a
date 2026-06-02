@@ -283,10 +283,7 @@ body.site-page::before {
   position: fixed;
   inset: 0;
   z-index: -2;
-  background:
-    radial-gradient(circle at 20% 18%, rgba(33, 84, 107, .34), transparent 22rem),
-    radial-gradient(circle at 52% 72%, rgba(197, 138, 32, .18), transparent 30rem),
-    linear-gradient(115deg, #03070c 0%, #07101a 48%, #020509 100%);
+  background: url("/assets/login-castle-bg.png?v=v2.2") center/cover no-repeat;
 }
 
 body.site-page::after {
@@ -294,7 +291,10 @@ body.site-page::after {
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: radial-gradient(circle at 72% 24%, rgba(197, 138, 32, .16), transparent 32rem), linear-gradient(180deg, rgba(2, 7, 13, .05), rgba(2, 7, 13, .76));
+  background:
+    linear-gradient(90deg, rgba(2, 7, 13, .78), rgba(2, 7, 13, .42) 48%, rgba(2, 7, 13, .84)),
+    radial-gradient(circle at 72% 24%, rgba(197, 138, 32, .12), transparent 32rem),
+    linear-gradient(180deg, rgba(2, 7, 13, .04), rgba(2, 7, 13, .82));
 }
 
 .ol-auth-screen {
@@ -364,44 +364,6 @@ body.site-page::after {
   margin-top: .6rem;
   color: #f2c75f;
   font-style: normal;
-}
-
-.ol-values {
-  display: grid;
-  gap: 1rem;
-  margin-top: 2rem;
-  max-width: 560px;
-}
-
-.ol-values article {
-  display: grid;
-  grid-template-columns: 58px 1fr;
-  gap: 1rem;
-  align-items: center;
-}
-
-.ol-values b {
-  display: grid;
-  place-items: center;
-  width: 58px;
-  height: 58px;
-  border: 1px solid #c58a20;
-  border-radius: 50%;
-  color: #f2c75f;
-}
-
-.ol-values h2 {
-  margin: 0 0 .2rem;
-  color: #f2c75f;
-  font-size: 1.05rem;
-  text-transform: uppercase;
-  font-family: Georgia, "Times New Roman", serif;
-}
-
-.ol-values p {
-  margin: 0;
-  color: #ddd7cc;
-  line-height: 1.5;
 }
 
 .ol-auth-card {

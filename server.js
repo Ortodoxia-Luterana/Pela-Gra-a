@@ -313,6 +313,85 @@ async function handleApi(req, res, url, user) {
   json(res, 405, { error: 'Método não permitido' });
 }
 
+function renderAuth(mode, error = '') {
+  const isRegister = mode === 'register';
+  return pageShell(isRegister ? 'Registrar' : 'Entrar', `
+<main class="ol-auth-screen">
+  <section class="ol-auth-brand">
+    <img src="/assets/ortodoxia-luterana.svg" alt="Ortodoxia Luterana" class="ol-seal">
+    <div class="ol-title"><span>Ortodoxia</span><span>Luterana</span><strong>Gaming</strong></div>
+    <blockquote>"Portanto, quer comais, quer bebais, ou facais outra coisa qualquer, fazei tudo para a gloria de Deus."<cite>1 Corintios 10:31</cite></blockquote>
+    <div class="ol-values">
+      <article><b>+</b><div><h2>Fe que joga junto</h2><p>Mais que jogos, cultivamos comunhao, valores cristaos e crescimento espiritual.</p></div></article>
+      <article><b>#</b><div><h2>Comunidade responsavel</h2><p>Um ambiente seguro, acolhedor e guiado pela Palavra de Deus.</p></div></article>
+      <article><b>*</b><div><h2>Diversao com proposito</h2><p>Jogos que edificam, amizades que inspiram e historia para colecionar.</p></div></article>
+    </div>
+  </section>
+  <section class="ol-auth-card">
+    <nav class="ol-auth-tabs"><a class="${isRegister ? '' : 'active'}" href="/login">Entrar</a><a class="${isRegister ? 'active' : ''}" href="/register">Registrar</a></nav>
+    <h1>${isRegister ? 'Registrar' : 'Entrar'}</h1>
+    <p>${isRegister ? 'Crie seu acesso para entrar no hub, salvar campanhas e participar dos rankings.' : 'Entre para acessar o hub de jogos da comunidade.'}</p>
+    ${error ? `<div class="form-error">${escapeHtml(error)}</div>` : ''}
+    <form method="POST" action="${isRegister ? '/register' : '/login'}" class="auth-form">
+      <label>E-mail ou nome de usuario
+        <input name="name" maxlength="40" autocomplete="username" placeholder="Digite seu nome de usuario" required>
+      </label>
+      <label>Senha
+        <input name="pin" inputmode="numeric" pattern="\\d{4}" maxlength="4" autocomplete="${isRegister ? 'new-password' : 'current-password'}" placeholder="Senha de 4 digitos" required>
+      </label>
+      ${isRegister ? `<label>Confirmar senha
+        <input name="confirm_pin" inputmode="numeric" pattern="\\d{4}" maxlength="4" autocomplete="new-password" placeholder="Repita a senha" required>
+      </label>` : ''}
+      <div class="auth-options"><label><input type="checkbox"> Lembrar de mim</label><span>Esqueci minha senha</span></div>
+      <button type="submit">${isRegister ? 'Registrar' : 'Entrar'}</button>
+    </form>
+    <div class="ol-auth-footer"><span>+</span><p>${isRegister ? 'Ja tem uma conta?' : 'Ainda nao tem uma conta?'}</p><a class="auth-link" href="${isRegister ? '/login' : '/register'}">${isRegister ? 'Entrar' : 'Registrar'}</a></div>
+  </section>
+</main>`, 'login');
+}
+
+function renderDashboard(user, error = '') {
+  const saves = new Map(getSavesByUser.all(user.id).map(save => [save.slot, save]));
+  const mainSave = saves.get(1);
+  const state = safeJsonParse(mainSave?.state_json, null);
+  const stats = state ? extractRankingStats(state) : { year: 1904, totalChurches: 1, totalMembers: 20, doctrineCorrect: 0 };
+  const points = Math.max(0, stats.totalChurches * 15 + stats.doctrineCorrect * 50);
+  const medals = [
+    ['Fiel no Estudo', stats.doctrineCorrect >= 10],
+    ['Missionario Digital', stats.totalChurches >= 25],
+    ['Guardiao Confessional', (state?.doc || 70) >= 85],
+    ['Finalista de 2026', stats.year >= 2026]
+  ];
+  return pageShell('Ortodoxia Luterana Gaming', `
+<main class="ol-hub">
+  <aside class="ol-sidebar">
+    <img src="/assets/ortodoxia-luterana.svg" alt="Ortodoxia Luterana">
+    <h1>Ortodoxia Luterana <span>Gaming</span></h1>
+    <nav><a class="active" href="/">Inicio</a><a href="/play">Jogos</a><a href="/ranking">Ranking</a><a href="#medalhas">Medalhas</a><a href="#album">Album</a><a href="#loja">Loja</a></nav>
+    <p class="side-verse">"Fe que joga junto, permanece junto."</p>
+  </aside>
+  <section class="ol-hub-main">
+    <header class="ol-topbar">
+      <div><p>Painel de acesso</p><h2>Bem-vindo, ${escapeHtml(user.name)}</h2></div>
+      <div class="ol-stats"><article><span>Pontos</span><b>${points}</b></article><article><span>Igrejas</span><b>${stats.totalChurches}</b></article><article><span>Ano</span><b>${stats.year}</b></article></div>
+      <form method="POST" action="/logout"><button>Sair</button></form>
+    </header>
+    ${error ? `<div class="form-error">${escapeHtml(error)}</div>` : ''}
+    <div class="ol-hub-grid">
+      <section class="ol-panel ol-games">
+        <div class="panel-head"><div><p>Jogo disponivel</p><h3>Pela Graca: Historia da IELB</h3></div><a href="/play">Jogar agora</a></div>
+        <article class="ol-game-card"><div><span>Jogavel</span><h4>Mapa da IELB</h4><p>Gerencie igrejas, forme pastores, responda perguntas doutrinarias e acompanhe a historia da IELB no Brasil.</p><small>Entrada oficial pelo hub. Links diretos para o mapa sao bloqueados.</small></div><a href="/play">Entrar no mapa</a></article>
+      </section>
+      <aside class="ol-panel ol-rank"><p>Seu rank</p><div class="rank-emblem">IHS</div><h3>Cavaleiro da Fe</h3><div class="rank-bar"><span style="width:${Math.min(100, Math.max(8, stats.totalChurches))}%"></span></div><a href="/ranking">Ver ranking geral</a></aside>
+      <section class="ol-panel" id="medalhas"><div class="panel-head"><h3>Medalhas</h3></div><div class="medal-grid">${medals.map(([name, ok]) => `<article class="${ok ? '' : 'locked'}"><b>+</b><span>${name}</span></article>`).join('')}</div></section>
+      <section class="ol-panel" id="album"><div class="panel-head"><h3>Album</h3><span>3/12 figurinhas</span></div><div class="album-grid">${['Rosa de Lutero','Confissao de Augsburgo','Seminario Concordia','Hora Luterana','Sola Scriptura','Soli Deo Gloria'].map((name, i) => `<article class="${i < 3 ? '' : 'locked'}"><b>${i < 3 ? name.slice(0,2).toUpperCase() : '?'}</b><span>${i < 3 ? name : 'Figurinha bloqueada'}</span></article>`).join('')}</div></section>
+      <section class="ol-panel" id="loja"><div class="panel-head"><h3>Loja</h3></div><div class="shop-grid"><article><h4>Pacote Comum</h4><p>100 pontos</p><button disabled>Em breve</button></article><article><h4>Pacote Historico</h4><p>220 pontos</p><button disabled>Em breve</button></article></div></section>
+      <section class="ol-panel ol-settings"><div class="panel-head"><h3>Configuracoes</h3></div><p>Apague o historico local do jogo Pela Graca neste usuario.</p>${mainSave ? `<form method="POST" action="/saves/${encodeURIComponent(mainSave.id)}/delete" onsubmit="return confirm('Apagar o historico de Pela Graca?')"><button>Apagar historico do jogo</button></form>` : '<a href="/play">Criar historico do jogo</a>'}</section>
+    </div>
+  </section>
+</main>`);
+}
+
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, `http://${req.headers.host}`);

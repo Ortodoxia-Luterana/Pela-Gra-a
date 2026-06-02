@@ -115,12 +115,12 @@ function pageShell(title, body, musicMode = '') {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(title)}</title>
-<link rel="stylesheet" href="/assets/site.css">
+<link rel="stylesheet" href="/assets/site.css?v=${GAME_VERSION}">
 ${musicMode ? `<script>window.__MUSIC_MODE__ = ${JSON.stringify(musicMode)};</script>` : ''}
 </head>
 <body class="site-page">
 ${body}
-<script src="/assets/audio.js"></script>
+<script src="/assets/audio.js?v=${GAME_VERSION}"></script>
 </body>
 </html>`;
 }
@@ -273,7 +273,7 @@ function serveAsset(req, res) {
   if (!filePath.startsWith(PUBLIC_DIR + path.sep)) { res.writeHead(403); res.end('Forbidden'); return; }
   if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) { res.writeHead(404); res.end('Not found'); return; }
   const ext = path.extname(filePath).toLowerCase();
-  const type = ext === '.css' ? 'text/css; charset=utf-8' : ext === '.js' ? 'text/javascript; charset=utf-8' : ext === '.html' ? 'text/html; charset=utf-8' : ext === '.mp3' ? 'audio/mpeg' : ext === '.ogg' ? 'audio/ogg' : ext === '.wav' ? 'audio/wav' : 'application/octet-stream';
+  const type = ext === '.css' ? 'text/css; charset=utf-8' : ext === '.js' ? 'text/javascript; charset=utf-8' : ext === '.html' ? 'text/html; charset=utf-8' : ext === '.svg' ? 'image/svg+xml; charset=utf-8' : ext === '.png' ? 'image/png' : ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : ext === '.mp3' ? 'audio/mpeg' : ext === '.ogg' ? 'audio/ogg' : ext === '.wav' ? 'audio/wav' : 'application/octet-stream';
   res.writeHead(200, { 'Content-Type': type });
   fs.createReadStream(filePath).pipe(res);
 }
@@ -367,7 +367,7 @@ function renderDashboard(user, error = '') {
   <aside class="ol-sidebar">
     <img src="/assets/ortodoxia-luterana.svg" alt="Ortodoxia Luterana">
     <h1>Ortodoxia Luterana <span>Gaming</span></h1>
-    <nav><a class="active" href="/">Inicio</a><a href="/play">Jogos</a><a href="/ranking">Ranking</a><a href="#medalhas">Medalhas</a><a href="#album">Album</a><a href="#loja">Loja</a></nav>
+    <nav><a class="active" href="/">Inicio</a><a href="/play">Jogos</a><a href="/ranking">Ranking</a><a href="#medalhas">Medalhas</a><a href="#album">Album</a><a href="#loja">Loja</a><a href="#perfil">Perfil</a><a href="#configuracoes">Configuracoes</a></nav>
     <p class="side-verse">"Fe que joga junto, permanece junto."</p>
   </aside>
   <section class="ol-hub-main">
@@ -379,14 +379,15 @@ function renderDashboard(user, error = '') {
     ${error ? `<div class="form-error">${escapeHtml(error)}</div>` : ''}
     <div class="ol-hub-grid">
       <section class="ol-panel ol-games">
-        <div class="panel-head"><div><p>Jogo disponivel</p><h3>Pela Graca: Historia da IELB</h3></div><a href="/play">Jogar agora</a></div>
-        <article class="ol-game-card"><div><span>Jogavel</span><h4>Mapa da IELB</h4><p>Gerencie igrejas, forme pastores, responda perguntas doutrinarias e acompanhe a historia da IELB no Brasil.</p><small>Entrada oficial pelo hub. Links diretos para o mapa sao bloqueados.</small></div><a href="/play">Entrar no mapa</a></article>
+        <div class="panel-head"><div><p>Jogo disponivel</p><h3>Pela Graca 1904</h3></div><a href="/play">Jogar agora</a></div>
+        <article class="ol-game-card pela-cover"><div><span>Jogavel</span><h4>Pela Graca 1904</h4><p>Gerencie igrejas, forme pastores, responda perguntas doutrinarias e acompanhe a historia da IELB no Brasil.</p></div><a href="/play">Jogar</a></article>
       </section>
       <aside class="ol-panel ol-rank"><p>Seu rank</p><div class="rank-emblem">IHS</div><h3>Cavaleiro da Fe</h3><div class="rank-bar"><span style="width:${Math.min(100, Math.max(8, stats.totalChurches))}%"></span></div><a href="/ranking">Ver ranking geral</a></aside>
       <section class="ol-panel" id="medalhas"><div class="panel-head"><h3>Medalhas</h3></div><div class="medal-grid">${medals.map(([name, ok]) => `<article class="${ok ? '' : 'locked'}"><b>+</b><span>${name}</span></article>`).join('')}</div></section>
       <section class="ol-panel" id="album"><div class="panel-head"><h3>Album</h3><span>3/12 figurinhas</span></div><div class="album-grid">${['Rosa de Lutero','Confissao de Augsburgo','Seminario Concordia','Hora Luterana','Sola Scriptura','Soli Deo Gloria'].map((name, i) => `<article class="${i < 3 ? '' : 'locked'}"><b>${i < 3 ? name.slice(0,2).toUpperCase() : '?'}</b><span>${i < 3 ? name : 'Figurinha bloqueada'}</span></article>`).join('')}</div></section>
       <section class="ol-panel" id="loja"><div class="panel-head"><h3>Loja</h3></div><div class="shop-grid"><article><h4>Pacote Comum</h4><p>100 pontos</p><button disabled>Em breve</button></article><article><h4>Pacote Historico</h4><p>220 pontos</p><button disabled>Em breve</button></article></div></section>
-      <section class="ol-panel ol-settings"><div class="panel-head"><h3>Configuracoes</h3></div><p>Apague o historico local do jogo Pela Graca neste usuario.</p>${mainSave ? `<form method="POST" action="/saves/${encodeURIComponent(mainSave.id)}/delete" onsubmit="return confirm('Apagar o historico de Pela Graca?')"><button>Apagar historico do jogo</button></form>` : '<a href="/play">Criar historico do jogo</a>'}</section>
+      <section class="ol-panel" id="perfil"><div class="panel-head"><h3>Perfil</h3></div><div class="profile-box"><b>${escapeHtml(user.name).slice(0,2).toUpperCase()}</b><div><h4>${escapeHtml(user.name)}</h4><p>Rank geral: Cavaleiro da Fe</p><p>Pela Graca 1904: campanha em ${stats.year}</p></div></div></section>
+      <section class="ol-panel ol-settings" id="configuracoes"><div class="panel-head"><h3>Configuracoes</h3></div><p>Gerencie dados salvos por jogo.</p>${mainSave ? `<form method="POST" action="/saves/${encodeURIComponent(mainSave.id)}/delete" onsubmit="return confirm('Apagar o historico de Pela Graca 1904?')"><button>Apagar historico de Pela Graca 1904</button></form>` : '<a href="/play">Criar historico de Pela Graca 1904</a>'}</section>
     </div>
   </section>
 </main>`);

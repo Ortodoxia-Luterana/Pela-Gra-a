@@ -674,6 +674,10 @@ body.site-page::after {
   background: linear-gradient(90deg, rgba(0, 0, 0, .25), rgba(0, 0, 0, .78)), url("/assets/hub-dashboard-bg.png") center/cover;
 }
 
+.ol-game-card.pela-cover {
+  background: linear-gradient(90deg, rgba(0, 0, 0, .12), rgba(0, 0, 0, .82)), url("/assets/pela-graca-1904-cover.png") center/cover;
+}
+
 .ol-game-card span {
   display: inline-flex;
   border: 1px solid rgba(205, 148, 46, .45);
@@ -767,6 +771,34 @@ body.site-page::after {
   color: #f7d7d3;
   border-color: rgba(185, 75, 66, .7);
   background: rgba(80, 12, 12, .28);
+}
+
+.profile-box {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.profile-box b {
+  display: grid;
+  place-items: center;
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  border: 1px solid #f2c75f;
+  color: #f2c75f;
+  background: rgba(255, 255, 255, .06);
+  font-size: 1.35rem;
+}
+
+.profile-box h4 {
+  margin: 0 0 .35rem;
+  color: #eee8db;
+  font-size: 1.25rem;
+}
+
+.profile-box p {
+  margin: .2rem 0;
 }
 
 @media (max-width: 1080px) {

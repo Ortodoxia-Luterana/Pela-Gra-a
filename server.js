@@ -12,7 +12,7 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v2.3';
+const GAME_VERSION = 'v2.4';
 const STATE_NAMES = {
   AC: 'Acre', AL: 'Alagoas', AP: 'Amapa', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceara', DF: 'Distrito Federal', ES: 'Espirito Santo', GO: 'Goias',
   MA: 'Maranhao', MT: 'Mato Grosso', MS: 'Mato Grosso do Sul', MG: 'Minas Gerais', PA: 'Para', PB: 'Paraiba', PR: 'Parana', PE: 'Pernambuco',
@@ -375,7 +375,6 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     ['configuracoes', 'Configuracoes', '/?section=configuracoes']
   ].map(([key, label, href]) => `<a class="${activeSection === key ? 'active' : ''}" href="${href}">${label}</a>`).join('');
   const gameCard = `<section class="ol-panel ol-games">
-    <div class="panel-head"><div><p>Jogo disponivel</p><h3>Pela Graca 1904</h3></div></div>
     <article class="ol-game-card pela-cover"><div><span>Jogavel</span><h4>Pela Graca 1904</h4><p>Gerencie igrejas, forme pastores, responda perguntas doutrinarias e acompanhe a historia da IELB no Brasil.</p></div><a href="/play">Jogar</a></article>
   </section>`;
   const rankCard = `<aside class="ol-panel ol-rank"><p>Seu rank geral</p><div class="rank-emblem">IHS</div><h3>Cavaleiro da Fe</h3><div class="rank-bar"><span style="width:${Math.min(100, Math.max(8, points / 10))}%"></span></div><a href="/?section=ranking">Ver ranking geral</a></aside>`;

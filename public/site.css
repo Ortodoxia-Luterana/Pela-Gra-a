@@ -323,9 +323,8 @@ body.site-page::after {
   width: clamp(9rem, 15vw, 15rem);
   aspect-ratio: 1;
   flex: 0 0 auto;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 50%;
-  border: 4px solid #c58a20;
   box-shadow: 0 22px 70px rgba(0, 0, 0, .42);
 }
 
@@ -557,10 +556,9 @@ body.site-page::after {
   display: block;
   width: 138px;
   aspect-ratio: 1;
-  object-fit: cover;
+  object-fit: contain;
   margin: 0 auto;
   border-radius: 50%;
-  border: 2px solid #c58a20;
 }
 
 .ol-sidebar h1 {
@@ -670,6 +668,15 @@ body.site-page::after {
   gap: 1rem;
 }
 
+.ol-intro {
+  grid-column: 1 / -1;
+  border-left: 3px solid #c58a20;
+  color: #d8d0c4;
+  background: linear-gradient(90deg, rgba(197, 138, 32, .14), rgba(8, 15, 23, .52));
+  padding: .95rem 1.1rem;
+  line-height: 1.55;
+}
+
 .ol-panel {
   border: 1px solid rgba(255, 255, 255, .09);
   border-radius: 10px;
@@ -700,7 +707,7 @@ body.site-page::after {
 .ol-game-card {
   min-height: 250px;
   display: grid;
-  grid-template-columns: 1fr 220px;
+  grid-template-columns: minmax(0, 1fr) 220px;
   align-items: end;
   gap: 1rem;
   padding: 1.2rem;
@@ -734,6 +741,44 @@ body.site-page::after {
 .ol-panel p {
   color: #d8d0c4;
   line-height: 1.55;
+}
+
+.future-games {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: .8rem;
+}
+
+.future-games article,
+.daily-wheel {
+  border: 1px dashed rgba(242, 199, 95, .34);
+  border-radius: 10px;
+  color: #d8d0c4;
+  background: rgba(12, 21, 31, .64);
+  padding: 1rem;
+}
+
+.ol-ranking-hub h4 {
+  margin: 1rem 0 .5rem;
+  color: #eee8db;
+}
+
+.hub-rank-row {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  gap: .75rem;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+  padding: .7rem 0;
+}
+
+.hub-rank-row:last-child {
+  border-bottom: 0;
+}
+
+.hub-rank-row b,
+.hub-rank-row strong {
+  color: #f2c75f;
 }
 
 .ol-rank {
@@ -785,6 +830,16 @@ body.site-page::after {
   padding: 1rem;
 }
 
+.shop-grid h4,
+.daily-wheel h4 {
+  margin: 0 0 .4rem;
+  color: #f2c75f;
+}
+
+.daily-wheel {
+  margin-top: 1rem;
+}
+
 .medal-grid b,
 .album-grid b {
   display: grid;
@@ -806,6 +861,12 @@ body.site-page::after {
   color: #f7d7d3;
   border-color: rgba(185, 75, 66, .7);
   background: rgba(80, 12, 12, .28);
+}
+
+.ol-settings hr {
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, .09);
+  margin: 1rem 0;
 }
 
 .profile-box {

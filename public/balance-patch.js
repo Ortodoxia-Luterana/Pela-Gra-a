@@ -181,10 +181,14 @@
 
     if (correct) {
       G.doctrineWrongStreak = 0;
+      G.doctrineCorrectCount = (G.doctrineCorrectCount || 0) + 1;
+      G.doctrineStats = { correct: G.doctrineCorrectCount, wrong: G.doctrineWrongCount || 0 };
       G.of += 20;
       addMembersToIelbChurches(20, G.sel !== 'BR' ? G.sel : null);
     } else {
       G.doctrineWrongStreak = (G.doctrineWrongStreak || 0) + 1;
+      G.doctrineWrongCount = (G.doctrineWrongCount || 0) + 1;
+      G.doctrineStats = { correct: G.doctrineCorrectCount || 0, wrong: G.doctrineWrongCount };
       G.doc = Math.max(0, G.doc - 8);
       G.fi = Math.max(0, G.fi * (1 - DOCTRINE_MEMBER_LOSS));
       ielbChurchRefs().forEach(r => {

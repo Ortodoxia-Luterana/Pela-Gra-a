@@ -105,6 +105,8 @@ body{font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;background:
 #m-choices{display:flex;flex-direction:column;gap:8px;}
 .mcbtn{width:100%;padding:11px 14px;font-size:14px;font-weight:500;border:1.5px solid #c8b890;border-radius:3px;background:#f5f0e8;color:#2a1800;cursor:pointer;text-align:left;transition:all 0.15s;line-height:1.4;}
 .mcbtn:hover{border-color:#8a6a20;color:#4a3200;background:#ede8df;}
+.mcbtn.confirm-pending{border-color:#805200;color:#4a3200;background:#fff3c4;font-weight:800;}
+.mcbtn.confirm-pending:hover{border-color:#805200;color:#4a3200;background:#ffe8a3;}
 .mcbtn.correct{border-color:#2e7d32;color:#1a5c1a;background:#f0f8f0;}
 .mcbtn.wrong{border-color:#c62828;color:#8b1a1a;background:#fdf0f0;}
 

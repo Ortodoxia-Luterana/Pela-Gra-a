@@ -4,6 +4,46 @@
   let lastSaved = '';
   let saveTimer = null;
 
+  function modalButtonSkipsConfirmation(btn) {
+    if (btn.dataset.noConfirm === '1') return true;
+    const text = (btn.dataset.originalText || btn.textContent || '').trim().toLowerCase();
+    return text === 'continuar' || text === 'cancelar' || text.startsWith('voltar');
+  }
+
+  function resetModalConfirmButtons(scope = document) {
+    scope.querySelectorAll('.mcbtn.confirm-pending').forEach(btn => {
+      btn.classList.remove('confirm-pending');
+      btn.dataset.confirmArmed = '';
+      if (btn.dataset.originalText) btn.textContent = btn.dataset.originalText;
+    });
+  }
+
+  function installModalConfirmGuard() {
+    if (window.__modalConfirmGuardInstalled) return;
+    window.__modalConfirmGuardInstalled = true;
+    document.documentElement.dataset.modalConfirmGuard = '1';
+    document.addEventListener('click', event => {
+      const btn = event.target.closest && event.target.closest('.mcbtn');
+      const modal = document.getElementById('modal');
+      if (!btn || btn.disabled || !modal || !modal.classList.contains('show')) return;
+      if (modalButtonSkipsConfirmation(btn)) return;
+      if (btn.dataset.confirmArmed === '1') {
+        btn.classList.remove('confirm-pending');
+        return;
+      }
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      const choices = btn.closest('#m-choices') || modal;
+      resetModalConfirmButtons(choices);
+      btn.dataset.originalText = btn.dataset.originalText || btn.textContent;
+      btn.dataset.confirmArmed = '1';
+      btn.classList.add('confirm-pending');
+      btn.textContent = 'Confirmar: ' + btn.dataset.originalText;
+    }, true);
+  }
+
+  installModalConfirmGuard();
+
   function setStatus(text, bad = false) {
     const el = statusEl();
     if (!el) return;
@@ -76,7 +116,10 @@
   }
 
   function replaceExact(source, from, to) {
-    if (!source.includes(from)) throw new Error('Trecho esperado não encontrado em game.js');
+    if (!source.includes(from)) {
+      console.warn('Patch textual ignorado: trecho esperado nao encontrado em game.js');
+      return source;
+    }
     return source.replace(from, to);
   }
 
@@ -300,7 +343,7 @@ function churchInternalBalance(stateId,index){
 
   function loadPatchedGame() {
     const xhr = new XMLHttpRequest();
-    xhr.open('GET', '/assets/game.js', false);
+    xhr.open('GET', '/assets/game.js?v=' + Date.now(), false);
     xhr.send(null);
     if (xhr.status < 200 || xhr.status >= 300) throw new Error('Falha ao carregar game.js');
     const patched = patchGameSource(xhr.responseText).replace(/<\/script/gi, '<\\/script');

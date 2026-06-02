@@ -9,7 +9,10 @@ const PUBLIC_DIR = path.join(ROOT, 'public');
 const DB_PATH = path.join(ROOT, 'data', 'cultivando.sqlite');
 const PORT = Number(process.env.PORT || 3000);
 const COOKIE_NAME = 'cultivando_session';
-const GAME_VERSION = 'v1.4';
+const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
+const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
+const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
+const GAME_VERSION = 'v1.7';
 const STATE_NAMES = {
   AC: 'Acre', AL: 'Alagoas', AP: 'Amapa', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceara', DF: 'Distrito Federal', ES: 'Espirito Santo', GO: 'Goias',
   MA: 'Maranhao', MT: 'Mato Grosso', MS: 'Mato Grosso do Sul', MG: 'Minas Gerais', PA: 'Para', PB: 'Paraiba', PR: 'Parana', PE: 'Pernambuco',
@@ -64,6 +67,24 @@ function currentUser(req) {
 }
 function setSessionCookie(res, sessionId) { res.setHeader('Set-Cookie', `${COOKIE_NAME}=${encodeURIComponent(sessionId)}; HttpOnly; SameSite=Lax; Path=/`); }
 function clearSessionCookie(res) { res.setHeader('Set-Cookie', `${COOKIE_NAME}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0`); }
+function signLaunch(userId, expiresAt) {
+  return crypto.createHmac('sha256', LAUNCH_SECRET).update(`${userId}:${expiresAt}`).digest('hex');
+}
+function setLaunchCookie(res, userId) {
+  const expiresAt = Date.now() + LAUNCH_MAX_AGE_SECONDS * 1000;
+  const token = `${userId}.${expiresAt}.${signLaunch(userId, expiresAt)}`;
+  res.setHeader('Set-Cookie', `${LAUNCH_COOKIE_NAME}=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Path=/game; Max-Age=${LAUNCH_MAX_AGE_SECONDS}`);
+}
+function hasValidLaunch(req, userId) {
+  const token = parseCookies(req)[LAUNCH_COOKIE_NAME];
+  if (!token) return false;
+  const [tokenUserId, rawExpiresAt, signature] = token.split('.');
+  const expiresAt = Number(rawExpiresAt);
+  if (tokenUserId !== userId || !Number.isFinite(expiresAt) || expiresAt < Date.now() || !signature) return false;
+  const expected = signLaunch(tokenUserId, expiresAt);
+  if (signature.length !== expected.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+}
 function redirect(res, location) { res.writeHead(302, { Location: location }); res.end(); }
 function json(res, status, payload) {
   const body = JSON.stringify(payload);
@@ -149,7 +170,9 @@ function extractRankingStats(state) {
   });
   const year = Math.max(1904, Math.floor(Number(state?.year) || 1904));
   const month = Math.max(0, Math.min(11, Math.floor(Number(state?.month) || 0)));
-  const doctrineCorrect = Math.max(0, Math.floor(Number(state?.doctrineCorrectCount || state?.doctrineStats?.correct || 0)));
+  const explicitDoctrineCorrect = Number(state?.doctrineCorrectCount ?? state?.doctrineStats?.correct);
+  const usedQuestions = Array.isArray(state?.usedTheologyQuestions) ? state.usedTheologyQuestions.length : 0;
+  const doctrineCorrect = Math.max(0, Math.floor(Number.isFinite(explicitDoctrineCorrect) ? explicitDoctrineCorrect : usedQuestions));
   return { year, month, totalChurches, totalMembers, doctrineCorrect, reachedFinal: year >= 2026 ? 1 : 0, stateChurches };
 }
 function updateRankingForSave(save, userName, state) {
@@ -161,7 +184,7 @@ function backfillRankings() {
   getAllSavedStates.all().forEach(save => updateRankingForSave(save, save.user_name, safeJsonParse(save.state_json)));
 }
 function publicRankingRow(row) {
-  return { player: row.user_name, story: row.save_name, year: row.year, month: row.month, totalChurches: row.total_churches, totalMembers: Math.floor(row.total_members), doctrineCorrect: row.doctrine_correct, reachedFinal: Boolean(row.reached_final), updatedAt: row.updated_at };
+  return { player: row.user_name, year: row.year, month: row.month, totalChurches: row.total_churches, totalMembers: Math.floor(row.total_members), doctrineCorrect: row.doctrine_correct, reachedFinal: Boolean(row.reached_final), updatedAt: row.updated_at };
 }
 function rankingPayload() {
   backfillRankings();
@@ -171,9 +194,17 @@ function rankingPayload() {
   const byDoctrine = [...rows].sort((a, b) => b.doctrine_correct - a.doctrine_correct || b.year - a.year || b.total_churches - a.total_churches).slice(0, 10).map(publicRankingRow);
   const byState = STATE_ORDER.map(code => {
     const best = rows.map(row => ({ row, count: Number(safeJsonParse(row.state_churches_json, {})[code] || 0) })).filter(item => item.count > 0).sort((a, b) => b.count - a.count || b.row.year - a.row.year || b.row.total_churches - a.row.total_churches)[0];
-    return best ? { state: code, stateName: STATE_NAMES[code], churches: best.count, ...publicRankingRow(best.row) } : { state: code, stateName: STATE_NAMES[code], churches: 0, player: '-', story: '-', year: 1904, totalChurches: 0, doctrineCorrect: 0 };
+    return best ? { state: code, stateName: STATE_NAMES[code], churches: best.count, ...publicRankingRow(best.row) } : { state: code, stateName: STATE_NAMES[code], churches: 0, player: '-', year: 1904, totalChurches: 0, doctrineCorrect: 0 };
   });
   return { generatedAt: new Date().toISOString(), byYear, byChurches, byState, byDoctrine };
+}
+function hubSaveForUser(user) {
+  const existing = getSaveSlot.get(user.id, 1);
+  if (existing) return existing;
+  const now = new Date().toISOString();
+  const id = crypto.randomUUID();
+  insertSave.run(id, user.id, 1, 'Pela Graça', now, now);
+  return getSave.get(id, user.id);
 }
 
 function renderDashboard(user, error = '') {
@@ -182,7 +213,7 @@ function renderDashboard(user, error = '') {
     const save = saves.get(slot);
     if (save) return `<section class="slot-card">
   <div><h2>Slot ${slot}</h2><strong>${escapeHtml(save.name)}</strong><span>${save.state_json ? 'Jogo salvo' : 'História nova'} · atualizado em ${new Date(save.updated_at).toLocaleString('pt-BR')}</span></div>
-  <div class="slot-actions"><a class="primary" href="/game?save=${encodeURIComponent(save.id)}">Jogar</a><form method="POST" action="/saves/${encodeURIComponent(save.id)}/delete" onsubmit="return confirm('Apagar este save?')"><button class="icon-danger" title="Apagar save" aria-label="Apagar save">×</button></form></div>
+  <div class="slot-actions"><a class="primary" href="/play?save=${encodeURIComponent(save.id)}">Jogar</a><form method="POST" action="/saves/${encodeURIComponent(save.id)}/delete" onsubmit="return confirm('Apagar este save?')"><button class="icon-danger" title="Apagar save" aria-label="Apagar save">×</button></form></div>
 </section>`;
     return `<section class="slot-card empty"><div><h2>Slot ${slot}</h2><span>Vazio</span></div><a class="create-link" href="/saves/new?slot=${slot}">Criar nova história</a></section>`;
   }).join('');
@@ -212,9 +243,9 @@ function renderGame(save, user) {
 <body>
 <div id="campaign-bar"><a href="/" class="bar-link">← Histórias</a><a href="/ranking" class="bar-link">Ranking</a><strong>${escapeHtml(save.name)}</strong><span>${escapeHtml(user.name)}</span><span id="save-status">Salvando no SQLite...</span></div>
 ${body}
-<script src="/assets/audio.js"></script>
-<script src="/assets/persistence.js"></script>
-<script src="/assets/game.js"></script>
+<script src="/assets/audio.js?v=${GAME_VERSION}"></script>
+<script src="/assets/persistence.js?v=${GAME_VERSION}"></script>
+<script src="/assets/game.js?v=${GAME_VERSION}"></script>
 </body>
 </html>`;
 }
@@ -227,9 +258,9 @@ function renderRankingPage(user) {
 <section class="ranking-card state-board"><h2>Recorde de igrejas por estado</h2><div id="rank-states" class="state-grid"></div></section><div id="ranking-updated" class="ranking-updated"></div>
 <script>
 const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-function row(item, index, score, suffix = '') { return '<div class="ranking-row"><div class="ranking-pos">'+(index+1)+'</div><div><div class="ranking-name">'+esc(item.player)+'</div><div class="ranking-meta">'+esc(item.story)+' · ano '+esc(item.year)+(item.reachedFinal?' · finalista':'')+'</div></div><div class="ranking-score">'+esc(score)+suffix+'</div></div>'; }
+function row(item, index, score, suffix = '') { return '<div class="ranking-row"><div class="ranking-pos">'+(index+1)+'</div><div><div class="ranking-name">'+esc(item.player)+'</div><div class="ranking-meta">ano '+esc(item.year)+(item.reachedFinal?' · finalista':'')+'</div></div><div class="ranking-score">'+esc(score)+suffix+'</div></div>'; }
 function emptyRow(text) { return '<div class="ranking-row"><div></div><div class="ranking-meta">'+esc(text)+'</div><div></div></div>'; }
-async function loadRanking() { const response = await fetch('/api/ranking', { cache: 'no-store' }); if (!response.ok) return; const data = await response.json(); document.getElementById('rank-years').innerHTML = data.byYear.length ? data.byYear.map((item, index) => row(item, index, item.year)).join('') : emptyRow('Sem campanhas salvas ainda.'); document.getElementById('rank-churches').innerHTML = data.byChurches.length ? data.byChurches.map((item, index) => row(item, index, item.totalChurches, ' igrejas')).join('') : emptyRow('Sem igrejas registradas ainda.'); document.getElementById('rank-doctrine').innerHTML = data.byDoctrine.length ? data.byDoctrine.map((item, index) => row(item, index, item.doctrineCorrect, ' acertos')).join('') : emptyRow('Os acertos passam a contar na versao ${GAME_VERSION}.'); document.getElementById('rank-states').innerHTML = data.byState.map(item => '<div class="state-item"><div class="state-code">'+esc(item.state)+'</div><div><div class="ranking-name">'+esc(item.stateName)+'</div><div class="ranking-meta">'+esc(item.player)+' · '+esc(item.story)+'</div></div><div class="ranking-score">'+esc(item.churches)+'</div></div>').join(''); document.getElementById('ranking-updated').textContent = 'Atualizado em ' + new Date(data.generatedAt).toLocaleString('pt-BR'); }
+async function loadRanking() { const response = await fetch('/api/ranking', { cache: 'no-store' }); if (!response.ok) return; const data = await response.json(); document.getElementById('rank-years').innerHTML = data.byYear.length ? data.byYear.map((item, index) => row(item, index, item.year)).join('') : emptyRow('Sem campanhas salvas ainda.'); document.getElementById('rank-churches').innerHTML = data.byChurches.length ? data.byChurches.map((item, index) => row(item, index, item.totalChurches, ' igrejas')).join('') : emptyRow('Sem igrejas registradas ainda.'); document.getElementById('rank-doctrine').innerHTML = data.byDoctrine.length ? data.byDoctrine.map((item, index) => row(item, index, item.doctrineCorrect, ' acertos')).join('') : emptyRow('Os acertos passam a contar na versao ${GAME_VERSION}.'); document.getElementById('rank-states').innerHTML = data.byState.map(item => '<div class="state-item"><div class="state-code">'+esc(item.state)+'</div><div><div class="ranking-name">'+esc(item.stateName)+'</div><div class="ranking-meta">'+esc(item.player)+'</div></div><div class="ranking-score">'+esc(item.churches)+'</div></div>').join(''); document.getElementById('ranking-updated').textContent = 'Atualizado em ' + new Date(data.generatedAt).toLocaleString('pt-BR'); }
 loadRanking(); setInterval(loadRanking, 5000);
 </script>
 </main>`);
@@ -291,6 +322,14 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname.startsWith('/api/')) { await handleApi(req, res, url, user); return; }
     if (!user) { redirect(res, '/login'); return; }
     if (req.method === 'GET' && url.pathname === '/') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end(renderDashboard(user)); return; }
+    if (req.method === 'GET' && url.pathname === '/play') {
+      const requestedSaveId = url.searchParams.get('save');
+      const save = requestedSaveId ? getSave.get(requestedSaveId, user.id) : hubSaveForUser(user);
+      if (!save) { redirect(res, '/'); return; }
+      setLaunchCookie(res, user.id);
+      redirect(res, `/game?save=${encodeURIComponent(save.id)}`);
+      return;
+    }
     if (req.method === 'GET' && url.pathname === '/ranking') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end(renderRankingPage(user)); return; }
     if (req.method === 'GET' && url.pathname === '/saves/new') {
       const slot = Number(url.searchParams.get('slot'));
@@ -308,6 +347,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && url.pathname === '/game') {
       const id = url.searchParams.get('save'); const save = id ? getSave.get(id, user.id) : null;
       if (!save) { redirect(res, '/'); return; }
+      if (!hasValidLaunch(req, user.id)) { redirect(res, '/'); return; }
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end(renderGame(save, user)); return;
     }
     res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end('Página não encontrada');

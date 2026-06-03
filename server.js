@@ -12,7 +12,7 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v3.5';
+const GAME_VERSION = 'v3.6';
 const STATE_NAMES = {
   AC: 'Acre', AL: 'Alagoas', AP: 'Amapa', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceara', DF: 'Distrito Federal', ES: 'Espirito Santo', GO: 'Goias',
   MA: 'Maranhao', MT: 'Mato Grosso', MS: 'Mato Grosso do Sul', MG: 'Minas Gerais', PA: 'Para', PB: 'Paraiba', PR: 'Parana', PE: 'Pernambuco',
@@ -413,9 +413,9 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   const gameCard = `<section class="ol-panel ol-games">
     <article class="ol-game-card pela-cover"><div><span>Jogável</span><h4>Pela Graça 1904</h4><p>Gerencie igrejas, forme pastores, responda perguntas doutrinárias e acompanhe a história da IELB no Brasil.</p></div><a href="/play">Jogar</a></article>
   </section>`;
-  const rankCard = `<aside class="ol-panel ol-rank"><p>Seu rank geral</p><img class="rank-badge" src="${rank.current.file}?v=${GAME_VERSION}" alt="${escapeHtml(rank.current.title)}"><div class="rank-xp"><strong>${rank.currentXp.toLocaleString('pt-BR')} XP</strong><span>${rank.next ? `Faltam ${(rank.next.xp - rank.currentXp).toLocaleString('pt-BR')} XP para ${escapeHtml(rank.next.title)}` : 'Rank máximo alcançado'}</span></div><div class="rank-bar"><span style="width:${rank.progress.toFixed(1)}%"></span></div><a href="/?section=ranking">Ver ranking geral</a></aside>`;
+  const rankCard = `<aside class="ol-panel ol-rank"><p>Seu rank geral</p><img class="rank-badge" src="${rank.current.file}?v=${GAME_VERSION}" alt="${escapeHtml(rank.current.title)}"><div class="rank-xp"><span>Sistema de XP em preparação</span></div><a href="/?section=ranking">Ver ranking geral</a></aside>`;
   const sections = {
-    inicio: `<section class="ol-intro">Escolha um jogo, acompanhe seu rank geral e veja os prestígios conquistados.</section>${gameCard}${rankCard}<section class="ol-panel ol-live"><div class="panel-head"><h3>Prestígios</h3></div><div id="hub-live-feed">${liveRows}</div></section>${missionsPanel}${eventPanel}`,
+    inicio: `<section class="ol-intro">Escolha um jogo, acompanhe seu rank geral e veja os prestígios conquistados.</section>${gameCard}${rankCard}<section class="ol-panel ol-live"><div class="panel-head"><h3>Prestígios</h3></div><div id="hub-live-feed">${liveRows}</div></section>${eventPanel}${missionsPanel}`,
     jogos: `${gameCard}<section class="ol-panel"><div class="panel-head"><h3>Futuros jogos</h3></div><div class="future-games"><article>Espaço reservado para o próximo jogo da comunidade.</article><article>Espaço reservado para outro modo ou desafio.</article></div></section>`,
     ranking: `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><h3>Ranking geral</h3></div><div class="hub-rank-row"><b>1</b><span>${escapeHtml(user.name)}</span><strong>${unlockedMedals} medalhas</strong></div></section><section class="ol-panel ol-ranking-hub"><div class="panel-head"><h3>Rankings por jogo</h3></div><div class="game-rank-list"><a href="/?section=ranking&game=pela-graca-1904"><span>Pela Graça 1904</span><strong>Ver ranking</strong></a></div></section>${ielbRanking}`,
     medalhas: `<section class="ol-panel" id="medalhas"><div class="panel-head"><h3>Medalhas</h3></div><div class="medal-grid">${medals.map(([name, ok]) => `<article class="${ok ? '' : 'locked'}"><b>+</b><span>${name}</span></article>`).join('')}</div></section>`,
@@ -434,6 +434,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   <section class="ol-hub-main">
     <header class="ol-topbar">
       <div><p>Painel de acesso</p><h2>Bem-vindo, ${escapeHtml(user.name)}</h2></div>
+      <div class="ol-stats"><article><span>Pontos</span><b>${points}</b></article><article><span>Medalhas</span><b>${unlockedMedals}</b></article><article><span>Figurinhas</span><b>3/12</b></article></div>
       <a class="top-profile" href="/?section=configuracoes">${renderAvatar(user, 'top-avatar')}<span>${escapeHtml(user.name)}<small>Ver perfil</small></span></a>
       <form method="POST" action="/logout"><button>Sair</button></form>
     </header>

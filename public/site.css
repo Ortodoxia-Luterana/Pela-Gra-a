@@ -283,7 +283,7 @@ body.site-page::before {
   position: fixed;
   inset: 0;
   z-index: -2;
-  background: url("/assets/login-castle-bg.png?v=v3.5") center/cover no-repeat;
+  background: url("/assets/login-castle-bg.png?v=v3.6") center/cover no-repeat;
 }
 
 body.site-page::after {
@@ -606,7 +606,7 @@ body.site-page::after {
 
 .ol-topbar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
   gap: 1rem;
   align-items: center;
   margin-bottom: 1.4rem;
@@ -927,7 +927,7 @@ img.feed-avatar {
 .rank-xp {
   display: grid;
   gap: .25rem;
-  margin: .7rem 0 .35rem;
+  margin: .7rem 0 1rem;
 }
 
 .rank-xp strong {

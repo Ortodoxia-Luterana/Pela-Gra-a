@@ -1011,6 +1011,11 @@ body.site-page::after {
     grid-template-columns: 1fr;
   }
 
+  .ol-auth-screen {
+    align-content: center;
+    gap: 1rem;
+  }
+
   .ol-sidebar {
     min-height: auto;
     position: sticky;
@@ -1020,7 +1025,32 @@ body.site-page::after {
   }
 
   .ol-auth-brand {
+    display: block;
+    max-width: none;
+    padding-left: 0;
+    text-align: center;
+  }
+
+  .ol-auth-brand blockquote {
     display: none;
+  }
+
+  .ol-brand-lockup {
+    justify-content: center;
+    gap: .75rem;
+  }
+
+  .ol-seal {
+    width: 5.2rem;
+  }
+
+  .ol-title span {
+    font-size: 1.55rem;
+  }
+
+  .ol-title strong {
+    font-size: .9rem;
+    letter-spacing: .18em;
   }
 
   .ol-sidebar img {
@@ -1062,6 +1092,10 @@ body.site-page::after {
 
   .ol-auth-card {
     padding: 1.2rem;
+  }
+
+  .ol-brand-lockup {
+    display: grid;
   }
 
   .ol-stats {

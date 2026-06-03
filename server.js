@@ -12,7 +12,7 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v2.7';
+const GAME_VERSION = 'v2.8';
 const STATE_NAMES = {
   AC: 'Acre', AL: 'Alagoas', AP: 'Amapa', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceara', DF: 'Distrito Federal', ES: 'Espirito Santo', GO: 'Goias',
   MA: 'Maranhao', MT: 'Mato Grosso', MS: 'Mato Grosso do Sul', MG: 'Minas Gerais', PA: 'Para', PB: 'Paraiba', PR: 'Parana', PE: 'Pernambuco',
@@ -327,7 +327,6 @@ function renderAuth(mode, error = '') {
   <section class="ol-auth-card">
     <nav class="ol-auth-tabs"><a class="${isRegister ? '' : 'active'}" href="/login">Entrar</a><a class="${isRegister ? 'active' : ''}" href="/register">Registrar</a></nav>
     <h1>${isRegister ? 'Registrar' : 'Entrar'}</h1>
-    <p>${isRegister ? 'Crie seu acesso para entrar no hub, salvar campanhas e participar dos rankings.' : 'Entre para acessar o hub de jogos da comunidade.'}</p>
     ${error ? `<div class="form-error">${escapeHtml(error)}</div>` : ''}
     <form method="POST" action="${isRegister ? '/register' : '/login'}" class="auth-form">
       <label>Nome de usuário

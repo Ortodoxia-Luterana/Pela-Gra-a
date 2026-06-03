@@ -283,7 +283,7 @@ body.site-page::before {
   position: fixed;
   inset: 0;
   z-index: -2;
-  background: url("/assets/login-castle-bg.png?v=v3.6") center/cover no-repeat;
+  background: url("/assets/login-castle-bg.png?v=v3.7") center/cover no-repeat;
 }
 
 body.site-page::after {
@@ -888,6 +888,20 @@ img.feed-avatar {
 .hub-rank-row b,
 .hub-rank-row strong {
   color: #f2c75f;
+}
+
+.hub-rank-player span {
+  display: grid;
+  gap: .35rem;
+}
+
+.mini-rank-badge {
+  display: block;
+  width: min(260px, 100%);
+  max-height: 64px;
+  object-fit: contain;
+  object-position: left center;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, .38));
 }
 
 .game-rank-list {

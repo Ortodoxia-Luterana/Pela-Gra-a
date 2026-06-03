@@ -1,0 +1,12 @@
+[
+  { "level": 1, "title": "Visitante", "file": "/assets/title-badges/01-visitante.svg" },
+  { "level": 2, "title": "Peregrino", "file": "/assets/title-badges/02-peregrino.svg" },
+  { "level": 3, "title": "Companheiro da Fé", "file": "/assets/title-badges/03-companheiro-da-fe.svg" },
+  { "level": 4, "title": "Servo da Palavra", "file": "/assets/title-badges/04-servo-da-palavra.svg" },
+  { "level": 5, "title": "Guardião da Verdade", "file": "/assets/title-badges/05-guardiao-da-verdade.svg" },
+  { "level": 6, "title": "Arauto da Graça", "file": "/assets/title-badges/06-arauto-da-graca.svg" },
+  { "level": 7, "title": "Defensor da Confissão", "file": "/assets/title-badges/07-defensor-da-confissao.svg" },
+  { "level": 8, "title": "Herdeiro da Reforma", "file": "/assets/title-badges/08-herdeiro-da-reforma.svg" },
+  { "level": 9, "title": "Cavaleiro da Fé", "file": "/assets/title-badges/09-cavaleiro-da-fe.svg" },
+  { "level": 10, "title": "Campeão da Verdade", "file": "/assets/title-badges/10-campeao-da-verdade.svg" }
+]

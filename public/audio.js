@@ -155,25 +155,29 @@
   suppressOriginalGameScript();
   loadGameHotfix();
 
+  const fullPlaylist = [
+    '/assets/audio/login.mp3',
+    '/assets/audio/game-1.mp3',
+    '/assets/audio/game-2.mp3',
+    '/assets/audio/game-3.mp3',
+    '/assets/audio/game-4.mp3',
+    '/assets/audio/game-5.mp3'
+  ];
+
   const playlists = {
-    login: ['/assets/audio/login.mp3', '/assets/audio/login.ogg'],
-    game: [
-      '/assets/audio/game-1.mp3',
-      '/assets/audio/game-2.mp3',
-      '/assets/audio/game-3.mp3',
-      '/assets/audio/game-4.mp3',
-      '/assets/audio/game-5.mp3'
-    ]
+    login: fullPlaylist,
+    game: fullPlaylist
   };
 
   const tracks = playlists[mode] || [];
   if (!tracks.length) return;
 
   const storageKey = 'pela-graca-music-muted';
+  const indexStorageKey = 'pela-graca-music-index';
   const audio = new Audio();
   audio.preload = 'auto';
   audio.volume = mode === 'login' ? 0.38 : 0.28;
-  let index = 0;
+  let index = Number(localStorage.getItem(indexStorageKey) || 0);
   let started = false;
   let missingAttempts = 0;
 
@@ -196,6 +200,7 @@
 
   function setTrack(nextIndex) {
     index = ((nextIndex % tracks.length) + tracks.length) % tracks.length;
+    localStorage.setItem(indexStorageKey, String(index));
     audio.src = tracks[index];
   }
 

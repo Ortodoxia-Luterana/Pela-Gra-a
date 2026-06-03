@@ -557,11 +557,11 @@ body.site-page::after {
 }
 
 .nav-icon {
-  display: grid;
-  place-items: center;
   width: 1.35rem;
-  color: #d8d0c4;
-  font-weight: 900;
+  height: 1.35rem;
+  flex: 0 0 auto;
+  object-fit: contain;
+  opacity: .78;
 }
 
 .ol-sidebar nav a.active,
@@ -569,6 +569,11 @@ body.site-page::after {
   border-color: rgba(205, 148, 46, .38);
   color: #f2c75f;
   background: rgba(255, 255, 255, .05);
+}
+
+.ol-sidebar nav a.active .nav-icon,
+.ol-sidebar nav a:hover .nav-icon {
+  opacity: 1;
 }
 
 .side-verse {
@@ -736,7 +741,6 @@ body.site-page::after {
   grid-column: 1 / 2;
 }
 
-.ol-medal-preview,
 .ol-event {
   grid-column: 2 / 3;
 }
@@ -1009,16 +1013,35 @@ body.site-page::after {
 
   .ol-sidebar {
     min-height: auto;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    padding: .75rem;
   }
 
-  .ol-sidebar img,
-  .ol-sidebar h1,
   .ol-auth-brand {
     display: none;
   }
 
+  .ol-sidebar img {
+    width: 72px;
+  }
+
+  .ol-sidebar h1 {
+    margin: .35rem 0 .7rem;
+    font-size: .9rem;
+  }
+
   .ol-sidebar nav {
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    display: flex;
+    gap: .5rem;
+    overflow-x: auto;
+    padding-bottom: .25rem;
+  }
+
+  .ol-sidebar nav a {
+    min-width: max-content;
+    padding: .65rem .8rem;
   }
 
   .ol-game-card {
@@ -1027,7 +1050,6 @@ body.site-page::after {
 
   .ol-live,
   .ol-missions,
-  .ol-medal-preview,
   .ol-event {
     grid-column: auto;
   }
@@ -1043,12 +1065,29 @@ body.site-page::after {
   }
 
   .ol-stats {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
   }
 
   .ol-stats article {
     border-right: 0;
     border-bottom: 1px solid rgba(255, 255, 255, .09);
+    padding: .65rem;
+  }
+
+  .top-profile {
+    min-width: 0;
+    width: 100%;
+  }
+
+  #hub-live-feed article,
+  .ol-missions article {
+    grid-template-columns: 38px minmax(0, 1fr);
+  }
+
+  #hub-live-feed small,
+  .ol-missions strong {
+    grid-column: 2;
   }
 
   .panel-head {

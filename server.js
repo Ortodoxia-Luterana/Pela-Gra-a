@@ -12,7 +12,7 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v2.6';
+const GAME_VERSION = 'v2.7';
 const STATE_NAMES = {
   AC: 'Acre', AL: 'Alagoas', AP: 'Amapa', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceara', DF: 'Distrito Federal', ES: 'Espirito Santo', GO: 'Goias',
   MA: 'Maranhao', MT: 'Mato Grosso', MS: 'Mato Grosso do Sul', MG: 'Minas Gerais', PA: 'Para', PB: 'Paraiba', PR: 'Parana', PE: 'Pernambuco',
@@ -364,27 +364,33 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   const stickers = ['Rosa de Lutero','Confissao de Augsburgo','Seminario Concordia','Hora Luterana','Sola Scriptura','Soli Deo Gloria'];
   const ranking = rankingPayload();
   const rankingRows = (items, score, suffix = '') => items.length ? items.slice(0, 8).map((item, index) => `<div class="hub-rank-row"><b>${index + 1}</b><span>${escapeHtml(item.player)}</span><strong>${escapeHtml(score(item))}${suffix}</strong></div>`).join('') : '<p>Nenhum registro ainda.</p>';
-  const liveRows = ranking.byYear.length ? ranking.byYear.slice(0, 4).map(item => `<article><b>${escapeHtml(item.player)}</b><span>avançou em Pela Graça 1904</span><small>ano ${item.year}</small></article>`).join('') : '<article><b>Hub</b><span>As notificações dos jogos aparecerão aqui.</span><small>ao vivo</small></article>';
+  const prestigeItems = ranking.byYear.flatMap(item => {
+    const earned = [];
+    if (item.doctrineCorrect >= 10) earned.push('Fiel no Estudo');
+    if (item.totalChurches >= 25) earned.push('Missionário Digital');
+    if (item.year >= 2026) earned.push('Finalista de 2026');
+    return earned.map(medal => ({ player: item.player, medal }));
+  }).slice(0, 4);
+  const liveRows = prestigeItems.length ? prestigeItems.map(item => `<article><b>${escapeHtml(item.player).slice(0,2).toUpperCase()}</b><span>${escapeHtml(item.player)} conquistou a medalha ${escapeHtml(item.medal)}</span><small>agora</small></article>`).join('') : '<article><b>OL</b><span>Os prestígios por medalhas aparecerão aqui.</span><small>ao vivo</small></article>';
   const missionsPanel = `<section class="ol-panel ol-missions"><div class="panel-head"><h3>Missões diárias</h3><a href="/?section=missoes">Ver todas</a></div><article><b>1</b><span>Entrar no hub hoje</span><strong>50 pts</strong></article><article><b>2</b><span>Jogar Pela Graça 1904</span><strong>100 pts</strong></article><article><b>3</b><span>Responder uma pergunta doutrinária</span><strong>150 pts</strong></article><p>Próxima renovação em até 24h.</p></section>`;
-  const medalsPanel = `<section class="ol-panel ol-medal-preview"><div class="panel-head"><h3>Medalhas</h3><a href="/?section=medalhas">Ver todas</a></div><div class="medal-grid">${medals.map(([name, ok]) => `<article class="${ok ? '' : 'locked'}"><b>+</b><span>${name}</span></article>`).join('')}</div></section>`;
-  const eventPanel = `<section class="ol-panel ol-event"><p>Evento em destaque</p><h3>Torneio de Reforma</h3><span>Participe para ganhar pontos, medalhas e pacotes especiais.</span><button disabled>Em breve</button></section>`;
+  const eventPanel = `<section class="ol-panel ol-event"><p>Evento em destaque</p><h3>Desafio da Reforma</h3><span>Temporada especial com pontos, medalhas e pacotes para os participantes.</span><button disabled>Em breve</button></section>`;
   const ielbRanking = selectedGame === 'pela-graca-1904' ? `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><div><p>Ranking do jogo</p><h3>Pela Graça 1904</h3></div><a href="/?section=ranking">Voltar</a></div><h4>Mais anos jogados</h4>${rankingRows(ranking.byYear, item => item.year)}<h4>Mais igrejas até 2026</h4>${rankingRows(ranking.byChurches, item => item.totalChurches, ' igrejas')}<h4>Mais acertos doutrinários</h4>${rankingRows(ranking.byDoctrine, item => item.doctrineCorrect, ' acertos')}</section>` : '';
   const nav = [
-    ['inicio', 'Início', '/', '⌂'],
-    ['jogos', 'Jogos', '/?section=jogos', '▣'],
-    ['ranking', 'Ranking', '/?section=ranking', '▥'],
-    ['medalhas', 'Medalhas', '/?section=medalhas', '✚'],
-    ['missoes', 'Missões', '/?section=missoes', '☷'],
-    ['album', 'Álbum', '/?section=album', '▤'],
-    ['loja', 'Loja', '/?section=loja', '□'],
-    ['configuracoes', 'Configurações', '/?section=configuracoes', '⚙']
-  ].map(([key, label, href, icon]) => `<a class="${activeSection === key ? 'active' : ''}" href="${href}"><span class="nav-icon">${icon}</span>${label}</a>`).join('');
+    ['inicio', 'Início', '/', 'nav-inicio.svg'],
+    ['jogos', 'Jogos', '/?section=jogos', 'nav-jogos.svg'],
+    ['ranking', 'Ranking', '/?section=ranking', 'nav-ranking.svg'],
+    ['medalhas', 'Medalhas', '/?section=medalhas', 'nav-medalhas.svg'],
+    ['missoes', 'Missões', '/?section=missoes', 'nav-missoes.svg'],
+    ['album', 'Álbum', '/?section=album', 'nav-album.svg'],
+    ['loja', 'Loja', '/?section=loja', 'nav-loja.svg'],
+    ['configuracoes', 'Configurações', '/?section=configuracoes', 'nav-configuracoes.svg']
+  ].map(([key, label, href, icon]) => `<a class="${activeSection === key ? 'active' : ''}" href="${href}"><img class="nav-icon" src="/assets/${icon}?v=${GAME_VERSION}" alt="">${label}</a>`).join('');
   const gameCard = `<section class="ol-panel ol-games">
     <article class="ol-game-card pela-cover"><div><span>Jogável</span><h4>Pela Graça 1904</h4><p>Gerencie igrejas, forme pastores, responda perguntas doutrinárias e acompanhe a história da IELB no Brasil.</p></div><a href="/play">Jogar</a></article>
   </section>`;
   const rankCard = `<aside class="ol-panel ol-rank"><p>Seu rank geral</p><div class="rank-emblem">IHS</div><h3>Cavaleiro da Fe</h3><div class="rank-bar"><span style="width:${Math.min(100, Math.max(8, points / 10))}%"></span></div><a href="/?section=ranking">Ver ranking geral</a></aside>`;
   const sections = {
-    inicio: `<section class="ol-intro">Escolha um jogo, acompanhe seu rank geral e veja as novidades dos jogos em tempo real.</section>${gameCard}${rankCard}<section class="ol-panel ol-live"><div class="panel-head"><h3>Notificações dos jogos</h3><span>ao vivo</span></div><div id="hub-live-feed">${liveRows}</div></section>${missionsPanel}${medalsPanel}${eventPanel}`,
+    inicio: `<section class="ol-intro">Escolha um jogo, acompanhe seu rank geral e veja os prestígios conquistados em tempo real.</section>${gameCard}${rankCard}<section class="ol-panel ol-live"><div class="panel-head"><h3>Prestígios</h3><span>ao vivo</span></div><div id="hub-live-feed">${liveRows}</div></section>${missionsPanel}${eventPanel}`,
     jogos: `${gameCard}<section class="ol-panel"><div class="panel-head"><h3>Futuros jogos</h3></div><div class="future-games"><article>Espaço reservado para o próximo jogo da comunidade.</article><article>Espaço reservado para outro modo ou desafio.</article></div></section>`,
     ranking: `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><h3>Ranking geral</h3></div><div class="hub-rank-row"><b>1</b><span>${escapeHtml(user.name)}</span><strong>${unlockedMedals} medalhas</strong></div></section><section class="ol-panel ol-ranking-hub"><div class="panel-head"><h3>Rankings por jogo</h3></div><div class="game-rank-list"><a href="/?section=ranking&game=pela-graca-1904"><span>Pela Graça 1904</span><strong>Ver ranking</strong></a></div></section>${ielbRanking}`,
     medalhas: `<section class="ol-panel" id="medalhas"><div class="panel-head"><h3>Medalhas</h3></div><div class="medal-grid">${medals.map(([name, ok]) => `<article class="${ok ? '' : 'locked'}"><b>+</b><span>${name}</span></article>`).join('')}</div></section>`,
@@ -422,8 +428,14 @@ async function refreshHubFeed() {
     const response = await fetch('/api/ranking', { cache: 'no-store' });
     if (!response.ok) return;
     const data = await response.json();
-    const rows = (data.byYear || []).slice(0, 4);
-    feed.innerHTML = rows.length ? rows.map(item => '<article><b>' + esc(item.player) + '</b><span>avançou em Pela Graça 1904</span><small>ano ' + esc(item.year) + '</small></article>').join('') : '<article><b>Hub</b><span>As notificações dos jogos aparecerão aqui.</span><small>ao vivo</small></article>';
+    const rows = (data.byYear || []).flatMap(item => {
+      const earned = [];
+      if (Number(item.doctrineCorrect) >= 10) earned.push('Fiel no Estudo');
+      if (Number(item.totalChurches) >= 25) earned.push('Missionário Digital');
+      if (Number(item.year) >= 2026) earned.push('Finalista de 2026');
+      return earned.map(medal => ({ player: item.player, medal }));
+    }).slice(0, 4);
+    feed.innerHTML = rows.length ? rows.map(item => '<article><b>' + esc(item.player).slice(0, 2).toUpperCase() + '</b><span>' + esc(item.player) + ' conquistou a medalha ' + esc(item.medal) + '</span><small>agora</small></article>').join('') : '<article><b>OL</b><span>Os prestígios por medalhas aparecerão aqui.</span><small>ao vivo</small></article>';
   } catch {}
 }
 refreshHubFeed();

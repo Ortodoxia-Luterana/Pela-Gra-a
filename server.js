@@ -12,7 +12,7 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v3.3';
+const GAME_VERSION = 'v3.4';
 const STATE_NAMES = {
   AC: 'Acre', AL: 'Alagoas', AP: 'Amapa', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceara', DF: 'Distrito Federal', ES: 'Espirito Santo', GO: 'Goias',
   MA: 'Maranhao', MT: 'Mato Grosso', MS: 'Mato Grosso do Sul', MG: 'Minas Gerais', PA: 'Para', PB: 'Paraiba', PR: 'Parana', PE: 'Pernambuco',
@@ -397,8 +397,8 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   const rankingRows = (items, score, suffix = '') => items.length ? items.slice(0, 8).map((item, index) => `<div class="hub-rank-row"><b>${index + 1}</b><span>${escapeHtml(item.player)}</span><strong>${escapeHtml(score(item))}${suffix}</strong></div>`).join('') : '<p>Nenhum registro ainda.</p>';
   const prestigeItems = [];
   const liveRows = prestigeItems.length ? prestigeItems.map(item => `<article>${renderAvatar(item, 'feed-avatar')}<span>${escapeHtml(item.player)} conquistou a medalha ${escapeHtml(item.medal)}</span><small>agora</small></article>`).join('') : '<article><b class="feed-avatar">OL</b><span>Nenhum prestígio conquistado ainda. Quando as medalhas reais forem criadas, os ganhos aparecerão aqui.</span></article>';
-  const missionsPanel = `<section class="ol-panel ol-missions"><div class="panel-head"><h3>Missões diárias</h3><a href="/?section=missoes">Ver todas</a></div><article><b>1</b><span>Entrar no hub hoje</span><strong>50 pts</strong></article><article><b>2</b><span>Jogar Pela Graça 1904</span><strong>100 pts</strong></article><article><b>3</b><span>Responder uma pergunta doutrinária</span><strong>150 pts</strong></article><p>Próxima renovação em até 24h.</p></section>`;
-  const eventPanel = `<section class="ol-panel ol-event"><p>Evento em destaque</p><h3>Desafio da Reforma</h3><span>Temporada especial com pontos, medalhas e pacotes para os participantes.</span><button disabled>Em breve</button></section>`;
+  const missionsPanel = `<section class="ol-panel ol-missions"><div class="panel-head"><h3>Missões diárias</h3><a href="/?section=missoes">Ver todas</a></div><article><b>1</b><span>Entrar no hub hoje</span></article><article><b>2</b><span>Jogar Pela Graça 1904</span></article><article><b>3</b><span>Responder uma pergunta doutrinária</span></article><p>As recompensas serão ativadas quando o sistema de XP estiver pronto.</p></section>`;
+  const eventPanel = `<section class="ol-panel ol-event"><p>Evento em destaque</p><h3>Desafio da Reforma</h3><span>Espaço reservado para temporadas especiais da comunidade.</span><button disabled>Em breve</button></section>`;
   const ielbRanking = selectedGame === 'pela-graca-1904' ? `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><div><p>Ranking do jogo</p><h3>Pela Graça 1904</h3></div><a href="/?section=ranking">Voltar</a></div><h4>Mais anos jogados</h4>${rankingRows(ranking.byYear, item => item.year)}<h4>Mais igrejas até 2026</h4>${rankingRows(ranking.byChurches, item => item.totalChurches, ' igrejas')}<h4>Mais acertos doutrinários</h4>${rankingRows(ranking.byDoctrine, item => item.doctrineCorrect, ' acertos')}</section>` : '';
   const nav = [
     ['inicio', 'Início', '/', 'inicio'],
@@ -434,7 +434,6 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   <section class="ol-hub-main">
     <header class="ol-topbar">
       <div><p>Painel de acesso</p><h2>Bem-vindo, ${escapeHtml(user.name)}</h2></div>
-      <div class="ol-stats"><article><span>Pontos</span><b>${points}</b></article><article><span>Medalhas</span><b>${unlockedMedals}</b></article><article><span>Figurinhas</span><b>3/12</b></article></div>
       <a class="top-profile" href="/?section=configuracoes">${renderAvatar(user, 'top-avatar')}<span>${escapeHtml(user.name)}<small>Ver perfil</small></span></a>
       <form method="POST" action="/logout"><button>Sair</button></form>
     </header>

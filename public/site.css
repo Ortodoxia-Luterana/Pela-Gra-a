@@ -283,7 +283,7 @@ body.site-page::before {
   position: fixed;
   inset: 0;
   z-index: -2;
-  background: url("/assets/login-castle-bg.png?v=v2.2") center/cover no-repeat;
+  background: url("/assets/login-castle-bg.png?v=v3.2") center/cover no-repeat;
 }
 
 body.site-page::after {
@@ -504,14 +504,22 @@ body.site-page::after {
 .ol-hub {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 260px 1fr;
+  grid-template-columns: 300px minmax(0, 1fr);
+}
+
+.ol-hub *,
+.ol-hub *::before,
+.ol-hub *::after {
+  box-sizing: border-box;
 }
 
 .ol-sidebar {
+  width: 100%;
   min-height: 100vh;
   border-right: 1px solid rgba(255, 255, 255, .09);
   background: rgba(3, 8, 13, .88);
-  padding: 1.4rem 1.2rem;
+  padding: 1.35rem 1rem;
+  overflow: hidden;
 }
 
 .ol-sidebar img {
@@ -546,22 +554,27 @@ body.site-page::after {
 }
 
 .ol-sidebar nav a {
-  display: flex;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
   align-items: center;
-  gap: .75rem;
+  gap: .9rem;
+  width: 100%;
   border: 1px solid transparent;
   border-radius: 7px;
   color: #a9a6a0;
   text-decoration: none;
-  padding: .85rem 1rem;
+  padding: .78rem .9rem;
+  line-height: 1.1;
+  overflow: hidden;
 }
 
 .nav-icon {
-  width: 1.35rem;
-  height: 1.35rem;
+  width: 34px;
+  height: 34px;
   flex: 0 0 auto;
   object-fit: contain;
-  opacity: .78;
+  opacity: .9;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, .5));
 }
 
 .ol-sidebar nav a.active,
@@ -1103,7 +1116,15 @@ img.feed-avatar {
 
   .ol-sidebar nav a {
     min-width: max-content;
-    padding: .65rem .8rem;
+    grid-template-columns: 26px auto;
+    gap: .45rem;
+    padding: .55rem .7rem;
+    font-size: .72rem;
+  }
+
+  .nav-icon {
+    width: 24px;
+    height: 24px;
   }
 
   .ol-hub-main {

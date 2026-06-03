@@ -654,7 +654,8 @@ body.site-page::after {
   text-decoration: none;
 }
 
-.top-profile b {
+.top-profile b,
+.top-avatar {
   display: grid;
   place-items: center;
   width: 44px;
@@ -663,6 +664,12 @@ body.site-page::after {
   border-radius: 50%;
   color: #f2c75f;
   background: rgba(255, 255, 255, .06);
+}
+
+img.top-avatar,
+img.profile-avatar,
+img.feed-avatar {
+  object-fit: cover;
 }
 
 .top-profile span {
@@ -715,6 +722,7 @@ body.site-page::after {
 }
 
 #hub-live-feed b,
+.feed-avatar,
 .ol-missions b {
   display: grid;
   place-items: center;
@@ -978,10 +986,11 @@ body.site-page::after {
 .profile-box {
   display: flex;
   gap: 1rem;
-  align-items: center;
+  align-items: flex-start;
 }
 
-.profile-box b {
+.profile-box b,
+.profile-avatar {
   display: grid;
   place-items: center;
   width: 74px;
@@ -991,6 +1000,24 @@ body.site-page::after {
   color: #f2c75f;
   background: rgba(255, 255, 255, .06);
   font-size: 1.35rem;
+}
+
+.profile-edit label {
+  display: grid;
+  gap: .35rem;
+  margin-bottom: .75rem;
+  color: #d8d0c4;
+  font-weight: 800;
+}
+
+.profile-edit input[type="text"],
+.profile-edit input[name="name"] {
+  min-height: 2.6rem;
+  border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 7px;
+  color: #eee8db;
+  background: rgba(255, 255, 255, .06);
+  padding: .55rem .7rem;
 }
 
 .profile-box h4 {
@@ -1014,6 +1041,11 @@ body.site-page::after {
   .ol-auth-screen {
     align-content: center;
     gap: 1rem;
+  }
+
+  .ol-hub {
+    display: block;
+    min-height: 0;
   }
 
   .ol-sidebar {
@@ -1072,6 +1104,10 @@ body.site-page::after {
   .ol-sidebar nav a {
     min-width: max-content;
     padding: .65rem .8rem;
+  }
+
+  .ol-hub-main {
+    padding-top: .8rem;
   }
 
   .ol-game-card {

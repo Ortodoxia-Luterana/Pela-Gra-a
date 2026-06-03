@@ -12,7 +12,7 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v2.8';
+const GAME_VERSION = 'v2.9';
 const STATE_NAMES = {
   AC: 'Acre', AL: 'Alagoas', AP: 'Amapa', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceara', DF: 'Distrito Federal', ES: 'Espirito Santo', GO: 'Goias',
   MA: 'Maranhao', MT: 'Mato Grosso', MS: 'Mato Grosso do Sul', MG: 'Minas Gerais', PA: 'Para', PB: 'Paraiba', PR: 'Parana', PE: 'Pernambuco',
@@ -30,10 +30,13 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS saves (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, slot INTEGER NOT NULL CHECK (slot IN (1, 2)), name TEXT NOT NULL, state_json TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE (user_id, slot), FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS rankings (save_id TEXT PRIMARY KEY, user_id TEXT NOT NULL, user_name TEXT NOT NULL, save_name TEXT NOT NULL, year INTEGER NOT NULL, month INTEGER NOT NULL, total_churches INTEGER NOT NULL, total_members REAL NOT NULL, doctrine_correct INTEGER NOT NULL, reached_final INTEGER NOT NULL, state_churches_json TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (save_id) REFERENCES saves(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
 `);
+try { db.exec('ALTER TABLE users ADD COLUMN avatar_data TEXT'); } catch {}
 
 const getUserByName = db.prepare('SELECT * FROM users WHERE name = ? COLLATE NOCASE');
 const getUserById = db.prepare('SELECT * FROM users WHERE id = ?');
 const insertUser = db.prepare('INSERT INTO users (id, name, pin_hash, salt, created_at) VALUES (?, ?, ?, ?, ?)');
+const updateUserProfile = db.prepare('UPDATE users SET name = ?, avatar_data = ? WHERE id = ?');
+const updateRankingUserName = db.prepare('UPDATE rankings SET user_name = ? WHERE user_id = ?');
 const insertSession = db.prepare('INSERT INTO sessions (id, user_id, created_at) VALUES (?, ?, ?)');
 const getSession = db.prepare('SELECT * FROM sessions WHERE id = ?');
 const deleteSession = db.prepare('DELETE FROM sessions WHERE id = ?');
@@ -107,6 +110,13 @@ function escapeHtml(value) {
   return String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
 }
 function safeJsonParse(raw, fallback = null) { try { return raw ? JSON.parse(raw) : fallback; } catch { return fallback; } }
+function isSafeAvatarData(value) {
+  return !value || /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(value);
+}
+function renderAvatar(user, className = 'avatar') {
+  const initials = escapeHtml(user.name).slice(0, 2).toUpperCase();
+  return user.avatar_data ? `<img class="${className}" src="${escapeHtml(user.avatar_data)}" alt="${escapeHtml(user.name)}">` : `<b class="${className}">${initials}</b>`;
+}
 
 function pageShell(title, body, musicMode = '') {
   return `<!DOCTYPE html>
@@ -354,23 +364,17 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   const stats = state ? extractRankingStats(state) : { year: 1904, totalChurches: 1, totalMembers: 20, doctrineCorrect: 0 };
   const points = Math.max(0, stats.totalChurches * 15 + stats.doctrineCorrect * 50);
   const medals = [
-    ['Fiel no Estudo', stats.doctrineCorrect >= 10],
-    ['Missionario Digital', stats.totalChurches >= 25],
-    ['Guardiao Confessional', (state?.doc || 70) >= 85],
-    ['Finalista de 2026', stats.year >= 2026]
+    ['Fiel no Estudo', false],
+    ['Missionário Digital', false],
+    ['Guardião Confessional', false],
+    ['Finalista de 2026', false]
   ];
   const unlockedMedals = medals.filter(([, ok]) => ok).length;
   const stickers = ['Rosa de Lutero','Confissao de Augsburgo','Seminario Concordia','Hora Luterana','Sola Scriptura','Soli Deo Gloria'];
   const ranking = rankingPayload();
   const rankingRows = (items, score, suffix = '') => items.length ? items.slice(0, 8).map((item, index) => `<div class="hub-rank-row"><b>${index + 1}</b><span>${escapeHtml(item.player)}</span><strong>${escapeHtml(score(item))}${suffix}</strong></div>`).join('') : '<p>Nenhum registro ainda.</p>';
-  const prestigeItems = ranking.byYear.flatMap(item => {
-    const earned = [];
-    if (item.doctrineCorrect >= 10) earned.push('Fiel no Estudo');
-    if (item.totalChurches >= 25) earned.push('Missionário Digital');
-    if (item.year >= 2026) earned.push('Finalista de 2026');
-    return earned.map(medal => ({ player: item.player, medal }));
-  }).slice(0, 4);
-  const liveRows = prestigeItems.length ? prestigeItems.map(item => `<article><b>${escapeHtml(item.player).slice(0,2).toUpperCase()}</b><span>${escapeHtml(item.player)} conquistou a medalha ${escapeHtml(item.medal)}</span><small>agora</small></article>`).join('') : '<article><b>OL</b><span>Os prestígios por medalhas aparecerão aqui.</span><small>ao vivo</small></article>';
+  const prestigeItems = [];
+  const liveRows = prestigeItems.length ? prestigeItems.map(item => `<article>${renderAvatar(item, 'feed-avatar')}<span>${escapeHtml(item.player)} conquistou a medalha ${escapeHtml(item.medal)}</span><small>agora</small></article>`).join('') : '<article><b class="feed-avatar">OL</b><span>Nenhum prestígio conquistado ainda. Quando as medalhas reais forem criadas, os ganhos aparecerão aqui.</span><small>ao vivo</small></article>';
   const missionsPanel = `<section class="ol-panel ol-missions"><div class="panel-head"><h3>Missões diárias</h3><a href="/?section=missoes">Ver todas</a></div><article><b>1</b><span>Entrar no hub hoje</span><strong>50 pts</strong></article><article><b>2</b><span>Jogar Pela Graça 1904</span><strong>100 pts</strong></article><article><b>3</b><span>Responder uma pergunta doutrinária</span><strong>150 pts</strong></article><p>Próxima renovação em até 24h.</p></section>`;
   const eventPanel = `<section class="ol-panel ol-event"><p>Evento em destaque</p><h3>Desafio da Reforma</h3><span>Temporada especial com pontos, medalhas e pacotes para os participantes.</span><button disabled>Em breve</button></section>`;
   const ielbRanking = selectedGame === 'pela-graca-1904' ? `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><div><p>Ranking do jogo</p><h3>Pela Graça 1904</h3></div><a href="/?section=ranking">Voltar</a></div><h4>Mais anos jogados</h4>${rankingRows(ranking.byYear, item => item.year)}<h4>Mais igrejas até 2026</h4>${rankingRows(ranking.byChurches, item => item.totalChurches, ' igrejas')}<h4>Mais acertos doutrinários</h4>${rankingRows(ranking.byDoctrine, item => item.doctrineCorrect, ' acertos')}</section>` : '';
@@ -396,7 +400,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     missoes: missionsPanel,
     album: `<section class="ol-panel" id="album"><div class="panel-head"><h3>Álbum</h3><span>3/12 figurinhas</span></div><div class="album-grid">${stickers.map((name, i) => `<article class="${i < 3 ? '' : 'locked'}"><b>${i < 3 ? name.slice(0,2).toUpperCase() : '?'}</b><span>${i < 3 ? name : 'Figurinha bloqueada'}</span></article>`).join('')}</div></section>`,
     loja: `<section class="ol-panel" id="loja"><div class="panel-head"><h3>Loja</h3></div><div class="shop-grid"><article><h4>Pacote Comum</h4><p>100 pontos</p><small>Maior chance de figurinhas comuns.</small><button disabled>Comprar em breve</button></article><article><h4>Pacote Raro</h4><p>250 pontos</p><small>Chance melhor de raras e especiais.</small><button disabled>Comprar em breve</button></article><article><h4>Pacote Lendario</h4><p>600 pontos</p><small>Chance alta de figurinhas raras e lendarias.</small><button disabled>Comprar em breve</button></article></div><div class="daily-wheel"><h4>Roleta diaria</h4><p>A cada 24h, o jogador podera tentar ganhar um pacote comum, raro ou lendario de graca.</p><button disabled>Disponivel em breve</button></div></section>`,
-    configuracoes: `<section class="ol-panel ol-settings" id="configuracoes"><div class="panel-head"><h3>Configurações</h3></div><div class="profile-box"><b>${escapeHtml(user.name).slice(0,2).toUpperCase()}</b><div><h4>${escapeHtml(user.name)}</h4><p>Perfil editável e nome público usado nos rankings.</p><button disabled>Editar perfil em breve</button></div></div><hr><p>Gerencie dados salvos por jogo.</p>${mainSave ? `<form method="POST" action="/saves/${encodeURIComponent(mainSave.id)}/delete" onsubmit="return confirm('Apagar o histórico de Pela Graça 1904?')"><button>Apagar histórico de Pela Graça 1904</button></form>` : '<a href="/play">Criar histórico de Pela Graça 1904</a>'}</section>`
+    configuracoes: `<section class="ol-panel ol-settings" id="configuracoes"><div class="panel-head"><h3>Configurações</h3></div><form method="POST" action="/profile" class="profile-edit"><div class="profile-box">${renderAvatar(user, 'profile-avatar')}<div><label>Nome público<input name="name" maxlength="40" value="${escapeHtml(user.name)}" required></label><label>Foto do perfil<input id="avatar-file" type="file" accept="image/png,image/jpeg,image/webp"></label><input id="avatar-data" type="hidden" name="avatar_data" value="${escapeHtml(user.avatar_data || '')}"><button type="submit">Salvar perfil</button></div></div></form><hr><p>Gerencie dados salvos por jogo.</p>${mainSave ? `<form method="POST" action="/saves/${encodeURIComponent(mainSave.id)}/delete" onsubmit="return confirm('Apagar o histórico de Pela Graça 1904?')"><button>Apagar histórico de Pela Graça 1904</button></form>` : '<a href="/play">Criar histórico de Pela Graça 1904</a>'}</section>`
   };
   return pageShell('Ortodoxia Luterana Gaming', `
 <main class="ol-hub">
@@ -409,7 +413,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     <header class="ol-topbar">
       <div><p>Painel de acesso</p><h2>Bem-vindo, ${escapeHtml(user.name)}</h2></div>
       <div class="ol-stats"><article><span>Pontos</span><b>${points}</b></article><article><span>Medalhas</span><b>${unlockedMedals}</b></article><article><span>Figurinhas</span><b>3/12</b></article></div>
-      <a class="top-profile" href="/?section=configuracoes"><b>${escapeHtml(user.name).slice(0,2).toUpperCase()}</b><span>${escapeHtml(user.name)}<small>Ver perfil</small></span></a>
+      <a class="top-profile" href="/?section=configuracoes">${renderAvatar(user, 'top-avatar')}<span>${escapeHtml(user.name)}<small>Ver perfil</small></span></a>
       <form method="POST" action="/logout"><button>Sair</button></form>
     </header>
     ${error ? `<div class="form-error">${escapeHtml(error)}</div>` : ''}
@@ -427,18 +431,37 @@ async function refreshHubFeed() {
     const response = await fetch('/api/ranking', { cache: 'no-store' });
     if (!response.ok) return;
     const data = await response.json();
-    const rows = (data.byYear || []).flatMap(item => {
-      const earned = [];
-      if (Number(item.doctrineCorrect) >= 10) earned.push('Fiel no Estudo');
-      if (Number(item.totalChurches) >= 25) earned.push('Missionário Digital');
-      if (Number(item.year) >= 2026) earned.push('Finalista de 2026');
-      return earned.map(medal => ({ player: item.player, medal }));
-    }).slice(0, 4);
-    feed.innerHTML = rows.length ? rows.map(item => '<article><b>' + esc(item.player).slice(0, 2).toUpperCase() + '</b><span>' + esc(item.player) + ' conquistou a medalha ' + esc(item.medal) + '</span><small>agora</small></article>').join('') : '<article><b>OL</b><span>Os prestígios por medalhas aparecerão aqui.</span><small>ao vivo</small></article>';
+    const rows = [];
+    feed.innerHTML = rows.length ? rows.map(item => '<article><b class="feed-avatar">' + esc(item.player).slice(0, 2).toUpperCase() + '</b><span>' + esc(item.player) + ' conquistou a medalha ' + esc(item.medal) + '</span><small>agora</small></article>').join('') : '<article><b class="feed-avatar">OL</b><span>Nenhum prestígio conquistado ainda. Quando as medalhas reais forem criadas, os ganhos aparecerão aqui.</span><small>ao vivo</small></article>';
   } catch {}
 }
 refreshHubFeed();
 setInterval(refreshHubFeed, 30000);
+const avatarFile = document.getElementById('avatar-file');
+if (avatarFile) {
+  avatarFile.addEventListener('change', () => {
+    const file = avatarFile.files && avatarFile.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const image = new Image();
+      image.onload = () => {
+        const size = 256;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        const scale = Math.max(size / image.width, size / image.height);
+        const width = image.width * scale;
+        const height = image.height * scale;
+        ctx.drawImage(image, (size - width) / 2, (size - height) / 2, width, height);
+        document.getElementById('avatar-data').value = canvas.toDataURL('image/jpeg', .82);
+      };
+      image.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
 </script>`);
 }
 
@@ -451,6 +474,21 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname.startsWith('/api/')) { await handleApi(req, res, url, user); return; }
     if (!user) { redirect(res, '/login'); return; }
     if (req.method === 'GET' && url.pathname === '/') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end(renderDashboard(user, '', url.searchParams.get('section') || 'inicio', url.searchParams.get('game') || '')); return; }
+    if (req.method === 'POST' && url.pathname === '/profile') {
+      const form = await readForm(req);
+      const name = String(form.get('name') || '').trim();
+      const avatarData = String(form.get('avatar_data') || '').trim();
+      const existing = name ? getUserByName.get(name) : null;
+      if (!name || (existing && existing.id !== user.id) || !isSafeAvatarData(avatarData)) {
+        res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(renderDashboard(user, 'Confira o nome e a foto do perfil.', 'configuracoes'));
+        return;
+      }
+      updateUserProfile.run(name, avatarData || null, user.id);
+      updateRankingUserName.run(name, user.id);
+      redirect(res, '/?section=configuracoes');
+      return;
+    }
     if (req.method === 'GET' && url.pathname === '/play') {
       const requestedSaveId = url.searchParams.get('save');
       const save = requestedSaveId ? getSave.get(requestedSaveId, user.id) : hubSaveForUser(user);

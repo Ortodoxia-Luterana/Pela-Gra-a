@@ -283,7 +283,7 @@ body.site-page::before {
   position: fixed;
   inset: 0;
   z-index: -2;
-  background: url("/assets/login-castle-bg.png?v=v3.2") center/cover no-repeat;
+  background: url("/assets/login-castle-bg.png?v=v3.3") center/cover no-repeat;
 }
 
 body.site-page::after {
@@ -568,13 +568,16 @@ body.site-page::after {
   overflow: hidden;
 }
 
-.nav-icon {
+.ol-sidebar nav .nav-icon {
   width: 34px;
   height: 34px;
   flex: 0 0 auto;
   object-fit: contain;
   opacity: .9;
   filter: drop-shadow(0 2px 5px rgba(0, 0, 0, .5));
+  display: block;
+  margin: 0 auto;
+  border-radius: 0;
 }
 
 .ol-sidebar nav a.active,
@@ -912,18 +915,28 @@ img.feed-avatar {
   text-align: center;
 }
 
-.rank-emblem {
+.rank-badge {
+  display: block;
+  width: min(100%, 330px);
+  margin: .9rem auto .75rem;
+  object-fit: contain;
+  filter: drop-shadow(0 12px 22px rgba(0, 0, 0, .45));
+}
+
+.rank-xp {
   display: grid;
-  place-items: center;
-  width: 120px;
-  height: 120px;
-  margin: 0 auto .8rem;
-  border-radius: 50%;
-  border: 2px solid #c58a20;
-  color: #f2c75f;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 2rem;
-  background: rgba(255, 255, 255, .05);
+  gap: .25rem;
+  margin: .7rem 0 .35rem;
+}
+
+.rank-xp strong {
+  color: #eee8db;
+  font-size: 1rem;
+}
+
+.rank-xp span {
+  color: #a9a6a0;
+  font-size: .9rem;
 }
 
 .rank-bar {
@@ -1122,7 +1135,7 @@ img.feed-avatar {
     font-size: .72rem;
   }
 
-  .nav-icon {
+  .ol-sidebar nav .nav-icon {
     width: 24px;
     height: 24px;
   }

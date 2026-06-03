@@ -12,7 +12,7 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v3.2';
+const GAME_VERSION = 'v3.3';
 const STATE_NAMES = {
   AC: 'Acre', AL: 'Alagoas', AP: 'Amapa', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceara', DF: 'Distrito Federal', ES: 'Espirito Santo', GO: 'Goias',
   MA: 'Maranhao', MT: 'Mato Grosso', MS: 'Mato Grosso do Sul', MG: 'Minas Gerais', PA: 'Para', PB: 'Paraiba', PR: 'Parana', PE: 'Pernambuco',
@@ -20,6 +20,18 @@ const STATE_NAMES = {
   SP: 'Sao Paulo', SE: 'Sergipe', TO: 'Tocantins'
 };
 const STATE_ORDER = Object.keys(STATE_NAMES);
+const TITLE_TRACK = [
+  { level: 1, title: 'Visitante', xp: 0, file: '/assets/title-badges/01-visitante.png' },
+  { level: 2, title: 'Peregrino', xp: 300, file: '/assets/title-badges/02-peregrino.png' },
+  { level: 3, title: 'Companheiro da Fé', xp: 800, file: '/assets/title-badges/03-companheiro-da-fe.png' },
+  { level: 4, title: 'Servo da Palavra', xp: 1800, file: '/assets/title-badges/04-servo-da-palavra.png' },
+  { level: 5, title: 'Guardião da Verdade', xp: 3200, file: '/assets/title-badges/05-guardiao-da-verdade.png' },
+  { level: 6, title: 'Arauto da Graça', xp: 5400, file: '/assets/title-badges/06-arauto-da-graca.png' },
+  { level: 7, title: 'Defensor da Confissão', xp: 8400, file: '/assets/title-badges/07-defensor-da-confissao.png' },
+  { level: 8, title: 'Herdeiro da Reforma', xp: 12000, file: '/assets/title-badges/08-herdeiro-da-reforma.png' },
+  { level: 9, title: 'Cavaleiro da Fé', xp: 16000, file: '/assets/title-badges/09-cavaleiro-da-fe.png' },
+  { level: 10, title: 'Santificado', xp: 20000, file: '/assets/title-badges/10-santificado.png' }
+];
 
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 const db = new DatabaseSync(DB_PATH);
@@ -116,6 +128,15 @@ function isSafeAvatarData(value) {
 function renderAvatar(user, className = 'avatar') {
   const initials = escapeHtml(user.name).slice(0, 2).toUpperCase();
   return user.avatar_data ? `<img class="${className}" src="${escapeHtml(user.avatar_data)}" alt="${escapeHtml(user.name)}">` : `<b class="${className}">${initials}</b>`;
+}
+function titleProgress(xp) {
+  const currentXp = Math.max(0, Math.floor(Number(xp) || 0));
+  const current = [...TITLE_TRACK].reverse().find(rank => currentXp >= rank.xp) || TITLE_TRACK[0];
+  const next = TITLE_TRACK.find(rank => rank.xp > currentXp) || null;
+  const baseXp = current.xp;
+  const nextXp = next ? next.xp : current.xp;
+  const progress = next ? Math.max(0, Math.min(100, ((currentXp - baseXp) / (nextXp - baseXp)) * 100)) : 100;
+  return { currentXp, current, next, progress };
 }
 
 function pageShell(title, body, musicMode = '') {
@@ -363,6 +384,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   const state = safeJsonParse(mainSave?.state_json, null);
   const stats = state ? extractRankingStats(state) : { year: 1904, totalChurches: 1, totalMembers: 20, doctrineCorrect: 0 };
   const points = Math.max(0, stats.totalChurches * 15 + stats.doctrineCorrect * 50);
+  const rank = titleProgress(points);
   const medals = [
     ['Fiel no Estudo', false],
     ['Missionário Digital', false],
@@ -391,7 +413,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   const gameCard = `<section class="ol-panel ol-games">
     <article class="ol-game-card pela-cover"><div><span>Jogável</span><h4>Pela Graça 1904</h4><p>Gerencie igrejas, forme pastores, responda perguntas doutrinárias e acompanhe a história da IELB no Brasil.</p></div><a href="/play">Jogar</a></article>
   </section>`;
-  const rankCard = `<aside class="ol-panel ol-rank"><p>Seu rank geral</p><div class="rank-emblem">IHS</div><h3>Cavaleiro da Fe</h3><div class="rank-bar"><span style="width:${Math.min(100, Math.max(8, points / 10))}%"></span></div><a href="/?section=ranking">Ver ranking geral</a></aside>`;
+  const rankCard = `<aside class="ol-panel ol-rank"><p>Seu rank geral</p><img class="rank-badge" src="${rank.current.file}?v=${GAME_VERSION}" alt="${escapeHtml(rank.current.title)}"><div class="rank-xp"><strong>${rank.currentXp.toLocaleString('pt-BR')} XP</strong><span>${rank.next ? `Faltam ${(rank.next.xp - rank.currentXp).toLocaleString('pt-BR')} XP para ${escapeHtml(rank.next.title)}` : 'Rank máximo alcançado'}</span></div><div class="rank-bar"><span style="width:${rank.progress.toFixed(1)}%"></span></div><a href="/?section=ranking">Ver ranking geral</a></aside>`;
   const sections = {
     inicio: `<section class="ol-intro">Escolha um jogo, acompanhe seu rank geral e veja os prestígios conquistados.</section>${gameCard}${rankCard}<section class="ol-panel ol-live"><div class="panel-head"><h3>Prestígios</h3></div><div id="hub-live-feed">${liveRows}</div></section>${missionsPanel}${eventPanel}`,
     jogos: `${gameCard}<section class="ol-panel"><div class="panel-head"><h3>Futuros jogos</h3></div><div class="future-games"><article>Espaço reservado para o próximo jogo da comunidade.</article><article>Espaço reservado para outro modo ou desafio.</article></div></section>`,

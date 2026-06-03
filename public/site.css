@@ -283,7 +283,7 @@ body.site-page::before {
   position: fixed;
   inset: 0;
   z-index: -2;
-  background: url("/assets/login-castle-bg.png?v=v3.4") center/cover no-repeat;
+  background: url("/assets/login-castle-bg.png?v=v3.5") center/cover no-repeat;
 }
 
 body.site-page::after {
@@ -767,12 +767,13 @@ img.feed-avatar {
 
 .ol-event {
   grid-column: 2 / 3;
+  align-self: start;
 }
 
 .ol-event {
-  min-height: 190px;
+  min-height: 0;
   display: grid;
-  align-content: center;
+  align-content: start;
   background: linear-gradient(90deg, rgba(0, 0, 0, .48), rgba(0, 0, 0, .82)), url("/assets/pela-graca-1904-cover.png") center/cover;
 }
 

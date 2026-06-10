@@ -822,7 +822,7 @@ img.feed-avatar {
   padding: 1.2rem;
   border: 1px solid rgba(205, 148, 46, .38);
   border-radius: 10px;
-  background: linear-gradient(90deg, rgba(0, 0, 0, .25), rgba(0, 0, 0, .78)), url("/assets/hub-dashboard-bg.png") center/cover;
+  background: linear-gradient(90deg, rgba(0, 0, 0, .25), rgba(0, 0, 0, .78)), url("/assets/login-castle-bg.png?v=v3.7") center/cover;
 }
 
 .ol-game-card.pela-cover {
@@ -1231,7 +1231,7 @@ img.feed-avatar {
 .ol-hub{
   background:
     linear-gradient(180deg, rgba(3,7,12,.94), rgba(3,7,12,.99)),
-    url("/assets/hub-dashboard-bg.png") center / cover fixed;
+    url("/assets/login-castle-bg.png?v=v3.7") center / cover fixed;
 }
 
 .ol-auth-screen{

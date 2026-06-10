@@ -12,7 +12,7 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v3.8.6-mobile';
+const GAME_VERSION = 'v3.9.0-achievements';
 const STATE_NAMES = {
   AC: 'Acre', AL: 'Alagoas', AP: 'Amapa', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceara', DF: 'Distrito Federal', ES: 'Espirito Santo', GO: 'Goias',
   MA: 'Maranhao', MT: 'Mato Grosso', MS: 'Mato Grosso do Sul', MG: 'Minas Gerais', PA: 'Para', PB: 'Paraiba', PR: 'Parana', PE: 'Pernambuco',
@@ -31,6 +31,11 @@ const TITLE_TRACK = [
   { level: 8, title: 'Herdeiro da Reforma', xp: 12000, file: '/assets/title-badges/08-herdeiro-da-reforma.png' },
   { level: 9, title: 'Cavaleiro da Fé', xp: 16000, file: '/assets/title-badges/09-cavaleiro-da-fe.png' },
   { level: 10, title: 'Santificado', xp: 20000, file: '/assets/title-badges/10-santificado.png' }
+];
+const ACHIEVEMENTS = [
+  { id: 'primeiros-passos', title: 'Primeiros Passos', description: 'Comecou sua primeira campanha em Pela Graca 1904.', xp: 75, file: '/assets/achievements/primeiros-passos.png', condition: stats => Boolean(stats.started) },
+  { id: 'centesima-igreja', title: 'Centesima Igreja', description: 'Alcancou 100 igrejas IELB na campanha.', xp: 500, file: '/assets/achievements/centesima-igreja.png', condition: stats => stats.totalChurches >= 100 },
+  { id: 'centenario-ielb', title: 'Centenario IELB', description: 'Conduziu a IELB por 100 anos de historia no jogo.', xp: 900, file: '/assets/achievements/centenario-ielb.png', condition: stats => stats.year >= 2004 }
 ];
 
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
@@ -130,6 +135,9 @@ function renderAvatar(user, className = 'avatar') {
   const initials = escapeHtml(user.name).slice(0, 2).toUpperCase();
   return user.avatar_data ? `<img class="${className}" src="${escapeHtml(user.avatar_data)}" alt="${escapeHtml(user.name)}">` : `<b class="${className}">${initials}</b>`;
 }
+function renderAchievementIcon(medal, className = 'achievement-icon') {
+  return `<img class="${className}" src="${medal.file}?v=${GAME_VERSION}" alt="${escapeHtml(medal.title)}">`;
+}
 function titleProgress(xp) {
   const currentXp = Math.max(0, Math.floor(Number(xp) || 0));
   const current = [...TITLE_TRACK].reverse().find(rank => currentXp >= rank.xp) || TITLE_TRACK[0];
@@ -140,17 +148,28 @@ function titleProgress(xp) {
   return { currentXp, current, next, progress };
 }
 
+function savedAchievementMap(state) {
+  const list = Array.isArray(state?.achievements) ? state.achievements : [];
+  return new Map(list.map(item => [item.id, item]));
+}
+function achievementsForState(state, stats) {
+  const saved = savedAchievementMap(state);
+  return ACHIEVEMENTS.map(def => {
+    const stored = saved.get(def.id);
+    const unlocked = Boolean(stored) || Boolean(state && def.condition(stats, state));
+    return { ...def, unlocked, unlockedAt: stored?.unlockedAt || null };
+  });
+}
+function achievementXp(medals) {
+  return medals.filter(medal => medal.unlocked).reduce((sum, medal) => sum + medal.xp, 0);
+}
+
 function playerStatsFromSave(save) {
   const state = safeJsonParse(save?.state_json, null);
   const stats = state ? extractRankingStats(state) : { year: 1904, totalChurches: 1, totalMembers: 20, doctrineCorrect: 0 };
-  const points = Math.max(0, stats.totalChurches * 15 + stats.doctrineCorrect * 50);
+  const medals = achievementsForState(state, stats);
+  const points = Math.max(0, stats.totalChurches * 15 + stats.doctrineCorrect * 50 + achievementXp(medals));
   const rank = titleProgress(points);
-  const medals = [
-    { id: 'fiel-estudo', title: 'Fiel no Estudo', unlocked: stats.doctrineCorrect >= 10 },
-    { id: 'missionario-digital', title: 'Missionario Digital', unlocked: stats.totalChurches >= 10 },
-    { id: 'guardiao-confessional', title: 'Guardiao Confessional', unlocked: state?.doc >= 85 && stats.year >= 2026 },
-    { id: 'finalista-2026', title: 'Finalista de 2026', unlocked: Boolean(stats.reachedFinal) }
-  ];
   const stickersOwned = Math.min(12, 3 + medals.filter(medal => medal.unlocked).length);
   return { state, stats, points, rank, medals, stickersOwned, stickersTotal: 12 };
 }
@@ -195,7 +214,7 @@ function extractRankingStats(state) {
   const explicitDoctrineCorrect = Number(state?.doctrineCorrectCount ?? state?.doctrineStats?.correct);
   const usedQuestions = Array.isArray(state?.usedTheologyQuestions) ? state.usedTheologyQuestions.length : 0;
   const doctrineCorrect = Math.max(0, Math.floor(Number.isFinite(explicitDoctrineCorrect) ? explicitDoctrineCorrect : usedQuestions));
-  return { year, month, totalChurches, totalMembers, doctrineCorrect, reachedFinal: year >= 2026 ? 1 : 0, stateChurches };
+  return { year, month, totalChurches, totalMembers, doctrineCorrect, reachedFinal: year >= 2026 ? 1 : 0, stateChurches, started: Boolean(state?.started) };
 }
 function updateRankingForSave(save, userName, state) {
   if (!state) { deleteRanking.run(save.id); return; }
@@ -218,7 +237,18 @@ function rankingPayload() {
     const best = rows.map(row => ({ row, count: Number(safeJsonParse(row.state_churches_json, {})[code] || 0) })).filter(item => item.count > 0).sort((a, b) => b.count - a.count || b.row.year - a.row.year || b.row.total_churches - a.row.total_churches)[0];
     return best ? { state: code, stateName: STATE_NAMES[code], churches: best.count, ...publicRankingRow(best.row) } : { state: code, stateName: STATE_NAMES[code], churches: 0, player: '-', year: 1904, totalChurches: 0, doctrineCorrect: 0 };
   });
-  return { generatedAt: new Date().toISOString(), byYear, byChurches, byState, byDoctrine };
+  const prestige = getAllSavedStates.all().flatMap(save => {
+    const summary = playerStatsFromSave(save);
+    return summary.medals.filter(medal => medal.unlocked).map(medal => ({
+      player: save.user_name,
+      medal: medal.title,
+      medalId: medal.id,
+      icon: medal.file,
+      xp: medal.xp,
+      unlockedAt: medal.unlockedAt || save.updated_at
+    }));
+  }).sort((a, b) => String(b.unlockedAt || '').localeCompare(String(a.unlockedAt || ''))).slice(0, 12);
+  return { generatedAt: new Date().toISOString(), byYear, byChurches, byState, byDoctrine, prestige };
 }
 function hubSaveForUser(user) {
   const existing = getSaveSlot.get(user.id, 1);
@@ -375,11 +405,14 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   const ranking = rankingPayload();
   const rankingRows = (items, score, suffix = '') => items.length ? items.slice(0, 8).map((item, index) => `<div class="hub-rank-row"><b>${index + 1}</b><span>${escapeHtml(item.player)}</span><strong>${escapeHtml(score(item))}${suffix}</strong></div>`).join('') : '<p>Nenhum registro ainda.</p>';
   const generalRankingRows = getAllUsers.all().map((rankUser, index) => {
-    const userRank = titleProgress(0).current;
-    return `<div class="hub-rank-row hub-rank-player"><b>${index + 1}</b><span>${escapeHtml(rankUser.name)}<img class="mini-rank-badge" src="${userRank.file}?v=${GAME_VERSION}" alt="${escapeHtml(userRank.title)}"></span><strong>0 medalhas</strong></div>`;
+    const userSave = getSaveSlot.get(rankUser.id, 1);
+    const userSummary = playerStatsFromSave(userSave);
+    const userRank = userSummary.rank.current;
+    const userMedals = userSummary.medals.filter(medal => medal.unlocked).length;
+    return `<div class="hub-rank-row hub-rank-player"><b>${index + 1}</b><span>${escapeHtml(rankUser.name)}<img class="mini-rank-badge" src="${userRank.file}?v=${GAME_VERSION}" alt="${escapeHtml(userRank.title)}"></span><strong>${userMedals} medalhas</strong></div>`;
   }).join('');
-  const prestigeItems = [];
-  const liveRows = prestigeItems.length ? prestigeItems.map(item => `<article>${renderAvatar(item, 'feed-avatar')}<span>${escapeHtml(item.player)} conquistou a medalha ${escapeHtml(item.medal)}</span><small>agora</small></article>`).join('') : '<article><b class="feed-avatar">OL</b><span>Nenhum prestígio conquistado ainda. Quando as medalhas reais forem criadas, os ganhos aparecerão aqui.</span></article>';
+  const prestigeItems = ranking.prestige.slice(0, 6);
+  const liveRows = prestigeItems.length ? prestigeItems.map(item => `<article><img class="feed-avatar achievement-feed-icon" src="${escapeHtml(item.icon)}?v=${GAME_VERSION}" alt="${escapeHtml(item.medal)}"><span>${escapeHtml(item.player)} conquistou ${escapeHtml(item.medal)}</span><small>+${item.xp} XP</small></article>`).join('') : '<article><b class="feed-avatar">OL</b><span>Nenhum prestigio conquistado ainda. As novas medalhas vao aparecer aqui.</span></article>';
   const missionsPanel = `<section class="ol-panel ol-missions"><div class="panel-head"><h3>Missões diárias</h3><a href="/?section=missoes">Ver todas</a></div><article><b>1</b><span>Entrar no hub hoje</span></article><article><b>2</b><span>Jogar Pela Graça 1904</span></article><article><b>3</b><span>Responder uma pergunta doutrinária</span></article><p>As recompensas serão ativadas quando o sistema de XP estiver pronto.</p></section>`;
   const eventPanel = `<section class="ol-panel ol-event"><p>Evento em destaque</p><h3>Desafio da Reforma</h3><span>Espaço reservado para temporadas especiais da comunidade.</span><button disabled>Em breve</button></section>`;
   const ielbRanking = selectedGame === 'pela-graca-1904' ? `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><div><p>Ranking do jogo</p><h3>Pela Graça 1904</h3></div><a href="/?section=ranking">Voltar</a></div><h4>Mais anos jogados</h4>${rankingRows(ranking.byYear, item => item.year)}<h4>Mais igrejas até 2026</h4>${rankingRows(ranking.byChurches, item => item.totalChurches, ' igrejas')}</section>` : '';
@@ -396,12 +429,12 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   const gameCard = `<section class="ol-panel ol-games">
     <article class="ol-game-card pela-cover"><div><span>Jogável</span><h4>Pela Graça 1904</h4><p>Gerencie igrejas, forme pastores, responda perguntas doutrinárias e acompanhe a história da IELB no Brasil.</p></div><a href="/play">Jogar</a></article>
   </section>`;
-  const rankCard = `<aside class="ol-panel ol-rank"><p>Seu rank geral</p><img class="rank-badge" src="${rank.current.file}?v=${GAME_VERSION}" alt="${escapeHtml(rank.current.title)}"><div class="rank-xp"><span>Sistema de XP em preparação</span></div><a href="/?section=ranking">Ver ranking geral</a></aside>`;
+  const rankCard = `<aside class="ol-panel ol-rank"><p>Seu rank geral</p><img class="rank-badge" src="${rank.current.file}?v=${GAME_VERSION}" alt="${escapeHtml(rank.current.title)}"><div class="rank-xp"><strong>${points} XP</strong><span>${rank.next ? `${Math.max(0, rank.next.xp - rank.currentXp)} XP para ${escapeHtml(rank.next.title)}` : 'Rank maximo alcancado'}</span><div class="rank-bar"><span style="width:${Math.round(rank.progress)}%"></span></div></div><a href="/?section=ranking">Ver ranking geral</a></aside>`;
   const sections = {
     inicio: `<section class="ol-intro">Escolha um jogo, acompanhe seu rank geral e veja os prestígios conquistados.</section>${gameCard}${rankCard}<section class="ol-panel ol-live"><div class="panel-head"><h3>Prestígios</h3></div><div id="hub-live-feed">${liveRows}</div></section>${eventPanel}${missionsPanel}`,
     jogos: `${gameCard}<section class="ol-panel"><div class="panel-head"><h3>Futuros jogos</h3></div><div class="future-games"><article>Espaço reservado para o próximo jogo da comunidade.</article><article>Espaço reservado para outro modo ou desafio.</article></div></section>`,
     ranking: `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><h3>Ranking geral</h3></div>${generalRankingRows || '<p>Nenhum jogador cadastrado ainda.</p>'}</section><section class="ol-panel ol-ranking-hub"><div class="panel-head"><h3>Rankings por jogo</h3></div><div class="game-rank-list"><a href="/?section=ranking&game=pela-graca-1904"><span>Pela Graça 1904</span><strong>Ver ranking</strong></a></div></section>${ielbRanking}`,
-    medalhas: `<section class="ol-panel" id="medalhas"><div class="panel-head"><h3>Medalhas</h3></div><div class="medal-grid">${medals.map(medal => `<article class="${medal.unlocked ? '' : 'locked'}"><b>+</b><span>${medal.title}</span></article>`).join('')}</div></section>`,
+    medalhas: `<section class="ol-panel" id="medalhas"><div class="panel-head"><h3>Medalhas</h3><span>${unlockedMedals}/${medals.length}</span></div><div class="medal-grid">${medals.map(medal => `<article class="${medal.unlocked ? '' : 'locked'}">${renderAchievementIcon(medal)}<span>${escapeHtml(medal.title)}</span><p>${escapeHtml(medal.description)}</p><small>+${medal.xp} XP</small></article>`).join('')}</div></section>`,
     missoes: missionsPanel,
     album: `<section class="ol-panel" id="album"><div class="panel-head"><h3>Álbum</h3><span>3/12 figurinhas</span></div><div class="album-grid">${stickers.map((name, i) => `<article class="${i < 3 ? '' : 'locked'}"><b>${i < 3 ? name.slice(0,2).toUpperCase() : '?'}</b><span>${i < 3 ? name : 'Figurinha bloqueada'}</span></article>`).join('')}</div></section>`,
     loja: `<section class="ol-panel" id="loja"><div class="panel-head"><h3>Loja</h3></div><div class="shop-grid"><article><h4>Pacote Comum</h4><p>100 pontos</p><small>Maior chance de figurinhas comuns.</small><button disabled>Comprar em breve</button></article><article><h4>Pacote Raro</h4><p>250 pontos</p><small>Chance melhor de raras e especiais.</small><button disabled>Comprar em breve</button></article><article><h4>Pacote Lendario</h4><p>600 pontos</p><small>Chance alta de figurinhas raras e lendarias.</small><button disabled>Comprar em breve</button></article></div><div class="daily-wheel"><h4>Roleta diaria</h4><p>A cada 24h, o jogador podera tentar ganhar um pacote comum, raro ou lendario de graca.</p><button disabled>Disponivel em breve</button></div></section>`,
@@ -436,8 +469,8 @@ async function refreshHubFeed() {
     const response = await fetch('/api/ranking', { cache: 'no-store' });
     if (!response.ok) return;
     const data = await response.json();
-    const rows = [];
-    feed.innerHTML = rows.length ? rows.map(item => '<article><b class="feed-avatar">' + esc(item.player).slice(0, 2).toUpperCase() + '</b><span>' + esc(item.player) + ' conquistou a medalha ' + esc(item.medal) + '</span><small>agora</small></article>').join('') : '<article><b class="feed-avatar">OL</b><span>Nenhum prestígio conquistado ainda. Quando as medalhas reais forem criadas, os ganhos aparecerão aqui.</span></article>';
+    const rows = (data.prestige || []).slice(0, 6);
+    feed.innerHTML = rows.length ? rows.map(item => '<article><img class="feed-avatar achievement-feed-icon" src="' + esc(item.icon) + '?v=${GAME_VERSION}" alt="' + esc(item.medal) + '"><span>' + esc(item.player) + ' conquistou ' + esc(item.medal) + '</span><small>+' + esc(item.xp) + ' XP</small></article>').join('') : '<article><b class="feed-avatar">OL</b><span>Nenhum prestigio conquistado ainda. As novas medalhas vao aparecer aqui.</span></article>';
   } catch {}
 }
 refreshHubFeed();

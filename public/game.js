@@ -225,7 +225,48 @@ const TICKERS=[
   'A influência agora nasce de igrejas, membros, níveis e história.'
 ];
 
-const G={year:1904,month:0,paused:true,started:false,gameOver:false,monthlyExpense:0,speed:1,fe:20,of:5,fi:12,doc:70,doctrineCorrectCount:0,doctrineWrongCount:0,rateMult:1,rateFe:0.35,rateOf:0.08,rateFi:0.01,sel:'BR',lastEv:new Set(),tickIdx:0,lastRivalTurn:'',states:{},foundedDenoms:new Set(),seminaryOpen:false,seminaryMode:'strong',seminary:[],pastors:[],availablePastors:[],nextPastorId:1,annualDecisions:[],eventQueue:[],usedTheologyQuestions:[],offerBrokeMonths:0,mods:{doctrineGrowth:1,missionGrowth:1,youthRetention:1,persecutionPressure:1,pastoralFormation:1}};
+const G={year:1904,month:0,paused:true,started:false,gameOver:false,monthlyExpense:0,speed:1,fe:20,of:5,fi:12,doc:70,doctrineCorrectCount:0,doctrineWrongCount:0,rateMult:1,rateFe:0.35,rateOf:0.08,rateFi:0.01,sel:'BR',lastEv:new Set(),tickIdx:0,lastRivalTurn:'',states:{},foundedDenoms:new Set(),seminaryOpen:false,seminaryMode:'strong',seminary:[],pastors:[],availablePastors:[],nextPastorId:1,annualDecisions:[],eventQueue:[],usedTheologyQuestions:[],achievements:[],offerBrokeMonths:0,mods:{doctrineGrowth:1,missionGrowth:1,youthRetention:1,persecutionPressure:1,pastoralFormation:1}};
+
+const ACHIEVEMENTS=[
+  {id:'primeiros-passos',title:'Primeiros Passos',xp:75,icon:'/assets/achievements/primeiros-passos.png',desc:'Voce iniciou sua primeira campanha em Pela Graca 1904.'},
+  {id:'centesima-igreja',title:'Centesima Igreja',xp:500,icon:'/assets/achievements/centesima-igreja.png',desc:'A IELB chegou a 100 igrejas na campanha.'},
+  {id:'centenario-ielb',title:'Centenario IELB',xp:900,icon:'/assets/achievements/centenario-ielb.png',desc:'Voce conduziu a IELB por 100 anos de historia.'}
+];
+
+function achievementUnlocked(id){
+  return Array.isArray(G.achievements)&&G.achievements.some(a=>a.id===id);
+}
+function unlockAchievement(id){
+  if(!Array.isArray(G.achievements))G.achievements=[];
+  if(achievementUnlocked(id))return false;
+  const def=ACHIEVEMENTS.find(a=>a.id===id);
+  if(!def)return false;
+  const item={id:def.id,title:def.title,xp:def.xp,unlockedAt:new Date().toISOString()};
+  G.achievements.push(item);
+  showAchievementToast(def);
+  setTick('Conquista desbloqueada: '+def.title+' (+'+def.xp+' XP).');
+  if(window.CultivandoPersistence)window.CultivandoPersistence.save(G);
+  return true;
+}
+function checkAchievements(){
+  if(!G.started)return;
+  unlockAchievement('primeiros-passos');
+  if(totalChurches('IELB')>=100)unlockAchievement('centesima-igreja');
+  if(G.year>=2004)unlockAchievement('centenario-ielb');
+}
+function showAchievementToast(def){
+  let wrap=document.getElementById('achievement-toast');
+  if(!wrap){
+    wrap=document.createElement('div');
+    wrap.id='achievement-toast';
+    wrap.setAttribute('role','status');
+    document.body.appendChild(wrap);
+  }
+  wrap.innerHTML='<img src="'+def.icon+'" alt=""><div><strong>Conquista desbloqueada</strong><span>'+def.title+'</span><small>+'+def.xp+' XP</small></div>';
+  wrap.classList.add('show');
+  clearTimeout(showAchievementToast.timer);
+  showAchievementToast.timer=setTimeout(()=>wrap.classList.remove('show'),5200);
+}
 
 function createDenomSlot(){return {churches:[],members:0,influence:0,cooldown:0,historicalPresence:0};}
 function initGame(){
@@ -270,6 +311,7 @@ function addChurch(stateId, denom, members=8, level=1, foundedYear=G.year){
   const church={denom,members,level,foundedYear,foundingChurch:slot.churches.length===0,pastorId:null,secondPastorId:null,struggleMonths:0,struggling:false,subsidized:false,solventMonths:0,overloadSince:null,offerRate:0.5+Math.random()*0.4,city,type,organicBias:(Math.random()-0.5)*0.025,organicPulse:(Math.random()-0.5)*0.03};
   slot.churches.push(church);
   syncDenomMembers(stateId,denom);
+  if(denom==='IELB')checkAchievements();
   return church;
 }
 
@@ -1318,6 +1360,7 @@ function startGame(){
   G.started=true;G.paused=false;
   document.getElementById('start-screen').style.display='none';
   document.getElementById('pausebtn').textContent='⏸ Pausar';
+  checkAchievements();
   recalc();updateRes();renderLeft();renderRight();
 }
 function endCampaign(win,msg){
@@ -1945,7 +1988,7 @@ function loop(now){
       const key=G.year+'-'+(G.month+1), ev=EVENTS.find(e=>e.year===G.year&&e.month===G.month+1);
       if(ev&&!G.lastEv.has(key)){G.lastEv.add(key);showEvent(ev);}
       const rk=G.year+'-'+G.month;if(G.lastRivalTurn!==rk){G.lastRivalTurn=rk;rivalStrategicTurn();}
-      recalc();applyMonthlySustainability();checkCampaignGoal();buildLegend();rd=true;
+      recalc();applyMonthlySustainability();checkCampaignGoal();buildLegend();checkAchievements();rd=true;
     }
     if(rd){redrawDots();renderLeft();renderRight();}
     tickMs+=dt;if(tickMs>=10){tickMs=0;G.tickIdx=(G.tickIdx+1)%TICKERS.length;setTick(TICKERS[G.tickIdx]);}
@@ -1957,6 +2000,8 @@ function loop(now){
 async function startClientGame(){
   initGame();
   if(window.CultivandoPersistence) await window.CultivandoPersistence.loadInto(G);
+  if(!Array.isArray(G.achievements))G.achievements=[];
+  checkAchievements();
   installModalConfirmGuard();
   bindMap();recalc();updateRes();buildLegend();redrawDots();selectBrazilOverview();setMobilePanel('info');
   if(window.CultivandoPersistence) window.CultivandoPersistence.start(G);

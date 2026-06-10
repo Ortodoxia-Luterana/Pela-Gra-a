@@ -985,6 +985,42 @@ img.feed-avatar {
   padding: 1rem;
 }
 
+.medal-grid article {
+  display: grid;
+  align-content: start;
+  gap: .45rem;
+}
+
+.achievement-icon {
+  width: 82px;
+  height: 82px;
+  object-fit: contain;
+  margin-bottom: .15rem;
+  filter: drop-shadow(0 10px 16px rgba(0, 0, 0, .42));
+}
+
+.medal-grid article span {
+  color: #f2c75f;
+  font-weight: 800;
+}
+
+.medal-grid article p {
+  margin: 0;
+  color: #cfc7b8;
+  font-size: .84rem;
+  line-height: 1.35;
+}
+
+.medal-grid article small {
+  color: #7bd88f;
+  font-weight: 800;
+}
+
+.achievement-feed-icon {
+  object-fit: cover;
+  background: rgba(255, 255, 255, .08);
+}
+
 .shop-grid h4,
 .daily-wheel h4 {
   margin: 0 0 .4rem;

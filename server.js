@@ -12,7 +12,7 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v3.9.1-rank-fix';
+const GAME_VERSION = 'v3.9.2-xp-reset';
 const STATE_NAMES = {
   AC: 'Acre', AL: 'Alagoas', AP: 'Amapa', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceara', DF: 'Distrito Federal', ES: 'Espirito Santo', GO: 'Goias',
   MA: 'Maranhao', MT: 'Mato Grosso', MS: 'Mato Grosso do Sul', MG: 'Minas Gerais', PA: 'Para', PB: 'Paraiba', PR: 'Parana', PE: 'Pernambuco',
@@ -168,10 +168,10 @@ function playerStatsFromSave(save) {
   const state = safeJsonParse(save?.state_json, null);
   const stats = state ? extractRankingStats(state) : { year: 1904, totalChurches: 0, totalMembers: 0, doctrineCorrect: 0, hasSave: false, started: false };
   const medals = achievementsForState(state, stats);
-  const points = Math.max(0, stats.totalChurches * 15 + stats.doctrineCorrect * 50 + achievementXp(medals));
+  const points = achievementXp(medals);
   const rank = titleProgress(points);
-  const stickersOwned = Math.min(12, 3 + medals.filter(medal => medal.unlocked).length);
-  return { state, stats, points, rank, medals, stickersOwned, stickersTotal: 12 };
+  const stickersOwned = 0;
+  return { state, stats, points, rank, medals, stickersOwned, stickersTotal: 0 };
 }
 
 function pageShell(title, body, musicMode = '') {
@@ -401,7 +401,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   const rank = player.rank;
   const medals = player.medals;
   const unlockedMedals = medals.filter(medal => medal.unlocked).length;
-  const stickers = ['Rosa de Lutero','Confissao de Augsburgo','Seminario Concordia','Hora Luterana','Sola Scriptura','Soli Deo Gloria'];
+  const stickers = [];
   const ranking = rankingPayload();
   const rankingRows = (items, score, suffix = '') => items.length ? items.slice(0, 8).map((item, index) => `<div class="hub-rank-row"><b>${index + 1}</b><span>${escapeHtml(item.player)}</span><strong>${escapeHtml(score(item))}${suffix}</strong></div>`).join('') : '<p>Nenhum registro ainda.</p>';
   const generalRankingRows = getAllUsers.all().map(rankUser => {
@@ -441,7 +441,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     ranking: `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><h3>Ranking geral</h3></div>${generalRankingRows || '<p>Nenhum jogador cadastrado ainda.</p>'}</section><section class="ol-panel ol-ranking-hub"><div class="panel-head"><h3>Rankings por jogo</h3></div><div class="game-rank-list"><a href="/?section=ranking&game=pela-graca-1904"><span>Pela Graça 1904</span><strong>Ver ranking</strong></a></div></section>${ielbRanking}`,
     medalhas: `<section class="ol-panel" id="medalhas"><div class="panel-head"><h3>Medalhas</h3><span>${unlockedMedals}/${medals.length}</span></div><div class="medal-grid">${medals.map(medal => `<article class="${medal.unlocked ? '' : 'locked'}">${renderAchievementIcon(medal)}<span>${escapeHtml(medal.title)}</span><p>${escapeHtml(medal.description)}</p><small>+${medal.xp} XP</small></article>`).join('')}</div></section>`,
     missoes: missionsPanel,
-    album: `<section class="ol-panel" id="album"><div class="panel-head"><h3>Álbum</h3><span>3/12 figurinhas</span></div><div class="album-grid">${stickers.map((name, i) => `<article class="${i < 3 ? '' : 'locked'}"><b>${i < 3 ? name.slice(0,2).toUpperCase() : '?'}</b><span>${i < 3 ? name : 'Figurinha bloqueada'}</span></article>`).join('')}</div></section>`,
+    album: `<section class="ol-panel" id="album"><div class="panel-head"><h3>Álbum</h3><span>0/0 figurinhas</span></div><p>Nenhuma figurinha foi criada ainda.</p></section>`,
     loja: `<section class="ol-panel" id="loja"><div class="panel-head"><h3>Loja</h3></div><div class="shop-grid"><article><h4>Pacote Comum</h4><p>100 pontos</p><small>Maior chance de figurinhas comuns.</small><button disabled>Comprar em breve</button></article><article><h4>Pacote Raro</h4><p>250 pontos</p><small>Chance melhor de raras e especiais.</small><button disabled>Comprar em breve</button></article><article><h4>Pacote Lendario</h4><p>600 pontos</p><small>Chance alta de figurinhas raras e lendarias.</small><button disabled>Comprar em breve</button></article></div><div class="daily-wheel"><h4>Roleta diaria</h4><p>A cada 24h, o jogador podera tentar ganhar um pacote comum, raro ou lendario de graca.</p><button disabled>Disponivel em breve</button></div></section>`,
     configuracoes: `<section class="ol-panel ol-settings" id="configuracoes"><div class="panel-head"><h3>Configurações</h3></div><form method="POST" action="/profile" class="profile-edit"><div class="profile-box">${renderAvatar(user, 'profile-avatar')}<div><label>Nome público<input name="name" maxlength="40" value="${escapeHtml(user.name)}" required></label><label>Foto do perfil<input id="avatar-file" type="file" accept="image/png,image/jpeg,image/webp"></label><input id="avatar-data" type="hidden" name="avatar_data" value="${escapeHtml(user.avatar_data || '')}"><button type="submit">Salvar perfil</button></div></div></form><hr><p>Gerencie dados salvos por jogo.</p>${mainSave ? `<form method="POST" action="/saves/${encodeURIComponent(mainSave.id)}/delete" onsubmit="return confirm('Apagar o histórico de Pela Graça 1904?')"><button>Apagar histórico de Pela Graça 1904</button></form>` : '<a href="/play">Criar histórico de Pela Graça 1904</a>'}</section>`
   };
@@ -455,7 +455,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   <section class="ol-hub-main">
     <header class="ol-topbar">
       <div><p>Painel de acesso</p><h2>Bem-vindo, ${escapeHtml(user.name)}</h2></div>
-      <div class="ol-stats"><article><span>Pontos</span><b>${points}</b></article><article><span>Medalhas</span><b>${unlockedMedals}</b></article><article><span>Figurinhas</span><b>3/12</b></article></div>
+      <div class="ol-stats"><article><span>Pontos</span><b>${points}</b></article><article><span>Medalhas</span><b>${unlockedMedals}</b></article><article><span>Figurinhas</span><b>0/0</b></article></div>
       <a class="top-profile" href="/?section=configuracoes">${renderAvatar(user, 'top-avatar')}<span>${escapeHtml(user.name)}<small>Ver perfil</small></span></a>
       <form method="POST" action="/logout"><button>Sair</button></form>
     </header>

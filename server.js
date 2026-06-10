@@ -12,7 +12,7 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v3.9.3-game-ranking';
+const GAME_VERSION = 'v3.10.0-points-system';
 const STATE_NAMES = {
   AC: 'Acre', AL: 'Alagoas', AP: 'Amapa', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceara', DF: 'Distrito Federal', ES: 'Espirito Santo', GO: 'Goias',
   MA: 'Maranhao', MT: 'Mato Grosso', MS: 'Mato Grosso do Sul', MG: 'Minas Gerais', PA: 'Para', PB: 'Paraiba', PR: 'Parana', PE: 'Pernambuco',
@@ -21,21 +21,21 @@ const STATE_NAMES = {
 };
 const STATE_ORDER = Object.keys(STATE_NAMES);
 const TITLE_TRACK = [
-  { level: 1, title: 'Visitante', xp: 0, file: '/assets/title-badges/01-visitante.png' },
-  { level: 2, title: 'Peregrino', xp: 300, file: '/assets/title-badges/02-peregrino.png' },
-  { level: 3, title: 'Companheiro da Fé', xp: 800, file: '/assets/title-badges/03-companheiro-da-fe.png' },
-  { level: 4, title: 'Servo da Palavra', xp: 1800, file: '/assets/title-badges/04-servo-da-palavra.png' },
-  { level: 5, title: 'Guardião da Verdade', xp: 3200, file: '/assets/title-badges/05-guardiao-da-verdade.png' },
-  { level: 6, title: 'Arauto da Graça', xp: 5400, file: '/assets/title-badges/06-arauto-da-graca.png' },
-  { level: 7, title: 'Defensor da Confissão', xp: 8400, file: '/assets/title-badges/07-defensor-da-confissao.png' },
-  { level: 8, title: 'Herdeiro da Reforma', xp: 12000, file: '/assets/title-badges/08-herdeiro-da-reforma.png' },
-  { level: 9, title: 'Cavaleiro da Fé', xp: 16000, file: '/assets/title-badges/09-cavaleiro-da-fe.png' },
-  { level: 10, title: 'Santificado', xp: 20000, file: '/assets/title-badges/10-santificado.png' }
+  { level: 1, title: 'Visitante', xp: 0, pointReward: 0, file: '/assets/title-badges/01-visitante.png' },
+  { level: 2, title: 'Peregrino', xp: 300, pointReward: 50, file: '/assets/title-badges/02-peregrino.png' },
+  { level: 3, title: 'Companheiro da Fé', xp: 800, pointReward: 100, file: '/assets/title-badges/03-companheiro-da-fe.png' },
+  { level: 4, title: 'Servo da Palavra', xp: 1800, pointReward: 175, file: '/assets/title-badges/04-servo-da-palavra.png' },
+  { level: 5, title: 'Guardião da Verdade', xp: 3200, pointReward: 250, file: '/assets/title-badges/05-guardiao-da-verdade.png' },
+  { level: 6, title: 'Arauto da Graça', xp: 5400, pointReward: 350, file: '/assets/title-badges/06-arauto-da-graca.png' },
+  { level: 7, title: 'Defensor da Confissão', xp: 8400, pointReward: 475, file: '/assets/title-badges/07-defensor-da-confissao.png' },
+  { level: 8, title: 'Herdeiro da Reforma', xp: 12000, pointReward: 625, file: '/assets/title-badges/08-herdeiro-da-reforma.png' },
+  { level: 9, title: 'Cavaleiro da Fé', xp: 16000, pointReward: 800, file: '/assets/title-badges/09-cavaleiro-da-fe.png' },
+  { level: 10, title: 'Santificado', xp: 20000, pointReward: 1000, file: '/assets/title-badges/10-santificado.png' }
 ];
 const ACHIEVEMENTS = [
-  { id: 'primeiros-passos', title: 'Primeiros Passos', description: 'Comecou sua primeira campanha em Pela Graca 1904.', xp: 75, file: '/assets/achievements/primeiros-passos.png', condition: stats => Boolean(stats.started || stats.hasSave) },
-  { id: 'centesima-igreja', title: 'Centesima Igreja', description: 'Alcancou 100 igrejas IELB na campanha.', xp: 500, file: '/assets/achievements/centesima-igreja.png', condition: stats => stats.totalChurches >= 100 },
-  { id: 'centenario-ielb', title: 'Centenario IELB', description: 'Conduziu a IELB por 100 anos de historia no jogo.', xp: 900, file: '/assets/achievements/centenario-ielb.png', condition: stats => stats.year >= 2004 }
+  { id: 'primeiros-passos', title: 'Primeiros Passos', description: 'Comecou sua primeira campanha em Pela Graca 1904.', xp: 75, points: 25, file: '/assets/achievements/primeiros-passos.png', condition: stats => Boolean(stats.started || stats.hasSave) },
+  { id: 'centesima-igreja', title: 'Centesima Igreja', description: 'Alcancou 100 igrejas IELB na campanha.', xp: 500, points: 150, file: '/assets/achievements/centesima-igreja.png', condition: stats => stats.totalChurches >= 100 },
+  { id: 'centenario-ielb', title: 'Centenario IELB', description: 'Conduziu a IELB por 100 anos de historia no jogo.', xp: 900, points: 300, file: '/assets/achievements/centenario-ielb.png', condition: stats => stats.year >= 2004 }
 ];
 
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
@@ -163,15 +163,22 @@ function achievementsForState(state, stats) {
 function achievementXp(medals) {
   return medals.filter(medal => medal.unlocked).reduce((sum, medal) => sum + medal.xp, 0);
 }
+function achievementPoints(medals) {
+  return medals.filter(medal => medal.unlocked).reduce((sum, medal) => sum + medal.points, 0);
+}
+function rankPointBonus(rank) {
+  return TITLE_TRACK.filter(title => title.level > 1 && title.level <= rank.current.level).reduce((sum, title) => sum + title.pointReward, 0);
+}
 
 function playerStatsFromSave(save) {
   const state = safeJsonParse(save?.state_json, null);
   const stats = state ? extractRankingStats(state) : { year: 1904, totalChurches: 0, totalMembers: 0, doctrineCorrect: 0, hasSave: false, started: false };
   const medals = achievementsForState(state, stats);
-  const points = achievementXp(medals);
-  const rank = titleProgress(points);
+  const xp = achievementXp(medals);
+  const rank = titleProgress(xp);
+  const points = achievementPoints(medals) + rankPointBonus(rank);
   const stickersOwned = 0;
-  return { state, stats, points, rank, medals, stickersOwned, stickersTotal: 0 };
+  return { state, stats, xp, points, rank, medals, stickersOwned, stickersTotal: 0 };
 }
 
 function pageShell(title, body, musicMode = '') {
@@ -245,6 +252,7 @@ function rankingPayload() {
       medalId: medal.id,
       icon: medal.file,
       xp: medal.xp,
+      points: medal.points,
       unlockedAt: medal.unlockedAt || save.updated_at
     }));
   }).sort((a, b) => String(b.unlockedAt || '').localeCompare(String(a.unlockedAt || ''))).slice(0, 12);
@@ -321,6 +329,7 @@ async function handleApi(req, res, url, user) {
     const summary = playerStatsFromSave(mainSave);
     json(res, 200, {
       user: { id: user.id, name: user.name, hasAvatar: Boolean(user.avatar_data) },
+      xp: summary.xp,
       points: summary.points,
       rank: summary.rank.current.title,
       nextRank: summary.rank.next?.title || null,
@@ -392,11 +401,12 @@ function renderAuth(mode, error = '') {
 }
 
 function renderDashboard(user, error = '', section = 'inicio', selectedGame = '') {
-  const activeSection = ['inicio', 'jogos', 'ranking', 'medalhas', 'missoes', 'album', 'loja', 'configuracoes'].includes(section) ? section : 'inicio';
+  const activeSection = ['inicio', 'jogos', 'ranking', 'medalhas', 'album', 'loja', 'configuracoes'].includes(section) ? section : 'inicio';
   const saves = new Map(getSavesByUser.all(user.id).map(save => [save.slot, save]));
   const mainSave = saves.get(1);
   const player = playerStatsFromSave(mainSave);
   const stats = player.stats;
+  const xp = player.xp;
   const points = player.points;
   const rank = player.rank;
   const medals = player.medals;
@@ -412,13 +422,12 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
       summary: userSummary,
       medals: userSummary.medals.filter(medal => medal.unlocked).length
     };
-  }).sort((a, b) => b.medals - a.medals || b.summary.points - a.summary.points || a.user.name.localeCompare(b.user.name)).map((item, index) => {
+  }).sort((a, b) => b.medals - a.medals || b.summary.points - a.summary.points || b.summary.xp - a.summary.xp || a.user.name.localeCompare(b.user.name)).map((item, index) => {
     const userRank = item.summary.rank.current;
-    return `<div class="hub-rank-row hub-rank-player"><b>${index + 1}</b><span>${escapeHtml(item.user.name)}<img class="mini-rank-badge" src="${userRank.file}?v=${GAME_VERSION}" alt="${escapeHtml(userRank.title)}"></span><strong>${item.medals} medalhas · ${item.summary.points} XP</strong></div>`;
+    return `<div class="hub-rank-row hub-rank-player"><b>${index + 1}</b><span>${escapeHtml(item.user.name)}<img class="mini-rank-badge" src="${userRank.file}?v=${GAME_VERSION}" alt="${escapeHtml(userRank.title)}"></span><strong>${item.medals} medalhas · ${item.summary.points} pontos · ${item.summary.xp} XP</strong></div>`;
   }).join('');
   const prestigeItems = ranking.prestige.slice(0, 6);
-  const liveRows = prestigeItems.length ? prestigeItems.map(item => `<article><img class="feed-avatar achievement-feed-icon" src="${escapeHtml(item.icon)}?v=${GAME_VERSION}" alt="${escapeHtml(item.medal)}"><span>${escapeHtml(item.player)} conquistou ${escapeHtml(item.medal)}</span><small>+${item.xp} XP</small></article>`).join('') : '<article><b class="feed-avatar">OL</b><span>Nenhum prestigio conquistado ainda. As novas medalhas vao aparecer aqui.</span></article>';
-  const missionsPanel = `<section class="ol-panel ol-missions"><div class="panel-head"><h3>Missões diárias</h3><a href="/?section=missoes">Ver todas</a></div><article><b>1</b><span>Entrar no hub hoje</span></article><article><b>2</b><span>Jogar Pela Graça 1904</span></article><article><b>3</b><span>Responder uma pergunta doutrinária</span></article><p>As recompensas serão ativadas quando o sistema de XP estiver pronto.</p></section>`;
+  const liveRows = prestigeItems.length ? prestigeItems.map(item => `<article><img class="feed-avatar achievement-feed-icon" src="${escapeHtml(item.icon)}?v=${GAME_VERSION}" alt="${escapeHtml(item.medal)}"><span>${escapeHtml(item.player)} conquistou ${escapeHtml(item.medal)}</span><small>+${item.xp} XP · +${item.points} pontos</small></article>`).join('') : '<article><b class="feed-avatar">OL</b><span>Nenhum prestigio conquistado ainda. As novas medalhas vao aparecer aqui.</span></article>';
   const eventPanel = `<section class="ol-panel ol-event"><p>Evento em destaque</p><h3>Desafio da Reforma</h3><span>Espaço reservado para temporadas especiais da comunidade.</span><button disabled>Em breve</button></section>`;
   const gameRankingList = `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><h3>Rankings por jogo</h3></div><div class="game-rank-list"><a href="/?section=ranking&game=pela-graca-1904"><span>Pela Graça 1904</span><strong>Ver ranking</strong></a></div></section>`;
   const generalRanking = `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><h3>Ranking geral</h3></div>${generalRankingRows || '<p>Nenhum jogador cadastrado ainda.</p>'}</section>${gameRankingList}`;
@@ -429,7 +438,6 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     ['jogos', 'Jogos', '/?section=jogos', 'jogos'],
     ['ranking', 'Ranking', '/?section=ranking', 'ranking'],
     ['medalhas', 'Medalhas', '/?section=medalhas', 'medalhas'],
-    ['missoes', 'Missões', '/?section=missoes', 'missoes'],
     ['album', 'Álbum', '/?section=album', 'album'],
     ['loja', 'Loja', '/?section=loja', 'loja'],
     ['configuracoes', 'Configurações', '/?section=configuracoes', 'configuracoes']
@@ -437,13 +445,12 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   const gameCard = `<section class="ol-panel ol-games">
     <article class="ol-game-card pela-cover"><div><span>Jogável</span><h4>Pela Graça 1904</h4><p>Gerencie igrejas, forme pastores, responda perguntas doutrinárias e acompanhe a história da IELB no Brasil.</p></div><a href="/play">Jogar</a></article>
   </section>`;
-  const rankCard = `<aside class="ol-panel ol-rank"><p>Seu rank geral</p><img class="rank-badge" src="${rank.current.file}?v=${GAME_VERSION}" alt="${escapeHtml(rank.current.title)}"><div class="rank-xp"><strong>${points} XP</strong><span>${rank.next ? `${Math.max(0, rank.next.xp - rank.currentXp)} XP para ${escapeHtml(rank.next.title)}` : 'Rank maximo alcancado'}</span><div class="rank-bar"><span style="width:${Math.round(rank.progress)}%"></span></div></div><a href="/?section=ranking">Ver ranking geral</a></aside>`;
+  const rankCard = `<aside class="ol-panel ol-rank"><p>Seu rank geral</p><img class="rank-badge" src="${rank.current.file}?v=${GAME_VERSION}" alt="${escapeHtml(rank.current.title)}"><div class="rank-xp"><strong>${xp} XP</strong><span>${rank.next ? `${Math.max(0, rank.next.xp - rank.currentXp)} XP para ${escapeHtml(rank.next.title)}` : 'Rank maximo alcancado'}</span><div class="rank-bar"><span style="width:${Math.round(rank.progress)}%"></span></div></div><a href="/?section=ranking">Ver ranking geral</a></aside>`;
   const sections = {
-    inicio: `<section class="ol-intro">Escolha um jogo, acompanhe seu rank geral e veja os prestígios conquistados.</section>${gameCard}${rankCard}<section class="ol-panel ol-live"><div class="panel-head"><h3>Prestígios</h3></div><div id="hub-live-feed">${liveRows}</div></section>${eventPanel}${missionsPanel}`,
+    inicio: `<section class="ol-intro">Escolha um jogo, acompanhe seu rank geral e veja os prestígios conquistados.</section>${gameCard}${rankCard}<section class="ol-panel ol-live"><div class="panel-head"><h3>Prestígios</h3></div><div id="hub-live-feed">${liveRows}</div></section>${eventPanel}`,
     jogos: `${gameCard}<section class="ol-panel"><div class="panel-head"><h3>Futuros jogos</h3></div><div class="future-games"><article>Espaço reservado para o próximo jogo da comunidade.</article><article>Espaço reservado para outro modo ou desafio.</article></div></section>`,
     ranking: rankingSection,
-    medalhas: `<section class="ol-panel" id="medalhas"><div class="panel-head"><h3>Medalhas</h3><span>${unlockedMedals}/${medals.length}</span></div><div class="medal-grid">${medals.map(medal => `<article class="${medal.unlocked ? '' : 'locked'}">${renderAchievementIcon(medal)}<span>${escapeHtml(medal.title)}</span><p>${escapeHtml(medal.description)}</p><small>+${medal.xp} XP</small></article>`).join('')}</div></section>`,
-    missoes: missionsPanel,
+    medalhas: `<section class="ol-panel" id="medalhas"><div class="panel-head"><h3>Medalhas</h3><span>${unlockedMedals}/${medals.length}</span></div><div class="medal-grid">${medals.map(medal => `<article class="${medal.unlocked ? '' : 'locked'}">${renderAchievementIcon(medal)}<span>${escapeHtml(medal.title)}</span><p>${escapeHtml(medal.description)}</p><small>+${medal.xp} XP · +${medal.points} pontos</small></article>`).join('')}</div></section>`,
     album: `<section class="ol-panel" id="album"><div class="panel-head"><h3>Álbum</h3><span>0/0 figurinhas</span></div><p>Nenhuma figurinha foi criada ainda.</p></section>`,
     loja: `<section class="ol-panel" id="loja"><div class="panel-head"><h3>Loja</h3></div><div class="shop-grid"><article><h4>Pacote Comum</h4><p>100 pontos</p><small>Maior chance de figurinhas comuns.</small><button disabled>Comprar em breve</button></article><article><h4>Pacote Raro</h4><p>250 pontos</p><small>Chance melhor de raras e especiais.</small><button disabled>Comprar em breve</button></article><article><h4>Pacote Lendario</h4><p>600 pontos</p><small>Chance alta de figurinhas raras e lendarias.</small><button disabled>Comprar em breve</button></article></div><div class="daily-wheel"><h4>Roleta diaria</h4><p>A cada 24h, o jogador podera tentar ganhar um pacote comum, raro ou lendario de graca.</p><button disabled>Disponivel em breve</button></div></section>`,
     configuracoes: `<section class="ol-panel ol-settings" id="configuracoes"><div class="panel-head"><h3>Configurações</h3></div><form method="POST" action="/profile" class="profile-edit"><div class="profile-box">${renderAvatar(user, 'profile-avatar')}<div><label>Nome público<input name="name" maxlength="40" value="${escapeHtml(user.name)}" required></label><label>Foto do perfil<input id="avatar-file" type="file" accept="image/png,image/jpeg,image/webp"></label><input id="avatar-data" type="hidden" name="avatar_data" value="${escapeHtml(user.avatar_data || '')}"><button type="submit">Salvar perfil</button></div></div></form><hr><p>Gerencie dados salvos por jogo.</p>${mainSave ? `<form method="POST" action="/saves/${encodeURIComponent(mainSave.id)}/delete" onsubmit="return confirm('Apagar o histórico de Pela Graça 1904?')"><button>Apagar histórico de Pela Graça 1904</button></form>` : '<a href="/play">Criar histórico de Pela Graça 1904</a>'}</section>`
@@ -458,7 +465,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   <section class="ol-hub-main">
     <header class="ol-topbar">
       <div><p>Painel de acesso</p><h2>Bem-vindo, ${escapeHtml(user.name)}</h2></div>
-      <div class="ol-stats"><article><span>Pontos</span><b>${points}</b></article><article><span>Medalhas</span><b>${unlockedMedals}</b></article><article><span>Figurinhas</span><b>0/0</b></article></div>
+      <div class="ol-stats"><article><span>Pontos</span><b>${points}</b></article><article><span>XP</span><b>${xp}</b></article><article><span>Medalhas</span><b>${unlockedMedals}</b></article></div>
       <a class="top-profile" href="/?section=configuracoes">${renderAvatar(user, 'top-avatar')}<span>${escapeHtml(user.name)}<small>Ver perfil</small></span></a>
       <form method="POST" action="/logout"><button>Sair</button></form>
     </header>
@@ -478,7 +485,7 @@ async function refreshHubFeed() {
     if (!response.ok) return;
     const data = await response.json();
     const rows = (data.prestige || []).slice(0, 6);
-    feed.innerHTML = rows.length ? rows.map(item => '<article><img class="feed-avatar achievement-feed-icon" src="' + esc(item.icon) + '?v=${GAME_VERSION}" alt="' + esc(item.medal) + '"><span>' + esc(item.player) + ' conquistou ' + esc(item.medal) + '</span><small>+' + esc(item.xp) + ' XP</small></article>').join('') : '<article><b class="feed-avatar">OL</b><span>Nenhum prestigio conquistado ainda. As novas medalhas vao aparecer aqui.</span></article>';
+    feed.innerHTML = rows.length ? rows.map(item => '<article><img class="feed-avatar achievement-feed-icon" src="' + esc(item.icon) + '?v=${GAME_VERSION}" alt="' + esc(item.medal) + '"><span>' + esc(item.player) + ' conquistou ' + esc(item.medal) + '</span><small>+' + esc(item.xp) + ' XP · +' + esc(item.points || 0) + ' pontos</small></article>').join('') : '<article><b class="feed-avatar">OL</b><span>Nenhum prestigio conquistado ainda. As novas medalhas vao aparecer aqui.</span></article>';
   } catch {}
 }
 refreshHubFeed();

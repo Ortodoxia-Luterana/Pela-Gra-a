@@ -228,9 +228,9 @@ const TICKERS=[
 const G={year:1904,month:0,paused:true,started:false,gameOver:false,monthlyExpense:0,speed:1,fe:20,of:5,fi:12,doc:70,doctrineCorrectCount:0,doctrineWrongCount:0,rateMult:1,rateFe:0.35,rateOf:0.08,rateFi:0.01,sel:'BR',lastEv:new Set(),tickIdx:0,lastRivalTurn:'',states:{},foundedDenoms:new Set(),seminaryOpen:false,seminaryMode:'strong',seminary:[],pastors:[],availablePastors:[],nextPastorId:1,annualDecisions:[],eventQueue:[],usedTheologyQuestions:[],achievements:[],offerBrokeMonths:0,mods:{doctrineGrowth:1,missionGrowth:1,youthRetention:1,persecutionPressure:1,pastoralFormation:1}};
 
 const ACHIEVEMENTS=[
-  {id:'primeiros-passos',title:'Primeiros Passos',xp:75,icon:'/assets/achievements/primeiros-passos.png',desc:'Voce iniciou sua primeira campanha em Pela Graca 1904.'},
-  {id:'centesima-igreja',title:'Centesima Igreja',xp:500,icon:'/assets/achievements/centesima-igreja.png',desc:'A IELB chegou a 100 igrejas na campanha.'},
-  {id:'centenario-ielb',title:'Centenario IELB',xp:900,icon:'/assets/achievements/centenario-ielb.png',desc:'Voce conduziu a IELB por 100 anos de historia.'}
+  {id:'primeiros-passos',title:'Primeiros Passos',xp:75,points:25,icon:'/assets/achievements/primeiros-passos.png',desc:'Voce iniciou sua primeira campanha em Pela Graca 1904.'},
+  {id:'centesima-igreja',title:'Centesima Igreja',xp:500,points:150,icon:'/assets/achievements/centesima-igreja.png',desc:'A IELB chegou a 100 igrejas na campanha.'},
+  {id:'centenario-ielb',title:'Centenario IELB',xp:900,points:300,icon:'/assets/achievements/centenario-ielb.png',desc:'Voce conduziu a IELB por 100 anos de historia.'}
 ];
 
 function achievementUnlocked(id){
@@ -241,10 +241,10 @@ function unlockAchievement(id){
   if(achievementUnlocked(id))return false;
   const def=ACHIEVEMENTS.find(a=>a.id===id);
   if(!def)return false;
-  const item={id:def.id,title:def.title,xp:def.xp,unlockedAt:new Date().toISOString()};
+  const item={id:def.id,title:def.title,xp:def.xp,points:def.points,unlockedAt:new Date().toISOString()};
   G.achievements.push(item);
   showAchievementToast(def);
-  setTick('Conquista desbloqueada: '+def.title+' (+'+def.xp+' XP).');
+  setTick('Conquista desbloqueada: '+def.title+' (+'+def.xp+' XP, +'+def.points+' pontos).');
   if(window.CultivandoPersistence)window.CultivandoPersistence.save(G);
   return true;
 }
@@ -262,7 +262,7 @@ function showAchievementToast(def){
     wrap.setAttribute('role','status');
     document.body.appendChild(wrap);
   }
-  wrap.innerHTML='<img src="'+def.icon+'" alt=""><div><strong>Conquista desbloqueada</strong><span>'+def.title+'</span><small>+'+def.xp+' XP</small></div>';
+  wrap.innerHTML='<img src="'+def.icon+'" alt=""><div><strong>Conquista desbloqueada</strong><span>'+def.title+'</span><small>+'+def.xp+' XP · +'+def.points+' pontos</small></div>';
   wrap.classList.add('show');
   clearTimeout(showAchievementToast.timer);
   showAchievementToast.timer=setTimeout(()=>wrap.classList.remove('show'),5200);

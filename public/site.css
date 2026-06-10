@@ -1214,3 +1214,331 @@ img.feed-avatar {
   }
 }
 
+/* v3.8 mobile-first hub polish */
+:root{
+  --ol-ink:#eee8db;
+  --ol-muted:#b8b0a3;
+  --ol-bg:#06090d;
+  --ol-panel:rgba(11,16,22,.94);
+  --ol-panel-strong:rgba(15,22,29,.98);
+  --ol-line:rgba(212,171,91,.32);
+  --ol-gold:#d8a642;
+  --ol-blue:#70a7ff;
+  --ol-green:#7bd88f;
+  --ol-red:#ff8a80;
+}
+
+.ol-hub,
+.ol-auth-screen{
+  background:
+    linear-gradient(180deg, rgba(3,7,12,.94), rgba(3,7,12,.99)),
+    url("/assets/hub-dashboard-bg.png") center / cover fixed;
+}
+
+.ol-panel,
+.ol-auth-card,
+.slot-card,
+.auth-card{
+  border-color:var(--ol-line);
+}
+
+.ol-panel{
+  background:var(--ol-panel);
+}
+
+.ol-game-card{
+  min-height:210px;
+}
+
+.ol-game-card a,
+.ol-panel a,
+.ol-topbar button,
+.profile-edit button,
+.shop-grid button,
+.daily-wheel button{
+  min-height:44px;
+}
+
+.ol-stats article b,
+.ol-rank p,
+.panel-head h3,
+.ol-game-card h4{
+  overflow-wrap:anywhere;
+}
+
+.ol-sidebar nav a:focus-visible,
+.ol-game-card a:focus-visible,
+.ol-topbar button:focus-visible,
+.top-profile:focus-visible,
+.profile-edit button:focus-visible{
+  outline:3px solid rgba(112,167,255,.35);
+  outline-offset:2px;
+}
+
+#music-toggle{
+  width:46px!important;
+  height:46px!important;
+  right:max(10px, env(safe-area-inset-right))!important;
+  bottom:max(10px, env(safe-area-inset-bottom))!important;
+  padding:0!important;
+  border-radius:999px!important;
+  font-size:0!important;
+}
+
+#music-toggle::before{
+  content:"♪";
+  font-size:20px;
+  line-height:1;
+}
+
+@media (max-width: 1080px){
+  .ol-hub{
+    background-attachment:scroll;
+  }
+
+  .ol-sidebar{
+    backdrop-filter:blur(14px);
+    background:rgba(3,8,13,.92);
+    border-bottom:1px solid var(--ol-line);
+  }
+
+  .ol-sidebar nav{
+    scrollbar-width:none;
+  }
+
+  .ol-sidebar nav::-webkit-scrollbar{
+    display:none;
+  }
+
+  .ol-sidebar nav a{
+    min-height:52px;
+    border-radius:10px;
+    background:rgba(255,255,255,.03);
+  }
+
+  .ol-topbar{
+    gap:.75rem;
+  }
+
+  .ol-topbar > div:first-child{
+    order:1;
+  }
+
+  .ol-stats{
+    order:3;
+  }
+
+  .top-profile{
+    order:2;
+  }
+
+  .ol-topbar form{
+    order:4;
+  }
+}
+
+@media (max-width: 720px){
+  .site-page{
+    background:#06090d;
+  }
+
+  .ol-auth-screen{
+    min-height:100svh;
+    padding:max(14px, env(safe-area-inset-top)) 14px max(18px, env(safe-area-inset-bottom));
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+  }
+
+  .ol-auth-brand{
+    margin-bottom:.5rem;
+  }
+
+  .ol-seal{
+    width:4.5rem;
+  }
+
+  .ol-title span{
+    font-size:1.35rem;
+  }
+
+  .ol-title strong{
+    font-size:.78rem;
+  }
+
+  .ol-auth-card{
+    width:100%;
+    border-radius:12px;
+    background:rgba(7,13,20,.96);
+  }
+
+  .ol-auth-tabs a,
+  .auth-form button,
+  .auth-link{
+    min-height:48px;
+  }
+
+  .ol-sidebar{
+    position:sticky;
+    top:0;
+    padding:.55rem .65rem .65rem;
+  }
+
+  .ol-sidebar img{
+    display:none;
+  }
+
+  .ol-sidebar h1{
+    text-align:left;
+    margin:0 0 .5rem;
+    padding-left:.2rem;
+  }
+
+  .ol-sidebar nav{
+    display:flex;
+    gap:.45rem;
+    overflow-x:auto;
+    padding:.1rem .05rem .15rem;
+  }
+
+  .ol-sidebar nav a{
+    min-width:88px;
+    min-height:54px;
+    padding:.5rem .55rem;
+    justify-items:center;
+    text-align:center;
+    font-size:.68rem;
+    border-radius:10px;
+  }
+
+  .ol-sidebar nav .nav-icon{
+    width:23px;
+    height:23px;
+  }
+
+  .ol-hub-main{
+    padding:.85rem .75rem max(1.2rem, env(safe-area-inset-bottom));
+  }
+
+  .ol-topbar{
+    display:grid;
+    grid-template-columns:1fr;
+    align-items:stretch;
+    margin-bottom:.8rem;
+  }
+
+  .ol-topbar h2{
+    font-size:1.25rem;
+    line-height:1.2;
+  }
+
+  .ol-topbar p{
+    font-size:.72rem;
+  }
+
+  .ol-stats{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    border-radius:12px;
+    overflow:hidden;
+  }
+
+  .ol-stats article{
+    min-width:0;
+    padding:.72rem .55rem;
+  }
+
+  .ol-stats article span{
+    font-size:.64rem;
+  }
+
+  .ol-stats article b{
+    font-size:1rem;
+  }
+
+  .top-profile{
+    width:100%;
+    min-height:58px;
+    border-radius:12px;
+  }
+
+  .ol-hub-grid{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:.75rem;
+  }
+
+  .ol-intro{
+    font-size:.95rem;
+    line-height:1.5;
+    border-radius:12px;
+    padding:.9rem 1rem;
+  }
+
+  .ol-panel{
+    border-radius:12px;
+    padding:.9rem;
+    margin-bottom:.75rem;
+  }
+
+  .panel-head{
+    display:flex;
+    gap:.75rem;
+    align-items:flex-start;
+    justify-content:space-between;
+  }
+
+  .panel-head h3{
+    font-size:1.05rem;
+  }
+
+  .ol-game-card{
+    min-height:250px;
+    border-radius:12px;
+    padding:1rem;
+    background-position:center;
+  }
+
+  .ol-game-card h4{
+    font-size:1.45rem;
+    line-height:1.1;
+  }
+
+  .ol-game-card p{
+    font-size:.95rem;
+    line-height:1.45;
+  }
+
+  .ol-game-card a{
+    width:100%;
+    border-radius:10px;
+  }
+
+  .rank-badge{
+    width:112px;
+    max-width:38vw;
+  }
+
+  #hub-live-feed article,
+  .ol-missions article,
+  .hub-rank-row,
+  .game-rank-list a{
+    border-radius:10px;
+  }
+
+  .medal-grid,
+  .album-grid,
+  .shop-grid,
+  .future-games{
+    grid-template-columns:1fr;
+  }
+
+  .profile-box{
+    grid-template-columns:1fr;
+  }
+
+  .profile-avatar{
+    width:96px;
+    height:96px;
+  }
+}
+

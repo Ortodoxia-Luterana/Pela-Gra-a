@@ -117,7 +117,7 @@
 
   function replaceExact(source, from, to) {
     if (!source.includes(from)) {
-      console.warn('Patch textual ignorado: trecho esperado nao encontrado em game.js');
+      window.__pelaGracaSkippedTextPatches = (window.__pelaGracaSkippedTextPatches || 0) + 1;
       return source;
     }
     return source.replace(from, to);
@@ -347,7 +347,7 @@ function churchInternalBalance(stateId,index){
     xhr.send(null);
     if (xhr.status < 200 || xhr.status >= 300) throw new Error('Falha ao carregar game.js');
     const patched = patchGameSource(xhr.responseText).replace(/<\/script/gi, '<\\/script');
-    document.write('<script>' + patched + '<\/script><!--');
+    document.write('<script>' + patched + '<\/script>');
   }
 
   window.CultivandoPersistence = { loadInto, start, save };

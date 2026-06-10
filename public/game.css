@@ -213,3 +213,317 @@ body{font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;background:
   #map-leg{transform:scale(.92);transform-origin:bottom left;}
 }
 
+/* v3.8 mobile-first polish */
+:root{
+  --ink:#1c170e;
+  --paper:#fbf8ef;
+  --panel:#fffdf7;
+  --rail:#e7ddc8;
+  --line:#b99a60;
+  --gold:#8a5a00;
+  --blue:#145aa7;
+  --green:#206b3d;
+  --red:#9f2f2f;
+}
+
+body{
+  background:var(--paper);
+  color:var(--ink);
+}
+
+#campaign-bar{
+  min-height:34px;
+  height:auto;
+  gap:8px;
+  overflow:hidden;
+}
+
+#campaign-bar strong,
+#campaign-bar span{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+#campaign-bar .bar-link{
+  min-height:28px;
+  display:inline-flex;
+  align-items:center;
+  padding:0 10px;
+  border:1px solid rgba(20,90,167,.25);
+  border-radius:999px;
+  background:#eef5ff;
+}
+
+#save-status{
+  flex:0 0 auto;
+  font-weight:800;
+}
+
+.tbtn,
+.sbtn,
+.mcbtn,
+.mtab,
+.quick-btn{
+  min-height:44px;
+}
+
+#top{
+  gap:0;
+}
+
+#brand{
+  display:flex;
+  align-items:center;
+}
+
+#datebox,
+.res,
+#doc-wrap,
+#top-btns{
+  min-height:48px;
+}
+
+#center{
+  background:#9fc1dd;
+}
+
+#left,
+#right,
+#left-hdr,
+#right-hdr,
+#ticker,
+#mobile-tabs,
+#quick-actions{
+  background:var(--paper);
+}
+
+#left-body,
+#right-body{
+  background:var(--panel);
+}
+
+.sbtn{
+  border-radius:8px;
+  background:#fffdfa;
+}
+
+.sbtn.miss{
+  border-color:rgba(20,90,167,.55);
+  background:#f2f7ff;
+}
+
+.sbtn.act,
+.quick-btn{
+  border-color:rgba(32,107,61,.5);
+  background:#f2fbf5;
+}
+
+.sbtn:focus-visible,
+.tbtn:focus-visible,
+.mcbtn:focus-visible,
+.quick-btn:focus-visible,
+.mtab:focus-visible{
+  outline:3px solid rgba(20,90,167,.35);
+  outline-offset:2px;
+}
+
+@media (max-width: 820px){
+  body{
+    display:block;
+    min-height:100svh;
+    overflow:auto;
+  }
+
+  #campaign-bar{
+    position:sticky;
+    top:0;
+    z-index:160;
+    padding:5px max(8px, env(safe-area-inset-left)) 5px max(8px, env(safe-area-inset-right));
+    background:#fffaf0;
+    box-shadow:0 2px 10px rgba(0,0,0,.08);
+  }
+
+  #campaign-bar strong{
+    flex:1 1 90px;
+  }
+
+  #campaign-bar > span:not(#save-status){
+    display:none;
+  }
+
+  #save-status{
+    max-width:92px;
+    font-size:11px;
+  }
+
+  #top{
+    top:34px;
+    padding:0;
+    border-bottom:1px solid var(--line);
+  }
+
+  #brand{
+    justify-content:center;
+    min-height:34px;
+    padding:5px 8px;
+    font-size:12px;
+  }
+
+  #datebox{
+    min-width:46%;
+    justify-content:center;
+    border-right:1px solid var(--line);
+  }
+
+  .res{
+    min-width:33.33%;
+    justify-content:center;
+  }
+
+  .res-lbl,
+  #doc-lbl{
+    font-size:8px;
+  }
+
+  #doc-wrap{
+    min-width:46%;
+    justify-content:center;
+  }
+
+  #top-btns{
+    min-width:54%;
+    justify-content:flex-end;
+    padding-right:6px;
+  }
+
+  .tbtn{
+    min-width:44px;
+    padding:7px 9px;
+  }
+
+  #pausebtn{
+    min-width:78px;
+  }
+
+  #main{
+    display:flex;
+    flex-direction:column;
+    min-height:auto;
+    overflow:visible;
+  }
+
+  #center{
+    order:1;
+    height:46svh;
+    min-height:320px;
+    max-height:520px;
+    border-bottom:1px solid var(--line);
+    box-shadow:inset 0 -18px 36px rgba(0,0,0,.08);
+  }
+
+  #yeardisp{
+    top:10px;
+    left:10px;
+    font-size:15px;
+    border-radius:999px;
+  }
+
+  #mobile-tabs{
+    top:calc(34px + 110px);
+    border-top:1px solid var(--line);
+  }
+
+  #quick-actions{
+    order:3;
+    top:calc(34px + 154px);
+    box-shadow:0 2px 8px rgba(0,0,0,.05);
+  }
+
+  .quick-btn{
+    border-radius:10px;
+    color:var(--green);
+  }
+
+  #left{
+    order:4;
+  }
+
+  #right{
+    order:5;
+  }
+
+  #left-hdr,
+  #right-hdr{
+    position:sticky;
+    top:calc(34px + 154px);
+    z-index:70;
+  }
+
+  #left-body,
+  #right-body{
+    padding:14px 14px 84px;
+  }
+
+  .sbtn{
+    min-height:64px;
+    padding:15px 16px;
+    font-size:16px;
+  }
+
+  .sbtn .sn{
+    margin-top:5px;
+  }
+
+  .srow{
+    gap:10px;
+  }
+
+  #ticker{
+    bottom:0;
+    padding-bottom:max(8px, env(safe-area-inset-bottom));
+  }
+
+  #map-leg{
+    right:8px;
+    left:auto;
+    bottom:8px;
+    max-width:min(45vw,170px);
+  }
+
+  #mbox{
+    border-radius:10px;
+  }
+}
+
+@media (max-width: 430px){
+  #campaign-bar{
+    gap:5px;
+  }
+
+  #campaign-bar .bar-link{
+    padding:0 8px;
+    font-size:11px;
+  }
+
+  #top{
+    top:34px;
+  }
+
+  #center{
+    height:43svh;
+    min-height:300px;
+  }
+
+  #doc-track{
+    width:62px;
+  }
+
+  .tbtn{
+    font-size:12px;
+    min-width:38px;
+    padding-inline:6px;
+  }
+}
+

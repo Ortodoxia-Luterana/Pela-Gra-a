@@ -1,4 +1,4 @@
-﻿Pela Graca - versao servidor com login
+Pela Graca - servidor com login, hub e layout mobile-first
 
 Suba estes arquivos/pastas no servidor:
 - server.js
@@ -7,15 +7,24 @@ Suba estes arquivos/pastas no servidor:
 - public/
 - data/
 
-Para rodar:
+Para rodar localmente:
 1. Instale Node.js recente com suporte a node:sqlite.
 2. No terminal, dentro desta pasta, rode:
    npm start
 3. Abra:
    http://localhost:3000
 
+Checklist depois do deploy:
+1. Abra /register e crie um usuario de teste.
+2. Entre no hub e confirme que nao existe rolagem horizontal no celular.
+3. Toque em Jogar no card Pela Graca 1904.
+4. Inicie a campanha e confirme que o mapa aparece.
+5. Use Culto ou Catecismo e confirme que aparece "Salvo no SQLite".
+
 Observacoes:
 - O jogo com login usa public/game.js, public/game-body.html, public/game.css, public/persistence.js e public/site.css.
 - O banco fica em data/cultivando.sqlite.
 - Se o arquivo cultivando.sqlite nao for enviado por causa do .gitignore, mantenha a pasta data/ no servidor; o server.js cria as tabelas sozinho.
-- Nao precisa subir arquivos server.out.log, server.err.log ou server.detached.log.
+- Nao suba arquivos server.out.log, server.err.log ou server.detached.log.
+- A versao atual prioriza celular. Teste primeiro em largura aproximada de 390px e depois em desktop.
+- Se o host estiver ligado ao GitHub, basta publicar/puxar o commit mais recente no branch main.

@@ -851,3 +851,21 @@ body{
   }
 }
 
+/* v3.10.3: the game HUD should scroll away on mobile instead of covering the map. */
+@media (max-width: 820px){
+  #top{
+    position:relative!important;
+    top:auto!important;
+    z-index:20!important;
+  }
+
+  #mobile-tabs{
+    top:0!important;
+  }
+
+  #left-hdr,
+  #right-hdr{
+    top:44px!important;
+  }
+}
+

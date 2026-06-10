@@ -12,7 +12,8 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v3.10.3-unpin-game-hud';
+const GAME_VERSION = 'v3.11.0-permanent-progress';
+const GAME_ID = 'pela-graca-1904';
 const STATE_NAMES = {
   AC: 'Acre', AL: 'Alagoas', AP: 'Amapa', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceara', DF: 'Distrito Federal', ES: 'Espirito Santo', GO: 'Goias',
   MA: 'Maranhao', MT: 'Mato Grosso', MS: 'Mato Grosso do Sul', MG: 'Minas Gerais', PA: 'Para', PB: 'Paraiba', PR: 'Parana', PE: 'Pernambuco',
@@ -46,6 +47,8 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, created_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS saves (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, slot INTEGER NOT NULL CHECK (slot IN (1, 2)), name TEXT NOT NULL, state_json TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE (user_id, slot), FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS rankings (save_id TEXT PRIMARY KEY, user_id TEXT NOT NULL, user_name TEXT NOT NULL, save_name TEXT NOT NULL, year INTEGER NOT NULL, month INTEGER NOT NULL, total_churches INTEGER NOT NULL, total_members REAL NOT NULL, doctrine_correct INTEGER NOT NULL, reached_final INTEGER NOT NULL, state_churches_json TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (save_id) REFERENCES saves(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
+  CREATE TABLE IF NOT EXISTS user_achievements (user_id TEXT NOT NULL, game_id TEXT NOT NULL, medal_id TEXT NOT NULL, unlocked_at TEXT NOT NULL, source_save_name TEXT, PRIMARY KEY (user_id, game_id, medal_id), FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
+  CREATE TABLE IF NOT EXISTS game_rankings (user_id TEXT NOT NULL, game_id TEXT NOT NULL, user_name TEXT NOT NULL, save_name TEXT NOT NULL, year INTEGER NOT NULL, month INTEGER NOT NULL, total_churches INTEGER NOT NULL, total_members REAL NOT NULL, doctrine_correct INTEGER NOT NULL, reached_final INTEGER NOT NULL, state_churches_json TEXT NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY (user_id, game_id), FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
 `);
 try { db.exec('ALTER TABLE users ADD COLUMN avatar_data TEXT'); } catch {}
 
@@ -67,6 +70,20 @@ const deleteSave = db.prepare('DELETE FROM saves WHERE id = ? AND user_id = ?');
 const deleteRanking = db.prepare('DELETE FROM rankings WHERE save_id = ?');
 const getAllSavedStates = db.prepare('SELECT saves.*, users.name AS user_name FROM saves JOIN users ON users.id = saves.user_id WHERE saves.state_json IS NOT NULL');
 const getRankingRows = db.prepare('SELECT * FROM rankings ORDER BY updated_at DESC');
+const getGameRankingRows = db.prepare('SELECT * FROM game_rankings ORDER BY updated_at DESC');
+const getBestRankingForUser = db.prepare('SELECT * FROM game_rankings WHERE user_id = ? AND game_id = ?');
+const upsertBestRanking = db.prepare(`
+  INSERT INTO game_rankings (user_id, game_id, user_name, save_name, year, month, total_churches, total_members, doctrine_correct, reached_final, state_churches_json, updated_at)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  ON CONFLICT(user_id, game_id) DO UPDATE SET user_name = excluded.user_name, save_name = excluded.save_name, year = excluded.year, month = excluded.month, total_churches = excluded.total_churches, total_members = excluded.total_members, doctrine_correct = excluded.doctrine_correct, reached_final = excluded.reached_final, state_churches_json = excluded.state_churches_json, updated_at = excluded.updated_at
+`);
+const updateBestRankingUserName = db.prepare('UPDATE game_rankings SET user_name = ? WHERE user_id = ?');
+const getUserAchievementRows = db.prepare('SELECT * FROM user_achievements WHERE user_id = ? AND game_id = ?');
+const getAllAchievementRows = db.prepare('SELECT user_achievements.*, users.name AS user_name FROM user_achievements JOIN users ON users.id = user_achievements.user_id WHERE game_id = ?');
+const insertUserAchievement = db.prepare(`
+  INSERT OR IGNORE INTO user_achievements (user_id, game_id, medal_id, unlocked_at, source_save_name)
+  VALUES (?, ?, ?, ?, ?)
+`);
 const upsertRanking = db.prepare(`
   INSERT INTO rankings (save_id, user_id, user_name, save_name, year, month, total_churches, total_members, doctrine_correct, reached_final, state_churches_json, updated_at)
   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -152,12 +169,18 @@ function savedAchievementMap(state) {
   const list = Array.isArray(state?.achievements) ? state.achievements : [];
   return new Map(list.map(item => [item.id, item]));
 }
-function achievementsForState(state, stats) {
+function permanentAchievementMap(userId) {
+  if (!userId) return new Map();
+  return new Map(getUserAchievementRows.all(userId, GAME_ID).map(item => [item.medal_id, item]));
+}
+function achievementsForState(state, stats, userId = '') {
   const saved = savedAchievementMap(state);
+  const permanent = permanentAchievementMap(userId);
   return ACHIEVEMENTS.map(def => {
     const stored = saved.get(def.id);
-    const unlocked = Boolean(stored) || Boolean(state && def.condition(stats, state));
-    return { ...def, unlocked, unlockedAt: stored?.unlockedAt || null };
+    const accountMedal = permanent.get(def.id);
+    const unlocked = Boolean(accountMedal) || Boolean(stored) || Boolean(state && def.condition(stats, state));
+    return { ...def, unlocked, unlockedAt: accountMedal?.unlocked_at || stored?.unlockedAt || null };
   });
 }
 function achievementXp(medals) {
@@ -170,10 +193,10 @@ function rankPointBonus(rank) {
   return TITLE_TRACK.filter(title => title.level > 1 && title.level <= rank.current.level).reduce((sum, title) => sum + title.pointReward, 0);
 }
 
-function playerStatsFromSave(save) {
+function playerStatsFromSave(save, userId = '') {
   const state = safeJsonParse(save?.state_json, null);
   const stats = state ? extractRankingStats(state) : { year: 1904, totalChurches: 0, totalMembers: 0, doctrineCorrect: 0, hasSave: false, started: false };
-  const medals = achievementsForState(state, stats);
+  const medals = achievementsForState(state, stats, userId || save?.user_id || '');
   const xp = achievementXp(medals);
   const rank = titleProgress(xp);
   const points = achievementPoints(medals) + rankPointBonus(rank);
@@ -223,10 +246,42 @@ function extractRankingStats(state) {
   const doctrineCorrect = Math.max(0, Math.floor(Number.isFinite(explicitDoctrineCorrect) ? explicitDoctrineCorrect : usedQuestions));
   return { year, month, totalChurches, totalMembers, doctrineCorrect, reachedFinal: year >= 2026 ? 1 : 0, stateChurches, started: Boolean(state?.started), hasSave: true };
 }
+function rankingScoreParts(row) {
+  return [
+    Number(row.reached_final || row.reachedFinal || 0),
+    Number(row.year || 1904),
+    Number(row.month || 0),
+    Number(row.total_churches ?? row.totalChurches ?? 0),
+    Number(row.doctrine_correct ?? row.doctrineCorrect ?? 0),
+    Number(row.total_members ?? row.totalMembers ?? 0)
+  ];
+}
+function rankingBeats(current, previous) {
+  if (!previous) return true;
+  const a = rankingScoreParts(current);
+  const b = rankingScoreParts(previous);
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return a[i] > b[i];
+  }
+  return false;
+}
+function persistUserAchievements(userId, saveName, state, stats, now = new Date().toISOString()) {
+  if (!userId || !state) return;
+  achievementsForState(state, stats, userId).filter(medal => medal.unlocked).forEach(medal => {
+    insertUserAchievement.run(userId, GAME_ID, medal.id, medal.unlockedAt || now, saveName || null);
+  });
+}
 function updateRankingForSave(save, userName, state) {
   if (!state) { deleteRanking.run(save.id); return; }
   const stats = extractRankingStats(state);
-  upsertRanking.run(save.id, save.user_id, userName, save.name, stats.year, stats.month, stats.totalChurches, stats.totalMembers, stats.doctrineCorrect, stats.reachedFinal, JSON.stringify(stats.stateChurches), new Date().toISOString());
+  const now = new Date().toISOString();
+  persistUserAchievements(save.user_id, save.name, state, stats, now);
+  upsertRanking.run(save.id, save.user_id, userName, save.name, stats.year, stats.month, stats.totalChurches, stats.totalMembers, stats.doctrineCorrect, stats.reachedFinal, JSON.stringify(stats.stateChurches), now);
+  const candidate = { ...stats, user_id: save.user_id, game_id: GAME_ID };
+  const previous = getBestRankingForUser.get(save.user_id, GAME_ID);
+  if (rankingBeats(candidate, previous)) {
+    upsertBestRanking.run(save.user_id, GAME_ID, userName, save.name, stats.year, stats.month, stats.totalChurches, stats.totalMembers, stats.doctrineCorrect, stats.reachedFinal, JSON.stringify(stats.stateChurches), now);
+  }
 }
 function backfillRankings() {
   getAllSavedStates.all().forEach(save => updateRankingForSave(save, save.user_name, safeJsonParse(save.state_json)));
@@ -236,7 +291,7 @@ function publicRankingRow(row) {
 }
 function rankingPayload() {
   backfillRankings();
-  const rows = getRankingRows.all();
+  const rows = getGameRankingRows.all();
   const byYear = [...rows].sort((a, b) => b.year - a.year || b.month - a.month || b.total_churches - a.total_churches).slice(0, 10).map(publicRankingRow);
   const byChurches = [...rows].sort((a, b) => b.total_churches - a.total_churches || b.reached_final - a.reached_final || b.year - a.year).slice(0, 10).map(publicRankingRow);
   const byDoctrine = [...rows].sort((a, b) => b.doctrine_correct - a.doctrine_correct || b.year - a.year || b.total_churches - a.total_churches).slice(0, 10).map(publicRankingRow);
@@ -244,18 +299,19 @@ function rankingPayload() {
     const best = rows.map(row => ({ row, count: Number(safeJsonParse(row.state_churches_json, {})[code] || 0) })).filter(item => item.count > 0).sort((a, b) => b.count - a.count || b.row.year - a.row.year || b.row.total_churches - a.row.total_churches)[0];
     return best ? { state: code, stateName: STATE_NAMES[code], churches: best.count, ...publicRankingRow(best.row) } : { state: code, stateName: STATE_NAMES[code], churches: 0, player: '-', year: 1904, totalChurches: 0, doctrineCorrect: 0 };
   });
-  const prestige = getAllSavedStates.all().flatMap(save => {
-    const summary = playerStatsFromSave(save);
-    return summary.medals.filter(medal => medal.unlocked).map(medal => ({
-      player: save.user_name,
+  const prestige = getAllAchievementRows.all(GAME_ID).map(item => {
+    const medal = ACHIEVEMENTS.find(def => def.id === item.medal_id);
+    if (!medal) return null;
+    return {
+      player: item.user_name,
       medal: medal.title,
       medalId: medal.id,
       icon: medal.file,
       xp: medal.xp,
       points: medal.points,
-      unlockedAt: medal.unlockedAt || save.updated_at
-    }));
-  }).sort((a, b) => String(b.unlockedAt || '').localeCompare(String(a.unlockedAt || ''))).slice(0, 12);
+      unlockedAt: item.unlocked_at
+    };
+  }).filter(Boolean).sort((a, b) => String(b.unlockedAt || '').localeCompare(String(a.unlockedAt || ''))).slice(0, 12);
   return { generatedAt: new Date().toISOString(), byYear, byChurches, byState, byDoctrine, prestige };
 }
 function hubSaveForUser(user) {
@@ -325,7 +381,7 @@ async function handleApi(req, res, url, user) {
   if (req.method === 'GET' && url.pathname === '/api/ranking') { json(res, 200, rankingPayload()); return; }
   if (req.method === 'GET' && url.pathname === '/api/me') {
     const mainSave = getSaveSlot.get(user.id, 1);
-    const summary = playerStatsFromSave(mainSave);
+    const summary = playerStatsFromSave(mainSave, user.id);
     json(res, 200, {
       user: { id: user.id, name: user.name, hasAvatar: Boolean(user.avatar_data) },
       xp: summary.xp,
@@ -403,7 +459,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   const activeSection = ['inicio', 'jogos', 'ranking', 'medalhas', 'album', 'loja', 'configuracoes'].includes(section) ? section : 'inicio';
   const saves = new Map(getSavesByUser.all(user.id).map(save => [save.slot, save]));
   const mainSave = saves.get(1);
-  const player = playerStatsFromSave(mainSave);
+  const player = playerStatsFromSave(mainSave, user.id);
   const stats = player.stats;
   const xp = player.xp;
   const points = player.points;
@@ -415,7 +471,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   const rankingRows = (items, score, suffix = '') => items.length ? items.slice(0, 8).map((item, index) => `<div class="hub-rank-row"><b>${index + 1}</b><span>${escapeHtml(item.player)}</span><strong>${escapeHtml(score(item))}${suffix}</strong></div>`).join('') : '<p>Nenhum registro ainda.</p>';
   const generalRankingRows = getAllUsers.all().map(rankUser => {
     const userSave = getSaveSlot.get(rankUser.id, 1);
-    const userSummary = playerStatsFromSave(userSave);
+    const userSummary = playerStatsFromSave(userSave, rankUser.id);
     return {
       user: rankUser,
       summary: userSummary,
@@ -452,7 +508,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     medalhas: `<section class="ol-panel" id="medalhas"><div class="panel-head"><h3>Medalhas</h3><span>${unlockedMedals}/${medals.length}</span></div><div class="medal-grid">${medals.map(medal => `<article class="${medal.unlocked ? '' : 'locked'}">${renderAchievementIcon(medal)}<span>${escapeHtml(medal.title)}</span><p>${escapeHtml(medal.description)}</p><small>+${medal.xp} XP · +${medal.points} pontos</small></article>`).join('')}</div></section>`,
     album: `<section class="ol-panel" id="album"><div class="panel-head"><h3>Álbum</h3><span>0/0 figurinhas</span></div><p>Nenhuma figurinha foi criada ainda.</p></section>`,
     loja: `<section class="ol-panel" id="loja"><div class="panel-head"><h3>Loja</h3></div><div class="shop-grid"><article><h4>Pacote Comum</h4><p>100 pontos</p><small>Maior chance de figurinhas comuns.</small><button disabled>Comprar em breve</button></article><article><h4>Pacote Raro</h4><p>250 pontos</p><small>Chance melhor de raras e especiais.</small><button disabled>Comprar em breve</button></article><article><h4>Pacote Lendario</h4><p>600 pontos</p><small>Chance alta de figurinhas raras e lendarias.</small><button disabled>Comprar em breve</button></article></div><div class="daily-wheel"><h4>Roleta diaria</h4><p>A cada 24h, o jogador podera tentar ganhar um pacote comum, raro ou lendario de graca.</p><button disabled>Disponivel em breve</button></div></section>`,
-    configuracoes: `<section class="ol-panel ol-settings" id="configuracoes"><div class="panel-head"><h3>Configurações</h3></div><form method="POST" action="/profile" class="profile-edit"><div class="profile-box">${renderAvatar(user, 'profile-avatar')}<div><label>Nome público<input name="name" maxlength="40" value="${escapeHtml(user.name)}" required></label><label>Foto do perfil<input id="avatar-file" type="file" accept="image/png,image/jpeg,image/webp"></label><input id="avatar-data" type="hidden" name="avatar_data" value="${escapeHtml(user.avatar_data || '')}"><button type="submit">Salvar perfil</button></div></div></form><hr><p>Gerencie dados salvos por jogo.</p>${mainSave ? `<form method="POST" action="/saves/${encodeURIComponent(mainSave.id)}/delete" onsubmit="return confirm('Apagar o histórico de Pela Graça 1904?')"><button>Apagar histórico de Pela Graça 1904</button></form>` : '<a href="/play">Criar histórico de Pela Graça 1904</a>'}</section>`
+    configuracoes: `<section class="ol-panel ol-settings" id="configuracoes"><div class="panel-head"><h3>Configurações</h3></div><form method="POST" action="/profile" class="profile-edit"><div class="profile-box">${renderAvatar(user, 'profile-avatar')}<div><label>Nome público<input name="name" maxlength="40" value="${escapeHtml(user.name)}" required></label><label>Foto do perfil<input id="avatar-file" type="file" accept="image/png,image/jpeg,image/webp"></label><input id="avatar-data" type="hidden" name="avatar_data" value="${escapeHtml(user.avatar_data || '')}"><button type="submit">Salvar perfil</button></div></div></form><hr><p>Gerencie dados salvos por jogo.</p>${mainSave ? `<form method="POST" action="/saves/${encodeURIComponent(mainSave.id)}/delete" onsubmit="return confirm('Apagar a campanha atual? Medalhas e melhor ranking serão mantidos.')"><button>Apagar campanha atual</button></form>` : '<a href="/play">Criar histórico de Pela Graça 1904</a>'}</section>`
   };
   return pageShell('Ortodoxia Luterana Gaming', `
 <main class="ol-hub">
@@ -538,6 +594,7 @@ const server = http.createServer(async (req, res) => {
       }
       updateUserProfile.run(name, avatarData || null, user.id);
       updateRankingUserName.run(name, user.id);
+      updateBestRankingUserName.run(name, user.id);
       redirect(res, '/?section=configuracoes');
       return;
     }
@@ -562,7 +619,7 @@ const server = http.createServer(async (req, res) => {
       const now = new Date().toISOString(); const id = crypto.randomUUID(); insertSave.run(id, user.id, slot, name, now, now); redirect(res, `/game?save=${encodeURIComponent(id)}`); return;
     }
     const deleteMatch = url.pathname.match(/^\/saves\/([^/]+)\/delete$/);
-    if (req.method === 'POST' && deleteMatch) { deleteSave.run(deleteMatch[1], user.id); deleteRanking.run(deleteMatch[1]); redirect(res, '/'); return; }
+    if (req.method === 'POST' && deleteMatch) { deleteSave.run(deleteMatch[1], user.id); redirect(res, '/'); return; }
     if (req.method === 'GET' && url.pathname === '/game') {
       const id = url.searchParams.get('save'); const save = id ? getSave.get(id, user.id) : null;
       if (!save) { redirect(res, '/'); return; }

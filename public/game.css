@@ -643,6 +643,111 @@ body{
   }
 }
 
+/* v3.8.4 phone cleanup: no duplicated actions, no map color seams */
+@media (max-width: 1200px){
+  #top{
+    display:flex!important;
+    flex-wrap:nowrap!important;
+    align-items:center!important;
+    gap:8px!important;
+    min-height:58px!important;
+    height:58px!important;
+    padding:7px 8px!important;
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+    scrollbar-width:none!important;
+    background:linear-gradient(180deg,#f8f2e6,#eee4d2)!important;
+    border-bottom:1px solid rgba(138,106,32,.45)!important;
+  }
+
+  #top::-webkit-scrollbar{
+    display:none!important;
+  }
+
+  #brand{
+    display:none!important;
+  }
+
+  #datebox,
+  .res,
+  #doc-wrap,
+  #top-btns{
+    flex:0 0 auto!important;
+    min-height:42px!important;
+    height:42px!important;
+    border:1px solid rgba(185,154,96,.62)!important;
+    border-radius:12px!important;
+    background:#fffdf7!important;
+    box-shadow:0 1px 0 rgba(255,255,255,.55) inset!important;
+  }
+
+  #datebox{
+    min-width:132px!important;
+    justify-content:center!important;
+    font-size:18px!important;
+  }
+
+  .res{
+    min-width:92px!important;
+    justify-content:center!important;
+  }
+
+  #doc-wrap{
+    min-width:138px!important;
+    justify-content:center!important;
+  }
+
+  #top-btns{
+    min-width:max-content!important;
+    padding:4px!important;
+    gap:6px!important;
+  }
+
+  .tbtn{
+    min-height:34px!important;
+    height:34px!important;
+    border-radius:9px!important;
+  }
+
+  #center,
+  #center::before,
+  #mapsvg{
+    background:#a8c8e8!important;
+  }
+
+  #center::before{
+    display:none!important;
+  }
+
+  #mapsvg > rect{
+    fill:#a8c8e8!important;
+  }
+
+  #center svg{
+    width:112%!important;
+    height:112%!important;
+    left:-6%!important;
+    top:-6%!important;
+  }
+
+  #yeardisp{
+    display:none!important;
+  }
+
+  #quick-actions{
+    display:none!important;
+  }
+
+  #mobile-tabs{
+    top:calc(34px + 58px)!important;
+  }
+
+  #left-hdr,
+  #right-hdr{
+    top:calc(34px + 102px)!important;
+  }
+}
+
 @media (max-width: 430px){
   #center{
     height:37svh;

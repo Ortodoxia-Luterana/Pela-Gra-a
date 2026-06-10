@@ -12,7 +12,7 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v3.10.1-mobile-tabs';
+const GAME_VERSION = 'v3.10.2-game-clean-top';
 const STATE_NAMES = {
   AC: 'Acre', AL: 'Alagoas', AP: 'Amapa', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceara', DF: 'Distrito Federal', ES: 'Espirito Santo', GO: 'Goias',
   MA: 'Maranhao', MT: 'Mato Grosso', MS: 'Mato Grosso do Sul', MG: 'Minas Gerais', PA: 'Para', PB: 'Paraiba', PR: 'Parana', PE: 'Pernambuco',
@@ -284,7 +284,6 @@ function renderGame(save, user) {
 <script>window.__SAVE_ID__ = ${JSON.stringify(save.id)}; window.__SAVE_NAME__ = ${JSON.stringify(save.name)}; window.__MUSIC_MODE__ = 'game';</script>
 </head>
 <body>
-<div id="campaign-bar"><a href="/" class="bar-link">← Histórias</a><a href="/ranking" class="bar-link">Ranking</a><strong>${escapeHtml(save.name)}</strong><span>${escapeHtml(user.name)}</span><span id="save-status">Salvando no SQLite...</span></div>
 ${body}
 <script src="/assets/audio.js?v=${GAME_VERSION}"></script>
 <script src="/assets/persistence.js?v=${GAME_VERSION}"></script>

@@ -241,8 +241,8 @@ function renderGame(save, user) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>${escapeHtml(save.name)} — Pela Graça</title>
-<link rel="stylesheet" href="/assets/game.css">
-<link rel="stylesheet" href="/assets/site.css">
+<link rel="stylesheet" href="/assets/game.css?v=${GAME_VERSION}">
+<link rel="stylesheet" href="/assets/site.css?v=${GAME_VERSION}">
 <script>window.__SAVE_ID__ = ${JSON.stringify(save.id)}; window.__SAVE_NAME__ = ${JSON.stringify(save.name)}; window.__MUSIC_MODE__ = 'game';</script>
 </head>
 <body>

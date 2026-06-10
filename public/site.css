@@ -1060,6 +1060,61 @@ img.feed-avatar {
   margin: 1rem 0;
 }
 
+.saved-games-head h4 {
+  margin: 0 0 .25rem;
+  color: #f2c75f;
+  font-size: 1rem;
+}
+
+.saved-games-head p {
+  margin: 0 0 .85rem;
+  color: #b8b0a3;
+}
+
+.saved-game-list {
+  display: grid;
+  gap: .75rem;
+}
+
+.saved-game-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: .85rem;
+  align-items: center;
+  padding: .9rem;
+  border: 1px solid rgba(216, 166, 66, .32);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .035);
+}
+
+.saved-game-row span,
+.saved-game-row small {
+  display: block;
+  color: #b8b0a3;
+}
+
+.saved-game-row strong {
+  display: block;
+  margin: .2rem 0;
+  color: #eee8db;
+}
+
+.saved-game-row form {
+  margin: 0;
+}
+
+.saved-game-row a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: .65rem .9rem;
+  border: 1px solid rgba(216, 166, 66, .42);
+  border-radius: 7px;
+  color: #f2c75f;
+  text-decoration: none;
+  font-weight: 800;
+}
+
 .profile-box {
   display: flex;
   gap: 1rem;
@@ -1600,6 +1655,16 @@ img.feed-avatar {
 
   .profile-box{
     grid-template-columns:1fr;
+  }
+
+  .saved-game-row{
+    grid-template-columns:1fr;
+  }
+
+  .saved-game-row button,
+  .saved-game-row a{
+    width:100%;
+    justify-content:center;
   }
 
   .profile-avatar{

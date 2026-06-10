@@ -1384,39 +1384,58 @@ img.feed-avatar {
   .ol-sidebar{
     position:sticky;
     top:0;
-    padding:.55rem .65rem .65rem;
+    display:grid;
+    grid-template-columns:48px minmax(0, 1fr);
+    column-gap:.65rem;
+    align-items:center;
+    padding:.65rem .75rem .7rem;
   }
 
   .ol-sidebar img{
-    display:none;
+    display:block;
+    width:46px;
+    height:46px;
+    grid-column:1;
+    grid-row:1;
+    margin:0;
   }
 
   .ol-sidebar h1{
     text-align:left;
-    margin:0 0 .5rem;
-    padding-left:.2rem;
+    grid-column:2;
+    grid-row:1;
+    margin:0;
+    padding-left:0;
+    font-size:.86rem;
+    line-height:1.05;
   }
 
   .ol-sidebar nav{
+    grid-column:1 / -1;
     display:flex;
-    gap:.45rem;
+    gap:.55rem;
     overflow-x:auto;
-    padding:.1rem .05rem .15rem;
+    padding:.65rem .05rem .1rem;
+    scroll-snap-type:x proximity;
   }
 
   .ol-sidebar nav a{
-    min-width:88px;
-    min-height:54px;
-    padding:.5rem .55rem;
-    justify-items:center;
-    text-align:center;
-    font-size:.68rem;
+    min-width:124px;
+    min-height:56px;
+    grid-template-columns:30px minmax(0, 1fr);
+    gap:.5rem;
+    padding:.55rem .65rem;
+    justify-items:start;
+    text-align:left;
+    font-size:.74rem;
     border-radius:10px;
+    white-space:nowrap;
+    scroll-snap-align:start;
   }
 
   .ol-sidebar nav .nav-icon{
-    width:23px;
-    height:23px;
+    width:28px;
+    height:28px;
   }
 
   .ol-hub-main{

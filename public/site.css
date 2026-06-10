@@ -1228,11 +1228,14 @@ img.feed-avatar {
   --ol-red:#ff8a80;
 }
 
-.ol-hub,
-.ol-auth-screen{
+.ol-hub{
   background:
     linear-gradient(180deg, rgba(3,7,12,.94), rgba(3,7,12,.99)),
     url("/assets/hub-dashboard-bg.png") center / cover fixed;
+}
+
+.ol-auth-screen{
+  background:transparent;
 }
 
 .ol-panel,

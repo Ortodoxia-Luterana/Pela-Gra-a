@@ -17,7 +17,7 @@
       --muted: #d8c9aa;
       --danger: #c7433d;
       --ok: #6fd16f;
-      --tile: calc((min(94vw, 520px) - 18px) / 8);
+      --board-size: min(calc(100vw - 52px), 520px);
     }
 
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -31,7 +31,7 @@
       font-family: "Segoe UI", system-ui, Arial, sans-serif;
       background:
         linear-gradient(180deg, rgba(4, 9, 14, .1), rgba(4, 9, 14, .5)),
-        url("/assets/luther-metch-bg.png") center / cover no-repeat,
+        url("/assets/luther-metch-bg.png") center top / cover no-repeat,
         #08111a;
       overflow-x: hidden;
     }
@@ -47,6 +47,7 @@
       display: grid;
       grid-template-rows: auto auto 1fr auto;
       gap: 10px;
+      overflow-x: hidden;
     }
 
     .top {
@@ -151,7 +152,7 @@
     }
 
     .board {
-      width: min(94vw, 520px);
+      width: var(--board-size);
       aspect-ratio: 1;
       display: grid;
       grid-template-columns: repeat(8, 1fr);
@@ -196,6 +197,13 @@
       object-fit: contain;
       filter: drop-shadow(0 6px 4px rgba(0, 0, 0, .34));
       pointer-events: none;
+    }
+
+    .piece.special {
+      transform: scale(1.08);
+      filter:
+        drop-shadow(0 0 8px rgba(255, 224, 138, .8))
+        drop-shadow(0 7px 5px rgba(0, 0, 0, .38));
     }
 
     .boosters {
@@ -327,7 +335,7 @@
       <button class="restart" id="restart" type="button" aria-label="Reiniciar">↻</button>
     </section>
 
-    <div class="message" id="message">Toque em uma peça e depois em uma vizinha para combinar.</div>
+    <div class="message" id="message">Deslize uma peça para trocar com a vizinha.</div>
   </main>
 
   <div class="overlay" id="overlay">
@@ -340,16 +348,20 @@
   </div>
 
   <script>
-    const KEY = "ol-luther-metch-v1";
+    const KEY = "ol-luther-metch-v2";
     const SIZE = 8;
     const TYPES = [
       { id: "book", name: "Livro", src: "/assets/match3-tile-book.svg" },
       { id: "rose", name: "Rosa", src: "/assets/match3-tile-rose.svg" },
       { id: "candle", name: "Vela", src: "/assets/match3-tile-candle.svg" },
-      { id: "chalice", name: "Cálice", src: "/assets/match3-tile-chalice.svg" },
-      { id: "heart", name: "Coração", src: "/assets/match3-tile-heart.svg" },
+      { id: "chalice", name: "Calice", src: "/assets/match3-tile-chalice.svg" },
+      { id: "heart", name: "Coracao", src: "/assets/match3-tile-heart.svg" },
       { id: "fish", name: "Peixe", src: "/assets/match3-tile-fish.svg" }
     ];
+    const SPECIALS = {
+      luther: { name: "Lutero", src: "/assets/match3-special-luther.png" },
+      solas: { name: "Cinco Solas", src: "/assets/match3-special-solas.png" }
+    };
     const OBJECTIVE_IDS = ["book", "rose", "candle"];
     const baseState = () => ({
       level: 1,
@@ -365,34 +377,37 @@
     });
 
     let state = loadState();
+    let pointerStart = null;
     const boardEl = document.querySelector("#board");
     const messageEl = document.querySelector("#message");
     const overlay = document.querySelector("#overlay");
 
+    function makeTile(type = randType(), special = null) { return { type, special }; }
+    function tileType(tile) { return typeof tile === "string" ? tile : tile?.type; }
+    function tileSpecial(tile) { return typeof tile === "object" ? tile?.special : null; }
+    function normalizeBoard(board) { return board.map(tile => tile ? makeTile(tileType(tile), tileSpecial(tile)) : null); }
+
     function loadState() {
       try {
         const saved = JSON.parse(localStorage.getItem(KEY) || "null");
-        if (saved && Array.isArray(saved.board) && saved.board.length === SIZE * SIZE) return saved;
+        if (saved && Array.isArray(saved.board) && saved.board.length === SIZE * SIZE) {
+          return { ...baseState(), ...saved, board: normalizeBoard(saved.board) };
+        }
       } catch {}
       const fresh = baseState();
       fresh.board = makeBoard();
       return fresh;
     }
 
-    function saveState() {
-      localStorage.setItem(KEY, JSON.stringify({ ...state, selected: null, mode: null }));
-    }
-
-    function randType() {
-      return TYPES[Math.floor(Math.random() * TYPES.length)].id;
-    }
+    function saveState() { localStorage.setItem(KEY, JSON.stringify({ ...state, selected: null, mode: null })); }
+    function randType() { return TYPES[Math.floor(Math.random() * TYPES.length)].id; }
 
     function makeBoard() {
       const b = [];
       for (let i = 0; i < SIZE * SIZE; i += 1) {
         let type = randType();
         while (wouldMatchAt(b, i, type)) type = randType();
-        b[i] = type;
+        b[i] = makeTile(type);
       }
       return b;
     }
@@ -400,8 +415,8 @@
     function wouldMatchAt(board, index, type) {
       const row = Math.floor(index / SIZE);
       const col = index % SIZE;
-      return (col >= 2 && board[index - 1] === type && board[index - 2] === type) ||
-        (row >= 2 && board[index - SIZE] === type && board[index - SIZE * 2] === type);
+      return (col >= 2 && tileType(board[index - 1]) === type && tileType(board[index - 2]) === type) ||
+        (row >= 2 && tileType(board[index - SIZE]) === type && tileType(board[index - SIZE * 2]) === type);
     }
 
     function render() {
@@ -415,12 +430,15 @@
       document.querySelector("#objectives").innerHTML = OBJECTIVE_IDS.map(id => {
         const type = TYPES.find(item => item.id === id);
         const done = Math.min(state.collected[id] || 0, state.goals[id]);
-        return `<article class="objective"><img src="${type.src}" alt=""><span><small>${type.name}</small><b>${done}/${state.goals[id]}</b></span></article>`;
+        return '<article class="objective"><img src="' + type.src + '" alt=""><span><small>' + type.name + '</small><b>' + done + '/' + state.goals[id] + '</b></span></article>';
       }).join("");
-      boardEl.innerHTML = state.board.map((id, index) => {
-        const type = TYPES.find(item => item.id === id);
+      boardEl.innerHTML = state.board.map((tile, index) => {
+        const special = tileSpecial(tile);
+        const base = TYPES.find(item => item.id === tileType(tile));
+        const visual = special ? SPECIALS[special] : base;
         const selected = state.selected === index ? " selected" : "";
-        return `<button class="cell${selected}" type="button" data-index="${index}" aria-label="${type.name}"><img class="piece" src="${type.src}" alt=""></button>`;
+        const specialClass = special ? " special" : "";
+        return '<button class="cell' + selected + '" type="button" data-index="' + index + '" aria-label="' + visual.name + '"><img class="piece' + specialClass + '" src="' + visual.src + '" alt=""></button>';
       }).join("");
     }
 
@@ -430,9 +448,21 @@
       return Math.abs(ar - br) + Math.abs(ac - bc) === 1;
     }
 
-    function swap(a, b) {
-      [state.board[a], state.board[b]] = [state.board[b], state.board[a]];
+    function neighborFromSwipe(index, dx, dy) {
+      if (Math.max(Math.abs(dx), Math.abs(dy)) < 18) return null;
+      const row = Math.floor(index / SIZE);
+      const col = index % SIZE;
+      if (Math.abs(dx) > Math.abs(dy)) {
+        if (dx > 0 && col < SIZE - 1) return index + 1;
+        if (dx < 0 && col > 0) return index - 1;
+      } else {
+        if (dy > 0 && row < SIZE - 1) return index + SIZE;
+        if (dy < 0 && row > 0) return index - SIZE;
+      }
+      return null;
     }
+
+    function swap(a, b) { [state.board[a], state.board[b]] = [state.board[b], state.board[a]]; }
 
     async function select(index) {
       if (state.over) return;
@@ -448,7 +478,7 @@
       }
       if (state.selected === null) {
         state.selected = index;
-        message("Escolha uma peça vizinha.");
+        message("Deslize uma peca ou toque em uma vizinha.");
         render();
         return;
       }
@@ -459,78 +489,141 @@
       }
       if (!adjacent(state.selected, index)) {
         state.selected = index;
-        message("Agora toque em uma peça vizinha.");
+        message("Agora escolha uma peca vizinha.");
         render();
         return;
       }
       const first = state.selected;
       state.selected = null;
-      swap(first, index);
-      const matches = findMatches();
-      if (!matches.length) {
-        swap(first, index);
-        message("Sem combinação. Tente outro movimento.");
+      await tryMove(first, index);
+    }
+
+    async function tryMove(first, second) {
+      if (state.over || !adjacent(first, second)) return;
+      const specialA = tileSpecial(state.board[first]);
+      const specialB = tileSpecial(state.board[second]);
+      if (specialA || specialB) {
+        state.moves -= 1;
+        await activateSpecialMove(first, second);
+        afterMove();
+        return;
+      }
+      swap(first, second);
+      let groups = findMatchGroups();
+      if (!groups.length) {
+        swap(first, second);
+        message("Sem combinacao. Tente outro movimento.");
         render();
         return;
       }
       state.moves -= 1;
-      await resolveMatches(matches);
+      await resolveMatches(groups, second);
       afterMove();
     }
 
-    function findMatches() {
-      const found = new Set();
+    function findMatchGroups() {
+      const groups = [];
       for (let r = 0; r < SIZE; r += 1) {
         let run = [r * SIZE];
         for (let c = 1; c < SIZE; c += 1) {
           const i = r * SIZE + c;
-          if (state.board[i] && state.board[i] === state.board[run[0]]) run.push(i);
-          else {
-            if (run.length >= 3) run.forEach(x => found.add(x));
-            run = [i];
-          }
+          if (tileType(state.board[i]) && tileType(state.board[i]) === tileType(state.board[run[0]])) run.push(i);
+          else { if (run.length >= 3) groups.push([...run]); run = [i]; }
         }
-        if (run.length >= 3) run.forEach(x => found.add(x));
+        if (run.length >= 3) groups.push([...run]);
       }
       for (let c = 0; c < SIZE; c += 1) {
         let run = [c];
         for (let r = 1; r < SIZE; r += 1) {
           const i = r * SIZE + c;
-          if (state.board[i] && state.board[i] === state.board[run[0]]) run.push(i);
-          else {
-            if (run.length >= 3) run.forEach(x => found.add(x));
-            run = [i];
-          }
+          if (tileType(state.board[i]) && tileType(state.board[i]) === tileType(state.board[run[0]])) run.push(i);
+          else { if (run.length >= 3) groups.push([...run]); run = [i]; }
         }
-        if (run.length >= 3) run.forEach(x => found.add(x));
+        if (run.length >= 3) groups.push([...run]);
       }
-      return [...found];
+      return groups;
+    }
+
+    function uniqueCells(groups) { return [...new Set(groups.flat())]; }
+
+    function specialCellsFor(index, targetType = tileType(state.board[index])) {
+      const special = tileSpecial(state.board[index]);
+      if (!special) return [index];
+      const cells = new Set([index]);
+      if (special === "luther") {
+        state.board.forEach((tile, i) => { if (tileType(tile) === targetType) cells.add(i); });
+      }
+      if (special === "solas") {
+        state.board.forEach((tile, i) => { if (tileType(tile) === targetType) cells.add(i); });
+        const row = Math.floor(index / SIZE);
+        const col = index % SIZE;
+        for (let i = 0; i < SIZE; i += 1) { cells.add(row * SIZE + i); cells.add(i * SIZE + col); }
+      }
+      return [...cells];
+    }
+
+    function expandSpecialCells(cells) {
+      const expanded = new Set(cells);
+      cells.forEach(index => {
+        if (tileSpecial(state.board[index])) specialCellsFor(index).forEach(i => expanded.add(i));
+      });
+      return [...expanded];
     }
 
     function removeCells(cells, hammer = false) {
-      cells.forEach(index => {
-        const id = state.board[index];
+      const expanded = expandSpecialCells(cells);
+      expanded.forEach(index => {
+        const id = tileType(state.board[index]);
         if (OBJECTIVE_IDS.includes(id)) state.collected[id] = (state.collected[id] || 0) + 1;
         state.board[index] = null;
       });
-      state.score += cells.length * (hammer ? 25 : 40);
+      state.score += expanded.length * (hammer ? 25 : 40);
     }
 
-    async function resolveMatches(initial) {
-      let matches = initial;
+    async function activateSpecialMove(first, second) {
+      const specialIndex = tileSpecial(state.board[first]) ? first : second;
+      const otherIndex = specialIndex === first ? second : first;
+      const special = tileSpecial(state.board[specialIndex]);
+      const targetType = tileType(state.board[otherIndex]);
+      let cells = specialCellsFor(specialIndex, targetType);
+      if (tileSpecial(state.board[otherIndex])) cells = state.board.map((_, index) => index);
+      else cells.push(otherIndex);
+      mark(cells);
+      await wait(160);
+      removeCells(cells);
+      await settle();
+      message(special === "solas" ? "Combo de 5 ativado." : "Lutero removeu todas as pecas iguais.");
+    }
+
+    async function resolveMatches(initialGroups, preferredIndex = null) {
+      let groups = initialGroups;
       let chain = 0;
-      while (matches.length) {
+      while (groups.length) {
         chain += 1;
-        mark(matches);
+        const specialGroup = [...groups].sort((a, b) => b.length - a.length).find(group => group.length >= 4);
+        let specialIndex = null;
+        let specialTile = null;
+        if (specialGroup) {
+          specialIndex = specialGroup.includes(preferredIndex) ? preferredIndex : specialGroup[0];
+          specialTile = makeTile(tileType(state.board[specialIndex]), specialGroup.length >= 5 ? "solas" : "luther");
+        }
+        let cells = uniqueCells(groups);
+        if (specialIndex !== null) cells = cells.filter(index => index !== specialIndex);
+        mark(cells);
         await wait(150);
-        removeCells(matches);
+        removeCells(cells);
+        if (specialIndex !== null) {
+          state.board[specialIndex] = specialTile;
+          state.score += specialTile.special === "solas" ? 220 : 120;
+        }
         drop();
         fill();
         render();
         await wait(90);
-        matches = findMatches();
+        groups = findMatchGroups();
+        preferredIndex = null;
       }
-      message(chain > 1 ? `Combo x${chain}.` : "Boa combinação.");
+      message(chain > 1 ? "Combo x" + chain + "." : "Boa combinacao.");
     }
 
     async function settle() {
@@ -538,12 +631,12 @@
       fill();
       render();
       await wait(90);
-      const matches = findMatches();
-      if (matches.length) await resolveMatches(matches);
+      const groups = findMatchGroups();
+      if (groups.length) await resolveMatches(groups);
     }
 
-    function mark(matches) {
-      matches.forEach(index => {
+    function mark(cells) {
+      cells.forEach(index => {
         const el = boardEl.querySelector(`[data-index="${index}"]`);
         if (el) el.classList.add("matched");
       });
@@ -564,7 +657,7 @@
 
     function fill() {
       for (let i = 0; i < state.board.length; i += 1) {
-        if (!state.board[i]) state.board[i] = randType();
+        if (!state.board[i]) state.board[i] = makeTile();
       }
     }
 
@@ -583,11 +676,11 @@
     function finish(win) {
       state.over = true;
       saveState();
-      document.querySelector("#modal-title").textContent = win ? "Fase concluída" : "Sem movimentos";
+      document.querySelector("#modal-title").textContent = win ? "Fase concluida" : "Sem movimentos";
       document.querySelector("#modal-copy").textContent = win
-        ? `Nível ${state.level} vencido com ${state.score} pontos.`
-        : "Os objetivos não foram concluídos. Reinicie a fase e tente outro caminho.";
-      document.querySelector("#next-level").textContent = win ? "Próximo nível" : "Tentar de novo";
+        ? `Nivel ${state.level} vencido com ${state.score} pontos.`
+        : "Os objetivos nao foram concluidos. Reinicie a fase e tente outro caminho.";
+      document.querySelector("#next-level").textContent = win ? "Proximo nivel" : "Tentar de novo";
       overlay.classList.add("show");
       render();
     }
@@ -632,16 +725,35 @@
       return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    boardEl.addEventListener("click", event => {
+    boardEl.addEventListener("pointerdown", event => {
       const cell = event.target.closest("[data-index]");
-      if (cell) select(Number(cell.dataset.index));
+      if (!cell) return;
+      pointerStart = {
+        index: Number(cell.dataset.index),
+        x: event.clientX,
+        y: event.clientY
+      };
+      boardEl.setPointerCapture?.(event.pointerId);
+    });
+
+    boardEl.addEventListener("pointerup", event => {
+      if (!pointerStart) return;
+      const start = pointerStart;
+      pointerStart = null;
+      const target = neighborFromSwipe(start.index, event.clientX - start.x, event.clientY - start.y);
+      if (target !== null) tryMove(start.index, target);
+      else select(start.index);
+    });
+
+    boardEl.addEventListener("pointercancel", () => {
+      pointerStart = null;
     });
 
     document.querySelector("#hammer").addEventListener("click", () => {
       if (state.boosters.hammer <= 0 || state.over) return;
       state.mode = state.mode === "hammer" ? null : "hammer";
       state.selected = null;
-      message(state.mode ? "Martelo ativo: toque em uma peça para remover." : "Martelo cancelado.");
+      message(state.mode ? "Martelo ativo: toque em uma peca para remover." : "Martelo cancelado.");
       render();
     });
 
@@ -657,7 +769,7 @@
 
     document.querySelector("#restart").addEventListener("click", restart);
     document.querySelector("#next-level").addEventListener("click", nextLevel);
-    document.querySelector("#sound").addEventListener("click", () => message("Som reservado para a próxima etapa."));
+    document.querySelector("#sound").addEventListener("click", () => message("Som reservado para a proxima etapa."));
 
     render();
     saveState();

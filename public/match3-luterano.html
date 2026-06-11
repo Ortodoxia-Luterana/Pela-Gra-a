@@ -577,23 +577,19 @@
       const specialA = tileSpecial(state.board[first]);
       const specialB = tileSpecial(state.board[second]);
       if (specialA || specialB) {
-        await animateSwap(first, second);
+        await commitSwap(first, second);
         state.moves -= 1;
-        await activateSpecialMove(first, second);
+        await activateSpecialMove(specialA ? second : first, specialA ? first : second);
         afterMove();
         isBusy = false;
         return;
       }
-      await animateSwap(first, second);
-      swap(first, second);
-      render();
+      await commitSwap(first, second);
       await wait(120);
       let groups = findMatchGroups();
       if (!groups.length) {
-        await animateSwap(second, first);
-        swap(first, second);
+        await commitSwap(second, first);
         message("Sem combinacao. Tente outro movimento.");
-        render();
         isBusy = false;
         return;
       }
@@ -743,20 +739,49 @@
       });
     }
 
-    async function animateSwap(first, second) {
-      render();
+    async function commitSwap(first, second) {
       const from = boardEl.querySelector(`[data-index="${first}"]`);
       const to = boardEl.querySelector(`[data-index="${second}"]`);
-      if (!from || !to) return;
-      const a = from.getBoundingClientRect();
-      const b = to.getBoundingClientRect();
-      from.style.setProperty("--swap-x", `${b.left - a.left}px`);
-      from.style.setProperty("--swap-y", `${b.top - a.top}px`);
-      to.style.setProperty("--swap-x", `${b.left - a.left}px`);
-      to.style.setProperty("--swap-y", `${b.top - a.top}px`);
-      from.classList.add("swap-from");
-      to.classList.add("swap-to");
+      const fromRect = from?.getBoundingClientRect();
+      const toRect = to?.getBoundingClientRect();
+
+      swap(first, second);
+      render();
+
+      if (!fromRect || !toRect) {
+        await wait(260);
+        return;
+      }
+
+      const movedToSecond = boardEl.querySelector(`[data-index="${second}"]`);
+      const movedToFirst = boardEl.querySelector(`[data-index="${first}"]`);
+      const dx = toRect.left - fromRect.left;
+      const dy = toRect.top - fromRect.top;
+      const animated = [
+        [movedToSecond, -dx, -dy],
+        [movedToFirst, dx, dy]
+      ];
+
+      animated.forEach(([el, x, y]) => {
+        if (!el) return;
+        el.style.transition = "none";
+        el.style.transform = `translate(${x}px, ${y}px)`;
+        el.style.zIndex = "4";
+      });
+      boardEl.offsetHeight;
+      await nextFrame();
+      animated.forEach(([el]) => {
+        if (!el) return;
+        el.style.transition = "transform .32s cubic-bezier(.2,.8,.2,1)";
+        el.style.transform = "translate(0, 0)";
+      });
       await wait(340);
+      animated.forEach(([el]) => {
+        if (!el) return;
+        el.style.transition = "";
+        el.style.transform = "";
+        el.style.zIndex = "";
+      });
     }
 
     function drop() {
@@ -840,6 +865,13 @@
 
     function wait(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function nextFrame() {
+      return new Promise(resolve => {
+        if (typeof requestAnimationFrame === "function") requestAnimationFrame(resolve);
+        else setTimeout(resolve, 16);
+      });
     }
 
     boardEl.addEventListener("pointerdown", event => {

@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 540" role="img" aria-label="Match 3 Luterano">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#25163a"/><stop offset=".48" stop-color="#0d2230"/><stop offset="1" stop-color="#553615"/></linearGradient>
+    <linearGradient id="gold" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#ffe08a"/><stop offset="1" stop-color="#b56f18"/></linearGradient>
+  </defs>
+  <rect width="900" height="540" fill="url(#bg)"/>
+  <path d="M0 410 C150 350 250 440 405 360 C560 280 690 320 900 242 L900 540 L0 540 Z" fill="#071015" opacity=".72"/>
+  <rect x="256" y="118" width="448" height="344" rx="18" fill="#122c39" stroke="url(#gold)" stroke-width="10"/>
+  <g opacity=".95">
+    <rect x="282" y="144" width="70" height="70" rx="12" fill="#263f4d"/><circle cx="317" cy="179" r="24" fill="#d92825"/>
+    <rect x="368" y="144" width="70" height="70" rx="12" fill="#263f4d"/><path d="M403 155 L422 198 H384 Z" fill="#f0bb2f"/>
+    <rect x="454" y="144" width="70" height="70" rx="12" fill="#263f4d"/><rect x="472" y="158" width="36" height="44" rx="5" fill="#7a3cb0"/>
+    <rect x="540" y="144" width="70" height="70" rx="12" fill="#263f4d"/><path d="M575 157 C610 179 596 202 575 204 C554 202 540 179 575 157Z" fill="#2d90dd"/>
+    <rect x="626" y="144" width="70" height="70" rx="12" fill="#263f4d"/><path d="M661 154 C681 174 681 198 661 208 C641 198 641 174 661 154Z" fill="#52bd32"/>
+    <rect x="282" y="230" width="70" height="70" rx="12" fill="#263f4d"/><rect x="300" y="246" width="36" height="42" rx="6" fill="#7a3cb0"/>
+    <rect x="368" y="230" width="70" height="70" rx="12" fill="#263f4d"/><circle cx="403" cy="265" r="24" fill="#f5f0df"/>
+    <rect x="454" y="230" width="70" height="70" rx="12" fill="#263f4d"/><circle cx="489" cy="265" r="24" fill="#d92825"/>
+    <rect x="540" y="230" width="70" height="70" rx="12" fill="#263f4d"/><path d="M575 240 L594 284 H556 Z" fill="#f0bb2f"/>
+    <rect x="626" y="230" width="70" height="70" rx="12" fill="#263f4d"/><path d="M661 243 C696 265 682 288 661 290 C640 288 626 265 661 243Z" fill="#2d90dd"/>
+    <rect x="282" y="316" width="70" height="70" rx="12" fill="#263f4d"/><path d="M317 326 C337 346 337 370 317 380 C297 370 297 346 317 326Z" fill="#52bd32"/>
+    <rect x="368" y="316" width="70" height="70" rx="12" fill="#263f4d"/><circle cx="403" cy="351" r="24" fill="#d92825"/>
+    <rect x="454" y="316" width="70" height="70" rx="12" fill="#263f4d"/><rect x="472" y="332" width="36" height="42" rx="6" fill="#7a3cb0"/>
+    <rect x="540" y="316" width="70" height="70" rx="12" fill="#263f4d"/><circle cx="575" cy="351" r="24" fill="#f5f0df"/>
+    <rect x="626" y="316" width="70" height="70" rx="12" fill="#263f4d"/><path d="M661 326 L680 370 H642 Z" fill="#f0bb2f"/>
+  </g>
+  <path d="M110 118 L110 332 L174 376 L238 332 L238 118 Z" fill="#6b3a85" stroke="url(#gold)" stroke-width="8"/>
+  <circle cx="174" cy="158" r="42" fill="#f6efe0" stroke="url(#gold)" stroke-width="8"/>
+  <path d="M174 132 L174 182 M154 154 L194 154" stroke="#111" stroke-width="9" stroke-linecap="round"/>
+  <text x="54" y="76" fill="#ffe08a" font-family="Georgia,serif" font-size="46" font-weight="700">Match 3 Luterano</text>
+  <text x="56" y="122" fill="#eee8db" font-family="Segoe UI,Arial,sans-serif" font-size="23">Puzzle mobile-first com objetivos e combos</text>
+</svg>

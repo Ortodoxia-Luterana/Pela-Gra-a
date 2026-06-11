@@ -835,8 +835,8 @@ img.feed-avatar {
   background: linear-gradient(90deg, rgba(0, 0, 0, .08), rgba(0, 0, 0, .82)), url("/assets/cronicas-do-levante-card.svg") center/cover;
 }
 
-.ol-game-card.caminhos-cover {
-  background: linear-gradient(90deg, rgba(0, 0, 0, .1), rgba(0, 0, 0, .82)), url("/assets/caminhos-da-igreja-card.svg") center/cover;
+.ol-game-card.match3-cover {
+  background: linear-gradient(90deg, rgba(0, 0, 0, .1), rgba(0, 0, 0, .82)), url("/assets/match3-luterano-card.svg") center/cover;
 }
 
 .ol-game-card.peregrino-cover {

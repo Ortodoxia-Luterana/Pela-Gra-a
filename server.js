@@ -12,7 +12,7 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v3.21.0-luther-metch-combo-burst';
+const GAME_VERSION = 'v3.22.0-luther-metch-combo-medals';
 const GAME_ID = 'pela-graca-1904';
 const CRONICAS_GAME_ID = 'cronicas-do-levante';
 const LUTHER_MATCH_GAME_ID = 'luther-metch';
@@ -70,10 +70,14 @@ const CRONICAS_ACHIEVEMENTS = [
 ];
 const LUTHER_MATCH_ACHIEVEMENTS = [
   { id: 'luther-match-primeiro-acesso', title: 'Primeiro Match', description: 'Entrou pela primeira vez em Luther Metch.', xp: 75, points: 25, file: `${RAW_PUBLIC_URL}/achievements/luther-match-primeiro-acesso-v2.png`, condition: stats => Boolean(stats.entered) },
-  { id: 'luther-match-nivel-10', title: 'Dez Teses', description: 'Completou o nível 10 em Luther Metch.', xp: 180, points: 60, file: `${RAW_PUBLIC_URL}/achievements/luther-match-nivel-10-v2.png`, condition: stats => stats.completedLevels >= 10 },
-  { id: 'luther-match-nivel-50', title: 'Cinco Dezenas', description: 'Completou o nível 50 em Luther Metch.', xp: 450, points: 150, file: `${RAW_PUBLIC_URL}/achievements/luther-match-nivel-50-v2.png`, condition: stats => stats.completedLevels >= 50 },
-  { id: 'luther-match-nivel-100', title: 'Centúria da Reforma', description: 'Completou o nível 100 em Luther Metch.', xp: 900, points: 300, file: `${RAW_PUBLIC_URL}/achievements/luther-match-nivel-100-v2.png`, condition: stats => stats.completedLevels >= 100 },
-  { id: 'luther-match-nivel-200', title: 'Mestre das Tr�s Solas', description: 'Completou o nível 200 em Luther Metch e dominou as Três Solas.', xp: 1600, points: 550, file: `${RAW_PUBLIC_URL}/achievements/luther-match-nivel-200-v2.png`, condition: stats => stats.completedLevels >= 200 }
+  { id: 'luther-match-nivel-10', title: 'Dez Teses', description: 'Completou o nivel 10 em Luther Metch.', xp: 180, points: 60, file: `${RAW_PUBLIC_URL}/achievements/luther-match-nivel-10-v2.png`, condition: stats => stats.completedLevels >= 10 },
+  { id: 'luther-match-nivel-50', title: 'Cinco Dezenas', description: 'Completou o nivel 50 em Luther Metch.', xp: 450, points: 150, file: `${RAW_PUBLIC_URL}/achievements/luther-match-nivel-50-v2.png`, condition: stats => stats.completedLevels >= 50 },
+  { id: 'luther-match-nivel-100', title: 'Centuria da Reforma', description: 'Completou o nivel 100 em Luther Metch.', xp: 900, points: 300, file: `${RAW_PUBLIC_URL}/achievements/luther-match-nivel-100-v2.png`, condition: stats => stats.completedLevels >= 100 },
+  { id: 'luther-match-nivel-200', title: 'Mestre das Tres Solas', description: 'Completou o nivel 200 em Luther Metch e dominou as Tres Solas.', xp: 1600, points: 550, file: `${RAW_PUBLIC_URL}/achievements/luther-match-nivel-200-v2.png`, condition: stats => stats.completedLevels >= 200 },
+  { id: 'luther-match-combo-3', title: 'Combo 3x', description: 'Fez uma cascata de combo 3x em Luther Metch.', xp: 240, points: 80, file: `${RAW_PUBLIC_URL}/achievements/luther-match-combo-3-v1.png`, condition: stats => stats.maxCombo >= 3 },
+  { id: 'luther-match-combo-5', title: 'Combo 5x', description: 'Fez uma cascata de combo 5x em Luther Metch.', xp: 600, points: 200, file: `${RAW_PUBLIC_URL}/achievements/luther-match-combo-5-v1.png`, condition: stats => stats.maxCombo >= 5 },
+  { id: 'luther-match-dois-luteros', title: 'Dois Luteros', description: 'Juntou duas pecas especiais de Lutero.', xp: 500, points: 170, file: `${RAW_PUBLIC_URL}/achievements/luther-match-dois-luteros-v1.png`, condition: stats => Boolean(stats.lutherPairUsed) },
+  { id: 'luther-match-duas-tres-solas', title: 'Forca das Tres Solas', description: 'Juntou duas pecas especiais criadas por combos de 5.', xp: 750, points: 250, file: `${RAW_PUBLIC_URL}/achievements/luther-match-duas-tres-solas-v1.png`, condition: stats => Boolean(stats.solasPairUsed) }
 ];
 
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
@@ -86,10 +90,13 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS rankings (save_id TEXT PRIMARY KEY, user_id TEXT NOT NULL, user_name TEXT NOT NULL, save_name TEXT NOT NULL, year INTEGER NOT NULL, month INTEGER NOT NULL, total_churches INTEGER NOT NULL, total_members REAL NOT NULL, doctrine_correct INTEGER NOT NULL, reached_final INTEGER NOT NULL, state_churches_json TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (save_id) REFERENCES saves(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS user_achievements (user_id TEXT NOT NULL, game_id TEXT NOT NULL, medal_id TEXT NOT NULL, unlocked_at TEXT NOT NULL, source_save_name TEXT, PRIMARY KEY (user_id, game_id, medal_id), FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS game_rankings (user_id TEXT NOT NULL, game_id TEXT NOT NULL, user_name TEXT NOT NULL, save_name TEXT NOT NULL, year INTEGER NOT NULL, month INTEGER NOT NULL, total_churches INTEGER NOT NULL, total_members REAL NOT NULL, doctrine_correct INTEGER NOT NULL, reached_final INTEGER NOT NULL, state_churches_json TEXT NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY (user_id, game_id), FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
-  CREATE TABLE IF NOT EXISTS luther_match_rankings (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, level INTEGER NOT NULL, best_level INTEGER NOT NULL, completed_levels INTEGER NOT NULL, score INTEGER NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
+  CREATE TABLE IF NOT EXISTS luther_match_rankings (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, level INTEGER NOT NULL, best_level INTEGER NOT NULL, completed_levels INTEGER NOT NULL, score INTEGER NOT NULL, max_combo INTEGER NOT NULL DEFAULT 0, luther_pair_used INTEGER NOT NULL DEFAULT 0, solas_pair_used INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS cronicas_saves (user_id TEXT PRIMARY KEY, state_json TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
 `);
 try { db.exec('ALTER TABLE users ADD COLUMN avatar_data TEXT'); } catch {}
+try { db.exec('ALTER TABLE luther_match_rankings ADD COLUMN max_combo INTEGER NOT NULL DEFAULT 0'); } catch {}
+try { db.exec('ALTER TABLE luther_match_rankings ADD COLUMN luther_pair_used INTEGER NOT NULL DEFAULT 0'); } catch {}
+try { db.exec('ALTER TABLE luther_match_rankings ADD COLUMN solas_pair_used INTEGER NOT NULL DEFAULT 0'); } catch {}
 
 const getUserByName = db.prepare('SELECT * FROM users WHERE name = ? COLLATE NOCASE');
 const getUserById = db.prepare('SELECT * FROM users WHERE id = ?');
@@ -123,14 +130,17 @@ const getAllAchievementRows = db.prepare('SELECT user_achievements.*, users.name
 const getLutherMatchRanking = db.prepare('SELECT * FROM luther_match_rankings WHERE user_id = ?');
 const getLutherMatchRankings = db.prepare('SELECT * FROM luther_match_rankings ORDER BY best_level DESC, completed_levels DESC, score DESC, updated_at ASC');
 const upsertLutherMatchRanking = db.prepare(`
-  INSERT INTO luther_match_rankings (user_id, user_name, level, best_level, completed_levels, score, updated_at)
-  VALUES (?, ?, ?, ?, ?, ?, ?)
+  INSERT INTO luther_match_rankings (user_id, user_name, level, best_level, completed_levels, score, max_combo, luther_pair_used, solas_pair_used, updated_at)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   ON CONFLICT(user_id) DO UPDATE SET
     user_name = excluded.user_name,
     level = excluded.level,
     best_level = max(luther_match_rankings.best_level, excluded.best_level),
     completed_levels = max(luther_match_rankings.completed_levels, excluded.completed_levels),
     score = max(luther_match_rankings.score, excluded.score),
+    max_combo = max(luther_match_rankings.max_combo, excluded.max_combo),
+    luther_pair_used = max(luther_match_rankings.luther_pair_used, excluded.luther_pair_used),
+    solas_pair_used = max(luther_match_rankings.solas_pair_used, excluded.solas_pair_used),
     updated_at = excluded.updated_at
 `);
 const insertUserAchievement = db.prepare(`
@@ -435,14 +445,23 @@ function lutherMatchStats(rowOrPayload = {}) {
     rowOrPayload.bestLevel ||
     rowOrPayload.completed_levels ||
     rowOrPayload.completedLevels ||
-    rowOrPayload.score
+    rowOrPayload.score ||
+    rowOrPayload.max_combo ||
+    rowOrPayload.maxCombo ||
+    rowOrPayload.luther_pair_used ||
+    rowOrPayload.lutherPairUsed ||
+    rowOrPayload.solas_pair_used ||
+    rowOrPayload.solasPairUsed
   ));
   return {
     entered: hasProgress,
     level: Number(rowOrPayload.level || 1),
     bestLevel: Number(rowOrPayload.best_level ?? rowOrPayload.bestLevel ?? rowOrPayload.level ?? 1),
     completedLevels: Number(rowOrPayload.completed_levels ?? rowOrPayload.completedLevels ?? 0),
-    score: Number(rowOrPayload.score || 0)
+    score: Number(rowOrPayload.score || 0),
+    maxCombo: Number(rowOrPayload.max_combo ?? rowOrPayload.maxCombo ?? 0),
+    lutherPairUsed: Boolean(rowOrPayload.luther_pair_used ?? rowOrPayload.lutherPairUsed ?? false),
+    solasPairUsed: Boolean(rowOrPayload.solas_pair_used ?? rowOrPayload.solasPairUsed ?? false)
   };
 }
 function persistLutherMatchAchievements(userId, stats, now = new Date().toISOString()) {
@@ -461,6 +480,9 @@ function publicLutherMatchRow(row) {
     bestLevel: Number(row.best_level || 1),
     completedLevels: Number(row.completed_levels || 0),
     score: Number(row.score || 0),
+    maxCombo: Number(row.max_combo || 0),
+    lutherPairUsed: Boolean(row.luther_pair_used),
+    solasPairUsed: Boolean(row.solas_pair_used),
     updatedAt: row.updated_at
   };
 }
@@ -634,7 +656,7 @@ async function handleApi(req, res, url, user) {
       const stats = lutherMatchStats(row || {});
       json(res, 200, {
         gameId: LUTHER_MATCH_GAME_ID,
-        progress: row ? publicLutherMatchRow(row) : { player: user.name, level: 1, bestLevel: 1, completedLevels: 0, score: 0, updatedAt: null },
+        progress: row ? publicLutherMatchRow(row) : { player: user.name, level: 1, bestLevel: 1, completedLevels: 0, score: 0, maxCombo: 0, lutherPairUsed: false, solasPairUsed: false, updatedAt: null },
         medals: achievementsForState({}, stats, user.id, LUTHER_MATCH_GAME_ID, LUTHER_MATCH_ACHIEVEMENTS)
       });
       return;
@@ -645,8 +667,11 @@ async function handleApi(req, res, url, user) {
       const bestLevel = clampInt(payload.bestLevel ?? level, 1, 200);
       const completedLevels = clampInt(payload.completedLevels ?? Math.max(0, bestLevel - 1), 0, 200);
       const score = clampInt(payload.score, 0, 999999999);
+      const maxCombo = clampInt(payload.maxCombo, 0, 999);
+      const lutherPairUsed = payload.lutherPairUsed ? 1 : 0;
+      const solasPairUsed = payload.solasPairUsed ? 1 : 0;
       const now = new Date().toISOString();
-      upsertLutherMatchRanking.run(user.id, user.name, level, bestLevel, completedLevels, score, now);
+      upsertLutherMatchRanking.run(user.id, user.name, level, bestLevel, completedLevels, score, maxCombo, lutherPairUsed, solasPairUsed, now);
       const saved = getLutherMatchRanking.get(user.id);
       const newlyUnlocked = persistLutherMatchAchievements(user.id, lutherMatchStats(saved), now);
       json(res, 200, { ok: true, progress: publicLutherMatchRow(saved), newlyUnlocked });

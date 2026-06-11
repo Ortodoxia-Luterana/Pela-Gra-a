@@ -1,6 +1,6 @@
 Deploy trigger for SquareWeb/GitHub integration.
 
-Game hub update: replace Caminhos da Igreja with Match 3 Luterano mobile-first.
+Game hub update: rename game to Luther Metch and use generated hub/game background.
 This small public file was updated to force a fresh deploy check.
 
 Updated: 2026-06-11

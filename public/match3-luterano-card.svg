@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 540" role="img" aria-label="Match 3 Luterano">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 540" role="img" aria-label="Luther Metch">
   <defs>
     <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#25163a"/><stop offset=".48" stop-color="#0d2230"/><stop offset="1" stop-color="#553615"/></linearGradient>
     <linearGradient id="gold" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#ffe08a"/><stop offset="1" stop-color="#b56f18"/></linearGradient>
@@ -26,6 +26,6 @@
   <path d="M110 118 L110 332 L174 376 L238 332 L238 118 Z" fill="#6b3a85" stroke="url(#gold)" stroke-width="8"/>
   <circle cx="174" cy="158" r="42" fill="#f6efe0" stroke="url(#gold)" stroke-width="8"/>
   <path d="M174 132 L174 182 M154 154 L194 154" stroke="#111" stroke-width="9" stroke-linecap="round"/>
-  <text x="54" y="76" fill="#ffe08a" font-family="Georgia,serif" font-size="46" font-weight="700">Match 3 Luterano</text>
+  <text x="54" y="76" fill="#ffe08a" font-family="Georgia,serif" font-size="46" font-weight="700">Luther Metch</text>
   <text x="56" y="122" fill="#eee8db" font-family="Segoe UI,Arial,sans-serif" font-size="23">Puzzle mobile-first com objetivos e combos</text>
 </svg>

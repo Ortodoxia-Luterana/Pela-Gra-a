@@ -832,7 +832,7 @@ img.feed-avatar {
 }
 
 .ol-game-card.cronicas-cover {
-  background: linear-gradient(90deg, rgba(0, 0, 0, .08), rgba(0, 0, 0, .82)), url("/assets/cronicas-do-levante-card.svg") center/cover;
+  background: linear-gradient(90deg, rgba(0, 0, 0, .06), rgba(0, 0, 0, .78)), url("/assets/cronicas-do-levante-card.png") center/cover;
 }
 
 .ol-game-card.match3-cover {

@@ -674,7 +674,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   const gameCard = `<section class="ol-panel ol-games">
     <article class="ol-game-card pela-cover"><div><h4>Pela Graça 1904</h4><p>Gerencie igrejas, forme pastores, responda perguntas doutrinárias e acompanhe a história da IELB no Brasil.</p></div><a href="/play">Jogar</a></article>
     <article class="ol-game-card cronicas-cover"><div><h4>Crônicas do Levante</h4><p>Uma narrativa bíblica interativa nos dias do rei Davi, com escolhas, descobertas, relações e consequências pelo caminho.</p></div><a href="/cronicas-do-levante">${cronicasSave ? 'Continuar' : 'Jogar'}</a></article>
-    <article class="ol-game-card match3-cover"><div><h4>Luther Metch</h4><p>Puzzle mobile-first com objetivos, movimentos, combos, cascatas, boosters e peças temáticas da fé cristã.</p></div><a href="/luther-metch">Jogar</a></article>
+    <article class="ol-game-card match3-cover"><div><h4>Luther Metch</h4></div><a href="/luther-metch">Jogar</a></article>
     <article class="ol-game-card peregrino-cover"><div><h4>Peregrino Confessional</h4><p>Jornada curta de formação sobre Escritura, confissão, culto e vida comunitária, com escolhas e anotações salvas no navegador.</p></div><a href="/peregrino-confessional">Jogar</a></article>
     <article class="ol-game-card quiz-cover"><div><h4>Quiz Ortodoxia</h4><p>Perguntas de Bíblia, Reforma e luteranismo em modo solo, contra robô ou sala local para 2 a 4 jogadores.</p></div><a href="/quiz-ortodoxia">Jogar</a></article>
   </section>`;

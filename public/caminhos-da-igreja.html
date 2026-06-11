@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Caminhos da Igreja | Ortodoxia Luterana Gaming</title>
+  <style>
+    :root{--bg:#071017;--panel:#101b24;--paper:#efe3c2;--ink:#23180f;--gold:#d49a2c;--gold2:#f3cf73;--muted:#c7bda9;--line:rgba(243,207,115,.32)}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(130deg,#08111a,#172631 48%,#3a2818);color:#efe8d8;font-family:Segoe UI,system-ui,Arial,sans-serif}
+    .shell{min-height:100vh;display:grid;grid-template-columns:minmax(260px,340px) 1fr;gap:18px;padding:18px}
+    aside,.stage,.panel{border:1px solid var(--line);border-radius:8px;background:rgba(9,17,25,.9);box-shadow:0 18px 54px rgba(0,0,0,.34)}
+    aside{padding:18px;display:grid;align-content:start;gap:14px}.brand{display:flex;justify-content:space-between;gap:12px;align-items:start}.brand h1{margin:0;color:var(--gold2);font-family:Georgia,serif;font-size:28px}.brand a{color:var(--gold2);text-decoration:none;border:1px solid var(--line);border-radius:7px;padding:8px 10px}
+    .metric{display:grid;grid-template-columns:1fr auto;gap:8px;border-top:1px solid rgba(255,255,255,.08);padding-top:12px}.metric span{color:var(--muted)}.metric b{color:var(--gold2)}
+    .map{display:grid;gap:10px}.map button,.choice,.toolbar button{border:1px solid var(--line);border-radius:7px;background:rgba(255,255,255,.04);color:#efe8d8;padding:12px;text-align:left;cursor:pointer}.map button.active,.choice:hover,.toolbar button:hover{background:rgba(212,154,44,.18);color:var(--gold2)}
+    .stage{padding:22px;display:grid;gap:16px}.scene{min-height:370px;border-radius:8px;background:linear-gradient(180deg,rgba(239,227,194,.98),rgba(220,203,161,.96));color:var(--ink);padding:26px;display:grid;align-content:end;overflow:hidden;position:relative}
+    .eyebrow{margin:0 0 8px;color:#8b641c;text-transform:uppercase;letter-spacing:.1em;font-size:12px;font-weight:800}.scene h2{font-family:Georgia,serif;font-size:36px;margin:0 0 12px}.scene p{max-width:780px;font-size:18px;line-height:1.6;margin:0}
+    .choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}.choice strong{display:block;color:var(--gold2);margin-bottom:5px}.choice small{color:var(--muted);line-height:1.4}.toolbar{display:flex;gap:10px;flex-wrap:wrap}.log{display:grid;gap:8px}.log div{border-left:3px solid var(--gold);padding-left:10px;color:var(--muted);line-height:1.45}
+    @media(max-width:820px){.shell{grid-template-columns:1fr;padding:10px}.scene{min-height:310px}.scene h2{font-size:28px}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <aside>
+      <div class="brand"><h1>Caminhos da Igreja</h1><a href="/">Hub</a></div>
+      <p>RPG simples de exploração histórica. O foco é conhecer ambientes, personagens e decisões da caminhada cristã.</p>
+      <div class="metric"><span>Local atual</span><b id="place-name"></b></div>
+      <div class="metric"><span>Memórias</span><b><span id="memory-count">0</span>/5</b></div>
+      <div class="metric"><span>Confiança</span><b id="trust-count">0</b></div>
+      <div class="map" id="map"></div>
+      <div class="toolbar"><button type="button" id="reset">Reiniciar jornada</button></div>
+    </aside>
+    <section class="stage">
+      <article class="scene" id="scene"></article>
+      <div class="choices" id="choices"></div>
+      <section class="panel" style="padding:16px"><p class="eyebrow">Diário salvo</p><div class="log" id="log"></div></section>
+    </section>
+  </main>
+  <script>
+    const KEY="ol-game-caminhos-da-igreja-v1";
+    const PLACES=[
+      {id:"jerusalem",name:"Jerusalém",era:"Igreja antiga",title:"A comunidade dos primeiros dias",body:"Você chega a uma casa simples, onde famílias se reúnem para ouvir a Palavra, repartir o pão e cuidar dos necessitados. Ninguém fala em vencer; todos falam em permanecer.",memory:"Igreja reunida em torno da Palavra e da comunhão.",choices:[["Ajudar na distribuição aos necessitados",1],["Ouvir os presbíteros contarem sobre perseverança",1]]},
+      {id:"niceia",name:"Niceia",era:"Concílios",title:"Uma sala cheia de perguntas",body:"Bispos discutem linguagem precisa para confessar Cristo contra erros que parecem pequenos, mas mudam tudo. Você percebe que palavras guardam a fé da Igreja.",memory:"A confissão de Cristo exige clareza.",choices:[["Anotar a diferença entre confessar e inventar",2],["Conversar com um jovem copista",2]]},
+      {id:"wartburg",name:"Wartburg",era:"Reforma",title:"A Palavra na língua do povo",body:"Entre pedra, tinta e silêncio, a tradução avança. A Escritura deixa de parecer trancada em uma torre e passa a soar como voz para gente comum.",memory:"A Reforma levou a Escritura ao povo.",choices:[["Ajudar a revisar uma página",3],["Perguntar por que traduzir importa tanto",3]]},
+      {id:"augsburg",name:"Augsburgo",era:"Confissão",title:"Diante do imperador",body:"A sala é formal, mas a questão é pastoral: confessar publicamente o Evangelho. Você entende que coragem cristã nem sempre faz barulho; às vezes ela lê um texto com firmeza.",memory:"A Confissão de Augsburgo apresenta a fé com ordem e sobriedade.",choices:[["Guardar uma frase da confissão",4],["Observar como respondem sem agressividade",4]]},
+      {id:"brasil",name:"Brasil",era:"Missão",title:"Comunidade em formação",body:"Imigrantes, famílias, escola, culto, visitas e ensino. A história da Igreja chega como trabalho cotidiano, não como vitrine. Você vê que tradição viva precisa ser ensinada.",memory:"A fé luterana no Brasil cresce com culto, ensino e cuidado.",choices:[["Organizar uma classe de ensino",0],["Registrar nomes para a memória da comunidade",0]]}
+    ];
+    const state=load();
+    function load(){try{return {...{place:0,memories:[],trust:0,log:["Jornada iniciada."]},...JSON.parse(localStorage.getItem(KEY)||"{}")}}catch{return {place:0,memories:[],trust:0,log:["Jornada iniciada."]}}}
+    function save(){localStorage.setItem(KEY,JSON.stringify(state))}
+    function visit(index,trust=0){const p=PLACES[index];state.place=index;state.trust+=trust;if(!state.memories.includes(p.memory))state.memories.push(p.memory);state.log.unshift(`${p.name}: ${p.memory}`);state.log=state.log.slice(0,6);save();render()}
+    function render(){const p=PLACES[state.place];document.querySelector("#place-name").textContent=p.name;document.querySelector("#memory-count").textContent=state.memories.length;document.querySelector("#trust-count").textContent=state.trust;document.querySelector("#scene").innerHTML=`<p class="eyebrow">${p.era}</p><h2>${p.title}</h2><p>${p.body}</p>`;document.querySelector("#choices").innerHTML=p.choices.map(([text,next])=>`<button class="choice" type="button" data-next="${next}"><strong>${text}</strong><small>Avança a jornada e salva o progresso automaticamente.</small></button>`).join("");document.querySelector("#map").innerHTML=PLACES.map((x,i)=>`<button class="${i===state.place?"active":""}" type="button" data-place="${i}">${x.name}</button>`).join("");document.querySelector("#log").innerHTML=state.log.map(x=>`<div>${x}</div>`).join("")}
+    document.querySelector("#choices").addEventListener("click",e=>{const b=e.target.closest("[data-next]");if(b)visit(Number(b.dataset.next),1)});
+    document.querySelector("#map").addEventListener("click",e=>{const b=e.target.closest("[data-place]");if(b)visit(Number(b.dataset.place),0)});
+    document.querySelector("#reset").addEventListener("click",()=>{localStorage.removeItem(KEY);location.reload()});
+    render();
+  </script>
+</body>
+</html>

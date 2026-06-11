@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Quiz Ortodoxia | Ortodoxia Luterana Gaming</title>
+  <style>
+    :root{--gold:#d79b2c;--gold2:#f2c75f;--text:#eee8db;--muted:#aaa49b;--line:rgba(242,199,95,.34);--ok:#63bd70;--bad:#c76358}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(135deg,#0a111a,#16202c 52%,#3b2815);color:var(--text);font-family:Segoe UI,system-ui,Arial,sans-serif}.app{max-width:1120px;margin:0 auto;padding:18px;display:grid;gap:16px}.top{display:flex;justify-content:space-between;gap:12px;align-items:center}.top h1{margin:0;color:var(--gold2);font-family:Georgia,serif;font-size:36px}.top a,.btn{border:1px solid var(--line);border-radius:7px;color:var(--gold2);background:rgba(255,255,255,.04);text-decoration:none;padding:10px 12px;cursor:pointer}.panel{border:1px solid var(--line);border-radius:8px;background:rgba(10,18,25,.9);padding:16px}.setup{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}.mode{border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(255,255,255,.04);color:var(--text);padding:14px;text-align:left;cursor:pointer}.mode.active{border-color:var(--gold);background:rgba(215,155,44,.16)}.mode strong{display:block;color:var(--gold2)}.quiz{display:grid;grid-template-columns:1fr 300px;gap:16px}.question{min-height:330px;border-radius:8px;border:1px solid var(--line);padding:24px;background:linear-gradient(135deg,rgba(239,227,194,.95),rgba(223,205,164,.95));color:#24190f;display:grid;align-content:center}.eyebrow{margin:0 0 8px;color:var(--gold2);text-transform:uppercase;letter-spacing:.1em;font-size:12px;font-weight:800}.question .eyebrow{color:#8a641d}.question h2{font-family:Georgia,serif;font-size:32px;margin:0 0 16px}.answers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.answer{border:1px solid rgba(36,25,15,.25);border-radius:7px;background:#fff8df;color:#24190f;padding:13px;text-align:left;cursor:pointer}.answer.correct{border-color:var(--ok);background:#dff4df}.answer.wrong{border-color:var(--bad);background:#f5d7d2}.scoreboard{display:grid;gap:10px}.player{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;border:1px solid rgba(255,255,255,.1);border-radius:7px;padding:12px}.player.active{border-color:var(--gold);background:rgba(215,155,44,.12)}.player b{color:var(--gold2)}.muted{color:var(--muted)}.actions{display:flex;gap:10px;flex-wrap:wrap}.hidden{display:none}@media(max-width:820px){.quiz{grid-template-columns:1fr}.answers{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}.question h2{font-size:26px}}
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="top"><div><p class="eyebrow">Bíblia, Reforma e luteranismo</p><h1>Quiz Ortodoxia</h1></div><a href="/">Voltar ao hub</a></header>
+    <section class="panel"><p class="eyebrow">Modo de jogo</p><div class="setup" id="modes"></div><div class="actions" style="margin-top:12px"><button class="btn" id="start">Iniciar rodada</button><button class="btn" id="reset">Limpar save</button></div><p class="muted" id="best"></p></section>
+    <section class="quiz">
+      <article class="question"><p class="eyebrow" id="round-label">Rodada</p><h2 id="question">Escolha um modo e inicie.</h2><div class="answers" id="answers"></div><p id="feedback"></p></article>
+      <aside class="panel"><p class="eyebrow">Sala</p><div class="scoreboard" id="scoreboard"></div></aside>
+    </section>
+  </main>
+  <script>
+    const KEY="ol-game-quiz-ortodoxia-v1";
+    const QUESTIONS=[
+      {q:"Qual princípio da Reforma afirma que a Escritura é a norma final da doutrina?",a:["Sola Scriptura","Sola Cultura","Sola Ratio","Sola História"],c:0},
+      {q:"Na tradição luterana, a justificação é recebida por:",a:["Obras acumuladas","Fé em Cristo","Mérito familiar","Cargo eclesiástico"],c:1},
+      {q:"Qual documento é uma apresentação central da fé luterana em 1530?",a:["Edito de Worms","Confissão de Augsburgo","Vulgata","Didachê"],c:1},
+      {q:"O centro da pregação cristã é:",a:["Autoajuda","Cristo crucificado e ressuscitado","Política partidária","Genealogias sem fim"],c:1},
+      {q:"Catecismo serve principalmente para:",a:["Substituir a Bíblia","Ensinar a fé de modo claro","Criar ranking social","Evitar perguntas"],c:1},
+      {q:"Batismo e Ceia devem ser tratados como:",a:["Brincadeiras religiosas","Meios ligados à promessa de Deus","Símbolos vazios","Prêmios por pontuação"],c:1}
+    ];
+    const MODES={solo:["Jogador"],bot:["Jogador","Robô"],multi2:["Jogador 1","Jogador 2"],multi3:["Jogador 1","Jogador 2","Jogador 3"],multi4:["Jogador 1","Jogador 2","Jogador 3","Jogador 4"]};
+    let state=load();
+    function load(){try{return {...{mode:"solo",round:0,current:0,turn:0,players:[{name:"Jogador",score:0}],best:0,last:[]},...JSON.parse(localStorage.getItem(KEY)||"{}")}}catch{return{mode:"solo",round:0,current:0,turn:0,players:[{name:"Jogador",score:0}],best:0,last:[]}}}
+    function save(){localStorage.setItem(KEY,JSON.stringify(state))}
+    function setMode(mode){state.mode=mode;state.players=MODES[mode].map(name=>({name,score:0}));state.round=0;state.turn=0;state.current=0;state.last=[];save();render()}
+    function start(){state.players=MODES[state.mode].map(name=>({name,score:0}));state.round=1;state.turn=0;state.current=Math.floor(Math.random()*QUESTIONS.length);state.last=[];save();render()}
+    function answer(index){if(!state.round)return;const q=QUESTIONS[state.current];const p=state.players[state.turn];const ok=index===q.c;if(ok)p.score+=10;state.last.unshift(`${p.name}: ${ok?"acertou":"errou"} (${q.a[index]})`);if(state.mode==="bot"&&state.turn===0){const robotOk=Math.random()<0.68;state.players[1].score+=robotOk?10:0;state.last.unshift(`Robô: ${robotOk?"acertou":"errou"}`)}
+      if(state.mode==="solo"||state.mode==="bot"||state.turn>=state.players.length-1){state.round+=1;state.turn=0;state.current=(state.current+1+Math.floor(Math.random()*(QUESTIONS.length-1)))%QUESTIONS.length}else{state.turn+=1}
+      const top=Math.max(...state.players.map(x=>x.score));state.best=Math.max(state.best,top);save();render(index,ok)}
+    function render(chosen=null,ok=null){document.querySelector("#modes").innerHTML=Object.entries({solo:"Solo",bot:"Contra robô",multi2:"Sala 2 pessoas",multi3:"Sala 3 pessoas",multi4:"Sala 4 pessoas"}).map(([id,label])=>`<button class="mode ${state.mode===id?"active":""}" data-mode="${id}"><strong>${label}</strong><span class="muted">${MODES[id].join(", ")}</span></button>`).join("");document.querySelector("#best").textContent=`Melhor pontuação salva: ${state.best} pts`;const q=QUESTIONS[state.current]||QUESTIONS[0];document.querySelector("#round-label").textContent=state.round?`Rodada ${state.round} - vez de ${state.players[state.turn].name}`:"Rodada";document.querySelector("#question").textContent=state.round?q.q:"Escolha um modo e inicie.";document.querySelector("#answers").innerHTML=state.round?q.a.map((x,i)=>`<button class="answer ${chosen===i?(ok?"correct":"wrong"):""}" data-answer="${i}">${x}</button>`).join(""):"";document.querySelector("#feedback").textContent=chosen===null?"":ok?"Resposta correta.":"Resposta incorreta.";document.querySelector("#scoreboard").innerHTML=state.players.map((p,i)=>`<div class="player ${i===state.turn?"active":""}"><span>${p.name}</span><b>${p.score}</b></div>`).join("")+state.last.slice(0,5).map(x=>`<p class="muted">${x}</p>`).join("")}
+    document.querySelector("#modes").addEventListener("click",e=>{const b=e.target.closest("[data-mode]");if(b)setMode(b.dataset.mode)});
+    document.querySelector("#answers").addEventListener("click",e=>{const b=e.target.closest("[data-answer]");if(b)answer(Number(b.dataset.answer))});
+    document.querySelector("#start").addEventListener("click",start);
+    document.querySelector("#reset").addEventListener("click",()=>{localStorage.removeItem(KEY);location.reload()});
+    render();
+  </script>
+</body>
+</html>

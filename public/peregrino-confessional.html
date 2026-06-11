@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Peregrino Confessional | Ortodoxia Luterana Gaming</title>
+  <style>
+    :root{--panel:#101b20;--gold:#d79b2c;--gold2:#f2c75f;--text:#eee8db;--muted:#b9b1a4;--line:rgba(242,199,95,.33);--blue:#4b8795}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(135deg,#0a1518,#15222a 54%,#3a2030);color:var(--text);font-family:Segoe UI,system-ui,Arial,sans-serif}.wrap{max-width:1180px;margin:0 auto;padding:18px;display:grid;gap:16px}.top{display:flex;justify-content:space-between;gap:12px;align-items:center}.top h1{margin:0;color:var(--gold2);font-family:Georgia,serif;font-size:34px}.top a,.btn{border:1px solid var(--line);border-radius:7px;color:var(--gold2);background:rgba(255,255,255,.04);text-decoration:none;padding:10px 12px;cursor:pointer}.grid{display:grid;grid-template-columns:320px 1fr;gap:16px}.card{border:1px solid var(--line);border-radius:8px;background:rgba(10,18,24,.88);padding:16px}.steps{display:grid;gap:10px}.step{border:1px solid rgba(255,255,255,.1);border-radius:7px;padding:12px;background:rgba(255,255,255,.035)}.step.active{border-color:var(--gold);background:rgba(215,155,44,.13)}.step.done{border-color:rgba(111,191,115,.55)}.step strong{display:block}.step small,.muted{color:var(--muted)}.scene{min-height:430px;display:grid;align-content:end;border-radius:8px;padding:28px;background:linear-gradient(180deg,rgba(10,18,24,.1),rgba(10,18,24,.8)),linear-gradient(135deg,#314a55,#6a4c24);border:1px solid var(--line)}.eyebrow{margin:0 0 8px;color:var(--gold2);text-transform:uppercase;letter-spacing:.1em;font-size:12px;font-weight:800}.scene h2{font-family:Georgia,serif;font-size:40px;margin:0 0 12px}.scene p{max-width:760px;line-height:1.65;font-size:18px}.choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:14px}.choice{border:1px solid var(--line);border-radius:7px;background:rgba(255,255,255,.05);color:var(--text);padding:14px;text-align:left;cursor:pointer}.choice:hover{background:rgba(75,135,149,.22)}.virtues{display:flex;gap:8px;flex-wrap:wrap}.pill{border:1px solid var(--line);border-radius:999px;padding:7px 10px;color:var(--gold2);background:rgba(0,0,0,.2)}textarea{width:100%;min-height:110px;border:1px solid rgba(255,255,255,.18);border-radius:7px;background:rgba(0,0,0,.22);color:var(--text);padding:10px;font:inherit}.actions{display:flex;gap:10px;flex-wrap:wrap}@media(max-width:840px){.grid{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}.scene h2{font-size:30px}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="top"><div><p class="eyebrow">Jornada de formação</p><h1>Peregrino Confessional</h1></div><a href="/">Voltar ao hub</a></header>
+    <section class="grid">
+      <aside class="card"><h2>Etapas salvas</h2><div class="steps" id="steps"></div><h2>Virtudes praticadas</h2><div class="virtues" id="virtues"></div></aside>
+      <section>
+        <article class="scene" id="scene"></article>
+        <div class="choices" id="choices"></div>
+        <article class="card" style="margin-top:16px"><p class="eyebrow">Anotação do jogador</p><textarea id="note" placeholder="Escreva uma observação da jornada..."></textarea><div class="actions"><button class="btn" id="save-note" type="button">Salvar anotação</button><button class="btn" id="reset" type="button">Reiniciar</button></div><p class="muted" id="saved-msg"></p></article>
+      </section>
+    </section>
+  </main>
+  <script>
+    const KEY="ol-game-peregrino-confessional-v1";
+    const STEPS=[
+      {t:"Escritura",h:"A Palavra que chama",b:"Você abre a jornada diante da Escritura. O primeiro desafio não é falar muito, mas aprender a ouvir antes de responder.",c:[["Ler com paciência",1,"Escuta"],["Pedir ajuda para entender",1,"Humildade"]]},
+      {t:"Confissão",h:"Dizer a mesma fé",b:"A comunidade pede que você explique a esperança cristã sem transformar doutrina em briga. Clareza e caridade precisam caminhar juntas.",c:[["Responder com precisão",2,"Clareza"],["Evitar provocação inútil",2,"Mansidão"]]},
+      {t:"Culto",h:"Receber antes de oferecer",b:"No culto, você percebe que a vida cristã não nasce de performance. A comunidade recebe Palavra, perdão e consolo.",c:[["Guardar reverência",3,"Reverência"],["Servir sem aparecer",3,"Serviço"]]},
+      {t:"Comunidade",h:"O próximo concreto",b:"A fé aparece em visitas, ensino, paciência com os fracos e perdão pedido. A jornada termina abrindo outra: viver junto.",c:[["Visitar alguém sozinho",4,"Cuidado"],["Ensinar uma criança",4,"Fidelidade"]]},
+      {t:"Envio",h:"Permanecer no caminho",b:"Você conclui a primeira rota. O jogo salva suas virtudes e anotações para que a próxima visita continue de onde parou.",c:[["Recomeçar para praticar outra rota",0,"Perseverança"]]}
+    ];
+    let state=load();
+    function load(){try{return {...{step:0,done:[],virtues:[],note:""},...JSON.parse(localStorage.getItem(KEY)||"{}")}}catch{return{step:0,done:[],virtues:[],note:""}}}
+    function save(){localStorage.setItem(KEY,JSON.stringify(state))}
+    function choose(next,virtue){if(!state.done.includes(state.step))state.done.push(state.step);if(!state.virtues.includes(virtue))state.virtues.push(virtue);state.step=next;save();render()}
+    function render(){const s=STEPS[state.step];document.querySelector("#scene").innerHTML=`<p class="eyebrow">${s.t}</p><h2>${s.h}</h2><p>${s.b}</p>`;document.querySelector("#choices").innerHTML=s.c.map(([label,next,virtue])=>`<button class="choice" data-next="${next}" data-virtue="${virtue}"><strong>${label}</strong><p class="muted">Prática: ${virtue}. O progresso será salvo.</p></button>`).join("");document.querySelector("#steps").innerHTML=STEPS.map((x,i)=>`<div class="step ${i===state.step?"active":""} ${state.done.includes(i)?"done":""}"><strong>${i+1}. ${x.t}</strong><small>${i===state.step?"Em andamento":state.done.includes(i)?"Concluída":"Aguardando"}</small></div>`).join("");document.querySelector("#virtues").innerHTML=(state.virtues.length?state.virtues:["Nenhuma ainda"]).map(x=>`<span class="pill">${x}</span>`).join("");document.querySelector("#note").value=state.note||""}
+    document.querySelector("#choices").addEventListener("click",e=>{const b=e.target.closest("[data-next]");if(b)choose(Number(b.dataset.next),b.dataset.virtue)});
+    document.querySelector("#save-note").addEventListener("click",()=>{state.note=document.querySelector("#note").value;save();document.querySelector("#saved-msg").textContent="Anotação salva neste navegador."});
+    document.querySelector("#reset").addEventListener("click",()=>{localStorage.removeItem(KEY);location.reload()});
+    render();
+  </script>
+</body>
+</html>

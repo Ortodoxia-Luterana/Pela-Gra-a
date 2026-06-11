@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 540" role="img" aria-label="Caminhos da Igreja">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#243b4f"/>
+      <stop offset=".52" stop-color="#101820"/>
+      <stop offset="1" stop-color="#594225"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#f5d37c"/>
+      <stop offset="1" stop-color="#b87921"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="540" fill="url(#bg)"/>
+  <path d="M0 410 C140 360 240 430 370 382 C520 326 624 362 900 306 L900 540 L0 540 Z" fill="#0b1117" opacity=".62"/>
+  <path d="M135 370 L135 235 L210 185 L285 235 L285 370 Z" fill="#d8c48f"/>
+  <path d="M167 370 L167 278 L253 278 L253 370 Z" fill="#2c1e16"/>
+  <path d="M210 130 L210 186 M178 158 L242 158" stroke="url(#gold)" stroke-width="18" stroke-linecap="round"/>
+  <path d="M405 380 L405 190 L475 140 L545 190 L545 380 Z" fill="#b9a36d"/>
+  <path d="M435 380 L435 264 L515 264 L515 380 Z" fill="#251913"/>
+  <path d="M475 94 L475 140 M446 116 L504 116" stroke="url(#gold)" stroke-width="16" stroke-linecap="round"/>
+  <path d="M654 388 L654 226 L716 182 L778 226 L778 388 Z" fill="#ead99c"/>
+  <path d="M681 388 L681 292 L751 292 L751 388 Z" fill="#2b2018"/>
+  <path d="M716 136 L716 182 M690 158 L742 158" stroke="url(#gold)" stroke-width="15" stroke-linecap="round"/>
+  <circle cx="780" cy="84" r="52" fill="#f5d37c" opacity=".78"/>
+  <text x="54" y="76" fill="#f5d37c" font-family="Georgia,serif" font-size="44" font-weight="700">Caminhos da Igreja</text>
+  <text x="56" y="122" fill="#eee8db" font-family="Segoe UI,Arial,sans-serif" font-size="23">RPG histórico de exploração</text>
+</svg>

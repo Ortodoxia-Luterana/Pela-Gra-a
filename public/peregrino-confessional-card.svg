@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 540" role="img" aria-label="Peregrino Confessional">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#142c2f"/>
+      <stop offset=".58" stop-color="#111820"/>
+      <stop offset="1" stop-color="#4a2430"/>
+    </linearGradient>
+    <linearGradient id="path" x1="0" x2="1">
+      <stop offset="0" stop-color="#79562a"/>
+      <stop offset="1" stop-color="#e5c06a"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="540" fill="url(#bg)"/>
+  <path d="M0 452 C168 384 310 430 445 338 C585 244 694 238 900 174 L900 540 L0 540 Z" fill="#071015" opacity=".8"/>
+  <path d="M96 510 C220 408 308 380 430 330 C552 280 632 226 812 116" fill="none" stroke="url(#path)" stroke-width="54" stroke-linecap="round" opacity=".72"/>
+  <circle cx="218" cy="398" r="28" fill="#f2c75f"/>
+  <circle cx="416" cy="322" r="28" fill="#f2c75f"/>
+  <circle cx="616" cy="214" r="28" fill="#f2c75f"/>
+  <path d="M703 292 L703 172 L766 128 L829 172 L829 292 Z" fill="#d9c792"/>
+  <path d="M766 88 L766 128 M738 108 L794 108" stroke="#f2c75f" stroke-width="16" stroke-linecap="round"/>
+  <rect x="82" y="132" width="270" height="210" rx="13" fill="#eadfbf" opacity=".92"/>
+  <path d="M118 185 H315 M118 229 H315 M118 273 H260" stroke="#5b3f22" stroke-width="14" stroke-linecap="round"/>
+  <text x="54" y="76" fill="#f2c75f" font-family="Georgia,serif" font-size="44" font-weight="700">Peregrino Confessional</text>
+  <text x="56" y="122" fill="#eee8db" font-family="Segoe UI,Arial,sans-serif" font-size="23">Jornada de formação e discernimento</text>
+</svg>

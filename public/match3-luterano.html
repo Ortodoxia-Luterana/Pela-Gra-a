@@ -277,46 +277,6 @@
       font-weight: 800;
     }
 
-    .overlay {
-      position: fixed;
-      inset: 0;
-      display: none;
-      place-items: center;
-      padding: 18px;
-      background: rgba(4, 9, 14, .68);
-      z-index: 10;
-    }
-
-    .overlay.show { display: grid; }
-
-    .modal {
-      width: min(100%, 420px);
-      border: 2px solid var(--gold);
-      border-radius: 14px;
-      background: linear-gradient(180deg, #fff5d7, #e5c985);
-      color: var(--ink);
-      padding: 20px;
-      text-align: center;
-      box-shadow: 0 24px 70px rgba(0, 0, 0, .5);
-    }
-
-    .modal h2 { margin: 0 0 8px; font-family: Georgia, serif; font-size: 28px; }
-    .modal p { margin: 0 0 16px; line-height: 1.45; }
-    .modal button, .modal a {
-      display: inline-flex;
-      min-height: 44px;
-      align-items: center;
-      justify-content: center;
-      border-radius: 8px;
-      border: 1px solid #8a5c1f;
-      background: linear-gradient(180deg, var(--gold-2), var(--gold));
-      color: #22160a;
-      font-weight: 900;
-      padding: 10px 14px;
-      margin: 4px;
-      cursor: pointer;
-    }
-
     @keyframes pop {
       0% { transform: scale(1); opacity: 1; filter: brightness(1); }
       45% { transform: scale(1.12); opacity: 1; filter: brightness(1.4); }
@@ -401,15 +361,6 @@
     <div class="message" id="message">Deslize uma peça para trocar com a vizinha.</div>
   </main>
 
-  <div class="overlay" id="overlay">
-    <section class="modal">
-      <h2 id="modal-title">Fase concluída</h2>
-      <p id="modal-copy"></p>
-      <button type="button" id="next-level">Continuar</button>
-      <a href="/">Hub</a>
-    </section>
-  </div>
-
   <script>
     const KEY = "ol-luther-metch-v2";
     const SIZE = 8;
@@ -449,7 +400,6 @@
     let isBusy = false;
     const boardEl = document.querySelector("#board");
     const messageEl = document.querySelector("#message");
-    const overlay = document.querySelector("#overlay");
 
     function makeTile(type = randType(), special = null) { return { type, special }; }
     function tileType(tile) { return typeof tile === "string" ? tile : tile?.type; }
@@ -939,20 +889,19 @@
       render();
     }
 
-    function finish(win) {
+    async function finish(win) {
       state.over = true;
       if (win) {
         state.completedLevels = Math.max(state.completedLevels || 0, state.level);
         state.bestLevel = Math.max(state.bestLevel || 1, Math.min(MAX_LEVEL, state.level + 1));
       }
       saveState();
-      document.querySelector("#modal-title").textContent = win ? "Fase concluida" : "Sem movimentos";
-      document.querySelector("#modal-copy").textContent = win
-        ? state.level >= MAX_LEVEL ? `Nivel ${MAX_LEVEL} vencido com ${state.score} pontos. Campanha completa.` : `Nivel ${state.level} vencido com ${state.score} pontos.`
-        : "Os objetivos nao foram concluidos. Reinicie a fase e tente outro caminho.";
-      document.querySelector("#next-level").textContent = win && state.level >= MAX_LEVEL ? "Rejogar nivel 200" : win ? "Proximo nivel" : "Tentar de novo";
-      overlay.classList.add("show");
+      message(win
+        ? state.level >= MAX_LEVEL ? "Campanha completa. Recarregando o nivel 200." : `Nivel ${state.level} concluido. Indo para o proximo...`
+        : "Sem movimentos. Reiniciando a fase...");
       render();
+      await wait(win ? 900 : 1100);
+      nextLevel();
     }
 
     function nextLevel() {
@@ -969,9 +918,8 @@
       next.boosters = config.boosters;
       next.board = makeBoard();
       state = next;
-      overlay.classList.remove("show");
       saveState();
-      message("Nova fase carregada.");
+      message(goalsDone() ? "Fase reiniciada." : `Nivel ${state.level} carregado.`);
       render();
     }
 
@@ -980,7 +928,6 @@
       state = baseState();
       applyLevelConfig(state);
       state.board = makeBoard();
-      overlay.classList.remove("show");
       message("Fase reiniciada.");
       saveState();
       render();
@@ -1068,7 +1015,6 @@
     });
 
     document.querySelector("#restart").addEventListener("click", restart);
-    document.querySelector("#next-level").addEventListener("click", nextLevel);
     document.querySelector("#sound").addEventListener("click", () => message("Som reservado para a proxima etapa."));
 
     render();

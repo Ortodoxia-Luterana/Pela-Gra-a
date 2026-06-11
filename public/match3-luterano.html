@@ -17,7 +17,6 @@
       --muted: #d8c9aa;
       --danger: #c7433d;
       --ok: #6fd16f;
-      --board-size: min(calc(100vw - 52px), 520px);
     }
 
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -40,7 +39,7 @@
     a { color: inherit; text-decoration: none; }
 
     .app {
-      width: min(100%, 560px);
+      width: min(100%, 390px);
       min-height: 100dvh;
       margin: 0 auto;
       padding: max(10px, env(safe-area-inset-top)) 10px max(14px, env(safe-area-inset-bottom));
@@ -120,7 +119,7 @@
       text-transform: uppercase;
     }
 
-    .hud strong { display: block; font-family: Georgia, serif; font-size: 25px; line-height: 1.05; }
+    .hud strong { display: block; font-family: Georgia, serif; font-size: clamp(21px, 7vw, 30px); line-height: 1.05; }
 
     .objectives {
       display: grid;
@@ -146,13 +145,18 @@
 
     .board-wrap {
       align-self: start;
+      width: 100%;
+      max-width: 536px;
+      margin: 0 auto;
       padding: 8px;
       background: linear-gradient(180deg, rgba(18, 48, 61, .98), rgba(9, 29, 41, .98));
       border-width: 2px;
     }
 
     .board {
-      width: var(--board-size);
+      width: 100%;
+      max-width: 520px;
+      margin: 0 auto;
       aspect-ratio: 1;
       display: grid;
       grid-template-columns: repeat(8, 1fr);
@@ -170,6 +174,7 @@
       padding: 2px;
       cursor: pointer;
       overflow: hidden;
+      transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
     }
 
     .cell::after {
@@ -188,7 +193,30 @@
     }
 
     .cell.matched {
-      animation: pop .24s ease both;
+      animation: pop .48s ease both;
+      z-index: 3;
+    }
+
+    .cell.swap-from { animation: nudge-from .34s ease both; }
+    .cell.swap-to { animation: nudge-to .34s ease both; }
+    .cell.special-hit { animation: special-hit .68s ease both; }
+    .cell.explosion {
+      animation: explosion .76s ease both;
+      box-shadow: 0 0 0 2px rgba(255, 224, 138, .8), 0 0 22px rgba(255, 197, 65, .74);
+    }
+
+    .cell.created {
+      animation: created .78s ease both;
+      box-shadow: 0 0 0 2px rgba(255, 224, 138, .86), 0 0 24px rgba(255, 224, 138, .72);
+    }
+
+    .cell.dragging {
+      z-index: 4;
+      box-shadow: 0 12px 26px rgba(0, 0, 0, .44);
+    }
+
+    .cell.dragging .piece {
+      transform: translate(var(--drag-x, 0px), var(--drag-y, 0px)) scale(1.06);
     }
 
     .piece {
@@ -197,6 +225,7 @@
       object-fit: contain;
       filter: drop-shadow(0 6px 4px rgba(0, 0, 0, .34));
       pointer-events: none;
+      transition: transform .12s ease;
     }
 
     .piece.special {
@@ -289,8 +318,39 @@
     }
 
     @keyframes pop {
-      0% { transform: scale(1); opacity: 1; }
-      100% { transform: scale(.2); opacity: 0; }
+      0% { transform: scale(1); opacity: 1; filter: brightness(1); }
+      45% { transform: scale(1.12); opacity: 1; filter: brightness(1.4); }
+      100% { transform: scale(.18); opacity: 0; filter: brightness(1.8); }
+    }
+
+    @keyframes nudge-from {
+      0% { transform: scale(1); }
+      45% { transform: translate(var(--swap-x, 0px), var(--swap-y, 0px)) scale(1.04); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes nudge-to {
+      0% { transform: scale(1); }
+      45% { transform: translate(calc(var(--swap-x, 0px) * -1), calc(var(--swap-y, 0px) * -1)) scale(1.04); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes special-hit {
+      0% { transform: scale(1); filter: brightness(1); }
+      35% { transform: scale(1.18); filter: brightness(1.8); }
+      100% { transform: scale(.15) rotate(16deg); opacity: 0; filter: brightness(2); }
+    }
+
+    @keyframes explosion {
+      0% { transform: scale(.92); opacity: 1; filter: brightness(1); }
+      38% { transform: scale(1.16); opacity: 1; filter: brightness(2); }
+      100% { transform: scale(.08); opacity: 0; filter: brightness(2.4); }
+    }
+
+    @keyframes created {
+      0% { transform: scale(.2) rotate(-8deg); opacity: .2; filter: brightness(2); }
+      55% { transform: scale(1.2); opacity: 1; filter: brightness(1.7); }
+      100% { transform: scale(1); opacity: 1; filter: brightness(1); }
     }
 
     @media (min-width: 760px) {
@@ -302,6 +362,9 @@
       }
       .top { grid-column: 1 / -1; }
       .hud, .objectives { grid-column: 1; }
+      .hud { grid-template-columns: 1fr; }
+      .hud article { min-height: 74px; padding: 11px 10px; }
+      .hud strong { font-size: 34px; }
       .objectives { grid-template-columns: 1fr; }
       .board-wrap { grid-column: 2; grid-row: 2 / span 2; }
       .boosters, .message { grid-column: 3; }
@@ -378,6 +441,7 @@
 
     let state = loadState();
     let pointerStart = null;
+    let isBusy = false;
     const boardEl = document.querySelector("#board");
     const messageEl = document.querySelector("#message");
     const overlay = document.querySelector("#overlay");
@@ -385,6 +449,7 @@
     function makeTile(type = randType(), special = null) { return { type, special }; }
     function tileType(tile) { return typeof tile === "string" ? tile : tile?.type; }
     function tileSpecial(tile) { return typeof tile === "object" ? tile?.special : null; }
+    function matchType(tile) { return tileSpecial(tile) ? null : tileType(tile); }
     function normalizeBoard(board) { return board.map(tile => tile ? makeTile(tileType(tile), tileSpecial(tile)) : null); }
 
     function loadState() {
@@ -465,17 +530,25 @@
     function swap(a, b) { [state.board[a], state.board[b]] = [state.board[b], state.board[a]]; }
 
     async function select(index) {
-      if (state.over) return;
+      if (state.over || isBusy) return;
+      isBusy = true;
       if (state.mode === "hammer") {
-        if (state.boosters.hammer <= 0) return;
+        if (state.boosters.hammer <= 0) {
+          isBusy = false;
+          return;
+        }
         state.boosters.hammer -= 1;
+        mark([index], "special-hit");
+        await wait(360);
         removeCells([index], true);
         state.mode = null;
         state.moves -= 1;
         await settle();
         afterMove();
+        isBusy = false;
         return;
       }
+      isBusy = false;
       if (state.selected === null) {
         state.selected = index;
         message("Deslize uma peca ou toque em uma vizinha.");
@@ -499,26 +572,35 @@
     }
 
     async function tryMove(first, second) {
-      if (state.over || !adjacent(first, second)) return;
+      if (state.over || isBusy || !adjacent(first, second)) return;
+      isBusy = true;
       const specialA = tileSpecial(state.board[first]);
       const specialB = tileSpecial(state.board[second]);
       if (specialA || specialB) {
+        await animateSwap(first, second);
         state.moves -= 1;
         await activateSpecialMove(first, second);
         afterMove();
+        isBusy = false;
         return;
       }
+      await animateSwap(first, second);
       swap(first, second);
+      render();
+      await wait(120);
       let groups = findMatchGroups();
       if (!groups.length) {
+        await animateSwap(second, first);
         swap(first, second);
         message("Sem combinacao. Tente outro movimento.");
         render();
+        isBusy = false;
         return;
       }
       state.moves -= 1;
       await resolveMatches(groups, second);
       afterMove();
+      isBusy = false;
     }
 
     function findMatchGroups() {
@@ -527,7 +609,7 @@
         let run = [r * SIZE];
         for (let c = 1; c < SIZE; c += 1) {
           const i = r * SIZE + c;
-          if (tileType(state.board[i]) && tileType(state.board[i]) === tileType(state.board[run[0]])) run.push(i);
+          if (matchType(state.board[i]) && matchType(state.board[i]) === matchType(state.board[run[0]])) run.push(i);
           else { if (run.length >= 3) groups.push([...run]); run = [i]; }
         }
         if (run.length >= 3) groups.push([...run]);
@@ -536,7 +618,7 @@
         let run = [c];
         for (let r = 1; r < SIZE; r += 1) {
           const i = r * SIZE + c;
-          if (tileType(state.board[i]) && tileType(state.board[i]) === tileType(state.board[run[0]])) run.push(i);
+          if (matchType(state.board[i]) && matchType(state.board[i]) === matchType(state.board[run[0]])) run.push(i);
           else { if (run.length >= 3) groups.push([...run]); run = [i]; }
         }
         if (run.length >= 3) groups.push([...run]);
@@ -562,6 +644,18 @@
       return [...cells];
     }
 
+    function block6Cells(centerIndex) {
+      const centerRow = Math.floor(centerIndex / SIZE);
+      const centerCol = centerIndex % SIZE;
+      const top = Math.max(0, Math.min(SIZE - 6, centerRow - 2));
+      const left = Math.max(0, Math.min(SIZE - 6, centerCol - 2));
+      const cells = [];
+      for (let r = top; r < top + 6; r += 1) {
+        for (let c = left; c < left + 6; c += 1) cells.push(r * SIZE + c);
+      }
+      return cells;
+    }
+
     function expandSpecialCells(cells) {
       const expanded = new Set(cells);
       cells.forEach(index => {
@@ -570,8 +664,8 @@
       return [...expanded];
     }
 
-    function removeCells(cells, hammer = false) {
-      const expanded = expandSpecialCells(cells);
+    function removeCells(cells, hammer = false, expand = true) {
+      const expanded = expand ? expandSpecialCells(cells) : [...new Set(cells)];
       expanded.forEach(index => {
         const id = tileType(state.board[index]);
         if (OBJECTIVE_IDS.includes(id)) state.collected[id] = (state.collected[id] || 0) + 1;
@@ -586,13 +680,14 @@
       const special = tileSpecial(state.board[specialIndex]);
       const targetType = tileType(state.board[otherIndex]);
       let cells = specialCellsFor(specialIndex, targetType);
+      if (special === "solas") cells = block6Cells(otherIndex);
       if (tileSpecial(state.board[otherIndex])) cells = state.board.map((_, index) => index);
-      else cells.push(otherIndex);
-      mark(cells);
-      await wait(160);
-      removeCells(cells);
+      else cells.push(otherIndex, specialIndex);
+      mark(cells, special === "solas" ? "explosion" : "special-hit");
+      await wait(special === "solas" ? 780 : 620);
+      removeCells(cells, false, false);
       await settle();
-      message(special === "solas" ? "Combo de 5 ativado." : "Lutero removeu todas as pecas iguais.");
+      message(special === "solas" ? "Combo de 5 explodiu um bloco 6x6." : "Lutero removeu todas as pecas iguais.");
     }
 
     async function resolveMatches(initialGroups, preferredIndex = null) {
@@ -610,7 +705,7 @@
         let cells = uniqueCells(groups);
         if (specialIndex !== null) cells = cells.filter(index => index !== specialIndex);
         mark(cells);
-        await wait(150);
+        await wait(460);
         removeCells(cells);
         if (specialIndex !== null) {
           state.board[specialIndex] = specialTile;
@@ -619,7 +714,13 @@
         drop();
         fill();
         render();
-        await wait(90);
+        if (specialIndex !== null) {
+          mark([specialIndex], "created");
+          message(specialTile.special === "solas" ? "Combo de 5 criou a peca especial." : "Combo de 4 criou o Lutero.");
+          await wait(560);
+        } else {
+          await wait(220);
+        }
         groups = findMatchGroups();
         preferredIndex = null;
       }
@@ -630,16 +731,32 @@
       drop();
       fill();
       render();
-      await wait(90);
+      await wait(220);
       const groups = findMatchGroups();
       if (groups.length) await resolveMatches(groups);
     }
 
-    function mark(cells) {
+    function mark(cells, className = "matched") {
       cells.forEach(index => {
         const el = boardEl.querySelector(`[data-index="${index}"]`);
-        if (el) el.classList.add("matched");
+        if (el) el.classList.add(className);
       });
+    }
+
+    async function animateSwap(first, second) {
+      render();
+      const from = boardEl.querySelector(`[data-index="${first}"]`);
+      const to = boardEl.querySelector(`[data-index="${second}"]`);
+      if (!from || !to) return;
+      const a = from.getBoundingClientRect();
+      const b = to.getBoundingClientRect();
+      from.style.setProperty("--swap-x", `${b.left - a.left}px`);
+      from.style.setProperty("--swap-y", `${b.top - a.top}px`);
+      to.style.setProperty("--swap-x", `${b.left - a.left}px`);
+      to.style.setProperty("--swap-y", `${b.top - a.top}px`);
+      from.classList.add("swap-from");
+      to.classList.add("swap-to");
+      await wait(340);
     }
 
     function drop() {
@@ -726,26 +843,50 @@
     }
 
     boardEl.addEventListener("pointerdown", event => {
+      if (isBusy || state.over) return;
       const cell = event.target.closest("[data-index]");
       if (!cell) return;
       pointerStart = {
         index: Number(cell.dataset.index),
         x: event.clientX,
-        y: event.clientY
+        y: event.clientY,
+        cell
       };
+      cell.classList.add("dragging");
+      cell.style.setProperty("--drag-x", "0px");
+      cell.style.setProperty("--drag-y", "0px");
       boardEl.setPointerCapture?.(event.pointerId);
+    });
+
+    boardEl.addEventListener("pointermove", event => {
+      if (!pointerStart) return;
+      const dx = event.clientX - pointerStart.x;
+      const dy = event.clientY - pointerStart.y;
+      const limit = pointerStart.cell.getBoundingClientRect().width * .72;
+      const clampedX = Math.max(-limit, Math.min(limit, dx));
+      const clampedY = Math.max(-limit, Math.min(limit, dy));
+      pointerStart.cell.style.setProperty("--drag-x", `${clampedX}px`);
+      pointerStart.cell.style.setProperty("--drag-y", `${clampedY}px`);
     });
 
     boardEl.addEventListener("pointerup", event => {
       if (!pointerStart) return;
       const start = pointerStart;
       pointerStart = null;
+      start.cell.classList.remove("dragging");
+      start.cell.style.removeProperty("--drag-x");
+      start.cell.style.removeProperty("--drag-y");
       const target = neighborFromSwipe(start.index, event.clientX - start.x, event.clientY - start.y);
       if (target !== null) tryMove(start.index, target);
       else select(start.index);
     });
 
     boardEl.addEventListener("pointercancel", () => {
+      if (pointerStart?.cell) {
+        pointerStart.cell.classList.remove("dragging");
+        pointerStart.cell.style.removeProperty("--drag-x");
+        pointerStart.cell.style.removeProperty("--drag-y");
+      }
       pointerStart = null;
     });
 

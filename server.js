@@ -12,7 +12,7 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v3.12.2-all-transparent-medals';
+const GAME_VERSION = 'v3.13.0-more-achievements';
 const GAME_ID = 'pela-graca-1904';
 const STATE_NAMES = {
   AC: 'Acre', AL: 'Alagoas', AP: 'Amapa', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceara', DF: 'Distrito Federal', ES: 'Espirito Santo', GO: 'Goias',
@@ -42,7 +42,18 @@ const TITLE_TRACK = [
 ];
 const ACHIEVEMENTS = [
   { id: 'primeiros-passos', title: 'Primeiros Passos', description: 'Comecou sua primeira campanha em Pela Graca 1904.', xp: 75, points: 25, file: '/assets/achievements/primeiros-passos.png', condition: stats => Boolean(stats.started || stats.hasSave) },
+  { id: 'primeira-missao', title: 'Primeira Missao', description: 'Criou seu primeiro ponto de missao IELB.', xp: 120, points: 40, file: '/assets/achievements/primeira-missao.png', condition: stats => stats.missionChurches >= 1 },
+  { id: 'rumo-alem-do-sul', title: 'Rumo Alem do Sul', description: 'Criou a primeira igreja ou missao IELB fora do Rio Grande do Sul.', xp: 180, points: 55, file: '/assets/achievements/rumo-alem-do-sul.png', condition: stats => (stats.statesWithChurches || []).some(code => code !== 'RS') },
+  { id: 'dino-luterano', title: 'Dino Luterano', description: 'Criou uma igreja ou missao IELB no Acre.', xp: 500, points: 160, file: '/assets/achievements/dino-luterano.png', condition: stats => stateChurchCount(stats, 'AC') > 0 },
+  { id: 'primeiros-pastores', title: 'Primeiros Pastores', description: 'Formou os primeiros pastores no Seminario Concordia.', xp: 220, points: 70, file: '/assets/achievements/primeiros-pastores.png', condition: stats => stats.formedPastors >= 1 },
+  { id: 'catequista-atento', title: 'Catequista Atento', description: 'Acertou 10 perguntas doutrinarias.', xp: 180, points: 60, file: '/assets/achievements/catequista-atento.png', condition: stats => stats.doctrineCorrect >= 10 },
+  { id: 'doutor-da-doutrina', title: 'Doutor da Doutrina', description: 'Acertou 20 perguntas doutrinarias.', xp: 320, points: 100, file: '/assets/achievements/doutor-da-doutrina.png', condition: stats => stats.doctrineCorrect >= 20 },
+  { id: 'dez-igrejas', title: 'Dez Igrejas', description: 'Alcancou 10 igrejas e missoes IELB na campanha.', xp: 300, points: 90, file: '/assets/achievements/dez-igrejas.png', condition: stats => stats.totalChurches >= 10 },
   { id: 'centesima-igreja', title: 'Centesima Igreja', description: 'Alcancou 100 igrejas IELB na campanha.', xp: 500, points: 150, file: '/assets/achievements/centesima-igreja.png', condition: stats => stats.totalChurches >= 100 },
+  { id: 'cem-membros', title: 'Cem Membros', description: 'Chegou a 100 membros IELB.', xp: 220, points: 70, file: '/assets/achievements/cem-membros.png', condition: stats => stats.totalMembers >= 100 },
+  { id: 'mil-membros', title: 'Mil Membros', description: 'Chegou a 1000 membros IELB.', xp: 650, points: 210, file: '/assets/achievements/mil-membros.png', condition: stats => stats.totalMembers >= 1000 },
+  { id: 'cem-pastores', title: 'Cem Pastores', description: 'Formou 100 pastores ao longo da historia da campanha.', xp: 750, points: 240, file: '/assets/achievements/cem-pastores.png', condition: stats => stats.formedPastors >= 100 },
+  { id: 'brasil-ielb', title: 'Brasil de Norte a Sul', description: 'Manteve pelo menos uma igreja ou missao IELB em cada estado.', xp: 900, points: 300, file: '/assets/achievements/brasil-ielb.png', condition: stats => (stats.statesWithChurches || []).length >= STATE_ORDER.length },
   { id: 'centenario-ielb', title: 'Centenario IELB', description: 'Conduziu a IELB por 100 anos de historia no jogo.', xp: 900, points: 300, file: '/assets/achievements/centenario-ielb.png', condition: stats => stats.year >= 2004 },
   { id: 'ate-aqui-nos-ajudou', title: 'Ate Aqui nos Ajudou', description: 'Chegou ao ano final da campanha, 2026.', xp: 1200, points: 400, file: '/assets/achievements/ate-aqui-nos-ajudou.png', condition: stats => isFinalCampaign(stats) },
   { id: 'missionario-do-sertao', title: 'Missionario do Sertao', description: 'Chegou a 2026 com o Nordeste como a regiao com mais igrejas IELB.', xp: 850, points: 275, file: '/assets/achievements/missionario-do-sertao.png', condition: stats => isFinalCampaign(stats) && dominantRegion(stats, 'nordeste') },
@@ -206,9 +217,13 @@ function rankPointBonus(rank) {
   return TITLE_TRACK.filter(title => title.level > 1 && title.level <= rank.current.level).reduce((sum, title) => sum + title.pointReward, 0);
 }
 
+function emptyRankingStats() {
+  return { year: 1904, totalChurches: 0, totalMembers: 0, doctrineCorrect: 0, missionChurches: 0, formedPastors: 0, statesWithChurches: [], stateChurches: {}, cityChurches: {}, hasSave: false, started: false };
+}
+
 function playerStatsFromSave(save, userId = '') {
   const state = safeJsonParse(save?.state_json, null);
-  const stats = state ? extractRankingStats(state) : { year: 1904, totalChurches: 0, totalMembers: 0, doctrineCorrect: 0, hasSave: false, started: false };
+  const stats = state ? extractRankingStats(state) : emptyRankingStats();
   const medals = achievementsForState(state, stats, userId || save?.user_id || '');
   const xp = achievementXp(medals);
   const rank = titleProgress(xp);
@@ -271,13 +286,19 @@ function extractRankingStats(state) {
   const states = state?.states || {};
   const stateChurches = {};
   const cityChurches = {};
+  const statesWithChurches = [];
   let totalChurches = 0;
   let totalMembers = 0;
+  let missionChurches = 0;
   STATE_ORDER.forEach(code => {
     const slot = states[code]?.denomData?.IELB;
     const count = churchCountForState(states[code]);
-    if (count > 0) stateChurches[code] = count;
+    if (count > 0) {
+      stateChurches[code] = count;
+      statesWithChurches.push(code);
+    }
     (slot?.churches || []).forEach(church => {
+      if (church?.type === 'missao') missionChurches += 1;
       const city = String(church.city || '').trim();
       if (!city) return;
       const key = cityKey(code, city);
@@ -291,7 +312,10 @@ function extractRankingStats(state) {
   const explicitDoctrineCorrect = Number(state?.doctrineCorrectCount ?? state?.doctrineStats?.correct);
   const usedQuestions = Array.isArray(state?.usedTheologyQuestions) ? state.usedTheologyQuestions.length : 0;
   const doctrineCorrect = Math.max(0, Math.floor(Number.isFinite(explicitDoctrineCorrect) ? explicitDoctrineCorrect : usedQuestions));
-  return { year, month, totalChurches, totalMembers, doctrineCorrect, reachedFinal: year >= 2026 ? 1 : 0, stateChurches, cityChurches, started: Boolean(state?.started), hasSave: true };
+  const explicitFormedPastors = Number(state?.totalPastorsFormed);
+  const rosterFormedPastors = Array.isArray(state?.pastors) ? state.pastors.filter(pastor => Number(pastor?.graduationYear || 0) > 1904).length : 0;
+  const formedPastors = Math.max(0, Math.floor(Math.max(Number.isFinite(explicitFormedPastors) ? explicitFormedPastors : 0, rosterFormedPastors)));
+  return { year, month, totalChurches, totalMembers, doctrineCorrect, missionChurches, formedPastors, reachedFinal: year >= 2026 ? 1 : 0, stateChurches, statesWithChurches, cityChurches, started: Boolean(state?.started), hasSave: true };
 }
 function rankingScoreParts(row) {
   return [

@@ -232,11 +232,22 @@ const TICKERS=[
   'A influência agora nasce de igrejas, membros, níveis e história.'
 ];
 
-const G={year:1904,month:0,paused:true,started:false,gameOver:false,monthlyExpense:0,speed:1,fe:20,of:5,fi:12,doc:70,doctrineCorrectCount:0,doctrineWrongCount:0,rateMult:1,rateFe:0.35,rateOf:0.08,rateFi:0.01,sel:'BR',lastEv:new Set(),tickIdx:0,lastRivalTurn:'',states:{},foundedDenoms:new Set(),seminaryOpen:false,seminaryMode:'strong',seminary:[],pastors:[],availablePastors:[],nextPastorId:1,annualDecisions:[],eventQueue:[],usedTheologyQuestions:[],achievements:[],offerBrokeMonths:0,mods:{doctrineGrowth:1,missionGrowth:1,youthRetention:1,persecutionPressure:1,pastoralFormation:1}};
+const G={year:1904,month:0,paused:true,started:false,gameOver:false,monthlyExpense:0,speed:1,fe:20,of:5,fi:12,doc:70,doctrineCorrectCount:0,doctrineWrongCount:0,rateMult:1,rateFe:0.35,rateOf:0.08,rateFi:0.01,sel:'BR',lastEv:new Set(),tickIdx:0,lastRivalTurn:'',states:{},foundedDenoms:new Set(),seminaryOpen:false,seminaryMode:'strong',seminary:[],pastors:[],availablePastors:[],nextPastorId:1,totalPastorsFormed:0,annualDecisions:[],eventQueue:[],usedTheologyQuestions:[],achievements:[],offerBrokeMonths:0,mods:{doctrineGrowth:1,missionGrowth:1,youthRetention:1,persecutionPressure:1,pastoralFormation:1}};
 
 const ACHIEVEMENTS=[
   {id:'primeiros-passos',title:'Primeiros Passos',xp:75,points:25,icon:'/assets/achievements/primeiros-passos.png',desc:'Voce iniciou sua primeira campanha em Pela Graca 1904.'},
+  {id:'primeira-missao',title:'Primeira Missao',xp:120,points:40,icon:'/assets/achievements/primeira-missao.png',desc:'Voce abriu seu primeiro ponto de missao IELB.'},
+  {id:'rumo-alem-do-sul',title:'Rumo Alem do Sul',xp:180,points:55,icon:'/assets/achievements/rumo-alem-do-sul.png',desc:'Voce levou a IELB para fora do Rio Grande do Sul.'},
+  {id:'dino-luterano',title:'Dino Luterano',xp:500,points:160,icon:'/assets/achievements/dino-luterano.png',desc:'Voce criou uma igreja ou missao IELB no Acre.'},
+  {id:'primeiros-pastores',title:'Primeiros Pastores',xp:220,points:70,icon:'/assets/achievements/primeiros-pastores.png',desc:'Os primeiros pastores foram formados no Seminario Concordia.'},
+  {id:'catequista-atento',title:'Catequista Atento',xp:180,points:60,icon:'/assets/achievements/catequista-atento.png',desc:'Voce acertou 10 perguntas doutrinarias.'},
+  {id:'doutor-da-doutrina',title:'Doutor da Doutrina',xp:320,points:100,icon:'/assets/achievements/doutor-da-doutrina.png',desc:'Voce acertou 20 perguntas doutrinarias.'},
+  {id:'dez-igrejas',title:'Dez Igrejas',xp:300,points:90,icon:'/assets/achievements/dez-igrejas.png',desc:'A IELB chegou a 10 igrejas e missoes.'},
   {id:'centesima-igreja',title:'Centesima Igreja',xp:500,points:150,icon:'/assets/achievements/centesima-igreja.png',desc:'A IELB chegou a 100 igrejas na campanha.'},
+  {id:'cem-membros',title:'Cem Membros',xp:220,points:70,icon:'/assets/achievements/cem-membros.png',desc:'A IELB chegou a 100 membros.'},
+  {id:'mil-membros',title:'Mil Membros',xp:650,points:210,icon:'/assets/achievements/mil-membros.png',desc:'A IELB chegou a 1000 membros.'},
+  {id:'cem-pastores',title:'Cem Pastores',xp:750,points:240,icon:'/assets/achievements/cem-pastores.png',desc:'A campanha formou 100 pastores ao todo.'},
+  {id:'brasil-ielb',title:'Brasil de Norte a Sul',xp:900,points:300,icon:'/assets/achievements/brasil-ielb.png',desc:'A IELB chegou a todos os estados do Brasil.'},
   {id:'centenario-ielb',title:'Centenario IELB',xp:900,points:300,icon:'/assets/achievements/centenario-ielb.png',desc:'Voce conduziu a IELB por 100 anos de historia.'},
   {id:'ate-aqui-nos-ajudou',title:'Ate Aqui nos Ajudou',xp:1200,points:400,icon:'/assets/achievements/ate-aqui-nos-ajudou.png',desc:'Voce chegou ao ano final da campanha, 2026.'},
   {id:'missionario-do-sertao',title:'Missionario do Sertao',xp:850,points:275,icon:'/assets/achievements/missionario-do-sertao.png',desc:'O Nordeste terminou como a regiao com mais igrejas IELB.'},
@@ -264,7 +275,18 @@ function unlockAchievement(id){
 function checkAchievements(){
   if(!G.started)return;
   unlockAchievement('primeiros-passos');
+  if(ielbMissionCount()>=1)unlockAchievement('primeira-missao');
+  if(ALL_STATES.some(id=>id!=='RS'&&churchCount(id,'IELB')>0))unlockAchievement('rumo-alem-do-sul');
+  if(churchCount('AC','IELB')>0)unlockAchievement('dino-luterano');
+  if(formedPastorCount()>=1)unlockAchievement('primeiros-pastores');
+  if((G.doctrineCorrectCount||0)>=10)unlockAchievement('catequista-atento');
+  if((G.doctrineCorrectCount||0)>=20)unlockAchievement('doutor-da-doutrina');
+  if(totalChurches('IELB')>=10)unlockAchievement('dez-igrejas');
   if(totalChurches('IELB')>=100)unlockAchievement('centesima-igreja');
+  if(totalMembers('IELB')>=100)unlockAchievement('cem-membros');
+  if(totalMembers('IELB')>=1000)unlockAchievement('mil-membros');
+  if(formedPastorCount()>=100)unlockAchievement('cem-pastores');
+  if(ALL_STATES.every(id=>churchCount(id,'IELB')>0))unlockAchievement('brasil-ielb');
   if(G.year>=2004)unlockAchievement('centenario-ielb');
   if(G.year>=2026){
     unlockAchievement('ate-aqui-nos-ajudou');
@@ -759,6 +781,7 @@ function processAnnualYear(){
       const r=(G.year<1930?randRange(0.45,0.62):G.year<1950?randRange(0.5,0.68):randRange(0.56,0.76))+supportBonus;
       const formed=Math.max(1,Math.min(c.enrolled,Math.round(c.enrolled*r)));
       entries+=formed;
+      G.totalPastorsFormed=(G.totalPastorsFormed||0)+formed;
       const formedPastors=[];
       for(let i=0;i<formed;i++)formedPastors.push(makePastor(G.year));
       G.eventQueue.push({type:'formation',entryYear:c.entryYear,gradYear:G.year,enrolled:c.enrolled,formed,left:Math.max(0,c.enrolled-formed),names:formedPastors.map(p=>p.name)});
@@ -859,6 +882,12 @@ function stateInfluenceSorted(id){
 function churchCount(id,d){return G.states[id].denomData[d].churches.length;}
 function totalMembers(d){return ALL_STATES.reduce((sum,id)=>sum+G.states[id].denomData[d].members,0);}
 function totalChurches(d){return ALL_STATES.reduce((sum,id)=>sum+churchCount(id,d),0);}
+function ielbMissionCount(){return ALL_STATES.reduce((sum,id)=>sum+G.states[id].denomData.IELB.churches.filter(ch=>ch.type==='missao').length,0);}
+function formedPastorCount(){
+  const explicit=Number(G.totalPastorsFormed||0);
+  const roster=Array.isArray(G.pastors)?G.pastors.filter(p=>Number(p.graduationYear||0)>1904).length:0;
+  return Math.max(explicit,roster);
+}
 function statePresenceCount(d){return ALL_STATES.filter(id=>churchCount(id,d)>0).length;}
 function regionChurchCount(regionKey){
   return (REGION_STATES[regionKey]||[]).reduce((sum,id)=>sum+churchCount(id,'IELB'),0);
@@ -1757,6 +1786,7 @@ function resolveTheologyQuestion(question,index){
   cont.onclick=()=>{document.getElementById('modal').classList.remove('show');G.paused=false;document.getElementById('pausebtn').textContent='⏸ Pausar';recalc();updateRes();renderLeft();renderRight();redrawDots();processEventQueue();};
   mc.appendChild(cont);
   recalc();updateRes();renderLeft();renderRight();redrawDots();
+  checkAchievements();
 }
 
 function showSecondPastorModal(stateId,index,fromAnnual=false){

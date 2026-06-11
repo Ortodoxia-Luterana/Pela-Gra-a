@@ -1,6 +1,6 @@
 Deploy trigger for SquareWeb/GitHub integration.
 
-Game hub update: Luther Metch cascade combo messages and five achievement medals.
+Game hub update: Luther Metch medal asset fallback for SquareWeb deploy.
 This small public file was updated to force a fresh deploy check.
 
 Updated: 2026-06-11

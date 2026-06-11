@@ -12,7 +12,7 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v3.20.0-luther-metch-combo-medals';
+const GAME_VERSION = 'v3.20.1-luther-metch-medal-assets';
 const GAME_ID = 'pela-graca-1904';
 const CRONICAS_GAME_ID = 'cronicas-do-levante';
 const LUTHER_MATCH_GAME_ID = 'luther-metch';
@@ -533,7 +533,14 @@ function serveAsset(req, res) {
   const relative = decodeURIComponent(url.pathname.replace(/^\/assets\//, ''));
   const filePath = path.resolve(PUBLIC_DIR, relative);
   if (!filePath.startsWith(PUBLIC_DIR + path.sep)) { res.writeHead(403); res.end('Forbidden'); return; }
-  if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) { res.writeHead(404); res.end('Not found'); return; }
+  if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
+    if (/^achievements\/luther-match-[a-z0-9-]+\.png$/i.test(relative)) {
+      res.writeHead(302, { Location: `https://raw.githubusercontent.com/Ortodoxia-Luterana/Pela-Gra-a/main/public/${relative}` });
+      res.end();
+      return;
+    }
+    res.writeHead(404); res.end('Not found'); return;
+  }
   const ext = path.extname(filePath).toLowerCase();
   const type = ext === '.css' ? 'text/css; charset=utf-8' : ext === '.js' ? 'text/javascript; charset=utf-8' : ext === '.html' ? 'text/html; charset=utf-8' : ext === '.svg' ? 'image/svg+xml; charset=utf-8' : ext === '.png' ? 'image/png' : ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : ext === '.mp3' ? 'audio/mpeg' : ext === '.ogg' ? 'audio/ogg' : ext === '.wav' ? 'audio/wav' : 'application/octet-stream';
   const headers = { 'Content-Type': type };

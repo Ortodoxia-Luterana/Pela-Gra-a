@@ -277,6 +277,63 @@
       font-weight: 800;
     }
 
+    .achievement-toast {
+      position: fixed;
+      left: 50%;
+      bottom: max(18px, env(safe-area-inset-bottom));
+      width: min(calc(100vw - 24px), 380px);
+      display: none;
+      grid-template-columns: 58px 1fr;
+      gap: 10px;
+      align-items: center;
+      transform: translate(-50%, 18px);
+      border: 1px solid rgba(255, 224, 138, .72);
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(18, 24, 34, .96), rgba(8, 12, 18, .96));
+      color: var(--text);
+      padding: 10px;
+      box-shadow: 0 18px 48px rgba(0, 0, 0, .46);
+      opacity: 0;
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    .achievement-toast.show {
+      display: grid;
+      animation: medal-toast 3.4s ease both;
+    }
+
+    .achievement-toast img {
+      width: 58px;
+      height: 58px;
+      object-fit: contain;
+      filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .4));
+    }
+
+    .achievement-toast small {
+      display: block;
+      color: var(--gold-2);
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .achievement-toast strong {
+      display: block;
+      font-family: Georgia, serif;
+      font-size: 17px;
+      line-height: 1.15;
+    }
+
+    .achievement-toast span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.25;
+      margin-top: 2px;
+    }
+
     @keyframes pop {
       0% { transform: scale(1); opacity: 1; filter: brightness(1); }
       45% { transform: scale(1.12); opacity: 1; filter: brightness(1.4); }
@@ -311,6 +368,13 @@
       0% { transform: scale(.2) rotate(-8deg); opacity: .2; filter: brightness(2); }
       55% { transform: scale(1.2); opacity: 1; filter: brightness(1.7); }
       100% { transform: scale(1); opacity: 1; filter: brightness(1); }
+    }
+
+    @keyframes medal-toast {
+      0% { opacity: 0; transform: translate(-50%, 18px) scale(.96); }
+      12% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+      86% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, 14px) scale(.98); }
     }
 
     @media (min-width: 760px) {
@@ -361,6 +425,8 @@
     <div class="message" id="message">Deslize uma peça para trocar com a vizinha.</div>
   </main>
 
+  <div class="achievement-toast" id="achievement-toast" aria-live="polite"></div>
+
   <script>
     const KEY = "ol-luther-metch-v2";
     const SIZE = 8;
@@ -400,6 +466,7 @@
     let isBusy = false;
     const boardEl = document.querySelector("#board");
     const messageEl = document.querySelector("#message");
+    const achievementToast = document.querySelector("#achievement-toast");
 
     function makeTile(type = randType(), special = null) { return { type, special }; }
     function tileType(tile) { return typeof tile === "string" ? tile : tile?.type; }
@@ -479,7 +546,7 @@
     }
     async function syncProgress() {
       try {
-        await fetch(PROGRESS_API, {
+        const response = await fetch(PROGRESS_API, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -488,6 +555,11 @@
             completedLevels: state.completedLevels,
             score: state.score
           })
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        (data.newlyUnlocked || []).forEach((medal, index) => {
+          setTimeout(() => showAchievement(medal), index * 3600);
         });
       } catch {}
     }
@@ -765,6 +837,10 @@
       let chain = 0;
       while (groups.length) {
         chain += 1;
+        if (chain > 1) {
+          message("Combo " + chain + "!");
+          await wait(260);
+        }
         const specialGroup = comboCandidates(groups).sort((a, b) => b.cells.length - a.cells.length).find(group => group.cells.length >= 4);
         let specialIndex = null;
         let specialTile = null;
@@ -935,6 +1011,20 @@
 
     function message(text) {
       messageEl.textContent = text;
+    }
+
+    function showAchievement(medal) {
+      if (!achievementToast || !medal) return;
+      achievementToast.classList.remove("show");
+      achievementToast.innerHTML =
+        '<img src="' + medal.file + '" alt="">' +
+        '<div><small>Medalha desbloqueada</small><strong>' + escapeText(medal.title) + '</strong><span>' + escapeText(medal.description || '') + '</span></div>';
+      achievementToast.offsetHeight;
+      achievementToast.classList.add("show");
+    }
+
+    function escapeText(value) {
+      return String(value ?? "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
     }
 
     function wait(ms) {

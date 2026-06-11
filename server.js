@@ -12,7 +12,7 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v3.19.0-luther-metch-auto-level';
+const GAME_VERSION = 'v3.20.0-luther-metch-combo-medals';
 const GAME_ID = 'pela-graca-1904';
 const CRONICAS_GAME_ID = 'cronicas-do-levante';
 const LUTHER_MATCH_GAME_ID = 'luther-metch';
@@ -66,6 +66,13 @@ const ACHIEVEMENTS = [
   { id: 'igreja-urbana', title: 'Igreja Urbana', description: 'Chegou a 2026 com a maior parte das igrejas IELB no estado de Sao Paulo.', xp: 800, points: 250, file: '/assets/achievements/igreja-urbana.png', condition: stats => isFinalCampaign(stats) && stats.totalChurches > 0 && stateChurchCount(stats, 'SP') > stats.totalChurches / 2 }
 ];
 const CRONICAS_ACHIEVEMENTS = [
+];
+const LUTHER_MATCH_ACHIEVEMENTS = [
+  { id: 'luther-match-primeiro-acesso', title: 'Primeiro Match', description: 'Entrou pela primeira vez em Luther Metch.', xp: 75, points: 25, file: '/assets/achievements/luther-match-primeiro-acesso.png', condition: stats => Boolean(stats.entered) },
+  { id: 'luther-match-nivel-10', title: 'Dez Teses', description: 'Completou o nível 10 em Luther Metch.', xp: 180, points: 60, file: '/assets/achievements/luther-match-nivel-10.png', condition: stats => stats.completedLevels >= 10 },
+  { id: 'luther-match-nivel-50', title: 'Cinco Dezenas', description: 'Completou o nível 50 em Luther Metch.', xp: 450, points: 150, file: '/assets/achievements/luther-match-nivel-50.png', condition: stats => stats.completedLevels >= 50 },
+  { id: 'luther-match-nivel-100', title: 'Centúria da Reforma', description: 'Completou o nível 100 em Luther Metch.', xp: 900, points: 300, file: '/assets/achievements/luther-match-nivel-100.png', condition: stats => stats.completedLevels >= 100 },
+  { id: 'luther-match-nivel-200', title: 'Mestre das Cinco Solas', description: 'Completou o nível 200 em Luther Metch.', xp: 1600, points: 550, file: '/assets/achievements/luther-match-nivel-200.png', condition: stats => stats.completedLevels >= 200 }
 ];
 
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
@@ -262,7 +269,8 @@ function playerStatsFromSave(save, userId = '') {
 function allAchievementDefinitions() {
   return [
     ...ACHIEVEMENTS.map(medal => ({ ...medal, gameId: GAME_ID })),
-    ...CRONICAS_ACHIEVEMENTS.map(medal => ({ ...medal, gameId: CRONICAS_GAME_ID }))
+    ...CRONICAS_ACHIEVEMENTS.map(medal => ({ ...medal, gameId: CRONICAS_GAME_ID })),
+    ...LUTHER_MATCH_ACHIEVEMENTS.map(medal => ({ ...medal, gameId: LUTHER_MATCH_GAME_ID }))
   ];
 }
 function accountAchievementSummary(userId) {
@@ -418,6 +426,33 @@ function backfillRankings() {
 function publicRankingRow(row) {
   return { player: row.user_name, year: row.year, month: row.month, totalChurches: row.total_churches, totalMembers: Math.floor(row.total_members), doctrineCorrect: row.doctrine_correct, reachedFinal: Boolean(row.reached_final), updatedAt: row.updated_at };
 }
+function lutherMatchStats(rowOrPayload = {}) {
+  const hasProgress = Boolean(rowOrPayload && (
+    rowOrPayload.entered ||
+    rowOrPayload.updated_at ||
+    rowOrPayload.best_level ||
+    rowOrPayload.bestLevel ||
+    rowOrPayload.completed_levels ||
+    rowOrPayload.completedLevels ||
+    rowOrPayload.score
+  ));
+  return {
+    entered: hasProgress,
+    level: Number(rowOrPayload.level || 1),
+    bestLevel: Number(rowOrPayload.best_level ?? rowOrPayload.bestLevel ?? rowOrPayload.level ?? 1),
+    completedLevels: Number(rowOrPayload.completed_levels ?? rowOrPayload.completedLevels ?? 0),
+    score: Number(rowOrPayload.score || 0)
+  };
+}
+function persistLutherMatchAchievements(userId, stats, now = new Date().toISOString()) {
+  if (!userId) return [];
+  const newlyUnlocked = [];
+  achievementsForState({}, stats, userId, LUTHER_MATCH_GAME_ID, LUTHER_MATCH_ACHIEVEMENTS).filter(medal => medal.unlocked).forEach(medal => {
+    const result = insertUserAchievement.run(userId, LUTHER_MATCH_GAME_ID, medal.id, medal.unlockedAt || now, 'Luther Metch');
+    if (result.changes > 0) newlyUnlocked.push({ ...medal, unlocked: true, unlockedAt: now });
+  });
+  return newlyUnlocked;
+}
 function publicLutherMatchRow(row) {
   return {
     player: row.user_name,
@@ -444,8 +479,10 @@ function rankingPayload() {
     const best = rows.map(row => ({ row, count: Number(safeJsonParse(row.state_churches_json, {})[code] || 0) })).filter(item => item.count > 0).sort((a, b) => b.count - a.count || b.row.year - a.row.year || b.row.total_churches - a.row.total_churches)[0];
     return best ? { state: code, stateName: STATE_NAMES[code], churches: best.count, ...publicRankingRow(best.row) } : { state: code, stateName: STATE_NAMES[code], churches: 0, player: '-', year: 1904, totalChurches: 0, doctrineCorrect: 0 };
   });
-  const prestige = getAllAchievementRows.all(GAME_ID).map(item => {
-    const medal = ACHIEVEMENTS.find(def => def.id === item.medal_id);
+  const definitions = allAchievementDefinitions();
+  const prestigeRows = [GAME_ID, CRONICAS_GAME_ID, LUTHER_MATCH_GAME_ID].flatMap(gameId => getAllAchievementRows.all(gameId));
+  const prestige = prestigeRows.map(item => {
+    const medal = definitions.find(def => def.gameId === item.game_id && def.id === item.medal_id);
     if (!medal) return null;
     return {
       player: item.user_name,
@@ -586,9 +623,11 @@ async function handleApi(req, res, url, user) {
   if (url.pathname === '/api/luther-metch/progress') {
     const row = getLutherMatchRanking.get(user.id);
     if (req.method === 'GET') {
+      const stats = lutherMatchStats(row || {});
       json(res, 200, {
         gameId: LUTHER_MATCH_GAME_ID,
-        progress: row ? publicLutherMatchRow(row) : { player: user.name, level: 1, bestLevel: 1, completedLevels: 0, score: 0, updatedAt: null }
+        progress: row ? publicLutherMatchRow(row) : { player: user.name, level: 1, bestLevel: 1, completedLevels: 0, score: 0, updatedAt: null },
+        medals: achievementsForState({}, stats, user.id, LUTHER_MATCH_GAME_ID, LUTHER_MATCH_ACHIEVEMENTS)
       });
       return;
     }
@@ -600,7 +639,9 @@ async function handleApi(req, res, url, user) {
       const score = clampInt(payload.score, 0, 999999999);
       const now = new Date().toISOString();
       upsertLutherMatchRanking.run(user.id, user.name, level, bestLevel, completedLevels, score, now);
-      json(res, 200, { ok: true, progress: publicLutherMatchRow(getLutherMatchRanking.get(user.id)) });
+      const saved = getLutherMatchRanking.get(user.id);
+      const newlyUnlocked = persistLutherMatchAchievements(user.id, lutherMatchStats(saved), now);
+      json(res, 200, { ok: true, progress: publicLutherMatchRow(saved), newlyUnlocked });
       return;
     }
   }
@@ -690,7 +731,9 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   const stats = player.stats;
   const cronicasState = safeJsonParse(cronicasSave?.state_json, null);
   const cronicasMedals = achievementsForState(cronicasState, {}, user.id, CRONICAS_GAME_ID, CRONICAS_ACHIEVEMENTS);
-  const medals = [...player.medals, ...cronicasMedals];
+  const lutherMatchRow = getLutherMatchRanking.get(user.id);
+  const lutherMatchMedals = achievementsForState({}, lutherMatchStats(lutherMatchRow || {}), user.id, LUTHER_MATCH_GAME_ID, LUTHER_MATCH_ACHIEVEMENTS);
+  const medals = [...player.medals, ...cronicasMedals, ...lutherMatchMedals];
   const xp = achievementXp(medals);
   const rank = titleProgress(xp);
   const points = achievementPoints(medals) + rankPointBonus(rank);
@@ -702,10 +745,11 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     const userSave = getSaveSlot.get(rankUser.id, 1);
     const userSummary = playerStatsFromSave(userSave, rankUser.id);
     const lutherMatch = getLutherMatchRanking.get(rankUser.id);
+    const lutherMedals = achievementsForState({}, lutherMatchStats(lutherMatch || {}), rankUser.id, LUTHER_MATCH_GAME_ID, LUTHER_MATCH_ACHIEVEMENTS).filter(medal => medal.unlocked).length;
     return {
       user: rankUser,
       summary: userSummary,
-      medals: userSummary.medals.filter(medal => medal.unlocked).length,
+      medals: userSummary.medals.filter(medal => medal.unlocked).length + lutherMedals,
       lutherMatch: lutherMatch ? publicLutherMatchRow(lutherMatch) : { bestLevel: 1, completedLevels: 0, score: 0 }
     };
   }).sort((a, b) => b.lutherMatch.bestLevel - a.lutherMatch.bestLevel || b.medals - a.medals || b.summary.points - a.summary.points || b.summary.xp - a.summary.xp || a.user.name.localeCompare(b.user.name)).map((item, index) => {

@@ -1,6 +1,6 @@
 Deploy trigger for SquareWeb/GitHub integration.
 
-Game hub update: force unique generated card image for each hub game.
+Game hub update: bump cache version, force unique card images, and add normal Luther Metch description.
 This small public file was updated to force a fresh deploy check.
 
 Updated: 2026-06-11

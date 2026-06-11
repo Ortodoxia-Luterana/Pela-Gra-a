@@ -12,7 +12,7 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v3.20.3-luther-metch-medal-cdn';
+const GAME_VERSION = 'v3.21.0-luther-metch-combo-burst';
 const GAME_ID = 'pela-graca-1904';
 const CRONICAS_GAME_ID = 'cronicas-do-levante';
 const LUTHER_MATCH_GAME_ID = 'luther-metch';
@@ -73,7 +73,7 @@ const LUTHER_MATCH_ACHIEVEMENTS = [
   { id: 'luther-match-nivel-10', title: 'Dez Teses', description: 'Completou o nível 10 em Luther Metch.', xp: 180, points: 60, file: `${RAW_PUBLIC_URL}/achievements/luther-match-nivel-10-v2.png`, condition: stats => stats.completedLevels >= 10 },
   { id: 'luther-match-nivel-50', title: 'Cinco Dezenas', description: 'Completou o nível 50 em Luther Metch.', xp: 450, points: 150, file: `${RAW_PUBLIC_URL}/achievements/luther-match-nivel-50-v2.png`, condition: stats => stats.completedLevels >= 50 },
   { id: 'luther-match-nivel-100', title: 'Centúria da Reforma', description: 'Completou o nível 100 em Luther Metch.', xp: 900, points: 300, file: `${RAW_PUBLIC_URL}/achievements/luther-match-nivel-100-v2.png`, condition: stats => stats.completedLevels >= 100 },
-  { id: 'luther-match-nivel-200', title: 'Mestre das Cinco Solas', description: 'Completou o nível 200 em Luther Metch.', xp: 1600, points: 550, file: `${RAW_PUBLIC_URL}/achievements/luther-match-nivel-200-v2.png`, condition: stats => stats.completedLevels >= 200 }
+  { id: 'luther-match-nivel-200', title: 'Mestre das Tr�s Solas', description: 'Completou o nível 200 em Luther Metch e dominou as Três Solas.', xp: 1600, points: 550, file: `${RAW_PUBLIC_URL}/achievements/luther-match-nivel-200-v2.png`, condition: stats => stats.completedLevels >= 200 }
 ];
 
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });

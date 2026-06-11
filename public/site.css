@@ -840,11 +840,11 @@ img.feed-avatar {
 }
 
 .ol-game-card.peregrino-cover {
-  background: linear-gradient(90deg, rgba(0, 0, 0, .1), rgba(0, 0, 0, .82)), url("/assets/peregrino-confessional-card.svg") center/cover;
+  background: linear-gradient(90deg, rgba(0, 0, 0, .1), rgba(0, 0, 0, .82)), url("/assets/peregrino-confessional-card.png") center/cover;
 }
 
 .ol-game-card.quiz-cover {
-  background: linear-gradient(90deg, rgba(0, 0, 0, .1), rgba(0, 0, 0, .82)), url("/assets/quiz-ortodoxia-card.svg") center/cover;
+  background: linear-gradient(90deg, rgba(0, 0, 0, .1), rgba(0, 0, 0, .82)), url("/assets/quiz-ortodoxia-card.png") center/cover;
 }
 
 .ol-game-card span {
@@ -1689,5 +1689,26 @@ img.feed-avatar {
     width:96px;
     height:96px;
   }
+}
+
+/* Final hub card art overrides: keep each game visually distinct on mobile and desktop. */
+.ol-game-card.pela-cover{
+  background:linear-gradient(90deg, rgba(0,0,0,.12), rgba(0,0,0,.82)), url("/assets/pela-graca-1904-cover.png?v=cards-20260611") center/cover !important;
+}
+
+.ol-game-card.cronicas-cover{
+  background:linear-gradient(90deg, rgba(0,0,0,.06), rgba(0,0,0,.78)), url("/assets/cronicas-do-levante-card.png?v=cards-20260611") center/cover !important;
+}
+
+.ol-game-card.match3-cover{
+  background:linear-gradient(90deg, rgba(0,0,0,.08), rgba(0,0,0,.78)), url("/assets/luther-metch-bg.png?v=cards-20260611") center 54%/cover !important;
+}
+
+.ol-game-card.peregrino-cover{
+  background:linear-gradient(90deg, rgba(0,0,0,.08), rgba(0,0,0,.78)), url("/assets/peregrino-confessional-card.png?v=cards-20260611") center/cover !important;
+}
+
+.ol-game-card.quiz-cover{
+  background:linear-gradient(90deg, rgba(0,0,0,.08), rgba(0,0,0,.78)), url("/assets/quiz-ortodoxia-card.png?v=cards-20260611") center/cover !important;
 }
 

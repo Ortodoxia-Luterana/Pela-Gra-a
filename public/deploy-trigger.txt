@@ -1,6 +1,6 @@
 Deploy trigger for SquareWeb/GitHub integration.
 
-Game hub update: remove Luther Metch description and add generated Cronicas do Levante card image.
+Game hub update: force unique generated card image for each hub game.
 This small public file was updated to force a fresh deploy check.
 
 Updated: 2026-06-11

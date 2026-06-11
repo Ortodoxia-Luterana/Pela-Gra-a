@@ -16,6 +16,7 @@ const GAME_VERSION = 'v3.20.1-luther-metch-medal-assets';
 const GAME_ID = 'pela-graca-1904';
 const CRONICAS_GAME_ID = 'cronicas-do-levante';
 const LUTHER_MATCH_GAME_ID = 'luther-metch';
+const RAW_PUBLIC_URL = 'https://raw.githubusercontent.com/Ortodoxia-Luterana/Pela-Gra-a/main/public';
 const CRONICAS_SAVE_NAME = 'Crônicas do Levante';
 const STATE_NAMES = {
   AC: 'Acre', AL: 'Alagoas', AP: 'Amapa', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceara', DF: 'Distrito Federal', ES: 'Espirito Santo', GO: 'Goias',
@@ -68,11 +69,11 @@ const ACHIEVEMENTS = [
 const CRONICAS_ACHIEVEMENTS = [
 ];
 const LUTHER_MATCH_ACHIEVEMENTS = [
-  { id: 'luther-match-primeiro-acesso', title: 'Primeiro Match', description: 'Entrou pela primeira vez em Luther Metch.', xp: 75, points: 25, file: '/assets/achievements/luther-match-primeiro-acesso.png', condition: stats => Boolean(stats.entered) },
-  { id: 'luther-match-nivel-10', title: 'Dez Teses', description: 'Completou o nível 10 em Luther Metch.', xp: 180, points: 60, file: '/assets/achievements/luther-match-nivel-10.png', condition: stats => stats.completedLevels >= 10 },
-  { id: 'luther-match-nivel-50', title: 'Cinco Dezenas', description: 'Completou o nível 50 em Luther Metch.', xp: 450, points: 150, file: '/assets/achievements/luther-match-nivel-50.png', condition: stats => stats.completedLevels >= 50 },
-  { id: 'luther-match-nivel-100', title: 'Centúria da Reforma', description: 'Completou o nível 100 em Luther Metch.', xp: 900, points: 300, file: '/assets/achievements/luther-match-nivel-100.png', condition: stats => stats.completedLevels >= 100 },
-  { id: 'luther-match-nivel-200', title: 'Mestre das Cinco Solas', description: 'Completou o nível 200 em Luther Metch.', xp: 1600, points: 550, file: '/assets/achievements/luther-match-nivel-200.png', condition: stats => stats.completedLevels >= 200 }
+  { id: 'luther-match-primeiro-acesso', title: 'Primeiro Match', description: 'Entrou pela primeira vez em Luther Metch.', xp: 75, points: 25, file: `${RAW_PUBLIC_URL}/achievements/luther-match-primeiro-acesso.png`, condition: stats => Boolean(stats.entered) },
+  { id: 'luther-match-nivel-10', title: 'Dez Teses', description: 'Completou o nível 10 em Luther Metch.', xp: 180, points: 60, file: `${RAW_PUBLIC_URL}/achievements/luther-match-nivel-10.png`, condition: stats => stats.completedLevels >= 10 },
+  { id: 'luther-match-nivel-50', title: 'Cinco Dezenas', description: 'Completou o nível 50 em Luther Metch.', xp: 450, points: 150, file: `${RAW_PUBLIC_URL}/achievements/luther-match-nivel-50.png`, condition: stats => stats.completedLevels >= 50 },
+  { id: 'luther-match-nivel-100', title: 'Centúria da Reforma', description: 'Completou o nível 100 em Luther Metch.', xp: 900, points: 300, file: `${RAW_PUBLIC_URL}/achievements/luther-match-nivel-100.png`, condition: stats => stats.completedLevels >= 100 },
+  { id: 'luther-match-nivel-200', title: 'Mestre das Cinco Solas', description: 'Completou o nível 200 em Luther Metch.', xp: 1600, points: 550, file: `${RAW_PUBLIC_URL}/achievements/luther-match-nivel-200.png`, condition: stats => stats.completedLevels >= 200 }
 ];
 
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });

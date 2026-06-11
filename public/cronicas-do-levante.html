@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Crônicas do Levante</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--parch:#f5edd6;--parch2:#ede0bc;--ink:#2c1a0e;--ink2:#4a2f1a;--gold:#8b6914;--gold2:#c49a2a;--blood:#7b1e1e;--stone:#3d3028;--stone2:#5a4535;--sep:1px solid rgba(139,105,20,.25);--r:7px}
+html,body{min-height:100%;background:#0e0a04;color:var(--ink);font-family:'Crimson Pro',serif}
+body{padding:16px;display:flex;justify-content:center}
+.shell{width:100%;max-width:1040px;min-height:94vh;background:var(--parch);border:2px solid var(--gold);border-radius:10px;overflow:hidden;box-shadow:0 0 70px rgba(0,0,0,.7);position:relative}
+.hdr{background:var(--stone);border-bottom:2px solid var(--gold);padding:13px 20px;display:flex;gap:12px;justify-content:space-between;align-items:center}
+.hdr-title{font-family:Cinzel,serif;color:var(--gold2);letter-spacing:3px;font-size:15px;font-weight:700}
+.hdr-sub{font-family:Cinzel,serif;color:rgba(232,192,96,.75);font-size:10px;letter-spacing:1px;text-align:right;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.hdr-sub span{border:1px solid rgba(196,154,42,.35);border-radius:4px;padding:5px 10px;background:rgba(196,154,42,.07)}
+.hdr-sub .hidden{display:none}
+.tabs{display:flex;background:var(--stone2);border-bottom:2px solid var(--gold);overflow-x:auto}
+.tab{font-family:Cinzel,serif;font-size:10px;letter-spacing:1px;color:rgba(232,192,96,.62);padding:9px 14px;border-right:var(--sep);white-space:nowrap;cursor:pointer}
+.tab.active{background:var(--parch);color:var(--ink);font-weight:600;margin-bottom:-2px;border-bottom:2px solid var(--parch)}
+.content{display:none;padding:16px}
+.content.active{display:block}
+.game{display:grid;grid-template-columns:1fr 270px;gap:15px}
+.main{min-width:0}
+.log{background:rgba(0,0,0,.06);border:1px solid rgba(139,105,20,.18);border-radius:var(--r);padding:9px 12px;margin-bottom:12px;max-height:96px;overflow:auto}
+.log div{font-size:12px;color:var(--ink2);line-height:1.5}
+.scene{background:rgba(255,255,255,.35);border:1px solid rgba(139,105,20,.22);border-radius:var(--r);padding:18px;animation:fade .25s ease}
+.loc{font-family:Cinzel,serif;font-size:9px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:7px}
+.title{font-family:Cinzel,serif;font-size:20px;font-weight:600;line-height:1.25;margin-bottom:12px}
+.body{font-size:17px;line-height:1.75;color:var(--ink2)}
+.body em{color:var(--ink);font-style:italic}
+.quote{display:block;border-left:3px solid var(--gold);padding:8px 13px;margin:12px 0;background:rgba(139,105,20,.06);font-style:italic}
+.act-head{display:flex;align-items:center;gap:10px;margin:14px 0 8px}
+.act-label{font-family:Cinzel,serif;font-size:10px;letter-spacing:1.5px;color:var(--gold);flex:1;border-bottom:var(--sep);padding-bottom:5px}
+.back{border:1px solid rgba(139,105,20,.3);background:transparent;color:var(--ink2);font-family:Cinzel,serif;font-size:10px;border-radius:4px;padding:5px 10px;cursor:pointer}
+.back:disabled{opacity:.35;cursor:not-allowed}
+.acts{display:flex;flex-direction:column;gap:8px}
+.act{background:var(--stone);color:var(--parch2);border:1px solid var(--stone2);border-radius:5px;padding:12px 14px;font-family:'Crimson Pro',serif;font-size:16px;line-height:1.35;text-align:left;cursor:pointer;transition:.15s}
+.act:hover{background:var(--blood);border-color:var(--gold)}
+.act small{font-family:Cinzel,serif;color:rgba(232,192,96,.7);margin-right:8px}
+.side{background:rgba(139,105,20,.04);border:1px solid rgba(139,105,20,.17);border-radius:var(--r);padding:13px;align-self:start}
+.side h3{font-family:Cinzel,serif;font-size:10px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin:12px 0 7px}
+.side h3:first-child{margin-top:0}
+.item{font-size:13.5px;line-height:1.55;color:var(--ink2);border-bottom:1px solid rgba(139,105,20,.08);padding:5px 0}
+.dim{opacity:.55;font-style:italic}
+.ending{border:2px solid var(--gold);background:rgba(139,105,20,.08);border-radius:var(--r);padding:24px}
+.ending-badge{text-align:center;font-family:Cinzel,serif;font-size:10px;letter-spacing:3px;color:var(--gold2);margin-bottom:10px}
+.ending-title{text-align:center;font-family:Cinzel,serif;font-size:24px;margin-bottom:14px}
+.ending-body{font-size:17px;line-height:1.85;color:var(--ink2)}
+.restart{display:block;margin:18px auto 0;background:var(--stone);color:var(--gold2);border:1px solid var(--gold);border-radius:5px;padding:10px 24px;font-family:Cinzel,serif;cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.card{background:rgba(255,255,255,.35);border:1px solid rgba(139,105,20,.2);border-radius:var(--r);padding:14px}
+.card h2{font-family:Cinzel,serif;font-size:15px;margin-bottom:8px}
+.card p,.card li{font-size:15px;line-height:1.55;color:var(--ink2)}
+.card ul{padding-left:18px}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:760px){body{padding:8px}.game{grid-template-columns:1fr}.side{order:2}.hdr{flex-direction:column;align-items:flex-start}.hdr-sub{text-align:left}.body{font-size:16px}.title{font-size:18px}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="hdr"><div class="hdr-title">CRÔNICAS DO LEVANTE</div><div class="hdr-sub"><span id="pill-ano">Ano: ???</span><span id="pill-local" class="hidden"></span><span id="pill-rei" class="hidden"></span></div></div>
+  <div class="tabs"><div class="tab active" onclick="tab('jogo')">Jogo</div><div class="tab" onclick="tab('linha')">Descobertas</div><div class="tab" onclick="tab('ajuda')">Como jogar</div></div>
+  <div id="jogo" class="content active"><div class="game"><div class="main"><div class="log" id="log"><div>Você acordou longe do seu mundo.</div></div><div class="scene" id="scene"></div><div class="act-head"><div class="act-label">O que você faz?</div><button class="back" id="back" onclick="voltar()" disabled>Voltar</button></div><div class="acts" id="acts"></div></div><aside class="side"><h3>Você</h3><div class="item" id="nome">estrangeiro</div><h3>Descobertas</h3><div id="desc"><div class="item dim">Nada claro ainda.</div></div><h3>Relações</h3><div id="rel"><div class="item dim">Ninguém confia em você ainda.</div></div><h3>Marcas</h3><div id="marks"><div class="item dim">Nenhuma decisão profunda ainda.</div></div><h3>Caminho</h3><div id="cam"><div class="item dim">Indefinido</div></div></aside></div></div>
+  <div id="linha" class="content"><div class="grid" id="linha-grid"></div></div>
+  <div id="ajuda" class="content"><div class="grid"><div class="card"><h2>Ideia central</h2><p>Você não recebe a história pronta. Primeiro sobrevive, escuta nomes e descobre aos poucos em que parte da Bíblia caiu.</p></div><div class="card"><h2>Como avançar</h2><p>Escolha pela intenção do personagem, não tentando adivinhar final certo. Algumas decisões aproximam você de pessoas, lugares e responsabilidades diferentes.</p></div><div class="card"><h2>Descobertas</h2><p>O painel guarda nomes, relações e marcas importantes. Ele mostra o que você aprendeu durante a jornada, sem entregar o que ainda não viveu.</p></div><div class="card"><h2>Duração</h2><p>Cada jornada é longa o bastante para explorar conversas, consequências e detalhes históricos antes de chegar a um final.</p></div></div></div>
+</div>
+<script>
+const CENAS={};
+const G={cena:0,hist:[],flags:{},desc:[],rel:[],marks:[],path:null,stats:{}};
+
+function uniquePush(list,x){if(x&&!list.includes(x))list.push(x)}
+function esc(s){return String(s).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]))}
+function makeScene(id,loc,title,body,acao,opt={}){CENAS[id]={loc,title,body,acao,...opt}}
+function makeEnding(id,title,body,opt={}){CENAS[id]={ending:true,etitle:title,ebody:body,...opt}}
+function snapshot(){return JSON.parse(JSON.stringify({cena:G.cena,flags:G.flags,desc:G.desc,rel:G.rel,marks:G.marks,path:G.path,stats:G.stats}))}
+function restore(s){Object.assign(G,{cena:s.cena,flags:s.flags,desc:s.desc,rel:s.rel,marks:s.marks,path:s.path,stats:s.stats||{}})}
+function meta(m={}){
+  uniquePush(G.desc,m.desc); uniquePush(G.rel,m.rel); uniquePush(G.marks,m.mark);
+  if(m.path)G.path=m.path; if(m.reveal)Object.assign(G.flags,m.reveal);
+  if(m.stat)G.stats[m.stat]=(G.stats[m.stat]||0)+1;
+}
+
+makeScene(0,'','O despertar',`Pedras quentes. Sol forte. Você abre os olhos num beco estreito, entre muros claros. Há poeira na boca, cheiro de pão no ar e vozes numa língua que parece antiga demais para ainda estar viva.<br><br>Você procura o celular. A tela está morta. Nada vibra. Nada responde. O mundo respondeu por você: você não está onde deveria estar.`,[
+{t:'Ficar quieto e observar antes de sair',p:1,mark:'Você escolheu observar antes de se revelar.'},
+{t:'Verificar o que ainda carrega consigo',p:2,mark:'Você percebeu que seus objetos modernos podem denunciar você.'},
+{t:'Levantar e procurar água',p:3,mark:'A sede falou mais alto que o medo.'}
+]);
+makeScene(1,'Beco de pedra','Antes de se mostrar',`Você espera. Passam sandálias, túnicas, cestos de figos, crianças carregando jarros. Ninguém usa metal polido como o seu. Ninguém fala como você.<br><br>Do outro lado da rua, um homem observa suas roupas por tempo demais. Você entende que sobreviver aqui começa por parecer menos impossível.`,[
+{t:'Sair devagar, sem chamar atenção',p:3},
+{t:'Esconder o celular e cobrir as roupas',p:2,desc:'Suas roupas e objetos não pertencem a esta época.'}
+],{desc:'As ruas não pertencem ao seu tempo.'});
+makeScene(2,'Beco de pedra','O que restou',`No bolso há vidro, metal e silêncio. O aparelho não acende. Sua carteira, suas chaves e seus documentos parecem relíquias de um reino que ninguém aqui saberia nomear.<br><br>Você guarda tudo sob a roupa. Pela primeira vez, sente medo de que uma prova da sua vida vire acusação contra você.`,[
+{t:'Sair para procurar água',p:3},
+{t:'Tentar trocar um objeto por ajuda',p:4,mark:'Você quase usou o futuro como moeda.'}
+],{desc:'Seu objeto moderno não funciona aqui.'});
+makeScene(3,'Rua movimentada','A cidade viva',`Você chega a uma rua cheia de barracas. Pão achatado, tâmaras, couro, azeite, cerâmica. Ao fundo, numa parte mais alta, há uma tenda cercada por homens de linho. Não parece uma casa. Parece um limite.<br><br>Perto do poço, uma mulher nota sua sede e aponta para a fila.`,[
+{t:'Ir ao poço e pedir água por gestos',p:4},
+{t:'Aproximar-se do homem que está te observando',p:5},
+{t:'Subir até a tenda cercada por homens de linho',p:6}
+],{desc:'Uma tenda sagrada domina a parte alta da cidade.'});
+makeScene(4,'Praça do poço','Água emprestada',`A mulher entende sua garganta seca antes de entender suas palavras. Ela entrega uma cuia. A água é morna, mas parece trazer você de volta ao corpo.<br><br>Ela diz devagar: <em>maim</em>. Depois aponta para si: <em>Hana</em>. Você repete mal. Ela ri sem crueldade.`,[
+{t:'Apontar ao redor e tentar perguntar onde está',p:7,rel:'Hana viu você como estrangeiro, não como ameaça.'},
+{t:'Ficar perto do poço para aprender palavras',p:8,desc:'Maim quer dizer água.'}
+],{desc:'Maim quer dizer água.'});
+makeScene(5,'Mercado','Ben-Hur',`O homem do mercado se aproxima com cuidado. Ele te oferece bebida de tâmaras e aponta para si: <em>Ben-Hur</em>. Depois aponta para você, esperando um nome.<br><br>Seu nome verdadeiro soa duro demais naquela língua. Ben-Hur tenta repetir, desiste e sorri.`,[
+{t:'Aceitar um nome mais simples para sobreviver',p:8,desc:'Você passa a ser chamado de Yonah.',rel:'Ben-Hur decidiu ajudar você.'},
+{t:'Perguntar com gestos o nome da cidade',p:7,rel:'Ben-Hur percebeu que você está perdido.'}
+]);
+makeScene(6,'Colina da tenda','Mishkan',`De perto, a tenda é mais solene que bonita. Tecido, incenso, silêncio e limite. Um guarda ergue a mão antes que você avance.<br><br>Um homem de linho diz duas palavras com reverência: <em>Mishkan</em>. <em>Aron</em>. Você não entende tudo, mas sente que ali a cidade respira diante de Deus.`,[
+{t:'Recuar antes de causar problema',p:8,desc:'A tenda na colina é sagrada.'},
+{t:'Perguntar quem governa a cidade',p:7,desc:'Você ouviu falar do Mishkan e da arca.'}
+],{desc:'A tenda na colina é sagrada.'});
+makeScene(7,'Jerusalém','O nome que atravessa',`Depois de gestos, erros e risadas contidas, alguém finalmente entende sua pergunta. A resposta vem clara:<br><br><span class="quote">Yerushalaim.</span>Jerusalém.<br><br>O nome atravessa você como um choque. Não é museu. Não é peça. É rua, poeira, fome, gente real.`,[
+{t:'Perguntar quem é o rei',p:9},
+{t:'Voltar ao poço antes que anoiteça',p:8}
+],{desc:'Você está em Jerusalém.',reveal:{local:'Jerusalém'}});
+makeScene(8,'Jerusalém','Primeiros dias',`Você sobrevive carregando sacos, varrendo pátios, repetindo palavras. Ben-Hur arruma um canto para você dormir. Hana te ensina a não encarar gente poderosa por tempo demais.<br><br>Um velho escriba chamado Eli-Shama nota que você aprende rápido. Ele não pergunta de onde você veio. Pergunta o que você teme descobrir.`,[
+{t:'Aproximar-se de Eli-Shama',p:10,rel:'Eli-Shama começou a observar você com interesse.'},
+{t:'Perguntar discretamente sobre o rei',p:9}
+],{rel:'Hana e Ben-Hur ajudam você a sobreviver.'});
+makeScene(9,'Jerusalém','O rei',`Quando você pergunta quem governa, a resposta vem com orgulho: <em>Davi ben Jessé, rei de Israel</em>.<br><br>As peças começam a se aproximar. Davi. Jerusalém. A tenda. A arca. Você ainda não sabe em que capítulo caiu, mas já sente que qualquer passo pode tocar algo maior que você.`,[
+{t:'Guardar a informação e continuar ouvindo',p:10},
+{t:'Tentar saber mais sobre a casa do rei',p:11}
+],{desc:'Davi reina em Jerusalém.',reveal:{rei:'Rei Davi',ano:'Dias de Davi'}});
+makeScene(10,'Casa de Eli-Shama','O escriba velho',`Eli-Shama deixa você copiar sinais em um caco de cerâmica. Depois diz, sem olhar para você:<br><br><span class="quote">Estrangeiro que escuta demais sempre acaba diante de uma escolha.</span>Ele fala da casa do rei com cuidado. Nomes aparecem como brasas cobertas: Amnom. Tamar. Absalão.`,[
+{t:'Pedir que ele explique os nomes',p:11,rel:'Eli-Shama sabe que você entende mais do que aparenta.'},
+{t:'Fingir que os nomes não mexeram com você',p:12}
+],{desc:'Nomes da casa de Davi começaram a aparecer: Amnom, Tamar e Absalão.'});
+makeScene(11,'Portões do palácio','Rumores cortados',`Perto do palácio, as frases morrem quando você chega. Um servo comenta que Amnom está recolhido, sem comer. Outro fala de Tamar com respeito e medo. Quando Absalão passa, o povo abre caminho para sua beleza e sua posição.<br><br>Você percebe que a história que conhece não está num livro. Ela ainda está respirando.`,[
+{t:'Ficar em Jerusalém e tentar agir com prudência',p:100,path:'Jerusalém - O aviso'},
+{t:'Ficar em Jerusalém como testemunha',p:200,path:'Jerusalém - A testemunha'},
+{t:'Agir rápido antes que seja tarde',p:300,path:'Jerusalém - Zelo sem sabedoria'},
+{t:'Procurar uma caravana para terras distantes',p:12}
+],{desc:'A crise da casa de Davi ainda está se formando.',reveal:{linha:'Tamar, Amnom, Absalão e Davi'}});
+makeScene(12,'Portão das caravanas','Quatro estradas',`Você poderia ficar. Também poderia partir antes que a casa de Davi engula sua vida. No portão das caravanas, quatro grupos se preparam: homens que falam de especiarias do oriente, viajantes de Cuxe, escribas rumo aos rios antigos e mercadores de Tiro.<br><br>Jerusalém ficará. A história principal seguirá. Mas talvez Deus também tenha perguntas nas bordas do mapa.`,[
+{t:'Seguir rumo à Índia pelas rotas de especiarias',p:400,path:'Índia - A semente distante'},
+{t:'Descer rumo a Cuxe com viajantes do sul',p:500,path:'Cuxe - O servo que busca'},
+{t:'Ir para a Mesopotâmia, terra de rios e escribas',p:600,path:'Babilônia - À sombra do exílio'},
+{t:'Subir para Tiro, entre cedros e navios',p:700,path:'Tiro - Cedros e aliança'}
+],{desc:'Há rotas antigas ligando Jerusalém a povos distantes.'});
+
+makeScene(100,'Palácio de Davi','O aviso discreto',`Você escolhe ficar perto do perigo sem transformá-lo em espetáculo. Lava jarros, carrega água e escuta servas que não podem falar alto.<br><br>O nome de Tamar aparece sempre acompanhado de um cuidado estranho. O nome de Amnom aparece como doença.`,[
+{t:'Levar o que ouviu a Eli-Shama',p:101,mark:'Você procurou conselho antes de acusar.'},
+{t:'Tentar confirmar o rumor com uma serva de Tamar',p:102,mark:'Você buscou proteger sem expor Tamar.'}
+],{path:'Jerusalém - O aviso'});
+makeScene(101,'Casa de Eli-Shama','Conselho antes da pressa',`Eli-Shama escuta sem interromper. Quando você termina, ele fecha os olhos.<br><br><span class="quote">Na casa de reis, pecado escondido vira guerra. Mas uma palavra lançada sem testemunha também vira faca.</span>Ele promete procurar alguém que Davi ainda respeite.`,[
+{t:'Pedir que ele procure o profeta Natan',p:103,rel:'Eli-Shama aceitou carregar parte do risco.'},
+{t:'Voltar ao palácio e observar a porta de Amnom',p:103}
+]);
+makeScene(102,'Pátio das servas','A serva de Tamar',`Uma serva entende sua pergunta antes que você termine. O rosto dela muda. Ela não acusa ninguém, mas pergunta:<br><br><span class="quote">Se você sabe, por que pergunta como homem curioso?</span>Você responde baixo: porque quer que Tamar não fique sozinha.`,[
+{t:'Prometer que não vai espalhar o nome de Tamar',p:103,rel:'Uma serva de Tamar decidiu confiar um pouco em você.'},
+{t:'Pedir que ela avise Tamar sem alarme',p:103,mark:'Você tentou proteger a honra de Tamar junto com sua segurança.'}
+]);
+makeScene(103,'Corredores do palácio','A porta preparada',`A notícia se encaixa tarde demais: Amnom pode pedir que Tamar leve comida ao quarto dele. O pretexto parece cuidado de família. O perigo parece porta fechada.<br><br>Você não tem força para mandar em ninguém. Tem apenas nomes, medo e alguns ouvidos certos.`,[
+{t:'Procurar Natan imediatamente',p:104},
+{t:'Falar com Tamar por meio da serva',p:105}
+],{desc:'O perigo contra Tamar está ligado ao quarto de Amnom.'});
+makeScene(104,'Casa de Natan','O profeta escuta',`Natan ouve como quem pesa cada palavra diante de Deus. Ele não te chama de louco. Só pergunta quem mais sabe.<br><br>Quando você cita Eli-Shama e a serva, Natan se levanta. O rosto dele não tem pressa. Tem gravidade.`,[
+{t:'Ir com Natan até Davi',p:106,rel:'Natan levou seu aviso a sério.'},
+{t:'Esperar enquanto Natan confirma os fatos',p:106}
+]);
+makeScene(105,'Pátio interno','Tamar ouve',`Tamar não recebe sua fala como fofoca. Recebe como peso. Ela baixa os olhos por um instante, depois pergunta se Absalão sabe.<br><br>Você percebe que proteger alguém também é não roubar dela a própria voz.`,[
+{t:'Dizer que Natan precisa saber',p:104,rel:'Tamar foi tratada como pessoa, não como rumor.'},
+{t:'Pedir que ela não vá sozinha a lugar nenhum',p:106}
+]);
+makeScene(106,'Casa do rei','Davi informado',`Davi envelhece diante de você enquanto escuta. O rei que venceu gigantes agora precisa olhar para a própria casa.<br><br>Natan não grita. Tamar não é exposta. Eli-Shama fica em silêncio. O pecado ainda é possível, mas a porta que ele queria usar já não está invisível.`,[
+{t:'Pedir proteção imediata para Tamar',p:107},
+{t:'Esperar a decisão do rei',p:107}
+],{rel:'Davi ouviu o aviso antes do crime.'});
+makeScene(107,'Palácio de Davi','A linha deslocada',`Uma ordem pequena muda a rotina: Tamar não vai sozinha. Amnom percebe que alguém viu a sombra antes do ato. Absalão nota que algo foi impedido sem saber exatamente o quê.<br><br>Naquela noite, Jerusalém parece respirar. Mas você sente um frio novo: se a ferida que moveria tantos acontecimentos não aconteceu, o que mais você deslocou?`,[
+{t:'Permanecer para ver o novo futuro',p:190},
+{t:'Perguntar a Natan se salvar um inocente pode quebrar uma promessa',p:190}
+]);
+
+makeScene(200,'Jerusalém','Perto, mas parado',`Você fica. Trabalha. Escuta. Decide que talvez não caiba a você tocar a casa do rei.<br><br>Rumores passam por você como água por pedra: Amnom doente, Tamar chamada, servos inquietos. Você entende o suficiente para temer e não o suficiente para agir sem se odiar.`,[
+{t:'Continuar observando',p:201,mark:'Você escolheu não interferir nos primeiros sinais.'},
+{t:'Procurar Eli-Shama, mas sem pedir ação',p:201,rel:'Eli-Shama percebeu seu medo de agir.'}
+],{path:'Jerusalém - A testemunha'});
+makeScene(201,'Poço de Hana','O silêncio depois',`A cidade amanhece diferente. Mulheres falam baixo. Homens mudam de assunto. O nome de Tamar some da boca pública como se calar apagasse violência.<br><br>Hana chora sem explicar. Você não precisa que ela explique tudo.`,[
+{t:'Perguntar por Tamar com cuidado',p:202},
+{t:'Guardar silêncio por vergonha',p:202,mark:'Você carregou culpa por ter entendido tarde demais.'}
+],{desc:'Tamar foi ferida dentro da casa real.'});
+makeScene(202,'Portão do palácio','Absalão calado',`Absalão passa pelo portão sem sorrir. Sua beleza ainda chama atenção, mas algo nele ficou duro como pedra aquecida.<br><br>Você ouve que ele levou Tamar para sua casa. Ele não fala com Amnom. Não grita com Davi. O silêncio dele parece uma espada guardada.`,[
+{t:'Observar Absalão no portão',p:203,desc:'Absalão recolheu Tamar e guardou silêncio.'},
+{t:'Ficar com Eli-Shama e registrar nomes',p:203}
+]);
+makeScene(203,'Jerusalém','Dois anos',`O tempo não cura. Apenas ensina a cidade a pisar em volta da ferida. Davi lamenta, mas não corrige. Amnom vive. Tamar permanece como uma dor que ninguém quer nomear.<br><br>Dois anos depois, Absalão prepara um banquete. Alguns chamam de reconciliação. Eli-Shama chama de colheita.`,[
+{t:'Prestar atenção aos preparativos',p:204},
+{t:'Tentar avisar alguém, mesmo tarde',p:204,mark:'Você tentou acordar quando a vingança já estava madura.'}
+]);
+makeScene(204,'Banquete dos filhos do rei','Sangue entre irmãos',`A notícia chega antes dos cavalos: Amnom morreu. Absalão fugiu.<br><br>Por um instante, todos os rumores voltam com corpo. O que foi escondido no quarto de um príncipe agora saiu pelos caminhos em forma de sangue.`,[
+{t:'Ir ao portão ouvir notícias',p:205},
+{t:'Ficar com Eli-Shama e escrever',p:205,rel:'Eli-Shama confiou a você parte do registro.'}
+],{desc:'Absalão matou Amnom e fugiu.'});
+makeScene(205,'Jerusalém','Exílio e retorno',`Gesur vira nome repetido em sussurros. Davi lamenta Amnom e sente falta de Absalão. Anos se dobram. Absalão volta, mas a casa não se reconcilia de verdade.<br><br>Você entende que pecado não tratado não desaparece. Ele muda de roupa.`,[
+{t:'Observar Absalão ganhar o coração do povo',p:206},
+{t:'Acompanhar Davi à distância',p:206}
+],{desc:'Absalão voltou a Jerusalém, mas a ruptura permaneceu.'});
+makeScene(206,'Estrada para fora da cidade','O filho contra o pai',`Absalão rouba o coração do povo. A cidade divide o olhar. Davi sai de Jerusalém chorando, e você vê o rei atravessar a mesma poeira em que acordou.<br><br>Depois vem a guerra. Depois a árvore. Depois a notícia que fere Davi mais que vitória.`,[
+{t:'Ouvir o lamento de Davi',p:290},
+{t:'Registrar a história até o fim',p:290}
+],{desc:'Absalão se rebelou contra Davi e morreu.'});
+
+makeScene(300,'Jerusalém','Pressa',`Você decide que esperar é covardia. Ainda não tem testemunhas, mas tem medo suficiente para agir.<br><br>Seu aviso sai alto demais no lugar errado. Servos repetem pedaços. O nome de Tamar começa a circular antes que Tamar esteja protegida.`,[
+{t:'Confrontar um servo de Amnom',p:301,mark:'Sua pressa transformou cuidado em alarme público.'},
+{t:'Procurar Absalão imediatamente',p:302,mark:'Você levou meia verdade ao coração mais inflamável.'}
+],{path:'Jerusalém - Zelo sem sabedoria'});
+makeScene(301,'Corredor do palácio','Amnom alertado',`Amnom percebe que alguém está olhando para ele. O perigo não desaparece. Apenas aprende a se esconder melhor.<br><br>Servos somem. Portas se fecham. O palácio inteiro começa a proteger sua própria aparência.`,[
+{t:'Tentar corrigir o que falou',p:303},
+{t:'Buscar Davi antes que piore',p:304}
+]);
+makeScene(302,'Casa de Absalão','Metade da verdade',`Absalão escuta pouco e completa o resto com ira. Seus olhos deixam de pedir verdade e passam a procurar alvo.<br><br>Quando você tenta recuar, já é tarde: sua intenção virou combustível.`,[
+{t:'Tentar acalmar Absalão',p:303},
+{t:'Dizer que ainda não há certeza',p:303}
+],{rel:'Absalão ouviu você, mas não como você esperava.'});
+makeScene(303,'Pátio interno','Tamar exposta',`Tamar é cercada por cuidados e olhares. Alguns dizem que querem protegê-la. Outros querem saber detalhes. Quase ninguém pergunta o que ela quer.<br><br>Você tentou impedir uma violência e descobriu outra: transformar a dor de alguém em assunto público.`,[
+{t:'Pedir perdão a Tamar',p:304,mark:'Você entendeu tarde que a vítima não era uma peça no seu plano.'},
+{t:'Procurar Natan',p:305}
+],{desc:'Tamar foi exposta pelo rumor antes de ser protegida.'});
+makeScene(304,'Casa do rei','Davi dividido',`Davi ouve rumor, acusação e medo misturados. Já não é prevenção. É escândalo. O rei hesita, e cada hesitação ganha testemunhas.<br><br>Você queria clareza. Entregou confusão.`,[
+{t:'Pedir uma ordem real',p:305},
+{t:'Recuar e deixar os responsáveis agirem',p:305}
+]);
+makeScene(305,'Casa de Natan','Repreensão',`Natan olha para você com tristeza.<br><br><span class="quote">Verdade sem tempo, sem testemunha e sem amor pode virar espada na mão errada.</span>Você percebe que falar certo não basta. É possível dizer algo verdadeiro e ainda ferir quem já estava ferida.`,[
+{t:'Aceitar a repreensão',p:306},
+{t:'Tentar justificar sua intenção',p:306,mark:'Você lutou contra a culpa se escondendo na própria intenção.'}
+]);
+makeScene(306,'Jerusalém','O fogo corre',`Absalão age cedo, sem espaço para arrependimento. Amnom cai. A cidade escolhe lados antes de entender a história. Davi perde filhos antes de quase perder o reino.<br><br>Você não criou o pecado deles. Mas acendeu corredores por onde ele correu mais depressa.`,[
+{t:'Assumir o peso do que provocou',p:390},
+{t:'Tentar reparar tarde demais',p:390}
+],{desc:'A tragédia foi acelerada por uma intervenção imprudente.'});
+
+makeScene(400,'Rota do oriente','Além do mapa familiar',`Você segue com mercadores que falam de pimenta, marfim, tecidos e portos tão distantes que Jerusalém parece virar sussurro.<br><br>Nas noites de viagem, você repete o que aprendeu: o Deus de Abraão, de Isaque e de Jacó não cabe apenas numa colina.`,[
+{t:'Aprender a língua dos mercadores',p:401,mark:'Você escolheu escutar antes de ensinar.'},
+{t:'Contar histórias de Israel ao redor do fogo',p:401,mark:'Você começou a falar de Deus longe de Jerusalém.'}
+],{path:'Índia - A semente distante'});
+makeScene(401,'Porto distante','A costa da Índia',`O mar entrega você a uma costa úmida, cheia de cheiros novos: especiarias, peixe, chuva, madeira molhada. Ninguém conhece Davi. Ninguém sabe o nome de Jerusalém.<br><br>Isso assusta você mais do que a viagem. Como falar do Deus vivo onde ninguém possui suas palavras?`,[
+{t:'Começar pelo Deus criador de todas as coisas',p:402},
+{t:'Começar pela história de Abraão como peregrino',p:402}
+],{desc:'Rotas comerciais podiam levar histórias junto com mercadorias.'});
+makeScene(402,'Casa de um mercador','Uma pergunta honesta',`Um mercador local pergunta se o seu Deus pertence apenas ao seu povo. Você quase responde rápido. Depois lembra que também é estrangeiro dependendo de hospitalidade.<br><br>Você fala de aliança, promessa e justiça. Não como dono da verdade, mas como alguém que foi alcançado por ela.`,[
+{t:'Ensinar uma oração curta ao mercador',p:403,rel:'Um mercador da Índia ouviu sobre o Deus de Israel.'},
+{t:'Escrever nomes hebraicos em um pedaço de cerâmica',p:403,desc:'Uma pequena memória escrita ficou em terra distante.'}
+]);
+makeScene(403,'Mercado de especiarias','Semente sem controle',`Alguns escutam por curiosidade. Outros por cortesia. Uma criança repete mal o nome de Jerusalém. Um idoso pergunta se justiça e misericórdia podem vir do mesmo Deus.<br><br>Você percebe que missão não é dominar o resultado. É semear sem possuir a colheita.`,[
+{t:'Ficar mais tempo ensinando com cuidado',p:404},
+{t:'Seguir viagem e deixar uma pequena lembrança',p:404}
+]);
+makeScene(404,'Costa da Índia','Rumores futuros',`Você ouve histórias de comunidades que um dia guardarão memórias judaicas nesta terra. Séculos depois, outros falarão de discípulos de Cristo chegando por rotas do mar.<br><br>Você não sabe o que é história, tradição ou providência escondida. Sabe apenas que uma pergunta sobre o Deus de Israel agora vive onde antes não vivia.`,[
+{t:'Confiar a semente a Deus',p:490},
+{t:'Voltar para as rotas levando o peso da distância',p:490}
+],{desc:'A Índia guarda tradições antigas ligadas a judeus e cristãos do Oriente.'});
+
+makeScene(500,'Caminho do sul','Rumo a Cuxe',`Você desce com viajantes que conhecem o Nilo, o deserto e os caminhos de Cuxe. Eles falam de reinos ao sul, ouro, oficiais de corte e gente que viaja longe para buscar sabedoria.<br><br>Jerusalém fica para trás, mas o desejo de Deus viaja com perguntas humanas.`,[
+{t:'Ajudar a guardar os rolos da caravana',p:501,mark:'Você cuidou da palavra escrita como tesouro.'},
+{t:'Conversar com um oficial estrangeiro',p:501,rel:'Um oficial de Cuxe percebeu sua fé.'}
+],{path:'Cuxe - O servo que busca'});
+makeScene(501,'Acampamento no deserto','O homem que lê',`Um oficial de Cuxe observa seus sinais escritos. Ele pergunta por que Israel canta tanto sobre justiça se seus reis também sangram a própria casa.<br><br>A pergunta atravessa você. Você fala de pecado real, juízo real e de um Deus que não abandona sua promessa por causa da ruína dos homens.`,[
+{t:'Contar a história de Davi com honestidade',p:502},
+{t:'Falar dos salmos que nascem de culpa e esperança',p:502}
+],{desc:'A fé de Israel também confronta o pecado dos próprios reis.'});
+makeScene(502,'Margem do Nilo','Fome de adoração',`O oficial não quer apenas histórias. Ele quer saber se estrangeiros podem buscar o Deus de Israel. Você lembra da tenda, da arca, dos limites, mas também lembra de promessas para as nações.<br><br>Você não consegue entregar todas as respostas. Entrega uma direção: Jerusalém.`,[
+{t:'Incentivá-lo a buscar o Deus de Israel',p:503,rel:'Um homem de Cuxe decidiu buscar mais do Deus de Israel.'},
+{t:'Copiar para ele um cântico sobre o Senhor',p:503,desc:'Um cântico de Israel seguiu para o sul.'}
+]);
+makeScene(503,'Casa de estrangeiros','Uma ponte longa',`Você imagina, sem entender como, um futuro em que outro homem de Cuxe voltará de Jerusalém lendo o profeta Isaías, e alguém lhe explicará o Cristo.<br><br>Você não antecipa o evangelho. Não inventa Escritura. Apenas ajuda uma fome antiga a encontrar caminho.`,[
+{t:'Deixar que a pergunta continue depois de você',p:504},
+{t:'Orar para que Deus conduza os que buscam',p:504}
+],{desc:'Cuxe se torna para você um sinal de povos buscando o Deus de Israel.'});
+makeScene(504,'Estrada do sul','O retorno das perguntas',`Notícias de Jerusalém chegam quebradas: Amnom morto, Absalão fugido, Davi ferido. O centro da promessa continua sangrando.<br><br>Mesmo assim, ao sul, alguém aprendeu que pode buscar o Deus de Israel sem possuir sangue de Israel.`,[
+{t:'Guardar essa esperança',p:590},
+{t:'Voltar com os viajantes para o norte',p:590}
+]);
+
+makeScene(600,'Caminho do leste','Rios antigos',`Você viaja para terras de rios largos, cidades antigas e escribas que medem o mundo em tábuas, impostos e presságios. Ali, poder parece menos um trono e mais uma máquina.<br><br>Você não sabe ainda, mas está olhando para a sombra de um futuro exílio.`,[
+{t:'Aprender com os escribas da Mesopotâmia',p:601,mark:'Você estudou como impérios preservam e controlam memória.'},
+{t:'Procurar famílias hebreias em trânsito',p:601}
+],{path:'Babilônia - À sombra do exílio'});
+makeScene(601,'Casa dos escribas','Memória e domínio',`Os escribas registram colheitas, guerras e reis como quem prende o tempo. Você pensa em Eli-Shama e entende que escrever pode servir à verdade ou ao domínio.<br><br>Um ancião pergunta por Jerusalém. Ele nunca viu a cidade, mas conhece o nome.`,[
+{t:'Falar de Davi e da promessa',p:602},
+{t:'Falar da fragilidade da casa de Davi',p:602,desc:'A promessa de Deus não apaga a culpa humana.'}
+]);
+makeScene(602,'Junto ao rio','A sombra do futuro',`Você percebe que esta terra poderá engolir reinos inteiros. Um dia, filhos de Judá talvez chorem junto a rios como este, lembrando Sião.<br><br>A ideia dói: Deus pode preservar seu povo até mesmo fora da terra, mas o exílio nunca será romantizado. Será ferida e disciplina.`,[
+{t:'Guardar essa visão como advertência',p:603,desc:'A Babilônia futura será lugar de exílio e preservação.'},
+{t:'Escrever uma advertência para quem vier depois',p:603}
+]);
+makeScene(603,'Mercado de tábuas','Um testemunho pequeno',`Você encontra viajantes que ridicularizam um Deus ligado a uma cidade pequena. Você quase responde com orgulho. Em vez disso, fala de um Deus que julga até o seu próprio povo.<br><br>Um jovem escriba fica incomodado. Não pela força do argumento, mas pela humildade dele.`,[
+{t:'Ensinar que o Senhor não é ídolo local',p:604},
+{t:'Contar que reis também respondem diante de Deus',p:604,rel:'Um jovem escriba ouviu que o Deus de Israel julga reis e impérios.'}
+]);
+makeScene(604,'Estrada de volta','O peso dos impérios',`Quando chegam notícias de Jerusalém, você entende que a queda começa dentro antes de chegar por fora. Amnom, Absalão e Davi pertencem ao presente. Babilônia pertence a uma sombra que ainda crescerá.<br><br>Você sai sabendo que Deus não perde seu povo nem quando seu povo perde a terra.`,[
+{t:'Voltar levando a advertência',p:690},
+{t:'Permanecer entre os escribas mais um tempo',p:690}
+]);
+
+makeScene(700,'Estrada do norte','Rumo a Tiro',`Você sobe com mercadores que falam de cedros, portos, bronze e contratos. Tiro não parece piedosa. Parece eficiente. Ainda assim, Deus também usa madeira, artesãos e navios no tempo certo.<br><br>Você começa a perceber que uma história santa também passa por armazéns.`,[
+{t:'Trabalhar nos armazéns de madeira',p:701,mark:'Você aprendeu que coisas materiais também servem a propósitos santos.'},
+{t:'Ouvir negociadores ligados à casa de Hirão',p:701}
+],{path:'Tiro - Cedros e aliança'});
+makeScene(701,'Tiro','Homens do mar',`O mar abre um mundo que Jerusalém não mostra. Línguas se misturam, medidas se comparam, promessas viram contratos.<br><br>Um negociante pergunta por Davi. Não como adorador, mas como homem que sabe que estabilidade muda preço, rota e confiança.`,[
+{t:'Defender a honra de Jerusalém sem esconder sua crise',p:702},
+{t:'Admitir que a casa de Davi está ferida',p:702,desc:'Até alianças comerciais sentem a instabilidade de Jerusalém.'}
+]);
+makeScene(702,'Armazém de cedros','Madeira para depois',`Cedros descem das montanhas como colunas de um futuro que você ainda não verá completo. Você pensa em Salomão, no templo, nos artesãos, no peso de preparar algo que outro construirá.<br><br>Enquanto Jerusalém sofre, aqui se movem peças de uma obra futura.`,[
+{t:'Fortalecer a confiança entre mercadores de Israel e Tiro',p:703},
+{t:'Impedir que explorem a crise de Jerusalém',p:703,mark:'Você tentou proteger uma aliança futura de oportunismo.'}
+],{desc:'Tiro e Israel terão uma ligação importante na construção do templo.'});
+makeScene(703,'Porto','Notícias de sangue',`Chegam notícias: Tamar ferida, Amnom morto, Absalão fugido. Os mercadores fazem contas. Você faz silêncio.<br><br>De longe, a dor parece virar informação. Você luta para não deixar que pessoas reais virem apenas movimento de mercado.`,[
+{t:'Orar por Jerusalém',p:704},
+{t:'Registrar os nomes para não esquecer',p:704}
+]);
+makeScene(704,'Navios e cedros','A ponte material',`Você não impediu a tragédia da casa de Davi. Mas ajudou a manter aberta uma ponte por onde madeira, técnica e confiança poderão circular.<br><br>Nem todo chamado é apagar incêndio. Às vezes é impedir que o futuro fique sem ferramentas para obedecer.`,[
+{t:'Aceitar esse papel menor',p:790},
+{t:'Voltar para Jerusalém com os mercadores',p:790}
+]);
+
+const DEEP_PATHS={
+100:{name:'Jerusalém - O aviso',ending:190,chapters:[
+['Pátio dos carregadores','Eli-Shama','servos que sabem demais','carregar água sem parecer curioso','o palácio tem sua própria língua de medo','Você aprende onde pode ficar sem ser expulso e quais portas ninguém atravessa sem ordem.'],
+['Casa das servas','uma serva de Tamar','mulheres que protegem nomes','falar baixo perto dos jarros','Tamar é amada por alguns e observada por outros','O perigo ainda não tem forma completa, mas já tem direção.'],
+['Corredor de Amnom','um copeiro jovem','o quarto fechado do príncipe','ouvir sobre a doença de Amnom','a paixão do príncipe parece menos amor que posse','A doença dele vira assunto doméstico, e assunto doméstico vira desculpa.'],
+['Mesa de Jonadabe','um parente astuto','conselhos dados com sorriso','perceber que alguém ensina Amnom a fingir','maldade também usa inteligência','Você descobre que o pecado raramente caminha sozinho.'],
+['Pátio de Tamar','Tamar','uma princesa tratada como pessoa real','avisar sem espalhar','proteger não é tomar a voz dela','Tamar entende antes que você termine, e a dignidade dela pesa mais que sua ansiedade.'],
+['Casa de Natan','Natan','um profeta que pesa palavras','levar testemunhas antes de acusar','autoridade sem verdade é fraca, mas verdade sem ordem fere','Natan exige nomes, limites e cuidado com Tamar.'],
+['Sala de Davi','Davi','o rei diante da própria casa','ver Davi ouvir sobre Amnom','um gigante público pode tremer diante do pecado doméstico','O rei não é lenda: é pai, juiz, pecador e responsável.'],
+['Porta impedida','guardas discretos','a rotina alterada','ver Tamar não ser enviada sozinha','uma ordem pequena pode impedir uma noite inteira','O plano de Amnom perde invisibilidade.'],
+['Casa de Absalão','Absalão','um irmão que percebe demais','notar que ele suspeita sem saber tudo','silêncio também pode ser campo de batalha','Você tenta impedir que uma proteção vire outra vingança.'],
+['Jerusalém suspensa','Hana e Ben-Hur','a cidade respirando diferente','sentir que algo foi salvo e algo foi deslocado','mudar uma dor também muda as estradas depois dela','As pessoas vivem, mas a história que você conhecia começa a escapar.'],
+['Tenda e promessa','Natan','a pergunta sobre providência','encarar o peso de ter interferido','misericórdia humana precisa se curvar ao Deus que vê o todo','Você chega ao fim sem saber se salvou apenas Tamar ou se tocou a linha da salvação.']
+]},
+200:{name:'Jerusalém - A testemunha',ending:290,chapters:[
+['Mercado de Jerusalém','Hana','gente comum sob reis famosos','aprender a sobreviver enquanto escuta','a história bíblica acontece no cotidiano','Você compra pão ao lado de pessoas que não sabem que seus dias serão lembrados por séculos.'],
+['Portão do palácio','Eli-Shama','rumores sobre Amnom','perceber sinais e ainda hesitar','não decidir também decide','Você sente que sabe pouco demais para agir e demais para descansar.'],
+['Manhã sem canto','Hana','mulheres falando baixo','descobrir que Tamar foi ferida','a violência tenta se esconder atrás do silêncio','O nome de Tamar some das ruas como se o desaparecimento do nome pudesse apagar a pessoa.'],
+['Casa de Absalão','servos de Absalão','Tamar acolhida pelo irmão','ver o silêncio de Absalão crescer','luto sem justiça pode virar vingança','Ele não fala com Amnom, e justamente por isso todos escutam sua ira.'],
+['Casa de Davi','um oficial do rei','Davi irado e parado','entender a fraqueza do rei','sentimento sem justiça não cura','Davi sofre, mas sua dor não se transforma em proteção.'],
+['Dois anos depois','pastores e mensageiros','a festa de tosquia','ouvir sobre o convite de Absalão','o tempo pode esconder uma lâmina','O convite parece reconciliação para quem não olhou a ferida de perto.'],
+['Banquete de Absalão','mensageiros apressados','a morte de Amnom','receber a notícia no portão','pecado escondido volta como sangue público','Jerusalém corre antes de entender.'],
+['Gesur distante','viajantes do norte','o exílio de Absalão','ouvir Davi lamentar dois filhos de modos diferentes','o exílio pune e preserva ao mesmo tempo','Absalão vive longe, mas sua ausência governa conversas.'],
+['Retorno sem abraço','Joabe citado por servos','a volta política de Absalão','ver reconciliação incompleta','perdão pela metade prepara nova ruptura','Absalão volta para a cidade antes de voltar para o coração do pai.'],
+['Portão dos julgamentos','o povo de Israel','Absalão roubando corações','acompanhar pequenas seduções políticas','rebelião nasce em frases bondosas e justiça prometida','Ele aprende a parecer mais acessível que o rei.'],
+['Estrada da fuga','Davi e seus servos','a revolta e a morte de Absalão','ouvir o lamento final','a Bíblia preserva o choro junto com o juízo','Você termina como testemunha ferida, não como espectador neutro.']
+]},
+300:{name:'Jerusalém - Zelo sem sabedoria',ending:390,chapters:[
+['Rua dos rumores','Ben-Hur','frases quebradas sobre Tamar','agir antes de confirmar','medo pode vestir roupa de coragem','Você chama sua pressa de zelo porque o outro nome dói demais.'],
+['Pátio dos servos','um servo acuado','acusação sem testemunha','confrontar no lugar errado','verdade mal colocada vira ruído','O servo se defende, outros escutam, e a história começa a correr sem rédeas.'],
+['Casa de Absalão','Absalão','ira recebendo meia notícia','procurar o irmão errado primeiro','uma vítima pode desaparecer atrás da vingança de quem a ama','Absalão não pergunta por cuidado; pergunta por alvo.'],
+['Quarto de Amnom','servos de Amnom','o príncipe se escondendo melhor','perceber que o perigo mudou de forma','expor o plano não é o mesmo que impedir o pecado','Amnom aprende a parecer vítima de calúnia.'],
+['Pátio de Tamar','Tamar','vergonha pública','ver sua intenção machucar quem queria defender','ninguém deve transformar dor alheia em prova pessoal','Tamar é cercada por cuidado, curiosidade e vergonha.'],
+['Sala de Davi','Davi','autoridade confusa','levar uma crise já contaminada','um rei hesitante piora quando recebe fumaça no lugar de fogo claro','Davi não sabe onde termina o fato e onde começa sua imprudência.'],
+['Casa de Natan','Natan','repreensão profética','ouvir que a verdade precisa de amor e tempo','falar certo não basta','Natan não diminui o mal de Amnom, mas também não absolve sua vaidade.'],
+['Bairros divididos','Hana e Ben-Hur','a cidade tomando lados','ver pessoas usando Tamar como argumento','quando a dor vira bandeira, a pessoa some de novo','Você percebe que todos dizem defendê-la enquanto quase ninguém a escuta.'],
+['Festa antecipada','homens de Absalão','vingança correndo cedo','tentar apagar fogo que você ajudou a espalhar','ira alimentada não obedece depois','O sangue vem antes que qualquer cura amadureça.'],
+['Jerusalém quebrada','Eli-Shama','boatos no lugar de fatos','registrar o que aconteceu','a cidade já não sabe em quem acreditar','Eli-Shama pede que você escreva os fatos na ordem certa, sem esconder sua participação.'],
+['Depois do incêndio','Natan','gente ferida por palavras apressadas','ouvir a repreensão de Natan','a intenção não apagou o dano','Natan não grita. Ele apenas mostra quantas pessoas foram atingidas por uma denúncia feita sem cuidado.']
+]},
+400:{name:'Índia - A semente distante',ending:490,chapters:[
+['Portão das especiarias','mercadores do oriente','rotas de pimenta e tecidos','entrar numa caravana longa','mercadoria e memória viajam juntas','Você aprende que uma estrada carrega mais que carga.'],
+['Deserto e litoral','um guia estrangeiro','línguas misturadas','escutar antes de ensinar','missão começa com humildade','Você deixa de tratar todos como figurantes do seu chamado.'],
+['Porto do mar oriental','marinheiros','o medo da travessia','orar sem transformar oração em espetáculo','Deus é Senhor também do mar que Israel mal conhece','O mar alarga sua teologia.'],
+['Costa da Índia','um anfitrião local','cheiros de chuva e especiarias','chegar onde Davi é desconhecido','Jerusalém pode ser centro sem ser limite','Você sente a solidão de falar de Deus sem palavras prontas.'],
+['Casa do mercador','um chefe de família','a pergunta sobre deuses e povos','explicar criação e aliança','o Deus de Israel não é ídolo tribal','A conversa começa por pão, preço e hospitalidade, não por discurso.'],
+['Pátio das crianças','crianças curiosas','nomes hebraicos repetidos errado','ensinar uma oração simples','uma semente pequena ainda é semente','Você aprende a não desprezar começos frágeis.'],
+['Mercado de especiarias','mulheres e artesãos','justiça no comércio','falar de pesos honestos','fé também toca balança e contrato','O Deus que você anuncia se torna pergunta sobre negócios do dia.'],
+['Casa dos anciãos','anciãos locais','respeito sem mistura vazia','recusar sincretismo com mansidão','honrar pessoas não exige diluir Deus','Você escolhe clareza sem desprezo.'],
+['Notícias do oeste','viajantes','a tragédia em Jerusalém chegando tarde','receber Amnom e Absalão como rumor distante','distância não transforma dor em detalhe','A cidade santa sangra enquanto você fala dela longe.'],
+['Cerâmica escrita','um jovem aprendiz','memória deixada para depois','registrar uma bênção em sinais hebraicos','nem toda colheita pertence aos olhos de quem semeia','Você deixa algo pequeno demais para virar monumento.'],
+['Maré da volta','o mercador amigo','tradições futuras apenas sugeridas','entregar a semente a Deus','história e providência se encontram sem você controlar','O fim aponta para memórias judaicas e cristãs antigas no Oriente, sem fingir certeza onde há mistério.']
+]},
+500:{name:'Cuxe - O servo que busca',ending:590,chapters:[
+['Estrada do sul','viajantes de Cuxe','ouro, rolos e sede','seguir pela rota do Nilo','as nações também fazem perguntas santas','Você descobre que estrangeiro não é sinônimo de distante de Deus.'],
+['Acampamento de fronteira','um oficial de Cuxe','curiosidade por Jerusalém','contar o que viu sem enfeitar','testemunho honesto inclui vergonha','Ele pergunta por que um povo de Deus sofre por causa dos próprios reis.'],
+['Margem do Nilo','guardas da caravana','água como lei','partilhar recurso escasso','justiça começa antes do discurso','Sua fé é observada antes de ser ouvida.'],
+['Casa de estrangeiros','um leitor cuidadoso','salmos em fragmentos','explicar lamento e esperança','orar também é levar culpa diante de Deus','Os cânticos de Israel soam diferentes na boca de quem busca de longe.'],
+['Mercado do sul','mulheres de Cuxe','histórias de rainhas e oficiais','ouvir antes de ligar tudo a Jerusalém','Deus não chama povos apagando suas histórias','Você aprende a não confundir missão com domínio cultural.'],
+['Sala de registros','um escriba de corte','nomes e tributos','mostrar que reis respondem ao Senhor','poder humano nunca é absoluto','A mensagem sobre Deus toca governo, justiça e medo.'],
+['Pergunta do eunuco','um servo real','pertencimento e exclusão','falar de busca sincera','o Senhor vê quem os portões humanos limitam','A dor de não caber em certos espaços vira sede por promessa.'],
+['Rolo copiado','o oficial','um cântico levado ao sul','copiar uma porção sem fingir autoridade profética','a palavra preservada pode viajar mais que o pregador','Você entrega memória, não controle.'],
+['Notícia de Jerusalém','mensageiros','Amnom morto e Absalão fugido','sentir o centro ferido','a promessa avança por uma casa quebrada','Cuxe ouve sobre Israel sem receber uma versão limpa demais.'],
+['Estrada de adoração','peregrinos futuros imaginados','a vontade de subir a Jerusalém','apontar para o Deus que chama','buscar já é ser movido','Você imagina caminhos que um dia levarão outros adoradores à cidade.'],
+['Horizonte de Atos','o oficial de Cuxe','uma ponte para um futuro distante','não antecipar o evangelho, mas preparar pergunta','Deus escreve linhas longas entre povos e promessas','O final deixa uma fome que séculos depois encontrará Cristo anunciado em Isaías.']
+]},
+600:{name:'Babilônia - À sombra do exílio',ending:690,chapters:[
+['Estrada do Eufrates','comerciantes do leste','rios maiores que reinos','viajar para cidades antigas','impérios parecem eternos até Deus pesá-los','Você entra num mundo que arquiva tudo, inclusive orgulho.'],
+['Casa das tábuas','escribas mesopotâmicos','memória em barro','aprender outro modo de escrever','registro pode servir à verdade ou ao domínio','Você compara Eli-Shama com homens que escrevem para impérios.'],
+['Mercado de ídolos','artesãos locais','deuses de cidade','falar do Deus que julga reis','o Senhor não cabe em estátuas nem fronteiras','Alguns riem de uma cidade pequena chamada Jerusalém.'],
+['Junto ao rio','um ancião sem terra','saudade de lugares nunca vistos','ouvir histórias de famílias sem pátria clara','exílio começa como possibilidade antes de virar sentença','A água larga parece carregar uma canção triste do futuro.'],
+['Arquivo do palácio','um oficial imperial','listas de tributo','perceber como nações são engolidas','quando tudo vira número, pessoas desaparecem','Você sente medo pelo futuro de Judá.'],
+['Noite de advertência','viajantes hebreus','pecado interno e ameaça externa','ligar Davi ferido a um futuro maior','quedas públicas começam em infidelidades íntimas','A casa de Davi vira lente para entender reinos.'],
+['Escola de jovens','um aprendiz escriba','sabedoria estrangeira','ensinar humildemente sobre temor do Senhor','sabedoria sem Deus vira ferramenta de poder','Um jovem percebe que Israel critica até seus próprios reis.'],
+['Carta não enviada','Eli-Shama lembrado','mensagem para Jerusalém','escrever uma advertência impossível de entregar','nem todo aviso chega a tempo','Você aprende o limite cruel de saber sem poder alcançar.'],
+['Notícias de Absalão','mercadores','revolta em Jerusalém','ouvir a crise como sinal','um reino dividido chama olhares de fora','A dor familiar de Davi parece ensaiar fragilidades nacionais.'],
+['Rios de futuro','exilados imaginados','salmos ainda não cantados ali','pressentir preservação no juízo','Deus disciplina sem abandonar','Você entende que Babilônia será ferida, mas também lugar onde a fé sobreviverá.'],
+['Saída dos rios','o jovem escriba','testemunho contra impérios','levar a advertência de volta','a aliança é maior que a terra, mas a perda da terra ainda dói','O final deixa você sob a sombra de um exílio que ainda virá.']
+]},
+700:{name:'Tiro - Cedros e aliança',ending:790,chapters:[
+['Estrada do norte','mercadores fenícios','cedros e portos','subir para Tiro','o plano de Deus também passa por trabalho comum','Você começa a ver santidade em madeira, medidas e suor.'],
+['Armazém de cedros','trabalhadores de Tiro','madeira marcada','aprender medidas e contratos','material não é menos espiritual por ser material','Cada tronco parece esperar uma finalidade que ainda não chegou.'],
+['Casa de negociadores','homens de Hirão','política e confiança','ouvir sobre Davi como aliado','alianças dependem de caráter e estabilidade','A crise de Jerusalém vira preocupação econômica.'],
+['Porto de línguas','marinheiros','alfabetos e rotas','ver histórias viajando por navios','ideias navegam com mercadorias','Você entende que o mundo bíblico é conectado por vozes e velas.'],
+['Oficina de artesãos','um mestre em bronze','beleza e função','falar do Deus que merece o melhor','arte pode servir à adoração sem virar ídolo','O artesão entende excelência antes de entender teologia.'],
+['Notícias amargas','um mensageiro','Tamar, Amnom e Absalão','receber a dor como mais que instabilidade','pessoas não são eventos de mercado','Você resiste à frieza de transformar tragédia em preço.'],
+['Contrato em risco','negociadores rivais','explorar a fraqueza de Davi','defender justiça nas trocas','fidelidade aparece quando o outro está vulnerável','Você tenta impedir que crise vire oportunidade suja.'],
+['Memória do templo','um israelita do norte','a casa que Salomão construirá','perceber o futuro sem possuir seu controle','preparar não é realizar','Você talvez carregue madeira para uma obra que outro verá.'],
+['Oração no cais','trabalhadores estrangeiros','Deus além de Jerusalém','orar sem transformar Tiro em Israel','as nações podem servir ao plano sem perder sua história','O cais vira lugar de temor discreto.'],
+['Retorno dos navios','capitães','rotas preservadas','manter aberta a ponte com Israel','uma aliança pequena pode sustentar obediência futura','Você escolhe a fidelidade prática.'],
+['Cedros ao longe','o mestre de armazém','futuro templo sugerido','aceitar um papel menor','nem todo chamado salva uma crise; alguns preparam um altar','O final mostra que madeira também pode carregar promessa.']
+]}
+};
+
+const PHASES=[
+  (ch)=>({title:ch[0],body:`Você chega em ${ch[0].toLowerCase()} e demora alguns minutos para entender a cena. ${cap(ch[1])} ${verbEstar(ch[1])} ali, fazendo o que precisa ser feito. Ao redor, sinais ${prepDe(ch[2])} mostram como aquele lugar funciona no dia a dia.<br><br>${ch[5]} Nada vem explicado. Você precisa olhar, ouvir e escolher por onde entrar na conversa.`,mark:ch[4]}),
+  (ch)=>({title:`${ch[0]} - trabalho e conversa`,body:`Você encontra um jeito pequeno de participar da rotina. Ajuda antes de exigir resposta, aprende uma palavra, erra um gesto, espera sua vez. Com isso, você deixa de parecer apenas um estranho para quem está ali.<br><br>A história entra pelo comum: água, pão, poeira, serviço e gente cansada tentando entender o próprio dia.`,rel:`A confiança começa a nascer em ${ch[0]}.`}),
+  (ch)=>({title:`${ch[0]} - pista e risco`,body:`No meio dessa convivência, o assunto ${prepDe(ch[2])} deixa de parecer detalhe. Você percebe quem fala baixo, quem muda de assunto, quem olha para a porta antes de responder.<br><br>${ch[5]} O problema é que uma informação mal usada pode ferir alguém antes de ajudar.`,desc:ch[4]}),
+  (ch)=>({title:`${ch[0]} - escolha de partida`,body:`Antes de seguir, você precisa decidir o que levar desse lugar. Nem tudo que ouviu deve ser repetido. Nem toda coragem precisa virar barulho. Nem toda prudência pode virar medo.<br><br>O próximo passo nasce do modo como você trata ${taskText(ch[3])}.`,mark:ch[4]})
+];
+
+function buildDeepPath(base,cfg){
+  cfg.chapters.forEach((ch,ci)=>{
+    PHASES.forEach((phase,pi)=>{
+      const id=base+(ci*PHASES.length)+pi;
+      const last=ci===cfg.chapters.length-1&&pi===PHASES.length-1;
+      const next=last?cfg.ending:id+1;
+      const s=phase(ch);
+      const opts=phaseOptions(ch,pi,ci,cfg.name);
+      const actionStats=['escuta','servico','prudencia','ousadia'];
+      const actions=opts.map((t,ai)=>({t:contextAction(t),p:next,mark:s.mark,rel:s.rel,desc:s.desc,stat:actionStats[ai]}));
+      makeScene(id,cfg.name,s.title,s.body,actions,{path:cfg.name});
+    });
+  });
+}
+Object.entries(DEEP_PATHS).forEach(([base,cfg])=>buildDeepPath(Number(base),cfg));
+
+function responseBody(ch,s,choice,ai){
+  const tones=[
+    `Você fica alguns passos atrás e presta atenção. Um detalhe que teria passado despercebido aparece: quem fala primeiro, quem espera, quem evita o olhar de ${ch[1]}.`,
+    `Você põe a mão no trabalho. Não entende todos os costumes, mas entende peso, sede e cansaço. ${ch[1]} nota isso antes de responder qualquer pergunta.`,
+    `Você se aproxima da pista sem espalhar o assunto. Alguém poderia se ferir se o nome errado fosse dito no lugar errado.`,
+    `Você fala antes que a cena se feche. Algumas pessoas olham para você com surpresa. Outras se calam, e esse silêncio também diz alguma coisa.`
+  ];
+  return `${tones[ai]}<br><br><span class="quote">${esc(choice)}</span>A reação não demora. Uma pessoa muda de assunto, outra se aproxima, e ${ch[1]} deixa escapar mais uma informação sobre ${ch[0]}. ${ch[5]}`;
+}
+
+function responseTitle(title,ai){
+  const suffix=['o detalhe','a ajuda','o cuidado','a pergunta'];
+  return `${title} - ${suffix[ai]}`;
+}
+
+function phaseOptions(ch,phase,ci,pathName){
+  const place=ch[0], person=ch[1], clue=ch[2], task=ch[3], lesson=ch[4];
+  const banks=[
+    [
+      [`Entrar em ${place} pelo lado onde há sinais de ${simpleClue(clue)}`,`Pedir para ${person} explicar o costume mais urgente dali`,`Ficar perto do trabalho de ${place} até entender quem manda`,`Notar quem evita falar de ${simpleClue(lesson)}`],
+      [`Misturar-se aos carregadores de ${place} sem puxar conversa`,`Observar o modo como ${person} recebe quem chega sem proteção`,`Seguir o cheiro de pão e ouvir o nome que mais repetem`,`Escolher um canto de onde dê para ver entradas e saídas`],
+      [`Contar as portas abertas de ${place} antes de falar com alguém`,`Esperar ${person} terminar a primeira tarefa do dia`,`Acompanhar uma família que passa falando baixo`,`Perceber como ${simpleClue(clue)} muda o ambiente`]
+    ],
+    [
+      [`Segurar uma carga para ${person} enquanto o trabalho aperta`,`Buscar água para quem trabalha perto de ${place}`,`Repetir uma palavra local até ${person} corrigir sua pronúncia`,`Trocar uma ajuda pequena por alguns minutos de abrigo`],
+      [`Carregar um cesto até a sombra antes de fazer perguntas`,`Separar ferramentas para ${person} sem tocar no assunto principal`,`Pedir uma tarefa que deixe você perto ${prepDe(clue)}`,`Dividir o peso com alguém que quase deixou tudo cair`],
+      [`Limpar o espaço onde todos pisam em ${place}`,`Levar um recado simples sem acrescentar explicações`,`Aprender o gesto correto antes de responder a ${person}`,`Ficar depois do serviço para ouvir o que dizem quando relaxam`]
+    ],
+    [
+      [`Mostrar para ${person} o detalhe que você percebeu em ${clue}`,`Seguir a pessoa que se afastou quando o assunto mudou`,`Anotar na memória a frase ligada a ${task}`,`Voltar ao ponto exato onde alguém se calou`],
+      [`Comparar duas versões sobre ${simpleClue(clue)} antes de escolher lado`,`Pedir para ${person} dizer quem viu primeiro`,`Examinar o objeto deixado perto de ${place}`,`Escutar atrás dos vendedores sem repetir o boato`],
+      [`Procurar quem perdeu algo quando ${clue} apareceram`,`Perguntar pela ordem dos fatos, não pela culpa`,`Guardar a pista até encontrar um lugar discreto`,`Olhar para quem ficou com medo quando citaram ${task}`]
+    ],
+    [
+      [`Sentar-se perto ${prepDe(person)} e perguntar quem falta à mesa`,`Dividir a porção com quem conhece a vizinhança de ${place}`,`Ouvir a notícia inteira antes de fazer comentário`,`Responder de onde veio sem inventar uma família`],
+      [`Oferecer pão a uma criança e observar quem agradece por ela`,`Perguntar que família está ligada ${prepA(clue)}`,`Deixar ${person} falar primeiro sobre o dia`,`Contar uma lembrança curta de Israel sem transformar em sermão`],
+      [`Ajudar a servir água e ouvir os nomes ao redor`,`Perguntar quem costuma dormir perto de ${place}`,`Ficar calado quando a conversa virar acusação`,`Falar do Deus de Israel como quem conta o que recebeu`]
+    ],
+    [
+      [`Responder a ${person} com aquilo que você realmente sabe`,`Admitir que ainda não entendeu ${task}`,`Usar uma história de Israel para iluminar ${lesson}`,`Devolver a pergunta e pedir que ${person} escolha as palavras`],
+      [`Dizer a verdade sem aumentar sua própria importância`,`Perguntar qual parte de ${clue} mais machucou as pessoas`,`Explicar sua dúvida com palavras simples`,`Pedir tempo para confirmar antes de aconselhar`],
+      [`Separar fato, medo e opinião diante de ${person}`,`Assumir que veio de longe e precisa aprender`, `Lembrar uma passagem de Israel sem fugir do problema`, `Perguntar quem deve ser protegido antes de qualquer resposta`]
+    ],
+    [
+      [`Entrar na discussão para tirar alguém do empurrão`,`Chamar ${person} antes que o boato vire gritaria`,`Levar para a sombra quem ficou no meio da confusão`,`Ficar visível para impedir que culpem o mais fraco`],
+      [`Separar duas pessoas sem anunciar julgamento`,`Pedir silêncio apenas até a pessoa ferida falar`,`Buscar água para quem treme de susto`,`Mandar chamar alguém responsável por ${place}`],
+      [`Recolher o objeto que pode virar arma`,`Acompanhar ${person} até quem tem autoridade`,`Ajudar o ferido antes de perguntar quem começou`,`Fechar a roda de curiosos para proteger o nome de alguém`]
+    ],
+    [
+      [`Perguntar quem trouxe a notícia e de onde veio`,`Conferir a notícia com o que você viu em ${place}`,`Pedir que o nome dos envolvidos não seja repetido ainda`,`Esperar o mensageiro seguinte antes de espalhar conclusão`],
+      [`Procurar a primeira testemunha antes do comentário mais alto`,`Separar o que foi visto do que foi imaginado`,`Avisar ${person} em particular, longe dos curiosos`,`Guardar a notícia até saber quem pode se ferir com ela`],
+      [`Perguntar quem ganha se a notícia correr depressa`,`Comparar a fala dos jovens com a dos mais velhos`,`Pedir a ${person} que leve a notícia a quem deve responder`,`Cortar uma acusação quando ela virar espetáculo`]
+    ],
+    [
+      [`Dormir perto de ${person} para retomar a conversa cedo`,`Repassar a ordem dos acontecimentos antes de esquecer`,`Guardar uma palavra de ${place} como lembrança do dia`,`Sair ainda escuro para evitar perguntas que não pode responder`],
+      [`Vigiar a porta enquanto os outros descansam`,`Separar na memória nomes, lugares e medos`,`Orar em silêncio pelo que não conseguiu consertar`,`Procurar um canto onde ninguém mexa nos seus objetos`],
+      [`Cobrir-se contra o frio e ouvir a cidade diminuir`,`Perguntar a ${person} onde é seguro passar a noite`,`Deixar para amanhã a pergunta que hoje machucaria alguém`,`Ficar acordado até o último rumor morrer`]
+    ],
+    [
+      [`Partir com ${person} levando a lição de ${place}`,`Voltar uma vez ao ponto onde ${clue} ficaram claros`,`Pedir a estrada certa antes que o sol suba demais`,`Ajudar na primeira tarefa antes de seguir viagem`],
+      [`Escolher quem acompanhar depois de ouvir ${person}`,`Devolver uma ferramenta emprestada antes de sair`,`Perguntar por perigos ligados a ${task}`,`Levar um recado que não exponha ninguém`],
+      [`Marcar na memória o caminho desde ${place}`,`Despedir-se de quem deu abrigo sem prometer o impossível`,`Buscar a próxima pessoa ligada a ${lesson}`,`Seguir quando a rotina engolir de novo o acontecimento`]
+    ]
+  ];
+  return banks[phase][ci%3].map((text,idx)=>`${text}${text.includes(place)?'':` em ${place}`}${sceneNudge(pathName,place)}`);
+}
+
+function taskText(text){
+  return text.replace(/^falar de /,'').replace(/^ver /,'').replace(/^receber /,'').replace(/^sentir /,'');
+}
+
+function simpleClue(text){
+  return String(text).replace(/^o /,'').replace(/^a /,'').replace(/^os /,'').replace(/^as /,'');
+}
+
+function prepA(text){
+  const raw=String(text).trim();
+  const lower=raw.toLowerCase();
+  if(lower.startsWith('o '))return `ao ${raw.slice(2)}`;
+  if(lower.startsWith('a '))return `à ${raw.slice(2)}`;
+  if(lower.startsWith('os '))return `aos ${raw.slice(3)}`;
+  if(lower.startsWith('as '))return `às ${raw.slice(3)}`;
+  return `a ${raw}`;
+}
+
+function prepDe(text){
+  const raw=String(text).trim();
+  const lower=raw.toLowerCase();
+  if(lower.startsWith('o '))return `do ${raw.slice(2)}`;
+  if(lower.startsWith('a '))return `da ${raw.slice(2)}`;
+  if(lower.startsWith('os '))return `dos ${raw.slice(3)}`;
+  if(lower.startsWith('as '))return `das ${raw.slice(3)}`;
+  return `de ${raw}`;
+}
+
+function cap(text){
+  const raw=String(text);
+  return raw.charAt(0).toUpperCase()+raw.slice(1);
+}
+
+function verbEstar(text){
+  const first=String(text).trim().toLowerCase().split(/\s+/)[0];
+  if(String(text).toLowerCase().includes(' e '))return 'estão';
+  return ['os','as','mercadores','marinheiros','viajantes','mensageiros','guardas','mulheres','crianças','peregrinos','trabalhadores','homens','capitães','negociadores','escribas','servos','pastores'].includes(first)?'estão':'está';
+}
+
+function sceneNudge(pathName,place){
+  if((place==='Pátio de Tamar'||place==='Casa de Absalão')&&pathName.includes('O aviso'))return ', procurando proteger sem expor';
+  if((place==='Pátio de Tamar'||place==='Casa de Absalão')&&pathName.includes('Zelo sem sabedoria'))return ', antes que o rumor cresça';
+  return '';
+}
+
+function pathFrame(pathName){
+  if(pathName.includes('O aviso'))return 'sem espalhar o aviso';
+  if(pathName.includes('A testemunha'))return 'como testemunha cuidadosa';
+  if(pathName.includes('Zelo sem sabedoria'))return 'sem alimentar escândalo';
+  if(pathName.includes('Índia'))return 'na rota dos mercadores';
+  if(pathName.includes('Cuxe'))return 'entre viajantes do sul';
+  if(pathName.includes('Babilônia'))return 'longe de Jerusalém';
+  if(pathName.includes('Tiro'))return 'entre porto e aliança';
+  return 'sem perder o fio da história';
+}
+
+function contextAction(t){
+  return t;
+}
+
+function responseOptions(ch,next,ai,sourceTitle,pathName,ci){
+  const place=ch[0], person=ch[1], clue=ch[2], task=ch[3], lesson=ch[4];
+  const route=pathName.split(' - ')[0];
+  const sets=[
+    [
+      [`Guardar essa ordem dos fatos e avançar para ${place}`,`Olhar de novo para quem ficou do lado de fora`, `Esperar ${person} nomear o problema sem pressa`, `Sair dali antes que confundam silêncio com culpa`],
+      [`Reparar no rosto que mudou quando ${clue} apareceram`,`Voltar ao canto onde a fala começou baixa`,`Deixar ${person} concluir a tarefa antes da próxima pergunta`,`Seguir com o cuidado aprendido em ${route}`],
+      [`Separar o que viu do que apenas supôs`,`Observar a entrada usada pelos mais pobres`,`Pedir a ${person} que repita o nome mais importante`,`Continuar sem transformar a pista em anúncio`]
+    ],
+    [
+      [`Terminar o serviço antes de pedir explicação`, `Aceitar outra tarefa curta ao lado de ${person}`, `Perguntar enquanto carrega o peso mais leve`, `Seguir depois de devolver a ajuda recebida`],
+      [`Ficar até a última corda ser recolhida`,`Pedir a ferramenta que todos evitam pegar`,`Deixar ${person} perceber que você não está usando a ajuda como moeda`,`Caminhar adiante com as mãos ainda sujas do trabalho`],
+      [`Levar água para quem não entrou na conversa`,`Consertar o erro pequeno que ninguém quis assumir`,`Perguntar a ${person} pelo costume de ${place}`,`Sair só depois de saber quem ficou desamparado`]
+    ],
+    [
+      [`Confirmar a informação com alguém que viu de perto`,`Guardar o assunto até encontrar um lugar sem curiosos`, `Afastar quem pode ser exposto por ${clue}`,`Ir adiante sem dar nome ao boato`],
+      [`Pedir uma segunda versão antes de agir`,`Proteger a pessoa citada antes de procurar culpados`,`Levar a pista a ${person} longe da multidão`,`Deixar ${task} amadurecer como pergunta, não como acusação`],
+      [`Rever a ordem dos acontecimentos com calma`,`Chamar só quem tem responsabilidade sobre ${place}`,`Cobrir a vergonha de quem já foi ferido`,`Não permitir que ${lesson} vire frase de efeito`]
+    ],
+    [
+      [`Manter a pergunta mesmo quando os olhares pesarem`,`Aceitar que agora você ficou visível em ${place}`,`Procurar alguém que conheça a casa por dentro`,`Sair antes que a conversa vire disputa`],
+      [`Falar com ${person} sem levantar a voz`,`Pedir que escutem a pessoa mais fraca primeiro`,`Recuar quando perceber que sua pressa atrapalha`,`Seguir com a pergunta ainda aberta`],
+      [`Assumir o risco de ser mal interpretado`,`Chamar pelo nome quem pode responder de verdade`,`Pedir que parem de repetir ${clue} como acusação`,`Deixar a sala antes que sua presença vire o assunto`]
+    ]
+  ];
+  const stats=['escuta','servico','prudencia','ousadia'];
+  return sets[ai][ci%3].map((t,idx)=>({t:continueAction(t,ch,sourceTitle,idx,pathName),p:next,stat:stats[ai],mark:ai===3?'Você aceitou ficar mais visível na história.':null}));
+}
+
+function continueAction(t,ch,sourceTitle,idx,pathName){
+  const place=ch[0], person=ch[1], clue=ch[2], task=ch[3], lesson=ch[4];
+  const frame=pathFrame(pathName);
+  const part=phaseLabel(sourceTitle);
+  const tail=[
+    ` em ${place}, após ${part}; ${frame}`,
+    ` com ${person}, após ${part}; ${frame}`,
+    ` sobre ${clue}, após ${part}; ${frame}`,
+    ` antes de ${task}, após ${part}; ${frame}`
+  ][idx];
+  return `${t}${tail}`;
+}
+
+function phaseLabel(title){
+  const clean=title.toLowerCase();
+  if(clean.includes(' - uma ajuda'))return 'ajudar';
+  if(clean.includes(' - uma pista'))return 'a pista';
+  if(clean.includes(' - comida'))return 'a refeição';
+  if(clean.includes(' - a pergunta'))return 'a pergunta';
+  if(clean.includes(' - problema'))return 'a confusão';
+  if(clean.includes(' - notícia'))return 'a notícia';
+  if(clean.includes(' - noite'))return 'a noite';
+  if(clean.includes(' - manhã'))return 'a manhã';
+  return 'a chegada';
+}
+
+const OPENING_REWRITE={
+  0:{body:`Pedras quentes. Sol forte. Você desperta num beco estreito, entre muros claros. Há poeira na boca, cheiro de pão no ar e vozes numa língua que parece antiga demais para ainda estar viva.<br><br>Você procura o celular. A tela está morta. Nada vibra. Nada responde. Antes de entender onde está, você precisa decidir como aparecer diante de um mundo que ainda não sabe seu nome.`,acao:[
+    {t:'Ficar abaixado e observar a rua antes de se mostrar',p:1,mark:'Você escolheu observar antes de se revelar.'},
+    {t:'Verificar o que ainda carrega nos bolsos',p:2,mark:'Você percebeu que seus objetos modernos podem denunciar você.'},
+    {t:'Sair do beco em direção às vozes e ao cheiro de pão',p:3,mark:'A necessidade venceu o medo inicial.'},
+    {t:'Chamar alguém com um gesto simples, sem usar palavras',p:5,rel:'Ben-Hur foi o primeiro a notar que você estava perdido.'}
+  ]},
+  1:{body:`Você fica imóvel o bastante para a rua se revelar. Passam sandálias, túnicas, cestos de figos, crianças com jarros e homens carregando fardos. Ninguém usa nada parecido com suas roupas. Ninguém fala como você.<br><br>Você entende que sobreviver aqui começa por parecer menos impossível. O beco protege por alguns instantes, mas não dará água, abrigo nem respostas.`,acao:[
+    {t:'Sair devagar e misturar-se ao movimento do mercado',p:3},
+    {t:'Voltar a olhar seus bolsos antes que alguém veja demais',p:2,desc:'Suas roupas e objetos não pertencem a esta época.'},
+    {t:'Seguir discretamente pessoas que carregam jarros',p:4,desc:'Os jarros indicam o caminho até a água.'},
+    {t:'Esperar o homem que te observa se aproximar primeiro',p:5,rel:'Ben-Hur percebeu que você estava acuado.'}
+  ],desc:'As ruas não pertencem ao seu tempo.'},
+  2:{body:`No bolso há vidro, metal e silêncio. O aparelho não acende. Sua carteira, suas chaves e seus documentos parecem relíquias de um reino que ninguém aqui saberia nomear.<br><br>Você guarda tudo sob a roupa e sente medo de que uma prova da sua vida vire acusação contra você. Agora precisa sair sem parecer alguém carregando um segredo perigoso.`,acao:[
+    {t:'Esconder tudo e procurar a rua mais movimentada',p:3},
+    {t:'Cobrir melhor as roupas antes de sair',p:1,desc:'Suas roupas e objetos não pertencem a esta época.'},
+    {t:'Ir ao poço com as mãos abertas, pedindo ajuda por gestos',p:4},
+    {t:'Aproximar-se de um mercador que parece menos desconfiado',p:5}
+  ],desc:'Seu objeto moderno não funciona aqui.'},
+  3:{body:`Você chega a uma rua cheia de barracas. Pão achatado, tâmaras, couro, azeite, cerâmica. Ao fundo, numa parte mais alta, há uma tenda cercada por homens de linho. Não parece uma casa. Parece um limite.<br><br>Perto do poço, uma mulher nota sua sede. Num outro canto, um homem observa suas roupas. A cidade oferece caminhos, mas nenhum deles vem sem risco.`,acao:[
+    {t:'Ir ao poço e pedir água por gestos',p:4},
+    {t:'Aproximar-se do homem que está te observando',p:5},
+    {t:'Subir até a tenda cercada por homens de linho',p:6},
+    {t:'Permanecer entre as barracas e aprender pela repetição das palavras',p:8,desc:'O mercado ensina palavras antes de explicar a cidade.'}
+  ],desc:'Uma tenda sagrada domina a parte alta da cidade.'},
+  4:{body:`A mulher do poço entende sua garganta seca antes de entender suas palavras. Ela entrega uma cuia, e a água morna parece trazer você de volta ao corpo.<br><br>Depois aponta para si e diz: <em>Hana</em>. Em seguida ergue a cuia e pronuncia devagar: <em>maim</em>. Você repete mal. Ela ri, mas sem crueldade. Pela primeira vez desde que acordou, alguém te trata como pessoa e não como ameaça.`,acao:[
+    {t:'Agradecer e tentar perguntar o nome da cidade',p:7,rel:'Hana viu você como estrangeiro, não como ameaça.'},
+    {t:'Ficar perto do poço aprendendo palavras com Hana',p:8,desc:'Maim quer dizer água.'},
+    {t:'Ajudar a puxar água para retribuir a gentileza',p:8,rel:'Hana viu que você não queria apenas receber ajuda.'},
+    {t:'Observar para onde as pessoas olham quando falam do poder',p:7,desc:'A praça mostra hierarquias da cidade.'}
+  ],desc:'Maim quer dizer água.'},
+  5:{body:`O homem do mercado se aproxima com cautela. Ele te oferece bebida de tâmaras e aponta para si: <em>Ben-Hur</em>. Depois aponta para você, esperando um nome.<br><br>Seu nome verdadeiro soa estranho naquela língua. Ben-Hur tenta repetir, erra duas vezes e sorri como quem decide não transformar sua diferença em ameaça.`,acao:[
+    {t:'Aceitar um nome simples para conseguir sobreviver ali',p:8,desc:'Você passa a ser chamado de Yonah.',rel:'Ben-Hur decidiu ajudar você.'},
+    {t:'Perguntar por gestos o nome da cidade',p:7,rel:'Ben-Hur percebeu que você está perdido.'},
+    {t:'Oferecer trabalho em troca da bebida',p:8,rel:'Ben-Hur percebeu que você queria retribuir.'},
+    {t:'Pedir que ele indique um lugar seguro antes da noite',p:9}
+  ]},
+  6:{body:`De perto, a tenda é mais solene que bonita. Tecido, incenso, silêncio e limite. Um guarda ergue a mão antes que você avance.<br><br>Um homem de linho diz duas palavras com reverência: <em>Mishkan</em>. <em>Aron</em>. Você ainda não entende tudo, mas percebe que ali a cidade não apenas administra poder; ela se coloca diante de Deus.`,acao:[
+    {t:'Recuar antes de causar problema',p:8,desc:'A tenda na colina é sagrada.'},
+    {t:'Perguntar quem governa a cidade',p:7,desc:'Você ouviu falar do Mishkan e da arca.'},
+    {t:'Observar de longe quem pode entrar e quem fica fora',p:8,desc:'Nem todos têm o mesmo acesso ao lugar sagrado.'},
+    {t:'Voltar ao mercado para perguntar o significado das palavras',p:5}
+  ],desc:'A tenda na colina é sagrada.'},
+  7:{body:`Depois de gestos, erros e risadas contidas, alguém finalmente entende sua pergunta. A resposta vem clara:<br><br><span class="quote">Yerushalaim.</span>Jerusalém.<br><br>O nome atravessa você como um choque. Não é museu. Não é peça. É rua, poeira, fome, gente real. E você ainda não sabe em que momento dessa história caiu.`,acao:[
+    {t:'Perguntar quem é o rei',p:9},
+    {t:'Voltar ao poço e procurar Hana antes que anoiteça',p:8,rel:'Hana percebeu seu choque ao ouvir o nome da cidade.'},
+    {t:'Repetir o nome Jerusalém para confirmar que entendeu',p:9,desc:'O nome Jerusalém deixou de ser ideia e virou lugar.'},
+    {t:'Procurar Ben-Hur para entender onde dormir',p:8}
+  ],desc:'Você está em Jerusalém.',reveal:{local:'Jerusalém'}},
+  8:{body:`Os primeiros dias não parecem aventura. Parecem sobrevivência. Você carrega sacos, varre pátios, aprende palavras e erra cumprimentos. Ben-Hur arruma um canto para você dormir. Hana ensina quando falar, quando baixar os olhos e quando ficar longe de homens armados.<br><br>Um velho escriba chamado Eli-Shama nota que você aprende rápido demais. Ele não pergunta de onde você veio. Pergunta o que você teme descobrir.`,acao:[
+    {t:'Aproximar-se de Eli-Shama e aceitar aprender com ele',p:10,rel:'Eli-Shama começou a observar você com interesse.'},
+    {t:'Perguntar discretamente sobre o rei da cidade',p:9},
+    {t:'Aceitar pequenas tarefas para permanecer em Jerusalém',p:10,mark:'Você escolheu criar raízes antes de decidir caminho.'},
+    {t:'Ouvir histórias do povo sobre Davi',p:9,desc:'Davi já era lembrado pelo povo como rei e guerreiro.'}
+  ],rel:'Hana e Ben-Hur ajudam você a sobreviver.'},
+  9:{body:`Quando você pergunta quem governa, a resposta vem com orgulho: <em>Davi ben Jessé, rei de Israel</em>.<br><br>As peças começam a se aproximar. Davi. Jerusalém. A tenda. A arca. Você ainda não sabe em que capítulo caiu, mas já sente que qualquer passo pode tocar algo maior que você.`,acao:[
+    {t:'Guardar a informação e continuar ouvindo',p:10},
+    {t:'Tentar saber mais sobre a casa do rei',p:11},
+    {t:'Perguntar por que a arca é tão importante para a cidade',p:10,desc:'Davi trouxe a arca para Jerusalém.'},
+    {t:'Observar como as pessoas falam de Davi quando ele não está presente',p:11}
+  ],desc:'Davi reina em Jerusalém.',reveal:{rei:'Rei Davi',ano:'Dias de Davi'}},
+  10:{body:`Eli-Shama deixa você copiar sinais em um caco de cerâmica. Depois diz, sem olhar para você:<br><br><span class="quote">Estrangeiro que escuta demais sempre acaba diante de uma escolha.</span>Ele fala da casa do rei com cuidado. Nomes aparecem como brasas cobertas: Amnom. Tamar. Absalão.`,acao:[
+    {t:'Pedir que Eli-Shama explique por que esses nomes pesam',p:11,rel:'Eli-Shama sabe que você entende mais do que aparenta.'},
+    {t:'Fingir que os nomes não mexeram com você',p:12},
+    {t:'Pedir que ele ensine as letras para você registrar melhor',p:11,rel:'Eli-Shama aceitou ensinar você por um tempo.'},
+    {t:'Perguntar por que todos evitam certos assuntos da casa real',p:11,desc:'Alguns nomes da casa real são tratados com cuidado.'}
+  ],desc:'Nomes da casa de Davi começaram a aparecer: Amnom, Tamar e Absalão.'}
+};
+Object.entries(OPENING_REWRITE).forEach(([id,data])=>Object.assign(CENAS[id],data));
+
+makeEnding(190,'FINAL I - A LINHA INTERROMPIDA',`Tamar não entrou sozinha no quarto de Amnom. O aviso chegou a tempo, a rotina do palácio mudou, e a porta que deveria se fechar nunca se fechou. No começo, tudo pareceu certo. Tamar continuou viva, inteira, protegida. Amnom perdeu a ocasião. Absalão não matou o irmão. Davi não chorou aquele filho daquele modo.<br><br>Durante alguns anos, você acreditou que tinha salvado a história. Mas a história não ficou apenas melhor. Ela ficou diferente. Sem o crime, não veio a mesma sequência de culpa, silêncio, vingança, exílio, retorno e revolta. Sem aquela ferida, a casa de Davi tomou outro caminho. Pessoas se casaram em outra hora, alianças mudaram de lugar, filhos que deveriam nascer não nasceram, e nomes que deveriam entrar na linhagem desapareceram.<br><br>Você só entendeu tarde demais. A promessa que Deus conduzia pela casa de Davi não era uma estrada comum. Dela viria, no tempo certo, o Cristo. Ao mexer no começo da cadeia, você não apagou apenas uma tragédia; você quebrou o caminho pelo qual a salvação chegaria ao mundo.<br><br>O novo futuro parecia mais limpo quando visto de perto. Mas, visto de longe, era vazio. Não houve o mesmo cumprimento das promessas. Não houve o Filho de Davi. Não houve cruz. Não houve ressurreição. Não houve evangelho anunciado às nações. A humanidade continuou com seus reis, guerras, culpas e altares, mas sem o Salvador.<br><br>Esse é o peso do seu final: você fez algo que parecia bom, e talvez fosse bom dentro daquela sala, naquela noite, para aquela pessoa. Mas ao tomar para si o direito de reescrever a história, você atravessou uma linha que não compreendia. No fim, Tamar foi poupada de uma dor terrível, mas o mundo inteiro ficou sem redenção. Todos permaneceram condenados, não porque Deus falhou, mas porque você interferiu no caminho que não era seu para governar.`)
+makeEnding(290,'FINAL II - O REINO FERIDO',`Você permaneceu em Jerusalém e viu a história conhecida acontecer por dentro. Primeiro vieram rumores pequenos: Amnom recolhido, Tamar chamada, servos inquietos. Depois veio o silêncio pesado da cidade, o nome de Tamar desaparecendo das conversas públicas, Absalão recebendo a irmã em casa e Davi sofrendo sem exercer a justiça que sua posição exigia.<br><br>Com o passar dos anos, você entendeu que a Bíblia não conta essa sequência como escândalo distante, mas como ferida real. Absalão não matou Amnom no mesmo dia. Ele esperou. A vingança amadureceu dentro de uma casa onde o pecado tinha sido reconhecido, mas não tratado. Quando Amnom morreu no banquete, o sangue não surgiu do nada; ele saiu de um silêncio que já estava apodrecendo havia muito tempo.<br><br>Depois vieram Gesur, o retorno incompleto de Absalão, a política no portão, o povo sendo conquistado por promessas de justiça e, por fim, a revolta contra Davi. A morte de Absalão não foi vitória limpa. O lamento de Davi pelo filho mostra que a Escritura não transforma tragédia familiar em simples lição moral.<br><br>Seu papel foi testemunhar. Isso não te torna inocente de tudo, porque houve momentos em que sua omissão pesou. Mas também te ensinou algo importante: a narrativa bíblica não esconde a culpa de seus personagens principais. Davi é rei escolhido por Deus, mas sua casa sofre consequências reais. Tamar não é nota de rodapé. Absalão não é apenas rebelde ambicioso. Amnom não é apenas instrumento narrativo. Todos aparecem como pessoas dentro de uma história em que pecado, justiça e promessa se cruzam.<br><br>Você sai carregando memória. Não mudou a linha, mas passou a entendê-la com mais temor. Deus conduziu sua promessa por dentro de uma família quebrada, sem chamar o mal de bem e sem abandonar o que havia prometido.`)
+makeEnding(390,'FINAL III - O AVISO QUE VIROU ESCÂNDALO',`Você não conseguiu impedir o mal, mas também não ficou parado. O problema foi o modo. Você falou antes de ter testemunhas, falou no lugar errado e deixou o nome de Tamar correr pelos corredores antes que ela estivesse protegida.<br><br>Amnom percebeu que havia suspeita contra ele e passou a agir com mais cuidado. Absalão ouviu pedaços da história e completou o resto com raiva. Davi recebeu uma confusão pública, cheia de versões diferentes. Tamar, que precisava de amparo, virou assunto. Alguns falavam como se a defendessem, mas usavam a dor dela para acusar, discutir e escolher lados.<br><br>A tragédia continuou. O crime veio cercado de boatos. A vingança de Absalão cresceu com menos silêncio e mais ira pública. Quando Amnom morreu, muita gente já tinha escolhido uma versão antes de saber os fatos. Depois vieram fuga, retorno, política no portão e revolta contra Davi.<br><br>Você tentou fazer o bem, mas machucou pessoas reais no processo. A verdade, quando é jogada sem cuidado, pode cair em cima da vítima primeiro. Tamar continuou ferida, e agora também carregava o peso de ter virado conversa da cidade.<br><br>No final, você entendeu que denunciar o mal não é espalhar suspeita. É proteger a pessoa ferida, procurar testemunhas, escolher a hora e chamar quem tem responsabilidade para agir. Sem isso, até uma boa intenção pode aumentar o sofrimento que queria combater.`)
+makeEnding(490,'FINAL IV - A SEMENTE DISTANTE',`Você chegou à Índia sem transformar a viagem numa fantasia de conquista espiritual. Primeiro precisou aprender a comer, negociar, ouvir e depender de hospitalidade. Só depois encontrou espaço para falar do Deus de Israel. A conversa não começou com grandes discursos, mas com perguntas simples: se o seu Deus criou todas as coisas, ele pertence apenas ao seu povo? Se ele é justo, por que seu próprio povo sofre? Se ele faz aliança, estrangeiros podem se aproximar?<br><br>Você não fundou uma comunidade completa nem escreveu uma nova página da Escritura. O que ficou foi menor e, por isso mesmo, mais crível: uma oração ensinada numa casa de mercador, letras hebraicas copiadas com dificuldade, histórias de Abraão contadas a pessoas que conheciam outras rotas, outros deuses e outras memórias. Alguns escutaram por curiosidade, outros por amizade, talvez poucos por fé verdadeira.<br><br>Enquanto isso, Jerusalém seguiu seu caminho doloroso. Tamar foi ferida, Amnom morreu, Absalão fugiu, voltou, rebelou-se e caiu. A história bíblica principal não foi alterada por sua aventura distante. Isso preserva o centro da narrativa: você não substituiu a Escritura por uma versão inventada.<br><br>O valor deste caminho está em outra coisa. Ele mostra como mercadorias, línguas e viagens também carregam ideias. Séculos depois, haveria tradições judaicas na Índia e comunidades cristãs antigas ligadas ao Oriente. O jogo não afirma que você criou essas histórias; apenas imagina uma semente possível, pequena e respeitosa, lançada num solo que Deus já conhecia.<br><br>Você termina aprendendo que missão não é dominar o futuro. É testemunhar com fidelidade no lugar onde Deus permitiu que você estivesse, mesmo quando a colheita pertence a outro tempo.`)
+makeEnding(590,'FINAL V - O CAMINHO DE CUXE',`No caminho para Cuxe, você encontrou pessoas que não estavam fugindo de Deus, mas procurando por ele com as palavras que possuíam. Um oficial estrangeiro perguntou sobre Jerusalém, sobre os salmos, sobre justiça e sobre por que o povo do Deus verdadeiro também carregava reis culpados e famílias quebradas. Essas perguntas impediram você de contar uma versão limpa demais da fé de Israel.<br><br>Você falou de Davi com honestidade: rei escolhido, poeta, guerreiro, pecador, pai fraco diante de sua própria casa. Falou de Tamar sem tratá-la como detalhe. Falou de Absalão sem reduzi-lo a monstro. Falou de Deus como aquele que julga o pecado do seu povo e, mesmo assim, não abandona sua promessa.<br><br>Ao sul, longe do centro político de Israel, alguém começou a desejar mais do que informação. Queria adorar, entender, aproximar-se. Você não podia resolver todas as questões de pertencimento, pureza, aliança e acesso ao culto. Mas podia apontar para o Deus que já havia prometido alcançar nações.<br><br>Jerusalém, enquanto isso, continuou sua história conhecida: Amnom, Tamar, Absalão, Davi, revolta e lamento. Você não mudou esse eixo. O que mudou foi uma rota de perguntas. Este caminho prepara, de forma imaginativa, uma ponte com o futuro de Atos 8, quando um homem etíope lê Isaías e recebe o anúncio de Cristo. O jogo não antecipa o evangelho nem cria doutrina fora de hora; ele mostra que Deus já conduzia buscadores muito antes de eles entenderem o desenho completo.<br><br>Você termina vendo Cuxe como sinal de esperança: as nações não estão fora do alcance de Deus. Algumas ainda caminham sem resposta completa, mas já estão sendo movidas pela fome de encontrá-lo.`)
+makeEnding(690,'FINAL VI - À SOMBRA DOS RIOS',`Na Mesopotâmia, você aprendeu que impérios não governam apenas com espadas. Eles governam com arquivos, tributos, listas, escolas, medidas e memória. Tudo é escrito, contado e organizado. Pessoas viram números, cidades viram obrigações, reis viram nomes em tábuas. Esse mundo parece sólido o bastante para engolir povos inteiros.<br><br>Ao observar escribas e oficiais, você começou a perceber uma sombra que ainda não pertencia aos dias de Davi, mas que cresceria na história bíblica: o exílio. Um dia, Jerusalém cairia. Um dia, filhos de Judá chorariam junto a rios estrangeiros. Um dia, a fé de Israel teria de aprender a sobreviver longe da terra, do templo e da segurança política.<br><br>A crise da casa de Davi ajudou você a entender isso. O colapso de um povo raramente começa apenas quando o inimigo aparece. Antes do cerco externo, há rachaduras internas: pecado sem arrependimento, justiça adiada, liderança enfraquecida, famílias reais incapazes de cuidar dos vulneráveis. Tamar, Amnom, Absalão e Davi pertencem ao presente do jogo, mas também ensinam a ler futuros juízos com mais seriedade.<br><br>Este final não romantiza Babilônia. O exílio será dor, disciplina e perda real. Mas também não retrata Deus como derrotado fora de Jerusalém. A Escritura mostrará que ele preserva seu povo mesmo em terra estranha, levanta testemunhas em cortes estrangeiras e mantém sua aliança quando tudo parece politicamente acabado.<br><br>Você termina carregando uma advertência: Deus pode guardar seu povo no exílio, mas isso não torna a infidelidade leve. A misericórdia que preserva também é a mesma santidade que disciplina.`)
+makeEnding(790,'FINAL VII - CEDROS PARA O FUTURO',`Em Tiro, você descobriu um lado da história bíblica que às vezes passa despercebido: alianças, materiais, artesãos, rotas marítimas, contratos e trabalho comum. Cedro não parece espiritual quando está empilhado num armazém. Bronze não parece promessa quando ainda é metal pesado nas mãos de um artesão. Mesmo assim, um dia essas coisas serviriam à construção do templo nos dias de Salomão.<br><br>Você conviveu com homens que não falavam como sacerdotes, mas sabiam medir madeira, negociar transporte, avaliar risco e manter confiança entre povos diferentes. Quando chegaram notícias da crise em Jerusalém, muitos pensaram primeiro em instabilidade comercial. Você precisou insistir, pelo menos pela sua própria consciência, que Tamar, Amnom, Absalão e Davi não eram apenas fatores de mercado. Eram pessoas numa história santa e ferida.<br><br>A linha principal seguiu sem você: Tamar sofreu, Amnom morreu, Absalão fugiu, voltou, rebelou-se e caiu. Você não impediu a dor da casa de Davi. Seu papel ficou em outra escala. Ao proteger relações honestas entre Israel e Tiro, ao recusar oportunismo e ao valorizar trabalho bem feito, você ajudou a preservar uma ponte material para algo que viria depois.<br><br>Este final ensina que nem toda participação no plano de Deus parece grandiosa no momento. Algumas pessoas pregam. Outras escrevem. Outras protegem vítimas. Outras carregam madeira, fazem contas justas, impedem acordos desonestos e preparam condições para uma obediência futura.<br><br>Você termina sem glória aparente. Mas entende que Deus também usa tarefas concretas. Às vezes, o que hoje parece armazém amanhã fará parte de uma casa de adoração.`)
+
+function updateTop(){
+  document.getElementById('pill-ano').textContent='Ano: '+(G.flags.ano||'???');
+  const local=document.getElementById('pill-local'); local.textContent=G.flags.local||''; local.classList.toggle('hidden',!G.flags.local);
+  const rei=document.getElementById('pill-rei'); rei.textContent=G.flags.rei||''; rei.classList.toggle('hidden',!G.flags.rei);
+}
+function renderList(id,list,empty,mark){
+  document.getElementById(id).innerHTML=list.length?list.map(x=>`<div class="item">${mark} ${esc(x)}</div>`).join(''):`<div class="item dim">${empty}</div>`;
+}
+function updateLinha(){
+  const cards=[];
+  cards.push(`<div class="card"><h2>O que você sabe</h2><p>${G.desc.length?G.desc.map(esc).join('<br>'):'Nada claro ainda. Explore, escute e descubra por dentro da narrativa.'}</p></div>`);
+  if(G.flags.local)cards.push(`<div class="card"><h2>Local descoberto</h2><p>Você descobriu que está em ${esc(G.flags.local)}. A cidade não é cenário: é gente, fome, poder, fé e medo.</p></div>`);
+  if(G.flags.rei)cards.push(`<div class="card"><h2>Época descoberta</h2><p>${esc(G.flags.rei)} governa. Você está nos dias em que a casa de Davi ainda carrega promessa, pecado e consequência.</p></div>`);
+  if(G.flags.linha)cards.push(`<div class="card"><h2>Linha principal</h2><p>${esc(G.flags.linha)} estão no centro da crise. Os caminhos fora de Jerusalém não mudam essa história, mas revelam ecos dela no mundo antigo.</p></div>`);
+  document.getElementById('linha-grid').innerHTML=cards.join('');
+}
+function updateSide(){
+  document.getElementById('nome').textContent=G.desc.includes('Você passa a ser chamado de Yonah.')?'Yonah - nome adotado':'estrangeiro';
+  renderList('desc',G.desc,'Nada claro ainda.','*');
+  renderList('rel',G.rel,'Ninguém confia em você ainda.','-');
+  renderList('marks',G.marks,'Nenhuma decisão profunda ainda.','>');
+  document.getElementById('cam').innerHTML=G.path?`<div class="item">${esc(G.path)}</div>`:'<div class="item dim">Indefinido</div>';
+  updateLinha();
+}
+function endingReflection(){
+  const labels={escuta:'você passou mais tempo observando',servico:'você ajudou mais do que perguntou',prudencia:'você segurou informações antes de falar',ousadia:'você falou e agiu mais rápido'};
+  const entries=Object.entries(G.stats||{}).sort((a,b)=>b[1]-a[1]);
+  if(!entries.length)return '';
+  const [top,count]=entries[0];
+  const second=entries[1];
+  let body=`<br><br><span class="quote">Durante a jornada, ${labels[top]||top}.</span>`;
+  if(top==='escuta')body+='Em muitas cenas você ficou um pouco atrás, ouviu primeiro e só depois entrou na conversa. Por isso seu caminho teve mais detalhes percebidos do que decisões barulhentas.';
+  if(top==='servico')body+='Você ganhou espaço ajudando em tarefas simples: carregar, esperar, dividir, acompanhar. As pessoas falaram mais porque você deixou de parecer apenas curioso.';
+  if(top==='prudencia')body+='Você evitou repetir tudo o que ouvia. Em alguns momentos isso protegeu pessoas; em outros, fez você chegar tarde a certas respostas.';
+  if(top==='ousadia')body+='Você abriu conversas que talvez não surgissem sozinhas. Isso trouxe respostas rápidas, mas também fez mais gente notar sua presença.';
+  if(second)body+=` Depois disso, apareceu bastante este traço: ${labels[second[0]]||second[0]}.`;
+  return body;
+}
+function log(x){const l=document.getElementById('log');const d=document.createElement('div');d.textContent=x;l.appendChild(d);l.scrollTop=l.scrollHeight}
+function render(id,push=true){
+  const s=CENAS[id]; if(!s){alert('Cena não encontrada: '+id);return}
+  if(push&&G.cena!==id)G.hist.push(snapshot());
+  G.cena=id; meta(s); updateTop();
+  document.getElementById('back').disabled=G.hist.length===0;
+  const sc=document.getElementById('scene'); const acts=document.getElementById('acts'); acts.innerHTML='';
+  if(s.ending){
+    sc.innerHTML=`<div class="ending"><div class="ending-badge">Fim de caminho</div><div class="ending-title">${s.etitle}</div><div class="ending-body">${s.ebody}${endingReflection()}</div><button class="restart" onclick="restart()">Recomeçar</button></div>`;
+  }else{
+    sc.innerHTML=`<div class="loc">${esc(s.loc||'')}</div><div class="title">${esc(s.title)}</div><div class="body">${s.body}</div>`;
+    (s.acao||[]).forEach((a,i)=>{const b=document.createElement('button');b.className='act';b.innerHTML=`<small>${i+1}</small>${esc(a.t)}`;b.onclick=()=>{meta(a);log(a.t);render(a.p)};acts.appendChild(b)});
+  }
+  updateSide();
+}
+function voltar(){if(!G.hist.length)return;restore(G.hist.pop());render(G.cena,false)}
+function restart(){Object.assign(G,{cena:0,hist:[],flags:{},desc:[],rel:[],marks:[],path:null,stats:{}});document.getElementById('log').innerHTML='<div>Você acordou longe do seu mundo.</div>';render(0,false)}
+function tab(id){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.content').forEach(c=>c.classList.remove('active'));document.querySelector(`.tab[onclick="tab('${id}')"]`).classList.add('active');document.getElementById(id).classList.add('active')}
+render(0,false);
+</script>
+</body>
+</html>

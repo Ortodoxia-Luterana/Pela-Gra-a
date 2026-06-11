@@ -811,6 +811,8 @@ img.feed-avatar {
 
 .ol-games {
   grid-column: 1 / 2;
+  display: grid;
+  gap: 1rem;
 }
 
 .ol-game-card {
@@ -827,6 +829,10 @@ img.feed-avatar {
 
 .ol-game-card.pela-cover {
   background: linear-gradient(90deg, rgba(0, 0, 0, .12), rgba(0, 0, 0, .82)), url("/assets/pela-graca-1904-cover.png") center/cover;
+}
+
+.ol-game-card.cronicas-cover {
+  background: linear-gradient(90deg, rgba(0, 0, 0, .08), rgba(0, 0, 0, .82)), url("/assets/cronicas-do-levante-card.svg") center/cover;
 }
 
 .ol-game-card span {

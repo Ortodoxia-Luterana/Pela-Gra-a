@@ -474,6 +474,13 @@ async function handleApi(req, res, url, user) {
           status: 'playable',
           playUrl: '/play',
           rankingUrl: '/?section=ranking&game=pela-graca-1904'
+        },
+        {
+          id: 'cronicas-do-levante',
+          title: 'Cronicas do Levante',
+          status: 'prototype',
+          playUrl: '/cronicas-do-levante',
+          rankingUrl: null
         }
       ]
     });
@@ -570,6 +577,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   ].map(([key, label, href, icon]) => `<a class="${activeSection === key ? 'active' : ''}" href="${href}"><img class="nav-icon" src="/assets/nav-icons/nav-${icon}.png?v=${GAME_VERSION}" alt="">${label}</a>`).join('');
   const gameCard = `<section class="ol-panel ol-games">
     <article class="ol-game-card pela-cover"><div><span>Jogável</span><h4>Pela Graça 1904</h4><p>Gerencie igrejas, forme pastores, responda perguntas doutrinárias e acompanhe a história da IELB no Brasil.</p></div><a href="/play">Jogar</a></article>
+    <article class="ol-game-card cronicas-cover"><div><span>Pré-moldado</span><h4>Crônicas do Levante</h4><p>Uma narrativa bíblica interativa nos dias do rei Davi, com escolhas, descobertas, relações e consequências pelo caminho.</p></div><a href="/cronicas-do-levante">Jogar</a></article>
   </section>`;
   const rankCard = `<aside class="ol-panel ol-rank"><p>Seu rank geral</p><img class="rank-badge" src="${rank.current.file}?v=${GAME_VERSION}" alt="${escapeHtml(rank.current.title)}"><div class="rank-xp"><strong>${xp} XP</strong><span>${rank.next ? `${Math.max(0, rank.next.xp - rank.currentXp)} XP para ${escapeHtml(rank.next.title)}` : 'Rank maximo alcancado'}</span><div class="rank-bar"><span style="width:${Math.round(rank.progress)}%"></span></div></div><a href="/?section=ranking">Ver ranking geral</a></aside>`;
   const sections = {
@@ -675,6 +683,12 @@ const server = http.createServer(async (req, res) => {
       if (!save) { redirect(res, '/'); return; }
       setLaunchCookie(res, user.id);
       redirect(res, `/game?save=${encodeURIComponent(save.id)}`);
+      return;
+    }
+    if (req.method === 'GET' && url.pathname === '/cronicas-do-levante') {
+      const body = fs.readFileSync(path.join(PUBLIC_DIR, 'cronicas-do-levante.html'), 'utf8');
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(body);
       return;
     }
     if (req.method === 'GET' && url.pathname === '/ranking') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end(renderDashboard(user, '', 'ranking', url.searchParams.get('game') || '')); return; }

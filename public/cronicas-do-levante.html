@@ -749,7 +749,98 @@ function render(id,push=true){
 function voltar(){if(!G.hist.length)return;restore(G.hist.pop());render(G.cena,false)}
 function restart(){Object.assign(G,{cena:0,hist:[],flags:{},desc:[],rel:[],marks:[],path:null,stats:{}});document.getElementById('log').innerHTML='<div>Você acordou longe do seu mundo.</div>';render(0,false)}
 function tab(id){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.content').forEach(c=>c.classList.remove('active'));document.querySelector(`.tab[onclick="tab('${id}')"]`).classList.add('active');document.getElementById(id).classList.add('active')}
-render(0,false);
+
+(function installHubPersistence(){
+  const endpoint='/api/cronicas/save';
+  let lastSaved='';
+  let saveTimer=null;
+  let loaded=false;
+
+  function plainList(value){return Array.isArray(value)?value.filter(item=>typeof item==='string'):[]}
+  function saveState(){
+    return {
+      cena:G.cena,
+      hist:Array.isArray(G.hist)?G.hist:[],
+      flags:G.flags||{},
+      desc:plainList(G.desc),
+      rel:plainList(G.rel),
+      marks:plainList(G.marks),
+      path:G.path||null,
+      stats:G.stats||{},
+      achievements:Array.isArray(G.achievements)?G.achievements:[],
+      log:[...document.querySelectorAll('#log div')].map(item=>item.textContent).slice(-80)
+    };
+  }
+  function restoreState(state){
+    if(!state||typeof state!=='object')return false;
+    G.cena=Number.isFinite(Number(state.cena))?Number(state.cena):0;
+    G.hist=Array.isArray(state.hist)?state.hist:[];
+    G.flags=state.flags&&typeof state.flags==='object'?state.flags:{};
+    G.desc=plainList(state.desc);
+    G.rel=plainList(state.rel);
+    G.marks=plainList(state.marks);
+    G.path=state.path||null;
+    G.stats=state.stats&&typeof state.stats==='object'?state.stats:{};
+    G.achievements=Array.isArray(state.achievements)?state.achievements:[];
+    const entries=Array.isArray(state.log)&&state.log.length?state.log:['Você acordou longe do seu mundo.'];
+    document.getElementById('log').innerHTML=entries.map(text=>`<div>${esc(text)}</div>`).join('');
+    return true;
+  }
+  async function saveNow(){
+    if(!loaded)return;
+    const state=saveState();
+    const body=JSON.stringify({state,achievements:state.achievements});
+    if(body===lastSaved)return;
+    lastSaved=body;
+    try{
+      await fetch(endpoint,{method:'PUT',headers:{'Content-Type':'application/json'},body});
+    }catch(error){
+      console.error('Falha ao salvar Crônicas do Levante',error);
+      lastSaved='';
+    }
+  }
+  function scheduleSave(){
+    if(!loaded)return;
+    clearTimeout(saveTimer);
+    saveTimer=setTimeout(saveNow,400);
+  }
+  window.CronicasHub={
+    save:saveNow,
+    unlockAchievement(id){
+      if(!id)return;
+      if(!Array.isArray(G.achievements))G.achievements=[];
+      if(!G.achievements.some(item=>item.id===id)){
+        G.achievements.push({id,unlockedAt:new Date().toISOString()});
+        scheduleSave();
+      }
+    }
+  };
+  const baseRender=render;
+  render=function(id,push=true){baseRender(id,push);scheduleSave()};
+  const baseLog=log;
+  log=function(text){baseLog(text);scheduleSave()};
+  const baseRestart=restart;
+  restart=function(){baseRestart();saveNow()};
+  const baseVoltar=voltar;
+  voltar=function(){baseVoltar();scheduleSave()};
+  window.addEventListener('beforeunload',()=>{
+    const state=saveState();
+    navigator.sendBeacon?.(endpoint,JSON.stringify({state,achievements:state.achievements}));
+  });
+  fetch(endpoint,{cache:'no-store'})
+    .then(response=>response.ok?response.json():null)
+    .then(payload=>{
+      const restored=restoreState(payload&&payload.state);
+      loaded=true;
+      render(restored?G.cena:0,false);
+      saveNow();
+    })
+    .catch(error=>{
+      console.error('Falha ao carregar Crônicas do Levante',error);
+      loaded=true;
+      render(0,false);
+    });
+})();
 </script>
 </body>
 </html>

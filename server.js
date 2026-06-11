@@ -14,6 +14,8 @@ const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').u
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
 const GAME_VERSION = 'v3.13.1-polished-achievements';
 const GAME_ID = 'pela-graca-1904';
+const CRONICAS_GAME_ID = 'cronicas-do-levante';
+const CRONICAS_SAVE_NAME = 'Crônicas do Levante';
 const STATE_NAMES = {
   AC: 'Acre', AL: 'Alagoas', AP: 'Amapa', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceara', DF: 'Distrito Federal', ES: 'Espirito Santo', GO: 'Goias',
   MA: 'Maranhao', MT: 'Mato Grosso', MS: 'Mato Grosso do Sul', MG: 'Minas Gerais', PA: 'Para', PB: 'Paraiba', PR: 'Parana', PE: 'Pernambuco',
@@ -62,6 +64,8 @@ const ACHIEVEMENTS = [
   { id: 'xique-xique-e-de-jesus', title: 'Xique-Xique e de Jesus', description: 'Chegou a 2026 com Xique-Xique, na Bahia, como a cidade com mais igrejas IELB.', xp: 1000, points: 350, file: '/assets/achievements/xique-xique-e-de-jesus.png', condition: stats => isFinalCampaign(stats) && dominantCity(stats, 'BA', 'Xique-Xique') },
   { id: 'igreja-urbana', title: 'Igreja Urbana', description: 'Chegou a 2026 com a maior parte das igrejas IELB no estado de Sao Paulo.', xp: 800, points: 250, file: '/assets/achievements/igreja-urbana.png', condition: stats => isFinalCampaign(stats) && stats.totalChurches > 0 && stateChurchCount(stats, 'SP') > stats.totalChurches / 2 }
 ];
+const CRONICAS_ACHIEVEMENTS = [
+];
 
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 const db = new DatabaseSync(DB_PATH);
@@ -73,6 +77,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS rankings (save_id TEXT PRIMARY KEY, user_id TEXT NOT NULL, user_name TEXT NOT NULL, save_name TEXT NOT NULL, year INTEGER NOT NULL, month INTEGER NOT NULL, total_churches INTEGER NOT NULL, total_members REAL NOT NULL, doctrine_correct INTEGER NOT NULL, reached_final INTEGER NOT NULL, state_churches_json TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (save_id) REFERENCES saves(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS user_achievements (user_id TEXT NOT NULL, game_id TEXT NOT NULL, medal_id TEXT NOT NULL, unlocked_at TEXT NOT NULL, source_save_name TEXT, PRIMARY KEY (user_id, game_id, medal_id), FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS game_rankings (user_id TEXT NOT NULL, game_id TEXT NOT NULL, user_name TEXT NOT NULL, save_name TEXT NOT NULL, year INTEGER NOT NULL, month INTEGER NOT NULL, total_churches INTEGER NOT NULL, total_members REAL NOT NULL, doctrine_correct INTEGER NOT NULL, reached_final INTEGER NOT NULL, state_churches_json TEXT NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY (user_id, game_id), FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
+  CREATE TABLE IF NOT EXISTS cronicas_saves (user_id TEXT PRIMARY KEY, state_json TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
 `);
 try { db.exec('ALTER TABLE users ADD COLUMN avatar_data TEXT'); } catch {}
 
@@ -108,6 +113,13 @@ const insertUserAchievement = db.prepare(`
   INSERT OR IGNORE INTO user_achievements (user_id, game_id, medal_id, unlocked_at, source_save_name)
   VALUES (?, ?, ?, ?, ?)
 `);
+const getCronicasSave = db.prepare('SELECT * FROM cronicas_saves WHERE user_id = ?');
+const upsertCronicasSave = db.prepare(`
+  INSERT INTO cronicas_saves (user_id, state_json, created_at, updated_at)
+  VALUES (?, ?, ?, ?)
+  ON CONFLICT(user_id) DO UPDATE SET state_json = excluded.state_json, updated_at = excluded.updated_at
+`);
+const deleteCronicasSave = db.prepare('DELETE FROM cronicas_saves WHERE user_id = ?');
 const upsertRanking = db.prepare(`
   INSERT INTO rankings (save_id, user_id, user_name, save_name, year, month, total_churches, total_members, doctrine_correct, reached_final, state_churches_json, updated_at)
   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -193,17 +205,17 @@ function savedAchievementMap(state) {
   const list = Array.isArray(state?.achievements) ? state.achievements : [];
   return new Map(list.map(item => [item.id, item]));
 }
-function permanentAchievementMap(userId) {
+function permanentAchievementMap(userId, gameId = GAME_ID) {
   if (!userId) return new Map();
-  return new Map(getUserAchievementRows.all(userId, GAME_ID).map(item => [item.medal_id, item]));
+  return new Map(getUserAchievementRows.all(userId, gameId).map(item => [item.medal_id, item]));
 }
-function achievementsForState(state, stats, userId = '') {
+function achievementsForState(state, stats, userId = '', gameId = GAME_ID, definitions = ACHIEVEMENTS) {
   const saved = savedAchievementMap(state);
-  const permanent = permanentAchievementMap(userId);
-  return ACHIEVEMENTS.map(def => {
+  const permanent = permanentAchievementMap(userId, gameId);
+  return definitions.map(def => {
     const stored = saved.get(def.id);
     const accountMedal = permanent.get(def.id);
-    const unlocked = Boolean(accountMedal) || Boolean(stored) || Boolean(state && def.condition(stats, state));
+    const unlocked = Boolean(accountMedal) || Boolean(stored) || Boolean(state && typeof def.condition === 'function' && def.condition(stats, state));
     return { ...def, unlocked, unlockedAt: accountMedal?.unlocked_at || stored?.unlockedAt || null };
   });
 }
@@ -230,6 +242,27 @@ function playerStatsFromSave(save, userId = '') {
   const points = achievementPoints(medals) + rankPointBonus(rank);
   const stickersOwned = 0;
   return { state, stats, xp, points, rank, medals, stickersOwned, stickersTotal: 0 };
+}
+function allAchievementDefinitions() {
+  return [
+    ...ACHIEVEMENTS.map(medal => ({ ...medal, gameId: GAME_ID })),
+    ...CRONICAS_ACHIEVEMENTS.map(medal => ({ ...medal, gameId: CRONICAS_GAME_ID }))
+  ];
+}
+function accountAchievementSummary(userId) {
+  const definitions = allAchievementDefinitions();
+  const rows = [
+    ...getUserAchievementRows.all(userId, GAME_ID),
+    ...getUserAchievementRows.all(userId, CRONICAS_GAME_ID)
+  ];
+  const medals = rows.map(row => {
+    const def = definitions.find(item => item.gameId === row.game_id && item.id === row.medal_id);
+    if (!def) return null;
+    return { ...def, unlocked: true, unlockedAt: row.unlocked_at };
+  }).filter(Boolean);
+  const xp = achievementXp(medals);
+  const points = achievementPoints(medals);
+  return { medals, xp, points };
 }
 
 function pageShell(title, body, musicMode = '') {
@@ -340,6 +373,15 @@ function persistUserAchievements(userId, saveName, state, stats, now = new Date(
   if (!userId || !state) return;
   achievementsForState(state, stats, userId).filter(medal => medal.unlocked).forEach(medal => {
     insertUserAchievement.run(userId, GAME_ID, medal.id, medal.unlockedAt || now, saveName || null);
+  });
+}
+function persistCronicasAchievements(userId, achievements = [], now = new Date().toISOString()) {
+  if (!userId || !CRONICAS_ACHIEVEMENTS.length) return;
+  const known = new Map(CRONICAS_ACHIEVEMENTS.map(medal => [medal.id, medal]));
+  achievements.forEach(item => {
+    const id = typeof item === 'string' ? item : item?.id;
+    if (!known.has(id)) return;
+    insertUserAchievement.run(userId, CRONICAS_GAME_ID, id, item?.unlockedAt || now, CRONICAS_SAVE_NAME);
   });
 }
 function updateRankingForSave(save, userName, state) {
@@ -486,6 +528,36 @@ async function handleApi(req, res, url, user) {
     });
     return;
   }
+  if (url.pathname === '/api/cronicas/save') {
+    const save = getCronicasSave.get(user.id);
+    const savedState = safeJsonParse(save?.state_json, null);
+    if (req.method === 'GET') {
+      json(res, 200, {
+        gameId: CRONICAS_GAME_ID,
+        name: CRONICAS_SAVE_NAME,
+        state: savedState,
+        updatedAt: save?.updated_at || null,
+        medals: achievementsForState(savedState, {}, user.id, CRONICAS_GAME_ID, CRONICAS_ACHIEVEMENTS)
+      });
+      return;
+    }
+    if (req.method === 'PUT' || req.method === 'POST') {
+      const payload = safeJsonParse(await readBody(req) || '{}', {});
+      const state = payload?.state || null;
+      const now = new Date().toISOString();
+      upsertCronicasSave.run(user.id, JSON.stringify(state), save?.created_at || now, now);
+      persistCronicasAchievements(user.id, payload?.achievements || state?.achievements || [], now);
+      json(res, 200, { ok: true, updatedAt: now });
+      return;
+    }
+    if (req.method === 'DELETE') {
+      deleteCronicasSave.run(user.id);
+      json(res, 200, { ok: true });
+      return;
+    }
+    json(res, 405, { error: 'Método não permitido' });
+    return;
+  }
   const match = url.pathname.match(/^\/api\/saves\/([^/]+)$/);
   if (!match) { json(res, 404, { error: 'API não encontrada' }); return; }
   const id = match[1]; const save = getSave.get(id, user.id);
@@ -537,12 +609,15 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   const activeSection = ['inicio', 'jogos', 'ranking', 'medalhas', 'album', 'loja', 'configuracoes'].includes(section) ? section : 'inicio';
   const saves = new Map(getSavesByUser.all(user.id).map(save => [save.slot, save]));
   const mainSave = saves.get(1);
+  const cronicasSave = getCronicasSave.get(user.id);
   const player = playerStatsFromSave(mainSave, user.id);
   const stats = player.stats;
-  const xp = player.xp;
-  const points = player.points;
-  const rank = player.rank;
-  const medals = player.medals;
+  const cronicasState = safeJsonParse(cronicasSave?.state_json, null);
+  const cronicasMedals = achievementsForState(cronicasState, {}, user.id, CRONICAS_GAME_ID, CRONICAS_ACHIEVEMENTS);
+  const medals = [...player.medals, ...cronicasMedals];
+  const xp = achievementXp(medals);
+  const rank = titleProgress(xp);
+  const points = achievementPoints(medals) + rankPointBonus(rank);
   const unlockedMedals = medals.filter(medal => medal.unlocked).length;
   const stickers = [];
   const ranking = rankingPayload();
@@ -577,7 +652,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   ].map(([key, label, href, icon]) => `<a class="${activeSection === key ? 'active' : ''}" href="${href}"><img class="nav-icon" src="/assets/nav-icons/nav-${icon}.png?v=${GAME_VERSION}" alt="">${label}</a>`).join('');
   const gameCard = `<section class="ol-panel ol-games">
     <article class="ol-game-card pela-cover"><div><span>Jogável</span><h4>Pela Graça 1904</h4><p>Gerencie igrejas, forme pastores, responda perguntas doutrinárias e acompanhe a história da IELB no Brasil.</p></div><a href="/play">Jogar</a></article>
-    <article class="ol-game-card cronicas-cover"><div><span>Pré-moldado</span><h4>Crônicas do Levante</h4><p>Uma narrativa bíblica interativa nos dias do rei Davi, com escolhas, descobertas, relações e consequências pelo caminho.</p></div><a href="/cronicas-do-levante">Jogar</a></article>
+    <article class="ol-game-card cronicas-cover"><div><span>${cronicasSave ? 'Salvo' : 'Pré-moldado'}</span><h4>Crônicas do Levante</h4><p>Uma narrativa bíblica interativa nos dias do rei Davi, com escolhas, descobertas, relações e consequências pelo caminho.</p></div><a href="/cronicas-do-levante">${cronicasSave ? 'Continuar' : 'Jogar'}</a></article>
   </section>`;
   const rankCard = `<aside class="ol-panel ol-rank"><p>Seu rank geral</p><img class="rank-badge" src="${rank.current.file}?v=${GAME_VERSION}" alt="${escapeHtml(rank.current.title)}"><div class="rank-xp"><strong>${xp} XP</strong><span>${rank.next ? `${Math.max(0, rank.next.xp - rank.currentXp)} XP para ${escapeHtml(rank.next.title)}` : 'Rank maximo alcancado'}</span><div class="rank-bar"><span style="width:${Math.round(rank.progress)}%"></span></div></div><a href="/?section=ranking">Ver ranking geral</a></aside>`;
   const sections = {
@@ -587,7 +662,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     medalhas: `<section class="ol-panel" id="medalhas"><div class="panel-head"><h3>Medalhas</h3><span>${unlockedMedals}/${medals.length}</span></div><div class="medal-grid">${medals.map(medal => `<article class="${medal.unlocked ? '' : 'locked'}">${renderAchievementIcon(medal)}<span>${escapeHtml(medal.title)}</span><p>${escapeHtml(medal.description)}</p><small>+${medal.xp} XP · +${medal.points} pontos</small></article>`).join('')}</div></section>`,
     album: `<section class="ol-panel" id="album"><div class="panel-head"><h3>Álbum</h3><span>0/0 figurinhas</span></div><p>Nenhuma figurinha foi criada ainda.</p></section>`,
     loja: `<section class="ol-panel" id="loja"><div class="panel-head"><h3>Loja</h3></div><div class="shop-grid"><article><h4>Pacote Comum</h4><p>100 pontos</p><small>Maior chance de figurinhas comuns.</small><button disabled>Comprar em breve</button></article><article><h4>Pacote Raro</h4><p>250 pontos</p><small>Chance melhor de raras e especiais.</small><button disabled>Comprar em breve</button></article><article><h4>Pacote Lendario</h4><p>600 pontos</p><small>Chance alta de figurinhas raras e lendarias.</small><button disabled>Comprar em breve</button></article></div><div class="daily-wheel"><h4>Roleta diaria</h4><p>A cada 24h, o jogador podera tentar ganhar um pacote comum, raro ou lendario de graca.</p><button disabled>Disponivel em breve</button></div></section>`,
-    configuracoes: `<section class="ol-panel ol-settings" id="configuracoes"><div class="panel-head"><h3>Configurações</h3></div><form method="POST" action="/profile" class="profile-edit"><div class="profile-box">${renderAvatar(user, 'profile-avatar')}<div><label>Nome público<input name="name" maxlength="40" value="${escapeHtml(user.name)}" required></label><label>Foto do perfil<input id="avatar-file" type="file" accept="image/png,image/jpeg,image/webp"></label><input id="avatar-data" type="hidden" name="avatar_data" value="${escapeHtml(user.avatar_data || '')}"><button type="submit">Salvar perfil</button></div></div></form><hr><div class="saved-games-head"><h4>Campanhas por jogo</h4><p>Medalhas e melhor ranking ficam salvos na conta.</p></div><div class="saved-game-list"><article class="saved-game-row"><div><span>Pela Graça 1904</span><strong>${mainSave ? escapeHtml(mainSave.name) : 'Nenhuma campanha atual'}</strong><small>${mainSave ? 'Apaga só esta campanha atual.' : 'Crie uma campanha para jogar novamente.'}</small></div>${mainSave ? `<form method="POST" action="/saves/${encodeURIComponent(mainSave.id)}/delete" onsubmit="return confirm('Apagar a campanha atual de Pela Graça 1904? Medalhas e melhor ranking serão mantidos.')"><button>Apagar campanha</button></form>` : '<a href="/play">Criar campanha</a>'}</article></div></section>`
+    configuracoes: `<section class="ol-panel ol-settings" id="configuracoes"><div class="panel-head"><h3>Configurações</h3></div><form method="POST" action="/profile" class="profile-edit"><div class="profile-box">${renderAvatar(user, 'profile-avatar')}<div><label>Nome público<input name="name" maxlength="40" value="${escapeHtml(user.name)}" required></label><label>Foto do perfil<input id="avatar-file" type="file" accept="image/png,image/jpeg,image/webp"></label><input id="avatar-data" type="hidden" name="avatar_data" value="${escapeHtml(user.avatar_data || '')}"><button type="submit">Salvar perfil</button></div></div></form><hr><div class="saved-games-head"><h4>Campanhas por jogo</h4><p>Medalhas e melhor ranking ficam salvos na conta.</p></div><div class="saved-game-list"><article class="saved-game-row"><div><span>Pela Graça 1904</span><strong>${mainSave ? escapeHtml(mainSave.name) : 'Nenhuma campanha atual'}</strong><small>${mainSave ? 'Apaga só esta campanha atual.' : 'Crie uma campanha para jogar novamente.'}</small></div>${mainSave ? `<form method="POST" action="/saves/${encodeURIComponent(mainSave.id)}/delete" onsubmit="return confirm('Apagar a campanha atual de Pela Graça 1904? Medalhas e melhor ranking serão mantidos.')"><button>Apagar campanha</button></form>` : '<a href="/play">Criar campanha</a>'}</article><article class="saved-game-row"><div><span>Crônicas do Levante</span><strong>${cronicasSave ? 'Campanha em andamento' : 'Nenhuma campanha atual'}</strong><small>${cronicasSave ? 'Apaga só o progresso narrativo. Medalhas futuras serão mantidas.' : 'Comece uma jornada para criar o save automático.'}</small></div>${cronicasSave ? `<form method="POST" action="/cronicas-do-levante/delete" onsubmit="return confirm('Apagar a campanha atual de Crônicas do Levante? Medalhas futuras serão mantidas.')"><button>Apagar campanha</button></form>` : '<a href="/cronicas-do-levante">Criar campanha</a>'}</article></div></section>`
   };
   return pageShell('Ortodoxia Luterana Gaming', `
 <main class="ol-hub">
@@ -689,6 +764,11 @@ const server = http.createServer(async (req, res) => {
       const body = fs.readFileSync(path.join(PUBLIC_DIR, 'cronicas-do-levante.html'), 'utf8');
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       res.end(body);
+      return;
+    }
+    if (req.method === 'POST' && url.pathname === '/cronicas-do-levante/delete') {
+      deleteCronicasSave.run(user.id);
+      redirect(res, '/?section=configuracoes');
       return;
     }
     if (req.method === 'GET' && url.pathname === '/ranking') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end(renderDashboard(user, '', 'ranking', url.searchParams.get('game') || '')); return; }

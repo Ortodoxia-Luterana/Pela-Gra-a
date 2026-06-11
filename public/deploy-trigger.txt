@@ -1,6 +1,6 @@
 Deploy trigger for SquareWeb/GitHub integration.
 
-Game hub update: Luther Metch real tile swap animation and reliable special removal.
+Game hub update: Luther Metch 200 levels, L-shape combo 5, and level ranking.
 This small public file was updated to force a fresh deploy check.
 
 Updated: 2026-06-11

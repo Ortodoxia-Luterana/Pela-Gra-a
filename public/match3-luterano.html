@@ -413,6 +413,8 @@
   <script>
     const KEY = "ol-luther-metch-v2";
     const SIZE = 8;
+    const MAX_LEVEL = 200;
+    const PROGRESS_API = "/api/luther-metch/progress";
     const TYPES = [
       { id: "book", name: "Livro", src: "/assets/match3-tile-book.svg" },
       { id: "rose", name: "Rosa", src: "/assets/match3-tile-rose.svg" },
@@ -425,12 +427,15 @@
       luther: { name: "Lutero", src: "/assets/match3-special-luther.png" },
       solas: { name: "Cinco Solas", src: "/assets/match3-special-solas.png" }
     };
-    const OBJECTIVE_IDS = ["book", "rose", "candle"];
+    const DEFAULT_OBJECTIVE_IDS = ["book", "rose", "candle"];
     const baseState = () => ({
       level: 1,
+      bestLevel: 1,
+      completedLevels: 0,
       moves: 25,
       score: 0,
       board: [],
+      goalIds: DEFAULT_OBJECTIVE_IDS,
       goals: { book: 12, rose: 8, candle: 10 },
       collected: { book: 0, rose: 0, candle: 0 },
       boosters: { hammer: 3, shuffle: 2 },
@@ -451,20 +456,91 @@
     function tileSpecial(tile) { return typeof tile === "object" ? tile?.special : null; }
     function matchType(tile) { return tileSpecial(tile) ? null : tileType(tile); }
     function normalizeBoard(board) { return board.map(tile => tile ? makeTile(tileType(tile), tileSpecial(tile)) : null); }
+    function levelConfig(level) {
+      const capped = Math.max(1, Math.min(MAX_LEVEL, Math.floor(Number(level) || 1)));
+      const tier = Math.floor((capped - 1) / 20);
+      const objectiveCount = capped >= 120 ? 6 : capped >= 70 ? 5 : capped >= 25 ? 4 : 3;
+      const goalIds = TYPES.slice(0, objectiveCount).map(item => item.id);
+      const goals = {};
+      goalIds.forEach((id, index) => {
+        goals[id] = Math.min(70, 8 + Math.floor(capped * 1.15) + index * 3 + tier * 2);
+      });
+      return {
+        level: capped,
+        goalIds,
+        goals,
+        moves: Math.max(14, 30 - Math.floor(capped / 12) - tier),
+        boosters: {
+          hammer: Math.max(1, 3 - Math.floor(capped / 55)),
+          shuffle: Math.max(1, 2 - Math.floor(capped / 120))
+        }
+      };
+    }
+    function applyLevelConfig(target) {
+      const config = levelConfig(target.level);
+      target.level = config.level;
+      target.goalIds = config.goalIds;
+      target.goals = { ...config.goals };
+      target.collected = Object.fromEntries(config.goalIds.map(id => [id, Number(target.collected?.[id] || 0)]));
+      if (!Number.isFinite(Number(target.moves)) || target.moves <= 0) target.moves = config.moves;
+      target.boosters = {
+        hammer: Number.isFinite(Number(target.boosters?.hammer)) ? target.boosters.hammer : config.boosters.hammer,
+        shuffle: Number.isFinite(Number(target.boosters?.shuffle)) ? target.boosters.shuffle : config.boosters.shuffle
+      };
+      target.bestLevel = Math.max(1, Math.min(MAX_LEVEL, Math.floor(Number(target.bestLevel) || target.level || 1)));
+      target.completedLevels = Math.max(0, Math.min(MAX_LEVEL, Math.floor(Number(target.completedLevels) || Math.max(0, target.bestLevel - 1))));
+      return target;
+    }
 
     function loadState() {
       try {
         const saved = JSON.parse(localStorage.getItem(KEY) || "null");
         if (saved && Array.isArray(saved.board) && saved.board.length === SIZE * SIZE) {
-          return { ...baseState(), ...saved, board: normalizeBoard(saved.board) };
+          return applyLevelConfig({ ...baseState(), ...saved, board: normalizeBoard(saved.board) });
         }
       } catch {}
       const fresh = baseState();
+      applyLevelConfig(fresh);
       fresh.board = makeBoard();
       return fresh;
     }
 
-    function saveState() { localStorage.setItem(KEY, JSON.stringify({ ...state, selected: null, mode: null })); }
+    function saveState() {
+      localStorage.setItem(KEY, JSON.stringify({ ...state, selected: null, mode: null }));
+      syncProgress();
+    }
+    async function loadRemoteProgress() {
+      try {
+        const response = await fetch(PROGRESS_API, { cache: "no-store" });
+        if (!response.ok) return;
+        const data = await response.json();
+        const progress = data.progress || {};
+        const remoteBest = Number(progress.bestLevel || 1);
+        const remoteCompleted = Number(progress.completedLevels || 0);
+        const remoteScore = Number(progress.score || 0);
+        if (remoteBest > state.bestLevel || remoteCompleted > state.completedLevels || remoteScore > state.score) {
+          state.bestLevel = Math.max(state.bestLevel, remoteBest);
+          state.completedLevels = Math.max(state.completedLevels, remoteCompleted);
+          state.score = Math.max(state.score, remoteScore);
+          saveState();
+          render();
+        }
+      } catch {}
+    }
+    async function syncProgress() {
+      try {
+        await fetch(PROGRESS_API, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            level: state.level,
+            bestLevel: state.bestLevel,
+            completedLevels: state.completedLevels,
+            score: state.score
+          })
+        });
+      } catch {}
+    }
     function randType() { return TYPES[Math.floor(Math.random() * TYPES.length)].id; }
 
     function makeBoard() {
@@ -492,7 +568,8 @@
       document.querySelector("#shuffle-count").textContent = state.boosters.shuffle;
       document.querySelector("#hammer").classList.toggle("active", state.mode === "hammer");
       document.querySelector("#shuffle").classList.toggle("active", state.mode === "shuffle");
-      document.querySelector("#objectives").innerHTML = OBJECTIVE_IDS.map(id => {
+      const objectiveIds = state.goalIds || DEFAULT_OBJECTIVE_IDS;
+      document.querySelector("#objectives").innerHTML = objectiveIds.map(id => {
         const type = TYPES.find(item => item.id === id);
         const done = Math.min(state.collected[id] || 0, state.goals[id]);
         return '<article class="objective"><img src="' + type.src + '" alt=""><span><small>' + type.name + '</small><b>' + done + '/' + state.goals[id] + '</b></span></article>';
@@ -623,6 +700,53 @@
     }
 
     function uniqueCells(groups) { return [...new Set(groups.flat())]; }
+    function comboCandidates(groups) {
+      const components = [];
+      groups.forEach(group => {
+        const type = matchType(state.board[group[0]]);
+        if (!type) return;
+        const cells = new Set(group);
+        let merged = false;
+        for (const component of components) {
+          if (component.type !== type) continue;
+          if (group.some(index => component.cells.has(index))) {
+            group.forEach(index => component.cells.add(index));
+            merged = true;
+            break;
+          }
+        }
+        if (!merged) components.push({ type, cells });
+      });
+      let changed = true;
+      while (changed) {
+        changed = false;
+        for (let i = 0; i < components.length; i += 1) {
+          for (let j = i + 1; j < components.length; j += 1) {
+            if (components[i].type !== components[j].type) continue;
+            if ([...components[j].cells].some(index => components[i].cells.has(index))) {
+              components[j].cells.forEach(index => components[i].cells.add(index));
+              components.splice(j, 1);
+              changed = true;
+              break;
+            }
+          }
+          if (changed) break;
+        }
+      }
+      return components.map(component => ({ type: component.type, cells: [...component.cells] }));
+    }
+    function chooseSpecialIndex(cells, preferredIndex = null) {
+      if (preferredIndex !== null && cells.includes(preferredIndex)) return preferredIndex;
+      const rowCounts = new Map();
+      const colCounts = new Map();
+      cells.forEach(index => {
+        const row = Math.floor(index / SIZE);
+        const col = index % SIZE;
+        rowCounts.set(row, (rowCounts.get(row) || 0) + 1);
+        colCounts.set(col, (colCounts.get(col) || 0) + 1);
+      });
+      return cells.find(index => rowCounts.get(Math.floor(index / SIZE)) > 1 && colCounts.get(index % SIZE) > 1) ?? cells[0];
+    }
 
     function specialCellsFor(index, targetType = tileType(state.board[index])) {
       const special = tileSpecial(state.board[index]);
@@ -664,7 +788,7 @@
       const expanded = expand ? expandSpecialCells(cells) : [...new Set(cells)];
       expanded.forEach(index => {
         const id = tileType(state.board[index]);
-        if (OBJECTIVE_IDS.includes(id)) state.collected[id] = (state.collected[id] || 0) + 1;
+        if ((state.goalIds || DEFAULT_OBJECTIVE_IDS).includes(id)) state.collected[id] = (state.collected[id] || 0) + 1;
         state.board[index] = null;
       });
       state.score += expanded.length * (hammer ? 25 : 40);
@@ -691,12 +815,12 @@
       let chain = 0;
       while (groups.length) {
         chain += 1;
-        const specialGroup = [...groups].sort((a, b) => b.length - a.length).find(group => group.length >= 4);
+        const specialGroup = comboCandidates(groups).sort((a, b) => b.cells.length - a.cells.length).find(group => group.cells.length >= 4);
         let specialIndex = null;
         let specialTile = null;
         if (specialGroup) {
-          specialIndex = specialGroup.includes(preferredIndex) ? preferredIndex : specialGroup[0];
-          specialTile = makeTile(tileType(state.board[specialIndex]), specialGroup.length >= 5 ? "solas" : "luther");
+          specialIndex = chooseSpecialIndex(specialGroup.cells, preferredIndex);
+          specialTile = makeTile(specialGroup.type, specialGroup.cells.length >= 5 ? "solas" : "luther");
         }
         let cells = uniqueCells(groups);
         if (specialIndex !== null) cells = cells.filter(index => index !== specialIndex);
@@ -804,7 +928,7 @@
     }
 
     function goalsDone() {
-      return OBJECTIVE_IDS.every(id => (state.collected[id] || 0) >= state.goals[id]);
+      return (state.goalIds || DEFAULT_OBJECTIVE_IDS).every(id => (state.collected[id] || 0) >= state.goals[id]);
     }
 
     function afterMove() {
@@ -817,30 +941,32 @@
 
     function finish(win) {
       state.over = true;
+      if (win) {
+        state.completedLevels = Math.max(state.completedLevels || 0, state.level);
+        state.bestLevel = Math.max(state.bestLevel || 1, Math.min(MAX_LEVEL, state.level + 1));
+      }
       saveState();
       document.querySelector("#modal-title").textContent = win ? "Fase concluida" : "Sem movimentos";
       document.querySelector("#modal-copy").textContent = win
-        ? `Nivel ${state.level} vencido com ${state.score} pontos.`
+        ? state.level >= MAX_LEVEL ? `Nivel ${MAX_LEVEL} vencido com ${state.score} pontos. Campanha completa.` : `Nivel ${state.level} vencido com ${state.score} pontos.`
         : "Os objetivos nao foram concluidos. Reinicie a fase e tente outro caminho.";
-      document.querySelector("#next-level").textContent = win ? "Proximo nivel" : "Tentar de novo";
+      document.querySelector("#next-level").textContent = win && state.level >= MAX_LEVEL ? "Rejogar nivel 200" : win ? "Proximo nivel" : "Tentar de novo";
       overlay.classList.add("show");
       render();
     }
 
     function nextLevel() {
       const next = baseState();
-      next.level = state.over && goalsDone() ? state.level + 1 : state.level;
-      next.moves = Math.max(18, 25 - Math.floor((next.level - 1) / 2));
+      next.level = state.over && goalsDone() ? Math.min(MAX_LEVEL, state.level + 1) : state.level;
+      next.bestLevel = Math.max(state.bestLevel || 1, next.level);
+      next.completedLevels = Math.max(state.completedLevels || 0, Math.min(MAX_LEVEL, next.level - 1));
       next.score = goalsDone() ? state.score : 0;
-      next.goals = {
-        book: 12 + next.level * 2,
-        rose: 8 + next.level,
-        candle: 10 + next.level
-      };
-      next.boosters = {
-        hammer: Math.max(1, 3 - Math.floor(next.level / 4)),
-        shuffle: 2
-      };
+      const config = levelConfig(next.level);
+      next.moves = config.moves;
+      next.goalIds = config.goalIds;
+      next.goals = config.goals;
+      next.collected = Object.fromEntries(config.goalIds.map(id => [id, 0]));
+      next.boosters = config.boosters;
       next.board = makeBoard();
       state = next;
       overlay.classList.remove("show");
@@ -852,6 +978,7 @@
     function restart() {
       localStorage.removeItem(KEY);
       state = baseState();
+      applyLevelConfig(state);
       state.board = makeBoard();
       overlay.classList.remove("show");
       message("Fase reiniciada.");
@@ -946,6 +1073,7 @@
 
     render();
     saveState();
+    loadRemoteProgress();
   </script>
 </body>
 </html>

@@ -913,6 +913,12 @@ img.feed-avatar {
   gap: .35rem;
 }
 
+.hub-rank-player small {
+  color: #d8d0c4;
+  font-size: .78rem;
+  font-weight: 700;
+}
+
 .mini-rank-badge {
   display: block;
   width: min(260px, 100%);

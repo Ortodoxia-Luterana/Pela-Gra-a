@@ -12,9 +12,10 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v3.17.0-luther-metch-real-swap';
+const GAME_VERSION = 'v3.18.0-luther-metch-level-rank';
 const GAME_ID = 'pela-graca-1904';
 const CRONICAS_GAME_ID = 'cronicas-do-levante';
+const LUTHER_MATCH_GAME_ID = 'luther-metch';
 const CRONICAS_SAVE_NAME = 'Crônicas do Levante';
 const STATE_NAMES = {
   AC: 'Acre', AL: 'Alagoas', AP: 'Amapa', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceara', DF: 'Distrito Federal', ES: 'Espirito Santo', GO: 'Goias',
@@ -77,6 +78,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS rankings (save_id TEXT PRIMARY KEY, user_id TEXT NOT NULL, user_name TEXT NOT NULL, save_name TEXT NOT NULL, year INTEGER NOT NULL, month INTEGER NOT NULL, total_churches INTEGER NOT NULL, total_members REAL NOT NULL, doctrine_correct INTEGER NOT NULL, reached_final INTEGER NOT NULL, state_churches_json TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (save_id) REFERENCES saves(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS user_achievements (user_id TEXT NOT NULL, game_id TEXT NOT NULL, medal_id TEXT NOT NULL, unlocked_at TEXT NOT NULL, source_save_name TEXT, PRIMARY KEY (user_id, game_id, medal_id), FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS game_rankings (user_id TEXT NOT NULL, game_id TEXT NOT NULL, user_name TEXT NOT NULL, save_name TEXT NOT NULL, year INTEGER NOT NULL, month INTEGER NOT NULL, total_churches INTEGER NOT NULL, total_members REAL NOT NULL, doctrine_correct INTEGER NOT NULL, reached_final INTEGER NOT NULL, state_churches_json TEXT NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY (user_id, game_id), FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
+  CREATE TABLE IF NOT EXISTS luther_match_rankings (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, level INTEGER NOT NULL, best_level INTEGER NOT NULL, completed_levels INTEGER NOT NULL, score INTEGER NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS cronicas_saves (user_id TEXT PRIMARY KEY, state_json TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
 `);
 try { db.exec('ALTER TABLE users ADD COLUMN avatar_data TEXT'); } catch {}
@@ -87,6 +89,7 @@ const getAllUsers = db.prepare('SELECT id, name, avatar_data, created_at FROM us
 const insertUser = db.prepare('INSERT INTO users (id, name, pin_hash, salt, created_at) VALUES (?, ?, ?, ?, ?)');
 const updateUserProfile = db.prepare('UPDATE users SET name = ?, avatar_data = ? WHERE id = ?');
 const updateRankingUserName = db.prepare('UPDATE rankings SET user_name = ? WHERE user_id = ?');
+const updateLutherMatchUserName = db.prepare('UPDATE luther_match_rankings SET user_name = ? WHERE user_id = ?');
 const insertSession = db.prepare('INSERT INTO sessions (id, user_id, created_at) VALUES (?, ?, ?)');
 const getSession = db.prepare('SELECT * FROM sessions WHERE id = ?');
 const deleteSession = db.prepare('DELETE FROM sessions WHERE id = ?');
@@ -109,6 +112,19 @@ const upsertBestRanking = db.prepare(`
 const updateBestRankingUserName = db.prepare('UPDATE game_rankings SET user_name = ? WHERE user_id = ?');
 const getUserAchievementRows = db.prepare('SELECT * FROM user_achievements WHERE user_id = ? AND game_id = ?');
 const getAllAchievementRows = db.prepare('SELECT user_achievements.*, users.name AS user_name FROM user_achievements JOIN users ON users.id = user_achievements.user_id WHERE game_id = ?');
+const getLutherMatchRanking = db.prepare('SELECT * FROM luther_match_rankings WHERE user_id = ?');
+const getLutherMatchRankings = db.prepare('SELECT * FROM luther_match_rankings ORDER BY best_level DESC, completed_levels DESC, score DESC, updated_at ASC');
+const upsertLutherMatchRanking = db.prepare(`
+  INSERT INTO luther_match_rankings (user_id, user_name, level, best_level, completed_levels, score, updated_at)
+  VALUES (?, ?, ?, ?, ?, ?, ?)
+  ON CONFLICT(user_id) DO UPDATE SET
+    user_name = excluded.user_name,
+    level = excluded.level,
+    best_level = max(luther_match_rankings.best_level, excluded.best_level),
+    completed_levels = max(luther_match_rankings.completed_levels, excluded.completed_levels),
+    score = max(luther_match_rankings.score, excluded.score),
+    updated_at = excluded.updated_at
+`);
 const insertUserAchievement = db.prepare(`
   INSERT OR IGNORE INTO user_achievements (user_id, game_id, medal_id, unlocked_at, source_save_name)
   VALUES (?, ?, ?, ?, ?)
@@ -402,9 +418,25 @@ function backfillRankings() {
 function publicRankingRow(row) {
   return { player: row.user_name, year: row.year, month: row.month, totalChurches: row.total_churches, totalMembers: Math.floor(row.total_members), doctrineCorrect: row.doctrine_correct, reachedFinal: Boolean(row.reached_final), updatedAt: row.updated_at };
 }
+function publicLutherMatchRow(row) {
+  return {
+    player: row.user_name,
+    level: Number(row.level || 1),
+    bestLevel: Number(row.best_level || 1),
+    completedLevels: Number(row.completed_levels || 0),
+    score: Number(row.score || 0),
+    updatedAt: row.updated_at
+  };
+}
+function clampInt(value, min, max) {
+  const number = Math.floor(Number(value));
+  if (!Number.isFinite(number)) return min;
+  return Math.max(min, Math.min(max, number));
+}
 function rankingPayload() {
   backfillRankings();
   const rows = getGameRankingRows.all();
+  const lutherMatch = getLutherMatchRankings.all().slice(0, 20).map(publicLutherMatchRow);
   const byYear = [...rows].sort((a, b) => b.year - a.year || b.month - a.month || b.total_churches - a.total_churches).slice(0, 10).map(publicRankingRow);
   const byChurches = [...rows].sort((a, b) => b.total_churches - a.total_churches || b.reached_final - a.reached_final || b.year - a.year).slice(0, 10).map(publicRankingRow);
   const byDoctrine = [...rows].sort((a, b) => b.doctrine_correct - a.doctrine_correct || b.year - a.year || b.total_churches - a.total_churches).slice(0, 10).map(publicRankingRow);
@@ -425,7 +457,7 @@ function rankingPayload() {
       unlockedAt: item.unlocked_at
     };
   }).filter(Boolean).sort((a, b) => String(b.unlockedAt || '').localeCompare(String(a.unlockedAt || ''))).slice(0, 12);
-  return { generatedAt: new Date().toISOString(), byYear, byChurches, byState, byDoctrine, prestige };
+  return { generatedAt: new Date().toISOString(), byYear, byChurches, byState, byDoctrine, lutherMatch, prestige };
 }
 function hubSaveForUser(user) {
   const existing = getSaveSlot.get(user.id, 1);
@@ -531,7 +563,7 @@ async function handleApi(req, res, url, user) {
           title: 'Luther Metch',
           status: 'prototype',
           playUrl: '/luther-metch',
-          rankingUrl: null
+          rankingUrl: '/?section=ranking&game=luther-metch'
         },
         {
           id: 'peregrino-confessional',
@@ -550,6 +582,27 @@ async function handleApi(req, res, url, user) {
       ]
     });
     return;
+  }
+  if (url.pathname === '/api/luther-metch/progress') {
+    const row = getLutherMatchRanking.get(user.id);
+    if (req.method === 'GET') {
+      json(res, 200, {
+        gameId: LUTHER_MATCH_GAME_ID,
+        progress: row ? publicLutherMatchRow(row) : { player: user.name, level: 1, bestLevel: 1, completedLevels: 0, score: 0, updatedAt: null }
+      });
+      return;
+    }
+    if (req.method === 'PUT' || req.method === 'POST') {
+      const payload = safeJsonParse(await readBody(req) || '{}', {});
+      const level = clampInt(payload.level, 1, 200);
+      const bestLevel = clampInt(payload.bestLevel ?? level, 1, 200);
+      const completedLevels = clampInt(payload.completedLevels ?? Math.max(0, bestLevel - 1), 0, 200);
+      const score = clampInt(payload.score, 0, 999999999);
+      const now = new Date().toISOString();
+      upsertLutherMatchRanking.run(user.id, user.name, level, bestLevel, completedLevels, score, now);
+      json(res, 200, { ok: true, progress: publicLutherMatchRow(getLutherMatchRanking.get(user.id)) });
+      return;
+    }
   }
   if (url.pathname === '/api/cronicas/save') {
     const save = getCronicasSave.get(user.id);
@@ -648,22 +701,25 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   const generalRankingRows = getAllUsers.all().map(rankUser => {
     const userSave = getSaveSlot.get(rankUser.id, 1);
     const userSummary = playerStatsFromSave(userSave, rankUser.id);
+    const lutherMatch = getLutherMatchRanking.get(rankUser.id);
     return {
       user: rankUser,
       summary: userSummary,
-      medals: userSummary.medals.filter(medal => medal.unlocked).length
+      medals: userSummary.medals.filter(medal => medal.unlocked).length,
+      lutherMatch: lutherMatch ? publicLutherMatchRow(lutherMatch) : { bestLevel: 1, completedLevels: 0, score: 0 }
     };
-  }).sort((a, b) => b.medals - a.medals || b.summary.points - a.summary.points || b.summary.xp - a.summary.xp || a.user.name.localeCompare(b.user.name)).map((item, index) => {
+  }).sort((a, b) => b.lutherMatch.bestLevel - a.lutherMatch.bestLevel || b.medals - a.medals || b.summary.points - a.summary.points || b.summary.xp - a.summary.xp || a.user.name.localeCompare(b.user.name)).map((item, index) => {
     const userRank = item.summary.rank.current;
-    return `<div class="hub-rank-row hub-rank-player"><b>${index + 1}</b><span>${escapeHtml(item.user.name)}<img class="mini-rank-badge" src="${userRank.file}?v=${GAME_VERSION}" alt="${escapeHtml(userRank.title)}"></span><strong>${item.medals} medalhas · ${item.summary.points} pontos · ${item.summary.xp} XP</strong></div>`;
+    return `<div class="hub-rank-row hub-rank-player"><b>${index + 1}</b><span>${escapeHtml(item.user.name)}<small>Luther Metch: nível ${item.lutherMatch.bestLevel} · ${item.lutherMatch.completedLevels} fases vencidas</small><img class="mini-rank-badge" src="${userRank.file}?v=${GAME_VERSION}" alt="${escapeHtml(userRank.title)}"></span><strong>${item.medals} medalhas · ${item.summary.points} pontos · ${item.summary.xp} XP</strong></div>`;
   }).join('');
   const prestigeItems = ranking.prestige.slice(0, 6);
   const liveRows = prestigeItems.length ? prestigeItems.map(item => `<article><img class="feed-avatar achievement-feed-icon" src="${escapeHtml(item.icon)}?v=${GAME_VERSION}" alt="${escapeHtml(item.medal)}"><span>${escapeHtml(item.player)} conquistou ${escapeHtml(item.medal)}</span><small>+${item.xp} XP · +${item.points} pontos</small></article>`).join('') : '<article><b class="feed-avatar">OL</b><span>Nenhum prestigio conquistado ainda. As novas medalhas vao aparecer aqui.</span></article>';
   const eventPanel = `<section class="ol-panel ol-event"><p>Evento em destaque</p><h3>Desafio da Reforma</h3><span>Espaço reservado para temporadas especiais da comunidade.</span><button disabled>Em breve</button></section>`;
-  const gameRankingList = `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><h3>Rankings por jogo</h3></div><div class="game-rank-list"><a href="/?section=ranking&game=pela-graca-1904"><span>Pela Graça 1904</span><strong>Ver ranking</strong></a></div></section>`;
+  const gameRankingList = `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><h3>Rankings por jogo</h3></div><div class="game-rank-list"><a href="/?section=ranking&game=pela-graca-1904"><span>Pela Graça 1904</span><strong>Ver ranking</strong></a><a href="/?section=ranking&game=luther-metch"><span>Luther Metch</span><strong>Níveis vencidos</strong></a></div></section>`;
   const generalRanking = `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><h3>Ranking geral</h3></div>${generalRankingRows || '<p>Nenhum jogador cadastrado ainda.</p>'}</section>${gameRankingList}`;
   const ielbRanking = `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><div><p>Ranking do jogo</p><h3>Pela Graça 1904</h3></div><a href="/?section=ranking">Voltar</a></div><h4>Mais anos jogados</h4>${rankingRows(ranking.byYear, item => item.year)}<h4>Mais igrejas até 2026</h4>${rankingRows(ranking.byChurches, item => item.totalChurches, ' igrejas')}</section>`;
-  const rankingSection = selectedGame === 'pela-graca-1904' ? ielbRanking : generalRanking;
+  const lutherRanking = `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><div><p>Ranking do jogo</p><h3>Luther Metch</h3></div><a href="/?section=ranking">Voltar</a></div><h4>Quem chegou mais longe</h4>${rankingRows(ranking.lutherMatch, item => `Nível ${item.bestLevel} · ${item.completedLevels} fases · ${item.score} pts`)}</section>`;
+  const rankingSection = selectedGame === 'pela-graca-1904' ? ielbRanking : selectedGame === 'luther-metch' ? lutherRanking : generalRanking;
   const nav = [
     ['inicio', 'Início', '/', 'inicio'],
     ['jogos', 'Jogos', '/?section=jogos', 'jogos'],
@@ -775,6 +831,7 @@ const server = http.createServer(async (req, res) => {
       updateUserProfile.run(name, avatarData || null, user.id);
       updateRankingUserName.run(name, user.id);
       updateBestRankingUserName.run(name, user.id);
+      updateLutherMatchUserName.run(name, user.id);
       redirect(res, '/?section=configuracoes');
       return;
     }

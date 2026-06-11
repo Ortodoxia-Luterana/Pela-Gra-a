@@ -12,7 +12,7 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v3.11.1-game-save-settings';
+const GAME_VERSION = 'v3.12.0-final-campaign-medals';
 const GAME_ID = 'pela-graca-1904';
 const STATE_NAMES = {
   AC: 'Acre', AL: 'Alagoas', AP: 'Amapa', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceara', DF: 'Distrito Federal', ES: 'Espirito Santo', GO: 'Goias',
@@ -21,6 +21,13 @@ const STATE_NAMES = {
   SP: 'Sao Paulo', SE: 'Sergipe', TO: 'Tocantins'
 };
 const STATE_ORDER = Object.keys(STATE_NAMES);
+const REGION_STATES = {
+  norte: ['AC', 'AP', 'AM', 'PA', 'RO', 'RR', 'TO'],
+  nordeste: ['AL', 'BA', 'CE', 'MA', 'PB', 'PE', 'PI', 'RN', 'SE'],
+  sudeste: ['ES', 'MG', 'RJ', 'SP'],
+  sul: ['PR', 'RS', 'SC'],
+  centroOeste: ['DF', 'GO', 'MT', 'MS']
+};
 const TITLE_TRACK = [
   { level: 1, title: 'Visitante', xp: 0, pointReward: 0, file: '/assets/title-badges/01-visitante.png' },
   { level: 2, title: 'Peregrino', xp: 300, pointReward: 50, file: '/assets/title-badges/02-peregrino.png' },
@@ -36,7 +43,13 @@ const TITLE_TRACK = [
 const ACHIEVEMENTS = [
   { id: 'primeiros-passos', title: 'Primeiros Passos', description: 'Comecou sua primeira campanha em Pela Graca 1904.', xp: 75, points: 25, file: '/assets/achievements/primeiros-passos.png', condition: stats => Boolean(stats.started || stats.hasSave) },
   { id: 'centesima-igreja', title: 'Centesima Igreja', description: 'Alcancou 100 igrejas IELB na campanha.', xp: 500, points: 150, file: '/assets/achievements/centesima-igreja.png', condition: stats => stats.totalChurches >= 100 },
-  { id: 'centenario-ielb', title: 'Centenario IELB', description: 'Conduziu a IELB por 100 anos de historia no jogo.', xp: 900, points: 300, file: '/assets/achievements/centenario-ielb.png', condition: stats => stats.year >= 2004 }
+  { id: 'centenario-ielb', title: 'Centenario IELB', description: 'Conduziu a IELB por 100 anos de historia no jogo.', xp: 900, points: 300, file: '/assets/achievements/centenario-ielb.png', condition: stats => stats.year >= 2004 },
+  { id: 'ate-aqui-nos-ajudou', title: 'Ate Aqui nos Ajudou', description: 'Chegou ao ano final da campanha, 2026.', xp: 1200, points: 400, file: '/assets/achievements/ate-aqui-nos-ajudou.png', condition: stats => isFinalCampaign(stats) },
+  { id: 'missionario-do-sertao', title: 'Missionario do Sertao', description: 'Chegou a 2026 com o Nordeste como a regiao com mais igrejas IELB.', xp: 850, points: 275, file: '/assets/achievements/missionario-do-sertao.png', condition: stats => isFinalCampaign(stats) && dominantRegion(stats, 'nordeste') },
+  { id: 'tribo-luterana', title: 'Tribo Luterana', description: 'Chegou a 2026 com o Norte como a regiao com mais igrejas IELB.', xp: 850, points: 275, file: '/assets/achievements/tribo-luterana.png', condition: stats => isFinalCampaign(stats) && dominantRegion(stats, 'norte') },
+  { id: 'culto-gauchesco', title: 'Culto Gauchesco', description: 'Chegou a 2026 mantendo igrejas IELB somente no Rio Grande do Sul.', xp: 700, points: 225, file: '/assets/achievements/culto-gauchesco.png', condition: stats => isFinalCampaign(stats) && stats.totalChurches > 0 && stateChurchCount(stats, 'RS') === stats.totalChurches },
+  { id: 'xique-xique-e-de-jesus', title: 'Xique-Xique e de Jesus', description: 'Chegou a 2026 com Xique-Xique, na Bahia, como a cidade com mais igrejas IELB.', xp: 1000, points: 350, file: '/assets/achievements/xique-xique-e-de-jesus.png', condition: stats => isFinalCampaign(stats) && dominantCity(stats, 'BA', 'Xique-Xique') },
+  { id: 'igreja-urbana', title: 'Igreja Urbana', description: 'Chegou a 2026 com a maior parte das igrejas IELB no estado de Sao Paulo.', xp: 800, points: 250, file: '/assets/achievements/igreja-urbana.png', condition: stats => isFinalCampaign(stats) && stats.totalChurches > 0 && stateChurchCount(stats, 'SP') > stats.totalChurches / 2 }
 ];
 
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
@@ -228,14 +241,48 @@ function memberCountForState(stateData) {
   if (Number.isFinite(Number(slot.members))) return Number(slot.members);
   return (slot.churches || []).reduce((sum, church) => sum + Math.max(0, Number(church.members) || 0), 0);
 }
+function isFinalCampaign(stats) {
+  return Number(stats?.year || 0) >= 2026;
+}
+function stateChurchCount(stats, stateCode) {
+  return Number(stats?.stateChurches?.[stateCode] || 0);
+}
+function regionChurchCount(stats, regionKey) {
+  return (REGION_STATES[regionKey] || []).reduce((sum, code) => sum + stateChurchCount(stats, code), 0);
+}
+function dominantRegion(stats, regionKey) {
+  const target = regionChurchCount(stats, regionKey);
+  if (target <= 0) return false;
+  return Object.keys(REGION_STATES).every(key => key === regionKey || target > regionChurchCount(stats, key));
+}
+function cityKey(stateCode, city) {
+  return `${stateCode}|${String(city || '').trim().toLowerCase()}`;
+}
+function cityChurchCount(stats, stateCode, city) {
+  return Number(stats?.cityChurches?.[cityKey(stateCode, city)] || 0);
+}
+function dominantCity(stats, stateCode, city) {
+  const target = cityChurchCount(stats, stateCode, city);
+  if (target <= 0) return false;
+  const counts = Object.entries(stats?.cityChurches || {});
+  return counts.every(([key, value]) => key === cityKey(stateCode, city) || target > Number(value || 0));
+}
 function extractRankingStats(state) {
   const states = state?.states || {};
   const stateChurches = {};
+  const cityChurches = {};
   let totalChurches = 0;
   let totalMembers = 0;
   STATE_ORDER.forEach(code => {
+    const slot = states[code]?.denomData?.IELB;
     const count = churchCountForState(states[code]);
     if (count > 0) stateChurches[code] = count;
+    (slot?.churches || []).forEach(church => {
+      const city = String(church.city || '').trim();
+      if (!city) return;
+      const key = cityKey(code, city);
+      cityChurches[key] = (cityChurches[key] || 0) + 1;
+    });
     totalChurches += count;
     totalMembers += memberCountForState(states[code]);
   });
@@ -244,7 +291,7 @@ function extractRankingStats(state) {
   const explicitDoctrineCorrect = Number(state?.doctrineCorrectCount ?? state?.doctrineStats?.correct);
   const usedQuestions = Array.isArray(state?.usedTheologyQuestions) ? state.usedTheologyQuestions.length : 0;
   const doctrineCorrect = Math.max(0, Math.floor(Number.isFinite(explicitDoctrineCorrect) ? explicitDoctrineCorrect : usedQuestions));
-  return { year, month, totalChurches, totalMembers, doctrineCorrect, reachedFinal: year >= 2026 ? 1 : 0, stateChurches, started: Boolean(state?.started), hasSave: true };
+  return { year, month, totalChurches, totalMembers, doctrineCorrect, reachedFinal: year >= 2026 ? 1 : 0, stateChurches, cityChurches, started: Boolean(state?.started), hasSave: true };
 }
 function rankingScoreParts(row) {
   return [

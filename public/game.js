@@ -62,6 +62,13 @@ const MARKER_SLOTS={
 
 const STATE_POP={RS:1150,SC:320,PR:350,SP:2280,RJ:1120,ES:210,MG:3590,BA:2120,SE:150,AL:300,PE:1030,PB:460,RN:360,CE:850,PI:330,MA:570,PA:450,AM:250,RR:20,AP:25,TO:80,GO:230,MT:140,MS:120,RO:30,AC:40,DF:50};
 const STATE_MULTI={RS:{fe:1.0,of:1.2,receptivity:1.18,urban:0.7},SC:{fe:1.1,of:1.1,receptivity:1.14,urban:0.75},PR:{fe:1.1,of:1.1,receptivity:1.1,urban:0.85},SP:{fe:0.6,of:2.0,receptivity:0.82,urban:1.45},RJ:{fe:0.6,of:1.8,receptivity:0.84,urban:1.45},ES:{fe:0.9,of:1.0,receptivity:0.95,urban:1.0},MG:{fe:0.9,of:1.1,receptivity:0.92,urban:1.0},BA:{fe:1.0,of:0.9,receptivity:1.0,urban:0.95},SE:{fe:1.3,of:0.8,receptivity:1.12,urban:0.9},AL:{fe:1.3,of:0.8,receptivity:1.1,urban:0.9},PE:{fe:1.0,of:0.9,receptivity:1.0,urban:1.05},PB:{fe:1.4,of:0.7,receptivity:1.16,urban:0.85},RN:{fe:1.4,of:0.7,receptivity:1.16,urban:0.85},CE:{fe:1.1,of:0.8,receptivity:1.06,urban:0.95},PI:{fe:1.6,of:0.6,receptivity:1.24,urban:0.7},MA:{fe:1.5,of:0.6,receptivity:1.2,urban:0.75},PA:{fe:1.7,of:0.6,receptivity:1.25,urban:0.85},AM:{fe:2.0,of:0.5,receptivity:1.3,urban:0.75},RR:{fe:3.0,of:0.4,receptivity:1.4,urban:0.55},AP:{fe:2.8,of:0.4,receptivity:1.35,urban:0.6},TO:{fe:2.0,of:0.5,receptivity:1.28,urban:0.65},GO:{fe:1.3,of:0.8,receptivity:1.08,urban:1.0},MT:{fe:1.8,of:0.5,receptivity:1.22,urban:0.75},MS:{fe:1.5,of:0.6,receptivity:1.16,urban:0.75},RO:{fe:2.5,of:0.4,receptivity:1.35,urban:0.6},AC:{fe:2.8,of:0.4,receptivity:1.38,urban:0.55},DF:{fe:0.7,of:1.5,receptivity:0.9,urban:1.55}};
+const REGION_STATES={
+  norte:['AC','AP','AM','PA','RO','RR','TO'],
+  nordeste:['AL','BA','CE','MA','PB','PE','PI','RN','SE'],
+  sudeste:['ES','MG','RJ','SP'],
+  sul:['PR','RS','SC'],
+  centroOeste:['DF','GO','MT','MS']
+};
 
 const DENOMS={
   IELB:{name:'IELB',color:'#1565c0',startYear:1904,startState:'RS',identity:1.22,profile:'player',growth:1.0,resource:0},
@@ -230,7 +237,13 @@ const G={year:1904,month:0,paused:true,started:false,gameOver:false,monthlyExpen
 const ACHIEVEMENTS=[
   {id:'primeiros-passos',title:'Primeiros Passos',xp:75,points:25,icon:'/assets/achievements/primeiros-passos.png',desc:'Voce iniciou sua primeira campanha em Pela Graca 1904.'},
   {id:'centesima-igreja',title:'Centesima Igreja',xp:500,points:150,icon:'/assets/achievements/centesima-igreja.png',desc:'A IELB chegou a 100 igrejas na campanha.'},
-  {id:'centenario-ielb',title:'Centenario IELB',xp:900,points:300,icon:'/assets/achievements/centenario-ielb.png',desc:'Voce conduziu a IELB por 100 anos de historia.'}
+  {id:'centenario-ielb',title:'Centenario IELB',xp:900,points:300,icon:'/assets/achievements/centenario-ielb.png',desc:'Voce conduziu a IELB por 100 anos de historia.'},
+  {id:'ate-aqui-nos-ajudou',title:'Ate Aqui nos Ajudou',xp:1200,points:400,icon:'/assets/achievements/ate-aqui-nos-ajudou.png',desc:'Voce chegou ao ano final da campanha, 2026.'},
+  {id:'missionario-do-sertao',title:'Missionario do Sertao',xp:850,points:275,icon:'/assets/achievements/missionario-do-sertao.png',desc:'O Nordeste terminou como a regiao com mais igrejas IELB.'},
+  {id:'tribo-luterana',title:'Tribo Luterana',xp:850,points:275,icon:'/assets/achievements/tribo-luterana.png',desc:'O Norte terminou como a regiao com mais igrejas IELB.'},
+  {id:'culto-gauchesco',title:'Culto Gauchesco',xp:700,points:225,icon:'/assets/achievements/culto-gauchesco.png',desc:'A campanha chegou a 2026 com igrejas IELB somente no Rio Grande do Sul.'},
+  {id:'xique-xique-e-de-jesus',title:'Xique-Xique e de Jesus',xp:1000,points:350,icon:'/assets/achievements/xique-xique-e-de-jesus.png',desc:'Xique-Xique, na Bahia, terminou como a cidade com mais igrejas IELB.'},
+  {id:'igreja-urbana',title:'Igreja Urbana',xp:800,points:250,icon:'/assets/achievements/igreja-urbana.png',desc:'Mais da metade das igrejas IELB ficaram no estado de Sao Paulo.'}
 ];
 
 function achievementUnlocked(id){
@@ -253,6 +266,14 @@ function checkAchievements(){
   unlockAchievement('primeiros-passos');
   if(totalChurches('IELB')>=100)unlockAchievement('centesima-igreja');
   if(G.year>=2004)unlockAchievement('centenario-ielb');
+  if(G.year>=2026){
+    unlockAchievement('ate-aqui-nos-ajudou');
+    if(dominantRegion('nordeste'))unlockAchievement('missionario-do-sertao');
+    if(dominantRegion('norte'))unlockAchievement('tribo-luterana');
+    if(totalChurches('IELB')>0&&churchCount('RS','IELB')===totalChurches('IELB'))unlockAchievement('culto-gauchesco');
+    if(dominantCity('BA','Xique-Xique'))unlockAchievement('xique-xique-e-de-jesus');
+    if(totalChurches('IELB')>0&&churchCount('SP','IELB')>totalChurches('IELB')/2)unlockAchievement('igreja-urbana');
+  }
 }
 function showAchievementToast(def){
   let wrap=document.getElementById('achievement-toast');
@@ -839,6 +860,29 @@ function churchCount(id,d){return G.states[id].denomData[d].churches.length;}
 function totalMembers(d){return ALL_STATES.reduce((sum,id)=>sum+G.states[id].denomData[d].members,0);}
 function totalChurches(d){return ALL_STATES.reduce((sum,id)=>sum+churchCount(id,d),0);}
 function statePresenceCount(d){return ALL_STATES.filter(id=>churchCount(id,d)>0).length;}
+function regionChurchCount(regionKey){
+  return (REGION_STATES[regionKey]||[]).reduce((sum,id)=>sum+churchCount(id,'IELB'),0);
+}
+function dominantRegion(regionKey){
+  const target=regionChurchCount(regionKey);
+  if(target<=0)return false;
+  return Object.keys(REGION_STATES).every(key=>key===regionKey||target>regionChurchCount(key));
+}
+function cityChurchCount(stateId,city){
+  const wanted=String(city||'').trim().toLowerCase();
+  return (G.states[stateId]?.denomData?.IELB?.churches||[]).filter(ch=>String(ch.city||'').trim().toLowerCase()===wanted).length;
+}
+function dominantCity(stateId,city){
+  const target=cityChurchCount(stateId,city);
+  if(target<=0)return false;
+  const wanted=String(city||'').trim().toLowerCase();
+  const counts={};
+  ALL_STATES.forEach(id=>G.states[id].denomData.IELB.churches.forEach(ch=>{
+    const key=id+'|'+String(ch.city||'').trim().toLowerCase();
+    counts[key]=(counts[key]||0)+1;
+  }));
+  return Object.entries(counts).every(([key,value])=>key===stateId+'|'+wanted||target>value);
+}
 function nationalDisplayInfluenceRows(){
   const nonCath=DENOM_KEYS.filter(d=>d!=='CAT').map(d=>[d,ALL_STATES.reduce((a,id)=>a+G.states[id].denomData[d].influence,0)]).filter(([,v])=>v>0);
   const nonCathRaw=nonCath.reduce((a,[,v])=>a+v,0);

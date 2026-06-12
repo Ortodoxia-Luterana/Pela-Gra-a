@@ -1,1 +1,1 @@
-Game hub update: general ranking shows medals only and medal rewards are rebalanced.
+Game hub update: restore meaningful rank point rewards while keeping general ranking medal-only.

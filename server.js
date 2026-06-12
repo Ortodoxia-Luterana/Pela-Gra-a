@@ -12,7 +12,7 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v3.23.0-medal-rank-balance';
+const GAME_VERSION = 'v3.23.1-rank-point-rewards';
 const GAME_ID = 'pela-graca-1904';
 const CRONICAS_GAME_ID = 'cronicas-do-levante';
 const LUTHER_MATCH_GAME_ID = 'luther-metch';
@@ -34,15 +34,15 @@ const REGION_STATES = {
 };
 const TITLE_TRACK = [
   { level: 1, title: 'Visitante', xp: 0, pointReward: 0, file: '/assets/title-badges/01-visitante.png' },
-  { level: 2, title: 'Peregrino', xp: 300, pointReward: 0, file: '/assets/title-badges/02-peregrino.png' },
-  { level: 3, title: 'Companheiro da Fé', xp: 800, pointReward: 0, file: '/assets/title-badges/03-companheiro-da-fe.png' },
-  { level: 4, title: 'Servo da Palavra', xp: 1800, pointReward: 0, file: '/assets/title-badges/04-servo-da-palavra.png' },
-  { level: 5, title: 'Guardião da Verdade', xp: 3200, pointReward: 0, file: '/assets/title-badges/05-guardiao-da-verdade.png' },
-  { level: 6, title: 'Arauto da Graça', xp: 5400, pointReward: 0, file: '/assets/title-badges/06-arauto-da-graca.png' },
-  { level: 7, title: 'Defensor da Confissão', xp: 8400, pointReward: 0, file: '/assets/title-badges/07-defensor-da-confissao.png' },
-  { level: 8, title: 'Herdeiro da Reforma', xp: 12000, pointReward: 0, file: '/assets/title-badges/08-herdeiro-da-reforma.png' },
-  { level: 9, title: 'Cavaleiro da Fé', xp: 16000, pointReward: 0, file: '/assets/title-badges/09-cavaleiro-da-fe.png' },
-  { level: 10, title: 'Santificado', xp: 20000, pointReward: 0, file: '/assets/title-badges/10-santificado.png' }
+  { level: 2, title: 'Peregrino', xp: 300, pointReward: 75, file: '/assets/title-badges/02-peregrino.png' },
+  { level: 3, title: 'Companheiro da Fé', xp: 800, pointReward: 100, file: '/assets/title-badges/03-companheiro-da-fe.png' },
+  { level: 4, title: 'Servo da Palavra', xp: 1800, pointReward: 150, file: '/assets/title-badges/04-servo-da-palavra.png' },
+  { level: 5, title: 'Guardião da Verdade', xp: 3200, pointReward: 200, file: '/assets/title-badges/05-guardiao-da-verdade.png' },
+  { level: 6, title: 'Arauto da Graça', xp: 5400, pointReward: 250, file: '/assets/title-badges/06-arauto-da-graca.png' },
+  { level: 7, title: 'Defensor da Confissão', xp: 8400, pointReward: 350, file: '/assets/title-badges/07-defensor-da-confissao.png' },
+  { level: 8, title: 'Herdeiro da Reforma', xp: 12000, pointReward: 450, file: '/assets/title-badges/08-herdeiro-da-reforma.png' },
+  { level: 9, title: 'Cavaleiro da Fé', xp: 16000, pointReward: 600, file: '/assets/title-badges/09-cavaleiro-da-fe.png' },
+  { level: 10, title: 'Santificado', xp: 20000, pointReward: 800, file: '/assets/title-badges/10-santificado.png' }
 ];
 const ACHIEVEMENTS = [
   { id: 'primeiros-passos', title: 'Primeiros Passos', description: 'Comecou sua primeira campanha em Pela Graca 1904.', xp: 20, points: 5, file: '/assets/achievements/primeiros-passos.png', condition: stats => Boolean(stats.started || stats.hasSave) },

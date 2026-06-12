@@ -4,7 +4,7 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
-    "start": "node --no-warnings server.js",
-    "dev": "node --no-warnings server.js"
+    "start": "node --no-warnings start.js",
+    "dev": "node --no-warnings start.js"
   }
 }

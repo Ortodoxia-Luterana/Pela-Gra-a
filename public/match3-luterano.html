@@ -633,6 +633,8 @@
       completedLevels: 0,
       moves: 25,
       score: 0,
+      totalScore: 0,
+      scoreMode: "level",
       board: [],
       goalIds: DEFAULT_OBJECTIVE_IDS,
       goals: { book: 12, rose: 8, candle: 10 },
@@ -736,6 +738,14 @@
       };
       target.bestLevel = Math.max(1, Math.min(MAX_LEVEL, Math.floor(Number(target.bestLevel) || target.level || 1)));
       target.completedLevels = Math.max(0, Math.min(MAX_LEVEL, Math.floor(Number(target.completedLevels) || Math.max(0, target.bestLevel - 1))));
+      if (target.scoreMode !== "level") {
+        target.totalScore = Math.max(0, Math.floor(Number(target.totalScore || target.score) || 0));
+        target.score = 0;
+        target.scoreMode = "level";
+      } else {
+        target.score = Math.max(0, Math.floor(Number(target.score) || 0));
+        target.totalScore = Math.max(0, Math.floor(Number(target.totalScore) || 0));
+      }
       target.maxCombo = Math.max(0, Math.floor(Number(target.maxCombo) || 0));
       target.lutherPairUsed = Boolean(target.lutherPairUsed);
       target.solasPairUsed = Boolean(target.solasPairUsed);
@@ -775,10 +785,10 @@
         const remoteMaxCombo = Number(progress.maxCombo || 0);
         const remoteLutherPair = Boolean(progress.lutherPairUsed);
         const remoteSolasPair = Boolean(progress.solasPairUsed);
-        if (remoteBest > state.bestLevel || remoteCompleted > state.completedLevels || remoteScore > state.score || remoteMaxCombo > state.maxCombo || remoteLutherPair !== state.lutherPairUsed || remoteSolasPair !== state.solasPairUsed) {
+        if (remoteBest > state.bestLevel || remoteCompleted > state.completedLevels || remoteScore > state.totalScore || remoteMaxCombo > state.maxCombo || remoteLutherPair !== state.lutherPairUsed || remoteSolasPair !== state.solasPairUsed) {
           state.bestLevel = Math.max(state.bestLevel, remoteBest);
           state.completedLevels = Math.max(state.completedLevels, remoteCompleted);
-          state.score = Math.max(state.score, remoteScore);
+          state.totalScore = Math.max(state.totalScore || 0, remoteScore);
           state.maxCombo = Math.max(state.maxCombo || 0, remoteMaxCombo);
           state.lutherPairUsed = state.lutherPairUsed || remoteLutherPair;
           state.solasPairUsed = state.solasPairUsed || remoteSolasPair;
@@ -796,7 +806,7 @@
             level: state.level,
             bestLevel: state.bestLevel,
             completedLevels: state.completedLevels,
-            score: state.score,
+            score: state.totalScore || 0,
             maxCombo: state.maxCombo || 0,
             lutherPairUsed: Boolean(state.lutherPairUsed),
             solasPairUsed: Boolean(state.solasPairUsed),
@@ -1098,6 +1108,12 @@
       return [...expanded];
     }
 
+    function addScore(points) {
+      const amount = Math.max(0, Math.floor(Number(points) || 0));
+      state.score = Math.max(0, Math.floor(Number(state.score) || 0)) + amount;
+      state.totalScore = Math.max(0, Math.floor(Number(state.totalScore) || 0)) + amount;
+    }
+
     function removeCells(cells, hammer = false, expand = true) {
       const expanded = expand ? expandSpecialCells(cells) : [...new Set(cells)];
       expanded.forEach(index => {
@@ -1114,7 +1130,7 @@
         if ((state.goalIds || DEFAULT_OBJECTIVE_IDS).includes(id)) state.collected[id] = (state.collected[id] || 0) + 1;
         state.board[index] = null;
       });
-      state.score += expanded.length * (hammer ? 25 : 40);
+      addScore(expanded.length * (hammer ? 25 : 40));
     }
 
     async function activateSpecialMove(first, second) {
@@ -1165,7 +1181,7 @@
         removeCells(cells);
         if (specialIndex !== null) {
           state.board[specialIndex] = specialTile;
-          state.score += specialTile.special === "solas" ? 220 : 120;
+          addScore(specialTile.special === "solas" ? 220 : 120);
         }
         drop();
         fill();
@@ -1315,7 +1331,9 @@
       next.level = state.over && goalsDone() ? Math.min(MAX_LEVEL, state.level + 1) : state.level;
       next.bestLevel = Math.max(state.bestLevel || 1, next.level);
       next.completedLevels = Math.max(state.completedLevels || 0, Math.min(MAX_LEVEL, next.level - 1));
-      next.score = goalsDone() ? state.score : 0;
+      next.score = 0;
+      next.totalScore = Math.max(0, Math.floor(Number(state.totalScore) || 0));
+      next.scoreMode = "level";
       const config = levelConfig(next.level);
       next.moves = config.moves;
       next.goalIds = config.goalIds;

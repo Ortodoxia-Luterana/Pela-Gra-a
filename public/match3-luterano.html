@@ -68,7 +68,13 @@
     }
 
     .seal img { width: 44px; height: 44px; }
-    .icon-btn { color: var(--gold-2); cursor: pointer; }
+    .icon-btn {
+      color: var(--gold-2);
+      cursor: pointer;
+      font-size: 20px;
+      font-weight: 900;
+      line-height: 1;
+    }
 
     .title {
       min-width: 0;
@@ -119,7 +125,19 @@
       text-transform: uppercase;
     }
 
-    .hud strong { display: block; font-family: Georgia, serif; font-size: clamp(21px, 7vw, 30px); line-height: 1.05; }
+    .hud strong {
+      display: block;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-family: Georgia, serif;
+      font-size: clamp(21px, 7vw, 30px);
+      font-variant-numeric: tabular-nums;
+      line-height: 1.05;
+    }
+
+    #score { font-size: clamp(18px, 5.4vw, 27px); }
 
     .level-map {
       display: grid;
@@ -533,6 +551,7 @@
       .hud { grid-template-columns: 1fr; }
       .hud article { min-height: 74px; padding: 11px 10px; }
       .hud strong { font-size: 34px; }
+      #score { font-size: 27px; }
       .objectives { grid-template-columns: 1fr; }
       .board-wrap { grid-column: 2; grid-row: 2 / span 2; }
       .message { grid-column: 3; }
@@ -554,11 +573,11 @@
     <header class="top">
       <a class="seal" href="/" aria-label="Voltar ao hub"><img src="/assets/match3-tile-rose.svg" alt=""></a>
       <div class="title"><span>Luther Metch</span><small>Soli Deo Gloria</small></div>
-      <button class="icon-btn" id="sound" type="button" aria-label="Som">â™ª</button>
+      <button class="icon-btn" id="sound" type="button" aria-label="Som"><span aria-hidden="true">&#9835;</span></button>
     </header>
 
     <section class="hud" aria-label="Status da fase">
-      <article><span>NÃ­vel</span><strong id="level">1</strong></article>
+      <article><span>Nivel</span><strong id="level">1</strong></article>
       <article><span>Movimentos</span><strong id="moves">25</strong></article>
       <article><span>Pontos</span><strong id="score">0</strong></article>
     </section>
@@ -572,7 +591,7 @@
       <div class="combo-burst" id="combo-burst" aria-live="polite"></div>
     </section>
 
-    <div class="message" id="message">Deslize uma peÃ§a para trocar com a vizinha.</div>
+    <div class="message" id="message">Deslize uma peca para trocar com a vizinha.</div>
   </main>
 
   <div class="level-complete" id="level-complete" aria-live="polite">

@@ -1,1 +1,1 @@
-Game hub update: Luther Metch 500 levels, map, phase types, obstacles and level chests.
+Game hub update: Luther Metch text encoding and HUD score readability polish.

@@ -12,7 +12,7 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v3.22.1-ranking-cleanup';
+const GAME_VERSION = 'v3.23.0-medal-rank-balance';
 const GAME_ID = 'pela-graca-1904';
 const CRONICAS_GAME_ID = 'cronicas-do-levante';
 const LUTHER_MATCH_GAME_ID = 'luther-metch';
@@ -34,50 +34,50 @@ const REGION_STATES = {
 };
 const TITLE_TRACK = [
   { level: 1, title: 'Visitante', xp: 0, pointReward: 0, file: '/assets/title-badges/01-visitante.png' },
-  { level: 2, title: 'Peregrino', xp: 300, pointReward: 50, file: '/assets/title-badges/02-peregrino.png' },
-  { level: 3, title: 'Companheiro da Fé', xp: 800, pointReward: 100, file: '/assets/title-badges/03-companheiro-da-fe.png' },
-  { level: 4, title: 'Servo da Palavra', xp: 1800, pointReward: 175, file: '/assets/title-badges/04-servo-da-palavra.png' },
-  { level: 5, title: 'Guardião da Verdade', xp: 3200, pointReward: 250, file: '/assets/title-badges/05-guardiao-da-verdade.png' },
-  { level: 6, title: 'Arauto da Graça', xp: 5400, pointReward: 350, file: '/assets/title-badges/06-arauto-da-graca.png' },
-  { level: 7, title: 'Defensor da Confissão', xp: 8400, pointReward: 475, file: '/assets/title-badges/07-defensor-da-confissao.png' },
-  { level: 8, title: 'Herdeiro da Reforma', xp: 12000, pointReward: 625, file: '/assets/title-badges/08-herdeiro-da-reforma.png' },
-  { level: 9, title: 'Cavaleiro da Fé', xp: 16000, pointReward: 800, file: '/assets/title-badges/09-cavaleiro-da-fe.png' },
-  { level: 10, title: 'Santificado', xp: 20000, pointReward: 1000, file: '/assets/title-badges/10-santificado.png' }
+  { level: 2, title: 'Peregrino', xp: 300, pointReward: 0, file: '/assets/title-badges/02-peregrino.png' },
+  { level: 3, title: 'Companheiro da Fé', xp: 800, pointReward: 0, file: '/assets/title-badges/03-companheiro-da-fe.png' },
+  { level: 4, title: 'Servo da Palavra', xp: 1800, pointReward: 0, file: '/assets/title-badges/04-servo-da-palavra.png' },
+  { level: 5, title: 'Guardião da Verdade', xp: 3200, pointReward: 0, file: '/assets/title-badges/05-guardiao-da-verdade.png' },
+  { level: 6, title: 'Arauto da Graça', xp: 5400, pointReward: 0, file: '/assets/title-badges/06-arauto-da-graca.png' },
+  { level: 7, title: 'Defensor da Confissão', xp: 8400, pointReward: 0, file: '/assets/title-badges/07-defensor-da-confissao.png' },
+  { level: 8, title: 'Herdeiro da Reforma', xp: 12000, pointReward: 0, file: '/assets/title-badges/08-herdeiro-da-reforma.png' },
+  { level: 9, title: 'Cavaleiro da Fé', xp: 16000, pointReward: 0, file: '/assets/title-badges/09-cavaleiro-da-fe.png' },
+  { level: 10, title: 'Santificado', xp: 20000, pointReward: 0, file: '/assets/title-badges/10-santificado.png' }
 ];
 const ACHIEVEMENTS = [
-  { id: 'primeiros-passos', title: 'Primeiros Passos', description: 'Comecou sua primeira campanha em Pela Graca 1904.', xp: 75, points: 25, file: '/assets/achievements/primeiros-passos.png', condition: stats => Boolean(stats.started || stats.hasSave) },
-  { id: 'primeira-missao', title: 'Primeira Missao', description: 'Criou seu primeiro ponto de missao IELB.', xp: 120, points: 40, file: '/assets/achievements/primeira-missao.png', condition: stats => stats.missionChurches >= 1 },
-  { id: 'rumo-alem-do-sul', title: 'Rumo Alem do Sul', description: 'Criou a primeira igreja ou missao IELB fora do Rio Grande do Sul.', xp: 180, points: 55, file: '/assets/achievements/rumo-alem-do-sul.png', condition: stats => (stats.statesWithChurches || []).some(code => code !== 'RS') },
-  { id: 'dino-luterano', title: 'Dino Luterano', description: 'Criou uma igreja ou missao IELB no Acre.', xp: 500, points: 160, file: '/assets/achievements/dino-luterano.png', condition: stats => stateChurchCount(stats, 'AC') > 0 },
-  { id: 'primeiros-pastores', title: 'Primeiros Pastores', description: 'Formou os primeiros pastores no Seminario Concordia.', xp: 220, points: 70, file: '/assets/achievements/primeiros-pastores.png', condition: stats => stats.formedPastors >= 1 },
-  { id: 'catequista-atento', title: 'Catequista Atento', description: 'Acertou 10 perguntas doutrinarias.', xp: 180, points: 60, file: '/assets/achievements/catequista-atento.png', condition: stats => stats.doctrineCorrect >= 10 },
-  { id: 'doutor-da-doutrina', title: 'Doutor da Doutrina', description: 'Acertou 20 perguntas doutrinarias.', xp: 320, points: 100, file: '/assets/achievements/doutor-da-doutrina.png', condition: stats => stats.doctrineCorrect >= 20 },
-  { id: 'dez-igrejas', title: 'Dez Igrejas', description: 'Alcancou 10 igrejas e missoes IELB na campanha.', xp: 300, points: 90, file: '/assets/achievements/dez-igrejas.png', condition: stats => stats.totalChurches >= 10 },
-  { id: 'centesima-igreja', title: 'Centesima Igreja', description: 'Alcancou 100 igrejas IELB na campanha.', xp: 500, points: 150, file: '/assets/achievements/centesima-igreja.png', condition: stats => stats.totalChurches >= 100 },
-  { id: 'cem-membros', title: 'Cem Membros', description: 'Chegou a 100 membros IELB.', xp: 220, points: 70, file: '/assets/achievements/cem-membros.png', condition: stats => stats.totalMembers >= 100 },
-  { id: 'mil-membros', title: 'Mil Membros', description: 'Chegou a 1000 membros IELB.', xp: 650, points: 210, file: '/assets/achievements/mil-membros.png', condition: stats => stats.totalMembers >= 1000 },
-  { id: 'cem-pastores', title: 'Cem Pastores', description: 'Formou 100 pastores ao longo da historia da campanha.', xp: 750, points: 240, file: '/assets/achievements/cem-pastores.png', condition: stats => stats.formedPastors >= 100 },
-  { id: 'brasil-ielb', title: 'Brasil de Norte a Sul', description: 'Manteve pelo menos uma igreja ou missao IELB em cada estado.', xp: 900, points: 300, file: '/assets/achievements/brasil-ielb.png', condition: stats => (stats.statesWithChurches || []).length >= STATE_ORDER.length },
-  { id: 'centenario-ielb', title: 'Centenario IELB', description: 'Conduziu a IELB por 100 anos de historia no jogo.', xp: 900, points: 300, file: '/assets/achievements/centenario-ielb.png', condition: stats => stats.year >= 2004 },
-  { id: 'ate-aqui-nos-ajudou', title: 'Ate Aqui nos Ajudou', description: 'Chegou ao ano final da campanha, 2026.', xp: 1200, points: 400, file: '/assets/achievements/ate-aqui-nos-ajudou.png', condition: stats => isFinalCampaign(stats) },
-  { id: 'missionario-do-sertao', title: 'Missionario do Sertao', description: 'Chegou a 2026 com o Nordeste como a regiao com mais igrejas IELB.', xp: 850, points: 275, file: '/assets/achievements/missionario-do-sertao.png', condition: stats => isFinalCampaign(stats) && dominantRegion(stats, 'nordeste') },
-  { id: 'tribo-luterana', title: 'Tribo Luterana', description: 'Chegou a 2026 com o Norte como a regiao com mais igrejas IELB.', xp: 850, points: 275, file: '/assets/achievements/tribo-luterana.png', condition: stats => isFinalCampaign(stats) && dominantRegion(stats, 'norte') },
-  { id: 'culto-gauchesco', title: 'Culto Gauchesco', description: 'Chegou a 2026 mantendo igrejas IELB somente no Rio Grande do Sul.', xp: 700, points: 225, file: '/assets/achievements/culto-gauchesco.png', condition: stats => isFinalCampaign(stats) && stats.totalChurches > 0 && stateChurchCount(stats, 'RS') === stats.totalChurches },
-  { id: 'xique-xique-e-de-jesus', title: 'Xique-Xique e de Jesus', description: 'Chegou a 2026 com Xique-Xique, na Bahia, como a cidade com mais igrejas IELB.', xp: 1000, points: 350, file: '/assets/achievements/xique-xique-e-de-jesus.png', condition: stats => isFinalCampaign(stats) && dominantCity(stats, 'BA', 'Xique-Xique') },
-  { id: 'igreja-urbana', title: 'Igreja Urbana', description: 'Chegou a 2026 com a maior parte das igrejas IELB no estado de Sao Paulo.', xp: 800, points: 250, file: '/assets/achievements/igreja-urbana.png', condition: stats => isFinalCampaign(stats) && stats.totalChurches > 0 && stateChurchCount(stats, 'SP') > stats.totalChurches / 2 }
+  { id: 'primeiros-passos', title: 'Primeiros Passos', description: 'Comecou sua primeira campanha em Pela Graca 1904.', xp: 20, points: 5, file: '/assets/achievements/primeiros-passos.png', condition: stats => Boolean(stats.started || stats.hasSave) },
+  { id: 'primeira-missao', title: 'Primeira Missao', description: 'Criou seu primeiro ponto de missao IELB.', xp: 30, points: 5, file: '/assets/achievements/primeira-missao.png', condition: stats => stats.missionChurches >= 1 },
+  { id: 'rumo-alem-do-sul', title: 'Rumo Alem do Sul', description: 'Criou a primeira igreja ou missao IELB fora do Rio Grande do Sul.', xp: 45, points: 10, file: '/assets/achievements/rumo-alem-do-sul.png', condition: stats => (stats.statesWithChurches || []).some(code => code !== 'RS') },
+  { id: 'dino-luterano', title: 'Dino Luterano', description: 'Criou uma igreja ou missao IELB no Acre.', xp: 125, points: 25, file: '/assets/achievements/dino-luterano.png', condition: stats => stateChurchCount(stats, 'AC') > 0 },
+  { id: 'primeiros-pastores', title: 'Primeiros Pastores', description: 'Formou os primeiros pastores no Seminario Concordia.', xp: 55, points: 10, file: '/assets/achievements/primeiros-pastores.png', condition: stats => stats.formedPastors >= 1 },
+  { id: 'catequista-atento', title: 'Catequista Atento', description: 'Acertou 10 perguntas doutrinarias.', xp: 45, points: 10, file: '/assets/achievements/catequista-atento.png', condition: stats => stats.doctrineCorrect >= 10 },
+  { id: 'doutor-da-doutrina', title: 'Doutor da Doutrina', description: 'Acertou 20 perguntas doutrinarias.', xp: 80, points: 15, file: '/assets/achievements/doutor-da-doutrina.png', condition: stats => stats.doctrineCorrect >= 20 },
+  { id: 'dez-igrejas', title: 'Dez Igrejas', description: 'Alcancou 10 igrejas e missoes IELB na campanha.', xp: 75, points: 15, file: '/assets/achievements/dez-igrejas.png', condition: stats => stats.totalChurches >= 10 },
+  { id: 'centesima-igreja', title: 'Centesima Igreja', description: 'Alcancou 100 igrejas IELB na campanha.', xp: 125, points: 20, file: '/assets/achievements/centesima-igreja.png', condition: stats => stats.totalChurches >= 100 },
+  { id: 'cem-membros', title: 'Cem Membros', description: 'Chegou a 100 membros IELB.', xp: 55, points: 10, file: '/assets/achievements/cem-membros.png', condition: stats => stats.totalMembers >= 100 },
+  { id: 'mil-membros', title: 'Mil Membros', description: 'Chegou a 1000 membros IELB.', xp: 160, points: 30, file: '/assets/achievements/mil-membros.png', condition: stats => stats.totalMembers >= 1000 },
+  { id: 'cem-pastores', title: 'Cem Pastores', description: 'Formou 100 pastores ao longo da historia da campanha.', xp: 190, points: 35, file: '/assets/achievements/cem-pastores.png', condition: stats => stats.formedPastors >= 100 },
+  { id: 'brasil-ielb', title: 'Brasil de Norte a Sul', description: 'Manteve pelo menos uma igreja ou missao IELB em cada estado.', xp: 225, points: 45, file: '/assets/achievements/brasil-ielb.png', condition: stats => (stats.statesWithChurches || []).length >= STATE_ORDER.length },
+  { id: 'centenario-ielb', title: 'Centenario IELB', description: 'Conduziu a IELB por 100 anos de historia no jogo.', xp: 225, points: 45, file: '/assets/achievements/centenario-ielb.png', condition: stats => stats.year >= 2004 },
+  { id: 'ate-aqui-nos-ajudou', title: 'Ate Aqui nos Ajudou', description: 'Chegou ao ano final da campanha, 2026.', xp: 300, points: 60, file: '/assets/achievements/ate-aqui-nos-ajudou.png', condition: stats => isFinalCampaign(stats) },
+  { id: 'missionario-do-sertao', title: 'Missionario do Sertao', description: 'Chegou a 2026 com o Nordeste como a regiao com mais igrejas IELB.', xp: 210, points: 40, file: '/assets/achievements/missionario-do-sertao.png', condition: stats => isFinalCampaign(stats) && dominantRegion(stats, 'nordeste') },
+  { id: 'tribo-luterana', title: 'Tribo Luterana', description: 'Chegou a 2026 com o Norte como a regiao com mais igrejas IELB.', xp: 210, points: 40, file: '/assets/achievements/tribo-luterana.png', condition: stats => isFinalCampaign(stats) && dominantRegion(stats, 'norte') },
+  { id: 'culto-gauchesco', title: 'Culto Gauchesco', description: 'Chegou a 2026 mantendo igrejas IELB somente no Rio Grande do Sul.', xp: 175, points: 35, file: '/assets/achievements/culto-gauchesco.png', condition: stats => isFinalCampaign(stats) && stats.totalChurches > 0 && stateChurchCount(stats, 'RS') === stats.totalChurches },
+  { id: 'xique-xique-e-de-jesus', title: 'Xique-Xique e de Jesus', description: 'Chegou a 2026 com Xique-Xique, na Bahia, como a cidade com mais igrejas IELB.', xp: 250, points: 50, file: '/assets/achievements/xique-xique-e-de-jesus.png', condition: stats => isFinalCampaign(stats) && dominantCity(stats, 'BA', 'Xique-Xique') },
+  { id: 'igreja-urbana', title: 'Igreja Urbana', description: 'Chegou a 2026 com a maior parte das igrejas IELB no estado de Sao Paulo.', xp: 200, points: 40, file: '/assets/achievements/igreja-urbana.png', condition: stats => isFinalCampaign(stats) && stats.totalChurches > 0 && stateChurchCount(stats, 'SP') > stats.totalChurches / 2 }
 ];
 const CRONICAS_ACHIEVEMENTS = [
 ];
 const LUTHER_MATCH_ACHIEVEMENTS = [
-  { id: 'luther-match-primeiro-acesso', title: 'Primeiro Match', description: 'Entrou pela primeira vez em Luther Metch.', xp: 75, points: 25, file: `${RAW_PUBLIC_URL}/achievements/luther-match-primeiro-acesso-v2.png`, condition: stats => Boolean(stats.entered) },
-  { id: 'luther-match-nivel-10', title: 'Dez Teses', description: 'Completou o nivel 10 em Luther Metch.', xp: 180, points: 60, file: `${RAW_PUBLIC_URL}/achievements/luther-match-nivel-10-v2.png`, condition: stats => stats.completedLevels >= 10 },
-  { id: 'luther-match-nivel-50', title: 'Cinco Dezenas', description: 'Completou o nivel 50 em Luther Metch.', xp: 450, points: 150, file: `${RAW_PUBLIC_URL}/achievements/luther-match-nivel-50-v2.png`, condition: stats => stats.completedLevels >= 50 },
-  { id: 'luther-match-nivel-100', title: 'Centuria da Reforma', description: 'Completou o nivel 100 em Luther Metch.', xp: 900, points: 300, file: `${RAW_PUBLIC_URL}/achievements/luther-match-nivel-100-v2.png`, condition: stats => stats.completedLevels >= 100 },
-  { id: 'luther-match-nivel-200', title: 'Mestre das Tres Solas', description: 'Completou o nivel 200 em Luther Metch e dominou as Tres Solas.', xp: 1600, points: 550, file: `${RAW_PUBLIC_URL}/achievements/luther-match-nivel-200-v2.png`, condition: stats => stats.completedLevels >= 200 },
-  { id: 'luther-match-combo-3', title: 'Combo 3x', description: 'Fez uma cascata de combo 3x em Luther Metch.', xp: 240, points: 80, file: `${RAW_PUBLIC_URL}/achievements/luther-match-combo-3-v1.png`, condition: stats => stats.maxCombo >= 3 },
-  { id: 'luther-match-combo-5', title: 'Combo 5x', description: 'Fez uma cascata de combo 5x em Luther Metch.', xp: 600, points: 200, file: `${RAW_PUBLIC_URL}/achievements/luther-match-combo-5-v1.png`, condition: stats => stats.maxCombo >= 5 },
-  { id: 'luther-match-dois-luteros', title: 'Dois Luteros', description: 'Juntou duas pecas especiais de Lutero.', xp: 500, points: 170, file: `${RAW_PUBLIC_URL}/achievements/luther-match-dois-luteros-v1.png`, condition: stats => Boolean(stats.lutherPairUsed) },
-  { id: 'luther-match-duas-tres-solas', title: 'Forca das Tres Solas', description: 'Juntou duas pecas especiais criadas por combos de 5.', xp: 750, points: 250, file: `${RAW_PUBLIC_URL}/achievements/luther-match-duas-tres-solas-v1.png`, condition: stats => Boolean(stats.solasPairUsed) }
+  { id: 'luther-match-primeiro-acesso', title: 'Primeiro Match', description: 'Entrou pela primeira vez em Luther Metch.', xp: 20, points: 5, file: `${RAW_PUBLIC_URL}/achievements/luther-match-primeiro-acesso-v2.png`, condition: stats => Boolean(stats.entered) },
+  { id: 'luther-match-nivel-10', title: 'Dez Teses', description: 'Completou o nivel 10 em Luther Metch.', xp: 45, points: 10, file: `${RAW_PUBLIC_URL}/achievements/luther-match-nivel-10-v2.png`, condition: stats => stats.completedLevels >= 10 },
+  { id: 'luther-match-nivel-50', title: 'Cinco Dezenas', description: 'Completou o nivel 50 em Luther Metch.', xp: 110, points: 20, file: `${RAW_PUBLIC_URL}/achievements/luther-match-nivel-50-v2.png`, condition: stats => stats.completedLevels >= 50 },
+  { id: 'luther-match-nivel-100', title: 'Centuria da Reforma', description: 'Completou o nivel 100 em Luther Metch.', xp: 225, points: 45, file: `${RAW_PUBLIC_URL}/achievements/luther-match-nivel-100-v2.png`, condition: stats => stats.completedLevels >= 100 },
+  { id: 'luther-match-nivel-200', title: 'Mestre das Tres Solas', description: 'Completou o nivel 200 em Luther Metch e dominou as Tres Solas.', xp: 400, points: 80, file: `${RAW_PUBLIC_URL}/achievements/luther-match-nivel-200-v2.png`, condition: stats => stats.completedLevels >= 200 },
+  { id: 'luther-match-combo-3', title: 'Combo 3x', description: 'Fez uma cascata de combo 3x em Luther Metch.', xp: 60, points: 10, file: `${RAW_PUBLIC_URL}/achievements/luther-match-combo-3-v1.png`, condition: stats => stats.maxCombo >= 3 },
+  { id: 'luther-match-combo-5', title: 'Combo 5x', description: 'Fez uma cascata de combo 5x em Luther Metch.', xp: 150, points: 30, file: `${RAW_PUBLIC_URL}/achievements/luther-match-combo-5-v1.png`, condition: stats => stats.maxCombo >= 5 },
+  { id: 'luther-match-dois-luteros', title: 'Dois Luteros', description: 'Juntou duas pecas especiais de Lutero.', xp: 125, points: 25, file: `${RAW_PUBLIC_URL}/achievements/luther-match-dois-luteros-v1.png`, condition: stats => Boolean(stats.lutherPairUsed) },
+  { id: 'luther-match-duas-tres-solas', title: 'Forca das Tres Solas', description: 'Juntou duas pecas especiais criadas por combos de 5.', xp: 190, points: 40, file: `${RAW_PUBLIC_URL}/achievements/luther-match-duas-tres-solas-v1.png`, condition: stats => Boolean(stats.solasPairUsed) }
 ];
 
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
@@ -784,9 +784,9 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
       summary: userSummary,
       medals: userSummary.medals.filter(medal => medal.unlocked).length + lutherMedals
     };
-  }).sort((a, b) => b.medals - a.medals || b.summary.points - a.summary.points || b.summary.xp - a.summary.xp || a.user.name.localeCompare(b.user.name)).map((item, index) => {
+  }).sort((a, b) => b.medals - a.medals || a.user.name.localeCompare(b.user.name)).map((item, index) => {
     const userRank = item.summary.rank.current;
-    return `<div class="hub-rank-row hub-rank-player"><b>${index + 1}</b><span>${escapeHtml(item.user.name)}<img class="mini-rank-badge" src="${userRank.file}?v=${GAME_VERSION}" alt="${escapeHtml(userRank.title)}"></span><strong>${item.medals} medalhas � ${item.summary.points} pontos � ${item.summary.xp} XP</strong></div>`;
+    return `<div class="hub-rank-row hub-rank-player"><b>${index + 1}</b><span>${escapeHtml(item.user.name)}<img class="mini-rank-badge" src="${userRank.file}?v=${GAME_VERSION}" alt="${escapeHtml(userRank.title)}"></span><strong>${item.medals} medalhas</strong></div>`;
   }).join('');
   const prestigeItems = ranking.prestige.slice(0, 6);
   const liveRows = prestigeItems.length ? prestigeItems.map(item => `<article><img class="feed-avatar achievement-feed-icon" src="${escapeHtml(item.icon)}?v=${GAME_VERSION}" alt="${escapeHtml(item.medal)}"><span>${escapeHtml(item.player)} conquistou ${escapeHtml(item.medal)}</span><small>+${item.xp} XP · +${item.points} pontos</small></article>`).join('') : '<article><b class="feed-avatar">OL</b><span>Nenhum prestigio conquistado ainda. As novas medalhas vao aparecer aqui.</span></article>';

@@ -1,1 +1,1 @@
-Game hub update: clean Luther Metch ranking labels and general rank rows.
+Game hub update: general ranking shows medals only and medal rewards are rebalanced.

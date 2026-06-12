@@ -12,7 +12,7 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v3.26.8-cronicas-choice-polish';
+const GAME_VERSION = 'v3.26.9-cronicas-medals';
 const GAME_ID = 'pela-graca-1904';
 const CRONICAS_GAME_ID = 'cronicas-do-levante';
 const LUTHER_MATCH_GAME_ID = 'luther-metch';
@@ -68,6 +68,14 @@ const ACHIEVEMENTS = [
   { id: 'igreja-urbana', title: 'Igreja Urbana', description: 'Chegou a 2026 com a maior parte das igrejas IELB no estado de Sao Paulo.', xp: 200, points: 40, file: '/assets/achievements/igreja-urbana.png', condition: stats => isFinalCampaign(stats) && stats.totalChurches > 0 && stateChurchCount(stats, 'SP') > stats.totalChurches / 2 }
 ];
 const CRONICAS_ACHIEVEMENTS = [
+  { id: 'cronicas-primeira-jornada', title: 'Primeira Jornada', description: 'Entrou pela primeira vez em Crônicas do Levante.', xp: 25, points: 5, file: '/assets/achievements/cronicas-primeira-jornada-v1.png' },
+  { id: 'cronicas-final-linha-interrompida', title: 'A Linha Interrompida', description: 'Alcançou o final A Linha Interrompida em Crônicas do Levante.', xp: 120, points: 25, file: '/assets/achievements/cronicas-linha-interrompida-v1.png' },
+  { id: 'cronicas-final-reino-ferido', title: 'O Reino Ferido', description: 'Alcançou o final O Reino Ferido em Crônicas do Levante.', xp: 120, points: 25, file: '/assets/achievements/cronicas-reino-ferido-v1.png' },
+  { id: 'cronicas-final-aviso-escandalo', title: 'O Aviso que Virou Escândalo', description: 'Alcançou o final O Aviso que Virou Escândalo em Crônicas do Levante.', xp: 120, points: 25, file: '/assets/achievements/cronicas-aviso-escandalo-v1.png' },
+  { id: 'cronicas-final-semente-distante', title: 'A Semente Distante', description: 'Alcançou o final A Semente Distante em Crônicas do Levante.', xp: 120, points: 25, file: '/assets/achievements/cronicas-semente-distante-v1.png' },
+  { id: 'cronicas-final-caminho-cuxe', title: 'O Caminho de Cuxe', description: 'Alcançou o final O Caminho de Cuxe em Crônicas do Levante.', xp: 120, points: 25, file: '/assets/achievements/cronicas-caminho-cuxe-v1.png' },
+  { id: 'cronicas-final-sombra-dos-rios', title: 'À Sombra dos Rios', description: 'Alcançou o final À Sombra dos Rios em Crônicas do Levante.', xp: 120, points: 25, file: '/assets/achievements/cronicas-sombra-dos-rios-v1.png' },
+  { id: 'cronicas-final-cedros-futuro', title: 'Cedros para o Futuro', description: 'Alcançou o final Cedros para o Futuro em Crônicas do Levante.', xp: 120, points: 25, file: '/assets/achievements/cronicas-cedros-futuro-v1.png' }
 ];
 const LUTHER_MATCH_ACHIEVEMENTS = [
   { id: 'luther-match-primeiro-acesso', title: 'Primeiro Match', description: 'Entrou pela primeira vez em Luther Metch.', xp: 20, points: 5, file: `${RAW_PUBLIC_URL}/achievements/luther-match-primeiro-acesso-v2.png`, condition: stats => Boolean(stats.entered) },

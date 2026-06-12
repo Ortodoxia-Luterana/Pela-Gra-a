@@ -49,6 +49,11 @@ body{padding:16px;display:flex;justify-content:center}
 .meter-top{display:flex;justify-content:space-between;gap:8px}
 .meter-bar{height:6px;border-radius:99px;background:rgba(139,105,20,.12);overflow:hidden;border:1px solid rgba(139,105,20,.14)}
 .meter-bar span{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));width:0%}
+.toast{position:fixed;right:16px;bottom:16px;z-index:20;display:grid;grid-template-columns:56px 1fr;gap:10px;align-items:center;width:min(330px,calc(100vw - 32px));padding:11px;border:1px solid var(--gold);border-radius:8px;background:rgba(44,30,20,.96);color:var(--parch);box-shadow:0 14px 40px rgba(0,0,0,.35);transform:translateY(18px);opacity:0;pointer-events:none;transition:.25s}
+.toast.show{transform:translateY(0);opacity:1}
+.toast img{width:56px;height:56px;object-fit:contain}
+.toast b{font-family:Cinzel,serif;color:var(--gold2);font-size:13px;display:block}
+.toast span{font-size:14px;line-height:1.35}
 .ending{border:2px solid var(--gold);background:rgba(139,105,20,.08);border-radius:var(--r);padding:24px}
 .ending-badge{text-align:center;font-family:Cinzel,serif;font-size:10px;letter-spacing:3px;color:var(--gold2);margin-bottom:10px}
 .ending-title{text-align:center;font-family:Cinzel,serif;font-size:24px;margin-bottom:14px}
@@ -71,9 +76,21 @@ body{padding:16px;display:flex;justify-content:center}
   <div id="linha" class="content"><div class="grid" id="linha-grid"></div></div>
   <div id="ajuda" class="content"><div class="grid"><div class="card"><h2>Ideia central</h2><p>Você não recebe a história pronta. Primeiro sobrevive, escuta nomes e descobre aos poucos em que parte da Bíblia caiu.</p></div><div class="card"><h2>Como avançar</h2><p>Escolha pela intenção do personagem, não tentando adivinhar final certo. Algumas decisões aproximam você de pessoas, lugares e responsabilidades diferentes.</p></div><div class="card"><h2>Descobertas</h2><p>O painel guarda nomes, relações e marcas importantes. Ele mostra o que você aprendeu durante a jornada, sem entregar o que ainda não viveu.</p></div><div class="card"><h2>Duração</h2><p>Cada jornada é longa o bastante para explorar conversas, consequências e detalhes históricos antes de chegar a um final.</p></div></div></div>
 </div>
+<div class="toast" id="achievement-toast" aria-live="polite"></div>
 <script>
 const CENAS={};
 const G={cena:0,hist:[],flags:{},desc:[],rel:[],marks:[],path:null,stats:{}};
+const CRONICAS_MEDALS={
+  'cronicas-primeira-jornada':{title:'Primeira Jornada',file:'/assets/achievements/cronicas-primeira-jornada-v1.png'},
+  'cronicas-final-linha-interrompida':{title:'A Linha Interrompida',file:'/assets/achievements/cronicas-linha-interrompida-v1.png'},
+  'cronicas-final-reino-ferido':{title:'O Reino Ferido',file:'/assets/achievements/cronicas-reino-ferido-v1.png'},
+  'cronicas-final-aviso-escandalo':{title:'O Aviso que Virou Escândalo',file:'/assets/achievements/cronicas-aviso-escandalo-v1.png'},
+  'cronicas-final-semente-distante':{title:'A Semente Distante',file:'/assets/achievements/cronicas-semente-distante-v1.png'},
+  'cronicas-final-caminho-cuxe':{title:'O Caminho de Cuxe',file:'/assets/achievements/cronicas-caminho-cuxe-v1.png'},
+  'cronicas-final-sombra-dos-rios':{title:'À Sombra dos Rios',file:'/assets/achievements/cronicas-sombra-dos-rios-v1.png'},
+  'cronicas-final-cedros-futuro':{title:'Cedros para o Futuro',file:'/assets/achievements/cronicas-cedros-futuro-v1.png'}
+};
+const ENDING_ACHIEVEMENTS={190:'cronicas-final-linha-interrompida',290:'cronicas-final-reino-ferido',390:'cronicas-final-aviso-escandalo',490:'cronicas-final-semente-distante',590:'cronicas-final-caminho-cuxe',690:'cronicas-final-sombra-dos-rios',790:'cronicas-final-cedros-futuro'};
 
 function uniquePush(list,x){if(x&&!list.includes(x))list.push(x)}
 function esc(s){return String(s).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]))}
@@ -85,6 +102,24 @@ function meta(m={}){
   uniquePush(G.desc,m.desc); uniquePush(G.rel,m.rel); uniquePush(G.marks,m.mark);
   if(m.path)G.path=m.path; if(m.reveal)Object.assign(G.flags,m.reveal);
   if(m.stat)G.stats[m.stat]=(G.stats[m.stat]||0)+1;
+}
+function achievementToast(id){
+  const medal=CRONICAS_MEDALS[id];
+  const el=document.getElementById('achievement-toast');
+  if(!medal||!el)return;
+  el.innerHTML=`<img src="${medal.file}" alt=""><span><b>Medalha conquistada</b>${esc(medal.title)}</span>`;
+  el.classList.add('show');
+  clearTimeout(achievementToast.timer);
+  achievementToast.timer=setTimeout(()=>el.classList.remove('show'),4200);
+}
+function unlockCronicasAchievement(id){
+  if(!id)return false;
+  if(!Array.isArray(G.achievements))G.achievements=[];
+  if(G.achievements.some(item=>item.id===id))return false;
+  G.achievements.push({id,unlockedAt:new Date().toISOString()});
+  achievementToast(id);
+  if(window.CronicasHub?.save)window.CronicasHub.save();
+  return true;
 }
 
 makeScene(0,'','O despertar',`Pedras quentes. Sol forte. Você abre os olhos num beco estreito, entre muros claros. Há poeira na boca, cheiro de pão no ar e vozes numa língua que parece antiga demais para ainda estar viva.<br><br>Você procura o celular. A tela está morta. Nada vibra. Nada responde. O mundo respondeu por você: você não está onde deveria estar.`,[
@@ -816,6 +851,7 @@ function render(id,push=true){
   const sc=document.getElementById('scene'); const acts=document.getElementById('acts'); acts.innerHTML='';
   if(s.ending){
     sc.innerHTML=`<div class="ending"><div class="ending-badge">Fim de caminho</div><div class="ending-title">${s.etitle}</div><div class="ending-body">${s.ebody}${endingReflection()}</div><button class="restart" onclick="restart()">Recomeçar</button></div>`;
+    unlockCronicasAchievement(ENDING_ACHIEVEMENTS[id]);
   }else{
     sc.innerHTML=`<div class="loc">${esc(s.loc||'')}</div><div class="title">${esc(s.title)}</div><div class="body">${s.body}</div>`;
     (s.acao||[]).forEach((a,i)=>{const b=document.createElement('button');b.className='act';b.innerHTML=`<small>${i+1}</small>${esc(a.t)}`;b.onclick=()=>{meta(a);log(a.t);render(a.p)};acts.appendChild(b)});
@@ -883,12 +919,7 @@ function tab(id){document.querySelectorAll('.tab').forEach(t=>t.classList.remove
   window.CronicasHub={
     save:saveNow,
     unlockAchievement(id){
-      if(!id)return;
-      if(!Array.isArray(G.achievements))G.achievements=[];
-      if(!G.achievements.some(item=>item.id===id)){
-        G.achievements.push({id,unlockedAt:new Date().toISOString()});
-        scheduleSave();
-      }
+      if(unlockCronicasAchievement(id))scheduleSave();
     }
   };
   const baseRender=render;
@@ -909,6 +940,7 @@ function tab(id){document.querySelectorAll('.tab').forEach(t=>t.classList.remove
       const restored=restoreState(payload&&payload.state);
       loaded=true;
       render(restored?G.cena:0,false);
+      unlockCronicasAchievement('cronicas-primeira-jornada');
       saveNow();
     })
     .catch(error=>{

@@ -1,1 +1,1 @@
-Game hub update: polish Quiz Ortodoxia game UI and rewards.
+Game hub update: fix Quiz Ortodoxia leave match flow.

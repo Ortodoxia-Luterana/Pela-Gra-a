@@ -193,9 +193,13 @@
 
   function updateButton() {
     const btn = document.getElementById('music-toggle');
-    if (!btn) return;
-    btn.textContent = isMuted() ? 'Som off' : 'Som on';
-    btn.setAttribute('aria-pressed', String(!isMuted()));
+    if (btn) {
+      btn.textContent = isMuted() ? 'Som off' : 'Som on';
+      btn.setAttribute('aria-pressed', String(!isMuted()));
+      btn.title = isMuted() ? 'Som desligado' : 'Som ligado';
+    }
+    const next = document.getElementById('music-next');
+    if (next) next.title = 'Proxima musica';
   }
 
   function setTrack(nextIndex) {
@@ -217,9 +221,9 @@
     updateButton();
   }
 
-  function nextTrack() {
+  function nextTrack(forcePlay) {
     setTrack(index + 1);
-    if (started && !isMuted()) play();
+    if ((started || forcePlay) && !isMuted()) play();
   }
 
   function firstInteraction() {
@@ -252,13 +256,34 @@
       if (!muted) play();
     };
     document.body.appendChild(btn);
+
+    const next = document.createElement('button');
+    next.id = 'music-next';
+    next.type = 'button';
+    next.setAttribute('aria-label', 'Proxima musica');
+    next.style.position = 'fixed';
+    next.style.right = '12px';
+    next.style.bottom = '66px';
+    next.style.zIndex = '3000';
+    next.style.border = '1px solid #8a6a20';
+    next.style.background = '#fffaf0';
+    next.style.color = '#4a3200';
+    next.style.borderRadius = '4px';
+    next.style.padding = '7px 10px';
+    next.style.font = '800 14px system-ui, -apple-system, Segoe UI, Arial, sans-serif';
+    next.style.boxShadow = '0 4px 16px rgba(42,24,0,.16)';
+    next.style.cursor = 'pointer';
+    next.onclick = function () {
+      nextTrack(true);
+    };
+    document.body.appendChild(next);
     updateButton();
   }
 
   audio.addEventListener('ended', nextTrack);
   audio.addEventListener('error', function () {
     missingAttempts += 1;
-    if (mode === 'game' && missingAttempts < tracks.length + 2) nextTrack();
+    if (missingAttempts < tracks.length + 2) nextTrack();
   });
 
   if (document.readyState === 'loading') {

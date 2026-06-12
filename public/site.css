@@ -426,6 +426,7 @@ body.site-page::after {
 .ol-auth-card .auth-form button,
 .ol-topbar button,
 .ol-game-card > a,
+.ol-game-card > .soon-badge,
 .ol-panel a,
 .ol-settings button {
   display: inline-flex;
@@ -440,6 +441,14 @@ body.site-page::after {
   padding: .75rem 1rem;
   font-weight: 800;
   text-transform: uppercase;
+}
+
+.ol-game-card > .soon-badge {
+  cursor: default;
+  color: #f6e8bd;
+  background: linear-gradient(180deg, rgba(118, 118, 118, .82), rgba(50, 50, 50, .86));
+  border-color: rgba(246, 232, 189, .28);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12);
 }
 
 .auth-options {
@@ -1127,7 +1136,8 @@ img.feed-avatar {
   margin: 0;
 }
 
-.saved-game-row a {
+.saved-game-row a,
+.saved-game-row .soon-badge {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
@@ -1137,6 +1147,12 @@ img.feed-avatar {
   color: #f2c75f;
   text-decoration: none;
   font-weight: 800;
+}
+
+.saved-game-row .soon-badge {
+  color: #d8d0c4;
+  background: rgba(255, 255, 255, .045);
+  cursor: default;
 }
 
 .profile-box {
@@ -1393,20 +1409,35 @@ img.feed-avatar {
   outline-offset:2px;
 }
 
-#music-toggle{
+#music-toggle,
+#music-next{
   width:46px!important;
   height:46px!important;
   right:max(10px, env(safe-area-inset-right))!important;
-  bottom:max(10px, env(safe-area-inset-bottom))!important;
   padding:0!important;
   border-radius:999px!important;
   font-size:0!important;
+}
+
+#music-toggle{
+  bottom:max(10px, env(safe-area-inset-bottom))!important;
+}
+
+#music-next{
+  bottom:max(66px, calc(env(safe-area-inset-bottom) + 66px))!important;
 }
 
 #music-toggle::before{
   content:"♪";
   font-size:20px;
   line-height:1;
+}
+
+#music-next::before{
+  content:"›";
+  font-size:30px;
+  line-height:1;
+  transform:translateY(-1px);
 }
 
 @media (max-width: 1080px){

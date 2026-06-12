@@ -12,11 +12,16 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v3.26.9-cronicas-medals';
+const GAME_VERSION = 'v3.27.0-quiz-online';
 const GAME_ID = 'pela-graca-1904';
 const CRONICAS_GAME_ID = 'cronicas-do-levante';
 const LUTHER_MATCH_GAME_ID = 'luther-metch';
+const QUIZ_GAME_ID = 'quiz-ortodoxia';
 const LUTHER_MATCH_MAX_LEVEL = 500;
+const QUIZ_ROUND_SECONDS = 20;
+const QUIZ_QUESTION_COUNT = 8;
+const QUIZ_GENERAL_WAIT_SECONDS = 15;
+const QUIZ_ONLINE_SECONDS = 45;
 const RAW_PUBLIC_URL = 'https://cdn.jsdelivr.net/gh/Ortodoxia-Luterana/Pela-Gra-a@main/public';
 const CRONICAS_SAVE_NAME = 'Crônicas do Levante';
 const STATE_NAMES = {
@@ -101,6 +106,13 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS game_rankings (user_id TEXT NOT NULL, game_id TEXT NOT NULL, user_name TEXT NOT NULL, save_name TEXT NOT NULL, year INTEGER NOT NULL, month INTEGER NOT NULL, total_churches INTEGER NOT NULL, total_members REAL NOT NULL, doctrine_correct INTEGER NOT NULL, reached_final INTEGER NOT NULL, state_churches_json TEXT NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY (user_id, game_id), FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS luther_match_rankings (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, level INTEGER NOT NULL, best_level INTEGER NOT NULL, completed_levels INTEGER NOT NULL, score INTEGER NOT NULL, max_combo INTEGER NOT NULL DEFAULT 0, luther_pair_used INTEGER NOT NULL DEFAULT 0, solas_pair_used INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS cronicas_saves (user_id TEXT PRIMARY KEY, state_json TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
+  CREATE TABLE IF NOT EXISTS quiz_presence (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, last_seen TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
+  CREATE TABLE IF NOT EXISTS quiz_queue (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, mode TEXT NOT NULL, joined_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
+  CREATE TABLE IF NOT EXISTS quiz_matches (id TEXT PRIMARY KEY, mode TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, started_at TEXT NOT NULL, question_ids_json TEXT NOT NULL, round_seconds INTEGER NOT NULL, finalized INTEGER NOT NULL DEFAULT 0);
+  CREATE TABLE IF NOT EXISTS quiz_match_players (match_id TEXT NOT NULL, user_id TEXT NOT NULL, user_name TEXT NOT NULL, score INTEGER NOT NULL DEFAULT 0, joined_at TEXT NOT NULL, PRIMARY KEY (match_id, user_id), FOREIGN KEY (match_id) REFERENCES quiz_matches(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
+  CREATE TABLE IF NOT EXISTS quiz_answers (match_id TEXT NOT NULL, user_id TEXT NOT NULL, question_index INTEGER NOT NULL, answer_index INTEGER NOT NULL, correct INTEGER NOT NULL, answered_at TEXT NOT NULL, PRIMARY KEY (match_id, user_id, question_index), FOREIGN KEY (match_id) REFERENCES quiz_matches(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
+  CREATE TABLE IF NOT EXISTS quiz_invites (id TEXT PRIMARY KEY, from_user_id TEXT NOT NULL, from_user_name TEXT NOT NULL, to_user_id TEXT NOT NULL, to_user_name TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, match_id TEXT, FOREIGN KEY (from_user_id) REFERENCES users(id) ON DELETE CASCADE, FOREIGN KEY (to_user_id) REFERENCES users(id) ON DELETE CASCADE);
+  CREATE TABLE IF NOT EXISTS quiz_rankings (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, best_score INTEGER NOT NULL DEFAULT 0, wins INTEGER NOT NULL DEFAULT 0, matches_played INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
 `);
 try { db.exec('ALTER TABLE users ADD COLUMN avatar_data TEXT'); } catch {}
 try { db.exec('ALTER TABLE luther_match_rankings ADD COLUMN max_combo INTEGER NOT NULL DEFAULT 0'); } catch {}
@@ -164,6 +176,9 @@ const deleteAchievementsForUser = db.prepare('DELETE FROM user_achievements WHER
 const deleteLutherRankingForUser = db.prepare('DELETE FROM luther_match_rankings WHERE user_id = ?');
 const deleteCronicasForUser = db.prepare('DELETE FROM cronicas_saves WHERE user_id = ?');
 const deleteUserById = db.prepare('DELETE FROM users WHERE id = ?');
+const deleteQuizPresenceForUser = db.prepare('DELETE FROM quiz_presence WHERE user_id = ?');
+const deleteQuizQueueForUser = db.prepare('DELETE FROM quiz_queue WHERE user_id = ?');
+const deleteQuizRankingForUser = db.prepare('DELETE FROM quiz_rankings WHERE user_id = ?');
 const getCronicasSave = db.prepare('SELECT * FROM cronicas_saves WHERE user_id = ?');
 const upsertCronicasSave = db.prepare(`
   INSERT INTO cronicas_saves (user_id, state_json, created_at, updated_at)
@@ -171,11 +186,170 @@ const upsertCronicasSave = db.prepare(`
   ON CONFLICT(user_id) DO UPDATE SET state_json = excluded.state_json, updated_at = excluded.updated_at
 `);
 const deleteCronicasSave = db.prepare('DELETE FROM cronicas_saves WHERE user_id = ?');
+const upsertQuizPresence = db.prepare('INSERT INTO quiz_presence (user_id, user_name, last_seen) VALUES (?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET user_name = excluded.user_name, last_seen = excluded.last_seen');
+const getQuizOnlineUsers = db.prepare('SELECT user_id, user_name, last_seen FROM quiz_presence WHERE last_seen >= ? ORDER BY user_name COLLATE NOCASE ASC');
+const deleteOldQuizPresence = db.prepare('DELETE FROM quiz_presence WHERE last_seen < ?');
+const upsertQuizQueue = db.prepare('INSERT INTO quiz_queue (user_id, user_name, mode, joined_at) VALUES (?, ?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET user_name = excluded.user_name, mode = excluded.mode, joined_at = excluded.joined_at');
+const getQuizQueueUser = db.prepare('SELECT * FROM quiz_queue WHERE user_id = ?');
+const getQuizDuelOpponent = db.prepare('SELECT * FROM quiz_queue WHERE mode = ? AND user_id <> ? ORDER BY joined_at ASC LIMIT 1');
+const getQuizGeneralQueue = db.prepare('SELECT * FROM quiz_queue WHERE mode = ? ORDER BY joined_at ASC');
+const deleteQuizQueueUser = db.prepare('DELETE FROM quiz_queue WHERE user_id = ?');
+const deleteOldQuizQueue = db.prepare('DELETE FROM quiz_queue WHERE joined_at < ?');
+const insertQuizMatch = db.prepare('INSERT INTO quiz_matches (id, mode, status, created_at, started_at, question_ids_json, round_seconds, finalized) VALUES (?, ?, ?, ?, ?, ?, ?, 0)');
+const getQuizMatch = db.prepare('SELECT * FROM quiz_matches WHERE id = ?');
+const getActiveQuizMatchForUser = db.prepare("SELECT quiz_matches.* FROM quiz_matches JOIN quiz_match_players ON quiz_match_players.match_id = quiz_matches.id WHERE quiz_match_players.user_id = ? AND quiz_matches.status = 'active' ORDER BY quiz_matches.created_at DESC LIMIT 1");
+const insertQuizMatchPlayer = db.prepare('INSERT OR IGNORE INTO quiz_match_players (match_id, user_id, user_name, score, joined_at) VALUES (?, ?, ?, 0, ?)');
+const getQuizMatchPlayers = db.prepare('SELECT * FROM quiz_match_players WHERE match_id = ? ORDER BY joined_at ASC');
+const getQuizAnswers = db.prepare('SELECT * FROM quiz_answers WHERE match_id = ?');
+const getQuizAnswer = db.prepare('SELECT * FROM quiz_answers WHERE match_id = ? AND user_id = ? AND question_index = ?');
+const insertQuizAnswer = db.prepare('INSERT OR IGNORE INTO quiz_answers (match_id, user_id, question_index, answer_index, correct, answered_at) VALUES (?, ?, ?, ?, ?, ?)');
+const updateQuizPlayerScore = db.prepare('UPDATE quiz_match_players SET score = ? WHERE match_id = ? AND user_id = ?');
+const updateQuizMatchStatus = db.prepare('UPDATE quiz_matches SET status = ? WHERE id = ?');
+const finalizeQuizMatchRow = db.prepare('UPDATE quiz_matches SET finalized = 1 WHERE id = ?');
+const insertQuizInvite = db.prepare('INSERT INTO quiz_invites (id, from_user_id, from_user_name, to_user_id, to_user_name, status, created_at, match_id) VALUES (?, ?, ?, ?, ?, ?, ?, NULL)');
+const getQuizInvite = db.prepare('SELECT * FROM quiz_invites WHERE id = ?');
+const getQuizIncomingInvites = db.prepare("SELECT * FROM quiz_invites WHERE to_user_id = ? AND status = 'pending' AND created_at >= ? ORDER BY created_at DESC");
+const updateQuizInvite = db.prepare('UPDATE quiz_invites SET status = ?, match_id = ? WHERE id = ?');
+const deleteOldQuizInvites = db.prepare("DELETE FROM quiz_invites WHERE created_at < ? OR status <> 'pending'");
+const getQuizRanking = db.prepare('SELECT * FROM quiz_rankings WHERE user_id = ?');
+const getQuizRankings = db.prepare('SELECT * FROM quiz_rankings ORDER BY wins DESC, best_score DESC, matches_played ASC, updated_at ASC LIMIT 20');
+const upsertQuizRanking = db.prepare('INSERT INTO quiz_rankings (user_id, user_name, best_score, wins, matches_played, updated_at) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET user_name = excluded.user_name, best_score = max(quiz_rankings.best_score, excluded.best_score), wins = quiz_rankings.wins + excluded.wins, matches_played = quiz_rankings.matches_played + excluded.matches_played, updated_at = excluded.updated_at');
 const upsertRanking = db.prepare(`
   INSERT INTO rankings (save_id, user_id, user_name, save_name, year, month, total_churches, total_members, doctrine_correct, reached_final, state_churches_json, updated_at)
   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   ON CONFLICT(save_id) DO UPDATE SET user_name = excluded.user_name, save_name = excluded.save_name, year = excluded.year, month = excluded.month, total_churches = excluded.total_churches, total_members = excluded.total_members, doctrine_correct = excluded.doctrine_correct, reached_final = excluded.reached_final, state_churches_json = excluded.state_churches_json, updated_at = excluded.updated_at
 `);
+
+const QUIZ_QUESTIONS = [
+  { q: 'Qual princípio afirma que a Escritura é a norma final da doutrina?', a: ['Sola Scriptura', 'Sola Cultura', 'Sola Ratio', 'Sola História'], c: 0 },
+  { q: 'Na fé luterana, a justificação é recebida por:', a: ['Obras acumuladas', 'Fé em Cristo', 'Cargo eclesiástico', 'Tradição familiar'], c: 1 },
+  { q: 'Qual documento apresentou a fé luterana ao imperador em 1530?', a: ['Confissão de Augsburgo', 'Edito de Worms', 'Vulgata', 'Didachê'], c: 0 },
+  { q: 'O centro da pregação cristã é:', a: ['Autoajuda', 'Cristo crucificado e ressuscitado', 'Política partidária', 'Genealogias sem fim'], c: 1 },
+  { q: 'O Catecismo serve principalmente para:', a: ['Substituir a Bíblia', 'Ensinar a fé com clareza', 'Criar ranking social', 'Evitar perguntas'], c: 1 },
+  { q: 'Batismo e Ceia devem ser tratados como:', a: ['Brincadeiras religiosas', 'Meios ligados à promessa de Deus', 'Símbolos vazios', 'Prêmios por pontuação'], c: 1 },
+  { q: 'Na distinção Lei e Evangelho, a Lei principalmente:', a: ['Mostra o pecado e acusa', 'Perdoa pecados por si mesma', 'Elimina a necessidade de Cristo', 'Troca a fé por mérito'], c: 0 },
+  { q: 'O Evangelho anuncia principalmente:', a: ['A condenação sem saída', 'A obra de Cristo por pecadores', 'Uma lista de méritos', 'Um método político'], c: 1 },
+  { q: 'Qual é uma das Três Solas confessadas no luteranismo?', a: ['Sola Gratia', 'Sola Roma', 'Sola Opinio', 'Sola Potestas'], c: 0 },
+  { q: 'A Ceia do Senhor, na confissão luterana, entrega:', a: ['Apenas lembrança mental', 'Corpo e sangue de Cristo com pão e vinho', 'Somente símbolo social', 'Um prêmio para perfeitos'], c: 1 },
+  { q: 'Quem escreveu o Catecismo Menor?', a: ['Martinho Lutero', 'João Calvino', 'Tomás de Aquino', 'Eusébio de Cesareia'], c: 0 },
+  { q: 'A vocação cristã ensina que:', a: ['Só pastores servem a Deus', 'Deus serve o próximo por meio de chamados comuns', 'Trabalho comum não importa', 'Família não tem relação com fé'], c: 1 },
+  { q: 'O primeiro mandamento ensina a:', a: ['Temer, amar e confiar em Deus sobre todas as coisas', 'Confiar primeiro no próprio coração', 'Trocar Deus por sinais', 'Servir apenas quando houver recompensa'], c: 0 },
+  { q: 'Na tradição luterana, fé salvadora é:', a: ['Confiança na promessa de Deus em Cristo', 'Opinião religiosa genérica', 'Força interior independente de Cristo', 'Obra que compra perdão'], c: 0 },
+  { q: 'A Reforma Luterana começou publicamente ligada a qual debate?', a: ['Indulgências e arrependimento', 'Calendário romano', 'Arquitetura gótica', 'Rotas marítimas'], c: 0 },
+  { q: 'O que significa “católico” no Credo, em sentido clássico?', a: ['Universal', 'Romano moderno apenas', 'Europeu', 'Político'], c: 0 },
+  { q: 'A ressurreição de Cristo significa que:', a: ['A morte venceu', 'Cristo venceu a morte', 'Tudo foi só metáfora', 'A fé não depende de fato histórico'], c: 1 },
+  { q: 'A oração do Pai Nosso começa dirigindo-se a:', a: ['Nossa força interior', 'Nosso Pai que está nos céus', 'Um anjo protetor', 'A comunidade local'], c: 1 },
+  { q: 'A Confissão de Augsburgo foi apresentada em qual século?', a: ['Século XVI', 'Século XII', 'Século XIX', 'Século IV'], c: 0 },
+  { q: 'O ofício pastoral existe para:', a: ['Dominar consciências', 'Pregar a Palavra e administrar os Sacramentos', 'Substituir Cristo', 'Garantir status social'], c: 1 },
+  { q: 'Qual destes pertence ao Credo Apostólico?', a: ['Creio em Deus Pai todo-poderoso', 'Tudo depende da sorte', 'A matéria é má por natureza', 'A salvação vem do Império'], c: 0 },
+  { q: 'A fé cristã confessa um Deus:', a: ['Triúno: Pai, Filho e Espírito Santo', 'Dividido em três deuses', 'Impessoal e distante', 'Criado pelo mundo'], c: 0 },
+  { q: 'O pecado original ensina que:', a: ['O ser humano nasce sem necessidade de graça', 'A corrupção do pecado atinge a natureza humana', 'Só atos públicos são pecado', 'Crianças não precisam de Cristo'], c: 1 },
+  { q: 'A absolvição anuncia:', a: ['Perdão em nome de Cristo', 'Apenas conselho psicológico', 'Que pecado não existe', 'Que obras compram graça'], c: 0 },
+  { q: 'A boa obra cristã é fruto de:', a: ['Fé viva em Cristo', 'Tentativa de comprar salvação', 'Vaidade necessária', 'Medo sem promessa'], c: 0 },
+  { q: 'A palavra “Evangelho” significa:', a: ['Boa notícia', 'Lei civil', 'Tradição secreta', 'Contrato comercial'], c: 0 },
+  { q: 'Quem é o mediador entre Deus e os homens?', a: ['Cristo Jesus', 'Mérito próprio', 'O acaso', 'Qualquer poder político'], c: 0 },
+  { q: 'No culto cristão, Deus primeiro:', a: ['Serve seu povo com Palavra e dons', 'Recebe entretenimento', 'Compra nossa atenção', 'Depende da nossa força'], c: 0 },
+  { q: 'A Escritura aponta para:', a: ['Cristo e sua obra salvadora', 'Autoexaltação humana', 'Mitos sem promessa', 'Poder sem arrependimento'], c: 0 },
+  { q: 'A esperança cristã inclui:', a: ['Ressurreição do corpo e vida eterna', 'Fuga eterna do corpo criado', 'Reencarnação infinita', 'Apenas sucesso presente'], c: 0 }
+];
+
+function isoNow() { return new Date().toISOString(); }
+function isoSecondsAgo(seconds) { return new Date(Date.now() - seconds * 1000).toISOString(); }
+function msUntil(iso) { return Math.max(0, new Date(iso).getTime() - Date.now()); }
+function quizQuestion(id) { return QUIZ_QUESTIONS[Number(id) % QUIZ_QUESTIONS.length]; }
+function publicQuizQuestion(id) {
+  const q = quizQuestion(id);
+  return { id: Number(id), q: q.q, a: q.a };
+}
+function quizQuestionIds(count = QUIZ_QUESTION_COUNT) {
+  const ids = [...Array(QUIZ_QUESTIONS.length)].map((_, index) => index);
+  for (let i = ids.length - 1; i > 0; i--) {
+    const j = crypto.randomInt(i + 1);
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+  }
+  return ids.slice(0, Math.min(count, ids.length));
+}
+function cleanQuizTables() {
+  deleteOldQuizPresence.run(isoSecondsAgo(QUIZ_ONLINE_SECONDS));
+  deleteOldQuizQueue.run(isoSecondsAgo(90));
+  deleteOldQuizInvites.run(isoSecondsAgo(180));
+}
+function touchQuizPresence(user) {
+  upsertQuizPresence.run(user.id, user.name, isoNow());
+  cleanQuizTables();
+}
+function createQuizMatch(mode, players) {
+  const id = crypto.randomUUID();
+  const now = isoNow();
+  insertQuizMatch.run(id, mode, 'active', now, now, JSON.stringify(quizQuestionIds()), QUIZ_ROUND_SECONDS);
+  players.forEach(player => insertQuizMatchPlayer.run(id, player.user_id || player.id, player.user_name || player.name, now));
+  return getQuizMatch.get(id);
+}
+function quizAnswerMap(matchId) {
+  const map = new Map();
+  getQuizAnswers.all(matchId).forEach(row => map.set(`${row.user_id}:${row.question_index}`, row));
+  return map;
+}
+function quizRoundInfo(match) {
+  const questionIds = safeJsonParse(match.question_ids_json, []);
+  const elapsed = Math.max(0, Date.now() - new Date(match.started_at).getTime());
+  const rawIndex = Math.floor(elapsed / (match.round_seconds * 1000));
+  const complete = rawIndex >= questionIds.length;
+  const index = Math.min(rawIndex, Math.max(0, questionIds.length - 1));
+  const roundEndsAt = new Date(new Date(match.started_at).getTime() + (index + 1) * match.round_seconds * 1000).toISOString();
+  return { questionIds, index, complete, roundEndsAt, msLeft: complete ? 0 : msUntil(roundEndsAt) };
+}
+function finalizeQuizMatch(match) {
+  if (!match || match.finalized) return;
+  const players = getQuizMatchPlayers.all(match.id);
+  const answers = getQuizAnswers.all(match.id);
+  const scoreByUser = new Map(players.map(player => [player.user_id, 0]));
+  answers.forEach(answer => scoreByUser.set(answer.user_id, (scoreByUser.get(answer.user_id) || 0) + (answer.correct ? 10 : 0)));
+  let best = -1;
+  scoreByUser.forEach(score => { if (score > best) best = score; });
+  players.forEach(player => {
+    const score = scoreByUser.get(player.user_id) || 0;
+    updateQuizPlayerScore.run(score, match.id, player.user_id);
+    upsertQuizRanking.run(player.user_id, player.user_name, score, score === best && players.length > 1 ? 1 : 0, 1, isoNow());
+  });
+  updateQuizMatchStatus.run('complete', match.id);
+  finalizeQuizMatchRow.run(match.id);
+}
+function publicQuizMatch(match, userId) {
+  if (!match) return null;
+  const round = quizRoundInfo(match);
+  if (round.complete && match.status !== 'complete') {
+    finalizeQuizMatch(match);
+    match = getQuizMatch.get(match.id);
+  }
+  const players = getQuizMatchPlayers.all(match.id);
+  const answers = quizAnswerMap(match.id);
+  const allAnswered = players.every(player => answers.has(`${player.user_id}:${round.index}`));
+  const reveal = match.status === 'complete' || round.complete || round.msLeft <= 250 || allAnswered;
+  const qid = round.questionIds[round.index];
+  const question = qid === undefined ? null : publicQuizQuestion(qid);
+  const userAnswer = answers.get(`${userId}:${round.index}`) || null;
+  return {
+    id: match.id,
+    mode: match.mode,
+    status: match.status,
+    round: Math.min(round.index + 1, round.questionIds.length),
+    totalRounds: round.questionIds.length,
+    roundSeconds: match.round_seconds,
+    roundEndsAt: round.roundEndsAt,
+    msLeft: round.msLeft,
+    question,
+    reveal,
+    correctIndex: reveal && qid !== undefined ? quizQuestion(qid).c : null,
+    answered: Boolean(userAnswer),
+    userAnswer: userAnswer ? userAnswer.answer_index : null,
+    players: players.map(player => {
+      const answered = answers.has(`${player.user_id}:${round.index}`);
+      const score = getQuizAnswers.all(match.id).filter(row => row.user_id === player.user_id && row.correct).length * 10;
+      return { id: player.user_id, name: player.user_name, score, answered };
+    })
+  };
+}
 
 function hashPin(pin, salt) { return crypto.createHash('sha256').update(`${salt}:${pin}`).digest('hex'); }
 function isNonPlayerAccountName(name) {
@@ -199,6 +373,9 @@ function cleanupNonPlayerAccounts() {
       deleteAchievementsForUser.run(user.id);
       deleteLutherRankingForUser.run(user.id);
       deleteCronicasForUser.run(user.id);
+      deleteQuizPresenceForUser.run(user.id);
+      deleteQuizQueueForUser.run(user.id);
+      deleteQuizRankingForUser.run(user.id);
       deleteSavesForUser.run(user.id);
       deleteUserById.run(user.id);
     });
@@ -710,12 +887,124 @@ async function handleApi(req, res, url, user) {
         {
           id: 'quiz-ortodoxia',
           title: 'Quiz Ortodoxia',
-          status: 'coming-soon',
-          playUrl: null,
+          status: 'prototype',
+          playUrl: '/quiz-ortodoxia',
           rankingUrl: null
         }
       ]
     });
+    return;
+  }
+  if (url.pathname.startsWith('/api/quiz')) {
+    touchQuizPresence(user);
+    if (req.method === 'GET' && url.pathname === '/api/quiz/lobby') {
+      const active = getActiveQuizMatchForUser.get(user.id);
+      const queue = getQuizQueueUser.get(user.id);
+      const online = getQuizOnlineUsers.all(isoSecondsAgo(QUIZ_ONLINE_SECONDS)).filter(item => item.user_id !== user.id);
+      json(res, 200, {
+        user: { id: user.id, name: user.name },
+        online: online.map(item => ({ id: item.user_id, name: item.user_name, lastSeen: item.last_seen })),
+        queue: queue ? { mode: queue.mode, joinedAt: queue.joined_at } : null,
+        activeMatch: active ? publicQuizMatch(active, user.id) : null,
+        invites: getQuizIncomingInvites.all(user.id, isoSecondsAgo(180)).map(item => ({ id: item.id, from: { id: item.from_user_id, name: item.from_user_name }, createdAt: item.created_at }))
+      });
+      return;
+    }
+    if (req.method === 'POST' && url.pathname === '/api/quiz/solo') {
+      deleteQuizQueueUser.run(user.id);
+      const match = createQuizMatch('solo', [user]);
+      json(res, 200, { match: publicQuizMatch(match, user.id) });
+      return;
+    }
+    if (req.method === 'POST' && url.pathname === '/api/quiz/queue') {
+      const payload = safeJsonParse(await readBody(req) || '{}', {});
+      const mode = payload.mode === 'general' ? 'general' : 'duel';
+      deleteQuizQueueUser.run(user.id);
+      if (mode === 'duel') {
+        const opponent = getQuizDuelOpponent.get('duel', user.id);
+        if (opponent) {
+          const match = createQuizMatch('duel', [opponent, user]);
+          deleteQuizQueueUser.run(opponent.user_id);
+          deleteQuizQueueUser.run(user.id);
+          json(res, 200, { status: 'matched', match: publicQuizMatch(match, user.id) });
+          return;
+        }
+      }
+      upsertQuizQueue.run(user.id, user.name, mode, isoNow());
+      if (mode === 'general') {
+        const queued = getQuizGeneralQueue.all('general');
+        const first = queued[0];
+        const waitedEnough = first && (Date.now() - new Date(first.joined_at).getTime()) >= QUIZ_GENERAL_WAIT_SECONDS * 1000;
+        if (queued.length >= 2 && waitedEnough) {
+          const match = createQuizMatch('general', queued);
+          queued.forEach(item => deleteQuizQueueUser.run(item.user_id));
+          json(res, 200, { status: 'matched', match: publicQuizMatch(match, user.id) });
+          return;
+        }
+      }
+      json(res, 200, { status: 'waiting', queue: getQuizQueueUser.get(user.id), queueSize: mode === 'general' ? getQuizGeneralQueue.all('general').length : 1, waitSeconds: mode === 'general' ? QUIZ_GENERAL_WAIT_SECONDS : null });
+      return;
+    }
+    if (req.method === 'POST' && url.pathname === '/api/quiz/cancel-queue') {
+      deleteQuizQueueUser.run(user.id);
+      json(res, 200, { ok: true });
+      return;
+    }
+    if (req.method === 'POST' && url.pathname === '/api/quiz/invite') {
+      const payload = safeJsonParse(await readBody(req) || '{}', {});
+      const target = getUserById.get(String(payload.toUserId || ''));
+      if (!target || target.id === user.id) { json(res, 400, { error: 'Jogador inválido.' }); return; }
+      const id = crypto.randomUUID();
+      insertQuizInvite.run(id, user.id, user.name, target.id, target.name, 'pending', isoNow());
+      json(res, 200, { ok: true, inviteId: id });
+      return;
+    }
+    if (req.method === 'POST' && url.pathname === '/api/quiz/invite/respond') {
+      const payload = safeJsonParse(await readBody(req) || '{}', {});
+      const invite = getQuizInvite.get(String(payload.inviteId || ''));
+      if (!invite || invite.to_user_id !== user.id || invite.status !== 'pending') { json(res, 404, { error: 'Convite não encontrado.' }); return; }
+      if (!payload.accept) {
+        updateQuizInvite.run('declined', null, invite.id);
+        json(res, 200, { ok: true });
+        return;
+      }
+      const match = createQuizMatch('invite', [
+        { user_id: invite.from_user_id, user_name: invite.from_user_name },
+        { user_id: invite.to_user_id, user_name: invite.to_user_name }
+      ]);
+      updateQuizInvite.run('accepted', match.id, invite.id);
+      deleteQuizQueueUser.run(invite.from_user_id);
+      deleteQuizQueueUser.run(invite.to_user_id);
+      json(res, 200, { ok: true, match: publicQuizMatch(match, user.id) });
+      return;
+    }
+    if (req.method === 'GET' && url.pathname === '/api/quiz/match') {
+      const match = getQuizMatch.get(url.searchParams.get('id') || '');
+      const players = match ? getQuizMatchPlayers.all(match.id) : [];
+      if (!match || !players.some(player => player.user_id === user.id)) { json(res, 404, { error: 'Partida não encontrada.' }); return; }
+      json(res, 200, { match: publicQuizMatch(match, user.id) });
+      return;
+    }
+    if (req.method === 'POST' && url.pathname === '/api/quiz/answer') {
+      const payload = safeJsonParse(await readBody(req) || '{}', {});
+      const match = getQuizMatch.get(String(payload.matchId || ''));
+      const players = match ? getQuizMatchPlayers.all(match.id) : [];
+      if (!match || match.status !== 'active' || !players.some(player => player.user_id === user.id)) { json(res, 404, { error: 'Partida não encontrada.' }); return; }
+      const round = quizRoundInfo(match);
+      if (round.complete || round.msLeft <= 0) { json(res, 409, { error: 'Tempo esgotado.', match: publicQuizMatch(match, user.id) }); return; }
+      if (getQuizAnswer.get(match.id, user.id, round.index)) { json(res, 200, { ok: true, match: publicQuizMatch(match, user.id) }); return; }
+      const answerIndex = clampInt(payload.answerIndex, 0, 3);
+      const qid = round.questionIds[round.index];
+      const correct = answerIndex === quizQuestion(qid).c ? 1 : 0;
+      insertQuizAnswer.run(match.id, user.id, round.index, answerIndex, correct, isoNow());
+      json(res, 200, { ok: true, correct: Boolean(correct), match: publicQuizMatch(match, user.id) });
+      return;
+    }
+    if (req.method === 'GET' && url.pathname === '/api/quiz/ranking') {
+      json(res, 200, { rows: getQuizRankings.all().map((row, index) => ({ position: index + 1, player: row.user_name, bestScore: row.best_score, wins: row.wins, matchesPlayed: row.matches_played })) });
+      return;
+    }
+    json(res, 404, { error: 'API do quiz não encontrada' });
     return;
   }
   if (url.pathname === '/api/luther-metch/progress') {
@@ -879,7 +1168,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     <article class="ol-game-card cronicas-cover"><div><h4>Crônicas do Levante</h4><p>Uma narrativa bíblica interativa nos dias do rei Davi, com escolhas, descobertas, relações e consequências pelo caminho.</p></div><a href="/cronicas-do-levante">${cronicasSave ? 'Continuar' : 'Jogar'}</a></article>
     <article class="ol-game-card match3-cover"><div><h4>Luther Metch</h4><p>Junte 3 ou mais peças iguais para cumprir objetivos e avançar de fase.</p></div><a href="/luther-metch">Jogar</a></article>
     <article class="ol-game-card peregrino-cover"><div><h4>Peregrino Confessional</h4><p>Jornada curta de formação sobre Escritura, confissão, culto e vida comunitária, com escolhas e anotações salvas no navegador.</p></div><span class="soon-badge">Em breve</span></article>
-    <article class="ol-game-card quiz-cover"><div><h4>Quiz Ortodoxia</h4><p>Perguntas de Bíblia, Reforma e luteranismo em modo solo, contra robô ou sala local para 2 a 4 jogadores.</p></div><span class="soon-badge">Em breve</span></article>
+    <article class="ol-game-card quiz-cover"><div><h4>Quiz Ortodoxia</h4><p>Dispute perguntas de Bíblia, Reforma e luteranismo em modo solo, duelo online, convite ou competição geral.</p></div><a href="/quiz-ortodoxia">Jogar</a></article>
   </section>`;
   const rankCard = `<aside class="ol-panel ol-rank"><p>Seu rank geral</p><img class="rank-badge" src="${rank.current.file}?v=${GAME_VERSION}" alt="${escapeHtml(rank.current.title)}"><div class="rank-xp"><strong>${xp} XP</strong><span>${rank.next ? `${Math.max(0, rank.next.xp - rank.currentXp)} XP para ${escapeHtml(rank.next.title)}` : 'Rank maximo alcancado'}</span><div class="rank-bar"><span style="width:${Math.round(rank.progress)}%"></span></div></div><a href="/?section=ranking">Ver ranking geral</a></aside>`;
   const sections = {
@@ -889,7 +1178,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     medalhas: `<section class="ol-panel" id="medalhas"><div class="panel-head"><h3>Medalhas</h3><span>${unlockedMedals}/${medals.length}</span></div><div class="medal-grid">${medals.map(medal => `<article class="${medal.unlocked ? '' : 'locked'}">${renderAchievementIcon(medal)}<span>${escapeHtml(medal.title)}</span><p>${escapeHtml(medal.description)}</p><small>+${medal.xp} XP · +${medal.points} pontos</small></article>`).join('')}</div></section>`,
     album: `<section class="ol-panel" id="album"><div class="panel-head"><h3>Álbum</h3><span>0/0 figurinhas</span></div><p>Nenhuma figurinha foi criada ainda.</p></section>`,
     loja: `<section class="ol-panel" id="loja"><div class="panel-head"><h3>Loja</h3></div><div class="shop-grid"><article><h4>Pacote Comum</h4><p>100 pontos</p><small>Maior chance de figurinhas comuns.</small><button disabled>Comprar em breve</button></article><article><h4>Pacote Raro</h4><p>250 pontos</p><small>Chance melhor de raras e especiais.</small><button disabled>Comprar em breve</button></article><article><h4>Pacote Lendario</h4><p>600 pontos</p><small>Chance alta de figurinhas raras e lendarias.</small><button disabled>Comprar em breve</button></article></div><div class="daily-wheel"><h4>Roleta diaria</h4><p>A cada 24h, o jogador podera tentar ganhar um pacote comum, raro ou lendario de graca.</p><button disabled>Disponivel em breve</button></div></section>`,
-    configuracoes: `<section class="ol-panel ol-settings" id="configuracoes"><div class="panel-head"><h3>Configurações</h3></div><form method="POST" action="/profile" class="profile-edit"><div class="profile-box">${renderAvatar(user, 'profile-avatar')}<div><label>Nome público<input name="name" maxlength="40" value="${escapeHtml(user.name)}" required></label><label>Foto do perfil<input id="avatar-file" type="file" accept="image/png,image/jpeg,image/webp"></label><input id="avatar-data" type="hidden" name="avatar_data" value="${escapeHtml(user.avatar_data || '')}"><button type="submit">Salvar perfil</button></div></div></form><hr><div class="saved-games-head"><h4>Campanhas por jogo</h4><p>Medalhas e melhor ranking ficam salvos na conta. Os protótipos novos usam save local automático no navegador.</p></div><div class="saved-game-list"><article class="saved-game-row"><div><span>Pela Graça 1904</span><strong>${mainSave ? escapeHtml(mainSave.name) : 'Nenhuma campanha atual'}</strong><small>${mainSave ? 'Apaga só esta campanha atual.' : 'Crie uma campanha para jogar novamente.'}</small></div>${mainSave ? `<form method="POST" action="/saves/${encodeURIComponent(mainSave.id)}/delete" onsubmit="return confirm('Apagar a campanha atual de Pela Graça 1904? Medalhas e melhor ranking serão mantidos.')"><button>Apagar campanha</button></form>` : '<a href="/play">Criar campanha</a>'}</article><article class="saved-game-row"><div><span>Crônicas do Levante</span><strong>${cronicasSave ? 'Campanha em andamento' : 'Nenhuma campanha atual'}</strong><small>${cronicasSave ? 'Apaga só o progresso narrativo. Medalhas futuras serão mantidas.' : 'Comece uma jornada para criar o save automático.'}</small></div>${cronicasSave ? `<form method="POST" action="/cronicas-do-levante/delete" onsubmit="return confirm('Apagar a campanha atual de Crônicas do Levante? Medalhas futuras serão mantidas.')"><button>Apagar campanha</button></form>` : '<a href="/cronicas-do-levante">Criar campanha</a>'}</article><article class="saved-game-row"><div><span>Luther Metch</span><strong>Save local automático</strong><small>Fase, objetivos, pontos e tabuleiro ficam salvos neste navegador.</small></div><a href="/luther-metch">Abrir</a></article><article class="saved-game-row"><div><span>Peregrino Confessional</span><strong>Save local automático</strong><small>Etapas, virtudes e anotações ficam salvas neste navegador.</small></div><span class="soon-badge">Em breve</span></article><article class="saved-game-row"><div><span>Quiz Ortodoxia</span><strong>Save local automático</strong><small>Modo, melhor pontuação e histórico da sala ficam salvos neste navegador.</small></div><span class="soon-badge">Em breve</span></article></div></section>`
+    configuracoes: `<section class="ol-panel ol-settings" id="configuracoes"><div class="panel-head"><h3>Configurações</h3></div><form method="POST" action="/profile" class="profile-edit"><div class="profile-box">${renderAvatar(user, 'profile-avatar')}<div><label>Nome público<input name="name" maxlength="40" value="${escapeHtml(user.name)}" required></label><label>Foto do perfil<input id="avatar-file" type="file" accept="image/png,image/jpeg,image/webp"></label><input id="avatar-data" type="hidden" name="avatar_data" value="${escapeHtml(user.avatar_data || '')}"><button type="submit">Salvar perfil</button></div></div></form><hr><div class="saved-games-head"><h4>Campanhas por jogo</h4><p>Medalhas e melhor ranking ficam salvos na conta. Os protótipos novos usam save local automático no navegador.</p></div><div class="saved-game-list"><article class="saved-game-row"><div><span>Pela Graça 1904</span><strong>${mainSave ? escapeHtml(mainSave.name) : 'Nenhuma campanha atual'}</strong><small>${mainSave ? 'Apaga só esta campanha atual.' : 'Crie uma campanha para jogar novamente.'}</small></div>${mainSave ? `<form method="POST" action="/saves/${encodeURIComponent(mainSave.id)}/delete" onsubmit="return confirm('Apagar a campanha atual de Pela Graça 1904? Medalhas e melhor ranking serão mantidos.')"><button>Apagar campanha</button></form>` : '<a href="/play">Criar campanha</a>'}</article><article class="saved-game-row"><div><span>Crônicas do Levante</span><strong>${cronicasSave ? 'Campanha em andamento' : 'Nenhuma campanha atual'}</strong><small>${cronicasSave ? 'Apaga só o progresso narrativo. Medalhas futuras serão mantidas.' : 'Comece uma jornada para criar o save automático.'}</small></div>${cronicasSave ? `<form method="POST" action="/cronicas-do-levante/delete" onsubmit="return confirm('Apagar a campanha atual de Crônicas do Levante? Medalhas futuras serão mantidas.')"><button>Apagar campanha</button></form>` : '<a href="/cronicas-do-levante">Criar campanha</a>'}</article><article class="saved-game-row"><div><span>Luther Metch</span><strong>Save local automático</strong><small>Fase, objetivos, pontos e tabuleiro ficam salvos neste navegador.</small></div><a href="/luther-metch">Abrir</a></article><article class="saved-game-row"><div><span>Peregrino Confessional</span><strong>Save local automático</strong><small>Etapas, virtudes e anotações ficam salvas neste navegador.</small></div><span class="soon-badge">Em breve</span></article><article class="saved-game-row"><div><span>Quiz Ortodoxia</span><strong>Multiplayer online</strong><small>Duelo, convite e competição geral rodam com pareamento pelo servidor.</small></div><a href="/quiz-ortodoxia">Abrir</a></article></div></section>`
   };
   return pageShell('Ortodoxia Luterana Gaming', `
 <main class="ol-hub">
@@ -1006,8 +1295,9 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (req.method === 'GET' && url.pathname === '/quiz-ortodoxia') {
+      const body = fs.readFileSync(path.join(PUBLIC_DIR, 'quiz-ortodoxia.html'), 'utf8');
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-      res.end(renderDashboard(user, 'Quiz Ortodoxia esta em breve.', 'jogos'));
+      res.end(body);
       return;
     }
     if (req.method === 'POST' && url.pathname === '/cronicas-do-levante/delete') {

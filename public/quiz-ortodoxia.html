@@ -5,44 +5,77 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Quiz Ortodoxia | Ortodoxia Luterana Gaming</title>
   <style>
-    :root{--gold:#d79b2c;--gold2:#f2c75f;--text:#eee8db;--muted:#aaa49b;--line:rgba(242,199,95,.34);--ok:#63bd70;--bad:#c76358}
-    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(135deg,#0a111a,#16202c 52%,#3b2815);color:var(--text);font-family:Segoe UI,system-ui,Arial,sans-serif}.app{max-width:1120px;margin:0 auto;padding:18px;display:grid;gap:16px}.top{display:flex;justify-content:space-between;gap:12px;align-items:center}.top h1{margin:0;color:var(--gold2);font-family:Georgia,serif;font-size:36px}.top a,.btn{border:1px solid var(--line);border-radius:7px;color:var(--gold2);background:rgba(255,255,255,.04);text-decoration:none;padding:10px 12px;cursor:pointer}.panel{border:1px solid var(--line);border-radius:8px;background:rgba(10,18,25,.9);padding:16px}.setup{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}.mode{border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(255,255,255,.04);color:var(--text);padding:14px;text-align:left;cursor:pointer}.mode.active{border-color:var(--gold);background:rgba(215,155,44,.16)}.mode strong{display:block;color:var(--gold2)}.quiz{display:grid;grid-template-columns:1fr 300px;gap:16px}.question{min-height:330px;border-radius:8px;border:1px solid var(--line);padding:24px;background:linear-gradient(135deg,rgba(239,227,194,.95),rgba(223,205,164,.95));color:#24190f;display:grid;align-content:center}.eyebrow{margin:0 0 8px;color:var(--gold2);text-transform:uppercase;letter-spacing:.1em;font-size:12px;font-weight:800}.question .eyebrow{color:#8a641d}.question h2{font-family:Georgia,serif;font-size:32px;margin:0 0 16px}.answers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.answer{border:1px solid rgba(36,25,15,.25);border-radius:7px;background:#fff8df;color:#24190f;padding:13px;text-align:left;cursor:pointer}.answer.correct{border-color:var(--ok);background:#dff4df}.answer.wrong{border-color:var(--bad);background:#f5d7d2}.scoreboard{display:grid;gap:10px}.player{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;border:1px solid rgba(255,255,255,.1);border-radius:7px;padding:12px}.player.active{border-color:var(--gold);background:rgba(215,155,44,.12)}.player b{color:var(--gold2)}.muted{color:var(--muted)}.actions{display:flex;gap:10px;flex-wrap:wrap}.hidden{display:none}@media(max-width:820px){.quiz{grid-template-columns:1fr}.answers{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}.question h2{font-size:26px}}
+    :root{--bg:#090b0f;--panel:#111820;--panel2:#18222b;--gold:#d79b2c;--gold2:#f2c75f;--text:#f4ecdd;--muted:#b9ac98;--line:rgba(242,199,95,.28);--ok:#65c876;--bad:#d86b60;--blue:#4da3ff}
+    *{box-sizing:border-box}html,body{min-height:100%}body{margin:0;background:radial-gradient(circle at top left,rgba(215,155,44,.22),transparent 34%),linear-gradient(135deg,#07090d,#101821 48%,#2a1b10);color:var(--text);font-family:Segoe UI,system-ui,Arial,sans-serif}
+    .app{max-width:1180px;margin:0 auto;padding:16px;display:grid;gap:14px}.top{min-height:168px;border:1px solid var(--line);border-radius:10px;background:linear-gradient(90deg,rgba(0,0,0,.35),rgba(0,0,0,.82)),url("/assets/quiz-ortodoxia-card.png") center/cover;display:flex;justify-content:space-between;gap:14px;align-items:flex-end;padding:20px;box-shadow:0 18px 55px rgba(0,0,0,.35)}
+    .top h1{margin:4px 0 0;color:var(--gold2);font-family:Georgia,serif;font-size:42px;line-height:1}.eyebrow{margin:0;color:var(--gold2);text-transform:uppercase;letter-spacing:.13em;font-size:12px;font-weight:900}.top a,.btn{border:1px solid var(--line);border-radius:7px;color:var(--gold2);background:rgba(255,255,255,.055);text-decoration:none;padding:11px 13px;cursor:pointer;font-weight:800}.btn.primary{background:linear-gradient(180deg,#f4cf69,#c78b26);color:#1d1309;border-color:#ffdf7c}.btn.danger{color:#ffd7d2;border-color:rgba(216,107,96,.55)}.btn:disabled{opacity:.48;cursor:not-allowed}
+    .grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:14px}.panel{border:1px solid var(--line);border-radius:10px;background:rgba(10,16,22,.92);padding:15px;box-shadow:0 14px 35px rgba(0,0,0,.18)}.modes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.mode{border:1px solid rgba(255,255,255,.12);border-radius:9px;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.025));color:var(--text);padding:14px;text-align:left;display:grid;gap:5px;cursor:pointer}.mode:hover,.mode.active{border-color:var(--gold);background:rgba(215,155,44,.14)}.mode strong{color:var(--gold2);font-size:17px}.muted{color:var(--muted)}.small{font-size:13px;line-height:1.45}.status{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding:12px;border:1px solid rgba(255,255,255,.09);border-radius:8px;background:rgba(255,255,255,.04)}
+    .arena{min-height:440px;display:grid;gap:14px}.question{border:1px solid var(--line);border-radius:12px;background:linear-gradient(135deg,rgba(246,235,206,.97),rgba(224,203,158,.98));color:#251809;padding:22px;display:grid;gap:14px}.question h2{font-family:Georgia,serif;font-size:31px;line-height:1.15;margin:0}.timer{height:9px;border-radius:99px;background:rgba(36,24,9,.18);overflow:hidden}.timer span{display:block;height:100%;background:linear-gradient(90deg,var(--gold),#ffe08a);width:100%;transition:width .25s}.answers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.answer{border:1px solid rgba(36,25,15,.25);border-radius:8px;background:#fff8df;color:#24190f;padding:13px;text-align:left;cursor:pointer;font-weight:800;min-height:58px}.answer.correct{border-color:#247c34;background:#dff4df}.answer.wrong{border-color:#9d3028;background:#f5d7d2}.answer:disabled{cursor:default}
+    .scoreboard{display:grid;gap:9px}.player{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:11px;background:rgba(255,255,255,.035)}.player.me{border-color:var(--gold);background:rgba(215,155,44,.12)}.player .mark{font-size:12px;color:var(--ok)}.online{display:grid;gap:8px;max-height:290px;overflow:auto}.online-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;border-bottom:1px solid rgba(255,255,255,.08);padding:8px 0}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 12px var(--ok);margin-right:6px}.invite{display:grid;gap:8px;margin-top:10px}.rank-row{display:grid;grid-template-columns:auto 1fr auto;gap:9px;border-bottom:1px solid rgba(255,255,255,.08);padding:8px 0}.hidden{display:none!important}
+    @media(max-width:860px){.grid{grid-template-columns:1fr}.modes{grid-template-columns:1fr}.answers{grid-template-columns:1fr}.top{min-height:150px;align-items:flex-start;flex-direction:column}.top h1{font-size:34px}}
   </style>
 </head>
 <body>
   <main class="app">
-    <header class="top"><div><p class="eyebrow">Bíblia, Reforma e luteranismo</p><h1>Quiz Ortodoxia</h1></div><a href="/">Voltar ao hub</a></header>
-    <section class="panel"><p class="eyebrow">Modo de jogo</p><div class="setup" id="modes"></div><div class="actions" style="margin-top:12px"><button class="btn" id="start">Iniciar rodada</button><button class="btn" id="reset">Limpar save</button></div><p class="muted" id="best"></p></section>
-    <section class="quiz">
-      <article class="question"><p class="eyebrow" id="round-label">Rodada</p><h2 id="question">Escolha um modo e inicie.</h2><div class="answers" id="answers"></div><p id="feedback"></p></article>
-      <aside class="panel"><p class="eyebrow">Sala</p><div class="scoreboard" id="scoreboard"></div></aside>
+    <header class="top">
+      <div><p class="eyebrow">Bíblia, Reforma e luteranismo</p><h1>Quiz Ortodoxia</h1><p class="muted">Solo, duelo online, convite direto e competição geral.</p></div>
+      <a href="/">Voltar ao hub</a>
+    </header>
+    <section class="grid">
+      <div class="arena">
+        <section class="panel" id="lobby">
+          <p class="eyebrow">Escolha a disputa</p>
+          <div class="modes">
+            <button class="mode active" data-mode="solo"><strong>Solo</strong><span class="small muted">Treine sozinho com placar salvo no servidor.</span></button>
+            <button class="mode" data-mode="duel"><strong>Duelo online</strong><span class="small muted">Pareamento contra outra pessoa na fila.</span></button>
+            <button class="mode" data-mode="general"><strong>Competição geral</strong><span class="small muted">Janela de entrada para todos que estiverem online.</span></button>
+          </div>
+          <div class="status">
+            <div><b id="status-title">Pronto para jogar</b><p class="small muted" id="status-text">Escolha um modo e comece a rodada.</p></div>
+            <div class="actions"><button class="btn primary" id="main-action">Iniciar</button><button class="btn danger hidden" id="cancel-queue">Cancelar fila</button></div>
+          </div>
+        </section>
+        <section class="question hidden" id="match">
+          <div><p class="eyebrow" id="round-label">Rodada</p><h2 id="question">Aguardando pergunta...</h2></div>
+          <div class="timer"><span id="timer-bar"></span></div>
+          <div class="answers" id="answers"></div>
+          <p id="feedback" class="small"></p>
+        </section>
+        <section class="panel">
+          <p class="eyebrow">Ranking do Quiz</p>
+          <div id="ranking" class="small muted">Carregando ranking...</div>
+        </section>
+      </div>
+      <aside class="panel">
+        <p class="eyebrow">Jogadores online</p>
+        <div id="online" class="online"><p class="muted small">Procurando jogadores...</p></div>
+        <div class="invite" id="invites"></div>
+        <hr style="border-color:rgba(255,255,255,.08);margin:14px 0">
+        <p class="eyebrow">Placar da partida</p>
+        <div class="scoreboard" id="scoreboard"><p class="muted small">Nenhuma partida em andamento.</p></div>
+      </aside>
     </section>
   </main>
   <script>
-    const KEY="ol-game-quiz-ortodoxia-v1";
-    const QUESTIONS=[
-      {q:"Qual princípio da Reforma afirma que a Escritura é a norma final da doutrina?",a:["Sola Scriptura","Sola Cultura","Sola Ratio","Sola História"],c:0},
-      {q:"Na tradição luterana, a justificação é recebida por:",a:["Obras acumuladas","Fé em Cristo","Mérito familiar","Cargo eclesiástico"],c:1},
-      {q:"Qual documento é uma apresentação central da fé luterana em 1530?",a:["Edito de Worms","Confissão de Augsburgo","Vulgata","Didachê"],c:1},
-      {q:"O centro da pregação cristã é:",a:["Autoajuda","Cristo crucificado e ressuscitado","Política partidária","Genealogias sem fim"],c:1},
-      {q:"Catecismo serve principalmente para:",a:["Substituir a Bíblia","Ensinar a fé de modo claro","Criar ranking social","Evitar perguntas"],c:1},
-      {q:"Batismo e Ceia devem ser tratados como:",a:["Brincadeiras religiosas","Meios ligados à promessa de Deus","Símbolos vazios","Prêmios por pontuação"],c:1}
-    ];
-    const MODES={solo:["Jogador"],bot:["Jogador","Robô"],multi2:["Jogador 1","Jogador 2"],multi3:["Jogador 1","Jogador 2","Jogador 3"],multi4:["Jogador 1","Jogador 2","Jogador 3","Jogador 4"]};
-    let state=load();
-    function load(){try{return {...{mode:"solo",round:0,current:0,turn:0,players:[{name:"Jogador",score:0}],best:0,last:[]},...JSON.parse(localStorage.getItem(KEY)||"{}")}}catch{return{mode:"solo",round:0,current:0,turn:0,players:[{name:"Jogador",score:0}],best:0,last:[]}}}
-    function save(){localStorage.setItem(KEY,JSON.stringify(state))}
-    function setMode(mode){state.mode=mode;state.players=MODES[mode].map(name=>({name,score:0}));state.round=0;state.turn=0;state.current=0;state.last=[];save();render()}
-    function start(){state.players=MODES[state.mode].map(name=>({name,score:0}));state.round=1;state.turn=0;state.current=Math.floor(Math.random()*QUESTIONS.length);state.last=[];save();render()}
-    function answer(index){if(!state.round)return;const q=QUESTIONS[state.current];const p=state.players[state.turn];const ok=index===q.c;if(ok)p.score+=10;state.last.unshift(`${p.name}: ${ok?"acertou":"errou"} (${q.a[index]})`);if(state.mode==="bot"&&state.turn===0){const robotOk=Math.random()<0.68;state.players[1].score+=robotOk?10:0;state.last.unshift(`Robô: ${robotOk?"acertou":"errou"}`)}
-      if(state.mode==="solo"||state.mode==="bot"||state.turn>=state.players.length-1){state.round+=1;state.turn=0;state.current=(state.current+1+Math.floor(Math.random()*(QUESTIONS.length-1)))%QUESTIONS.length}else{state.turn+=1}
-      const top=Math.max(...state.players.map(x=>x.score));state.best=Math.max(state.best,top);save();render(index,ok)}
-    function render(chosen=null,ok=null){document.querySelector("#modes").innerHTML=Object.entries({solo:"Solo",bot:"Contra robô",multi2:"Sala 2 pessoas",multi3:"Sala 3 pessoas",multi4:"Sala 4 pessoas"}).map(([id,label])=>`<button class="mode ${state.mode===id?"active":""}" data-mode="${id}"><strong>${label}</strong><span class="muted">${MODES[id].join(", ")}</span></button>`).join("");document.querySelector("#best").textContent=`Melhor pontuação salva: ${state.best} pts`;const q=QUESTIONS[state.current]||QUESTIONS[0];document.querySelector("#round-label").textContent=state.round?`Rodada ${state.round} - vez de ${state.players[state.turn].name}`:"Rodada";document.querySelector("#question").textContent=state.round?q.q:"Escolha um modo e inicie.";document.querySelector("#answers").innerHTML=state.round?q.a.map((x,i)=>`<button class="answer ${chosen===i?(ok?"correct":"wrong"):""}" data-answer="${i}">${x}</button>`).join(""):"";document.querySelector("#feedback").textContent=chosen===null?"":ok?"Resposta correta.":"Resposta incorreta.";document.querySelector("#scoreboard").innerHTML=state.players.map((p,i)=>`<div class="player ${i===state.turn?"active":""}"><span>${p.name}</span><b>${p.score}</b></div>`).join("")+state.last.slice(0,5).map(x=>`<p class="muted">${x}</p>`).join("")}
-    document.querySelector("#modes").addEventListener("click",e=>{const b=e.target.closest("[data-mode]");if(b)setMode(b.dataset.mode)});
-    document.querySelector("#answers").addEventListener("click",e=>{const b=e.target.closest("[data-answer]");if(b)answer(Number(b.dataset.answer))});
-    document.querySelector("#start").addEventListener("click",start);
-    document.querySelector("#reset").addEventListener("click",()=>{localStorage.removeItem(KEY);location.reload()});
-    render();
+    const $=s=>document.querySelector(s);
+    const api=(url,options={})=>fetch(url,{headers:{'Content-Type':'application/json'},cache:'no-store',...options}).then(async r=>{const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||'Falha no servidor');return data});
+    const S={mode:'solo',match:null,lobby:null,tick:null};
+    function setStatus(title,text,waiting=false){$('#status-title').textContent=title;$('#status-text').textContent=text;$('#cancel-queue').classList.toggle('hidden',!waiting)}
+    function chooseMode(mode){S.mode=mode;document.querySelectorAll('.mode').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));setStatus(mode==='solo'?'Treino solo':mode==='duel'?'Duelo online':'Competição geral',mode==='solo'?'Comece uma partida individual.':mode==='duel'?'Entre na fila para enfrentar uma pessoa online.':'Entre na janela geral; quando houver grupo, todos começam juntos.')}
+    async function refreshLobby(){try{const data=await api('/api/quiz/lobby');S.lobby=data;renderOnline(data);if(data.activeMatch){setMatch(data.activeMatch);return}if(data.queue)setStatus(data.queue.mode==='duel'?'Na fila de duelo':'Na competição geral',data.queue.mode==='duel'?'Aguardando outro jogador entrar na fila.':'Aguardando a janela de pareamento fechar com pelo menos 2 jogadores.',true)}catch(e){setStatus('Conexão indisponível',e.message)}}
+    function renderOnline(data){$('#online').innerHTML=data.online.length?data.online.map(p=>`<div class="online-row"><span><i class="dot"></i>${esc(p.name)}</span><button class="btn" data-invite="${p.id}">Convidar</button></div>`).join(''):'<p class="muted small">Nenhum outro jogador online agora.</p>';$('#invites').innerHTML=data.invites.length?data.invites.map(i=>`<div class="status"><span><b>${esc(i.from.name)}</b><br><small class="muted">quer disputar com você</small></span><span><button class="btn primary" data-accept="${i.id}">Aceitar</button><button class="btn" data-decline="${i.id}">Recusar</button></span></div>`).join(''):''}
+    function setMatch(match){S.match=match;$('#lobby').classList.add('hidden');$('#match').classList.remove('hidden');renderMatch(match)}
+    function renderMatch(match){S.match=match;if(match.status==='complete'){renderComplete(match);return}$('#round-label').textContent=`Rodada ${match.round}/${match.totalRounds} · ${match.mode==='solo'?'Solo':match.mode==='general'?'Competição geral':'Duelo'}`;$('#question').textContent=match.question?.q||'Aguardando...';const pct=Math.max(0,Math.min(100,match.msLeft/(match.roundSeconds*1000)*100));$('#timer-bar').style.width=pct+'%';$('#answers').innerHTML=(match.question?.a||[]).map((a,i)=>{const cls=match.reveal&&i===match.correctIndex?' correct':match.userAnswer===i&&!match.reveal?' active':match.reveal&&match.userAnswer===i&&i!==match.correctIndex?' wrong':'';return `<button class="answer${cls}" data-answer="${i}" ${match.answered||match.reveal?'disabled':''}>${esc(a)}</button>`}).join('');$('#feedback').textContent=match.answered&&!match.reveal?'Resposta enviada. Aguardando os demais ou o tempo acabar.':match.reveal?'Resposta revelada. Próxima pergunta em instantes.':'';$('#scoreboard').innerHTML=match.players.map(p=>`<div class="player ${S.lobby?.user?.id===p.id?'me':''}"><span>${esc(p.name)}${p.answered?' <span class="mark">respondeu</span>':''}</span><b>${p.score}</b></div>`).join('')}
+    function renderComplete(match){$('#round-label').textContent='Partida encerrada';$('#question').textContent='Resultado final';$('#timer-bar').style.width='0%';$('#answers').innerHTML='';const sorted=[...match.players].sort((a,b)=>b.score-a.score);$('#feedback').innerHTML=`Vencedor: <b>${esc(sorted[0]?.name||'')}</b> com ${sorted[0]?.score||0} pontos.`;$('#scoreboard').innerHTML=sorted.map((p,i)=>`<div class="player ${i===0?'me':''}"><span>${i+1}. ${esc(p.name)}</span><b>${p.score}</b></div>`).join('');$('#lobby').classList.remove('hidden');setStatus('Partida encerrada','Escolha um modo para jogar de novo.');S.match=null;loadRanking();refreshLobby()}
+    async function pollMatch(){if(!S.match)return;try{const data=await api('/api/quiz/match?id='+encodeURIComponent(S.match.id));renderMatch(data.match)}catch(e){setStatus('Partida perdida',e.message);S.match=null;$('#lobby').classList.remove('hidden');$('#match').classList.add('hidden')}}
+    async function mainAction(){try{if(S.mode==='solo'){const data=await api('/api/quiz/solo',{method:'POST',body:'{}'});setMatch(data.match);return}const data=await api('/api/quiz/queue',{method:'POST',body:JSON.stringify({mode:S.mode})});if(data.match)setMatch(data.match);else setStatus('Aguardando pareamento',data.status==='waiting'?'Você entrou na fila.':'Preparando partida.',true)}catch(e){setStatus('Erro',e.message)}}
+    async function cancelQueue(){await api('/api/quiz/cancel-queue',{method:'POST',body:'{}'});setStatus('Fila cancelada','Escolha um modo para tentar novamente.');refreshLobby()}
+    async function answer(i){if(!S.match)return;try{const data=await api('/api/quiz/answer',{method:'POST',body:JSON.stringify({matchId:S.match.id,answerIndex:i})});renderMatch(data.match)}catch(e){$('#feedback').textContent=e.message}}
+    async function loadRanking(){try{const data=await api('/api/quiz/ranking');$('#ranking').innerHTML=data.rows.length?data.rows.slice(0,8).map(r=>`<div class="rank-row"><b>${r.position}</b><span>${esc(r.player)}</span><strong>${r.wins} vitórias · ${r.bestScore} pts</strong></div>`).join(''):'<p class="muted small">Nenhuma partida ranqueada ainda.</p>'}catch{$('#ranking').textContent='Ranking indisponível.'}}
+    function esc(v){return String(v??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}
+    document.addEventListener('click',async e=>{const mode=e.target.closest('[data-mode]');if(mode)chooseMode(mode.dataset.mode);const inv=e.target.closest('[data-invite]');if(inv){await api('/api/quiz/invite',{method:'POST',body:JSON.stringify({toUserId:inv.dataset.invite})});setStatus('Convite enviado','Aguardando resposta do jogador.')}const acc=e.target.closest('[data-accept]');if(acc){const data=await api('/api/quiz/invite/respond',{method:'POST',body:JSON.stringify({inviteId:acc.dataset.accept,accept:true})});if(data.match)setMatch(data.match)}const dec=e.target.closest('[data-decline]');if(dec){await api('/api/quiz/invite/respond',{method:'POST',body:JSON.stringify({inviteId:dec.dataset.decline,accept:false})});refreshLobby()}const ans=e.target.closest('[data-answer]');if(ans)answer(Number(ans.dataset.answer))});
+    $('#main-action').addEventListener('click',mainAction);$('#cancel-queue').addEventListener('click',cancelQueue);
+    chooseMode('solo');refreshLobby();loadRanking();setInterval(refreshLobby,2500);setInterval(pollMatch,1000);
   </script>
 </body>
 </html>

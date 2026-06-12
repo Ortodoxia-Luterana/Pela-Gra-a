@@ -12,10 +12,11 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v3.25.0-luther-progression-polish';
+const GAME_VERSION = 'v3.26.0-luther-candy-progression';
 const GAME_ID = 'pela-graca-1904';
 const CRONICAS_GAME_ID = 'cronicas-do-levante';
 const LUTHER_MATCH_GAME_ID = 'luther-metch';
+const LUTHER_MATCH_MAX_LEVEL = 500;
 const RAW_PUBLIC_URL = 'https://cdn.jsdelivr.net/gh/Ortodoxia-Luterana/Pela-Gra-a@main/public';
 const CRONICAS_SAVE_NAME = 'Crônicas do Levante';
 const STATE_NAMES = {
@@ -437,6 +438,16 @@ function backfillRankings() {
 function publicRankingRow(row) {
   return { player: row.user_name, year: row.year, month: row.month, totalChurches: row.total_churches, totalMembers: Math.floor(row.total_members), doctrineCorrect: row.doctrine_correct, reachedFinal: Boolean(row.reached_final), updatedAt: row.updated_at };
 }
+function lutherMatchChestRewards(completedLevels = 0) {
+  const chests = Math.floor(Math.max(0, Math.min(LUTHER_MATCH_MAX_LEVEL, Number(completedLevels) || 0)) / 10);
+  let xp = 0;
+  let points = 0;
+  for (let chest = 1; chest <= chests; chest += 1) {
+    xp += 120 + Math.floor(chest / 5) * 45;
+    points += 90 + Math.floor(chest / 5) * 25;
+  }
+  return { chests, xp, points };
+}
 function lutherMatchStats(rowOrPayload = {}) {
   const hasProgress = Boolean(rowOrPayload && (
     rowOrPayload.entered ||
@@ -596,19 +607,27 @@ async function handleApi(req, res, url, user) {
   if (req.method === 'GET' && url.pathname === '/api/me') {
     const mainSave = getSaveSlot.get(user.id, 1);
     const summary = playerStatsFromSave(mainSave, user.id);
+    const lutherMatch = getLutherMatchRanking.get(user.id);
+    const lutherStats = lutherMatchStats(lutherMatch || {});
+    const lutherMedals = achievementsForState({}, lutherStats, user.id, LUTHER_MATCH_GAME_ID, LUTHER_MATCH_ACHIEVEMENTS);
+    const lutherChest = lutherMatchChestRewards(lutherStats.completedLevels);
+    const medals = [...summary.medals, ...lutherMedals];
+    const xp = achievementXp(medals) + lutherChest.xp;
+    const rank = titleProgress(xp);
+    const points = achievementPoints(medals) + rankPointBonus(rank) + lutherChest.points;
     json(res, 200, {
       user: { id: user.id, name: user.name, hasAvatar: Boolean(user.avatar_data) },
-      xp: summary.xp,
-      points: summary.points,
-      rank: summary.rank.current.title,
-      nextRank: summary.rank.next?.title || null,
-      progress: Math.round(summary.rank.progress),
-      medals: summary.medals,
+      xp,
+      points,
+      rank: rank.current.title,
+      nextRank: rank.next?.title || null,
+      progress: Math.round(rank.progress),
+      medals,
+      lutherChest,
       stickers: { owned: summary.stickersOwned, total: summary.stickersTotal }
     });
     return;
-  }
-  if (req.method === 'GET' && url.pathname === '/api/games') {
+  }  if (req.method === 'GET' && url.pathname === '/api/games') {
     json(res, 200, {
       games: [
         {
@@ -663,9 +682,9 @@ async function handleApi(req, res, url, user) {
     }
     if (req.method === 'PUT' || req.method === 'POST') {
       const payload = safeJsonParse(await readBody(req) || '{}', {});
-      const level = clampInt(payload.level, 1, 200);
-      const bestLevel = clampInt(payload.bestLevel ?? level, 1, 200);
-      const completedLevels = clampInt(payload.completedLevels ?? Math.max(0, bestLevel - 1), 0, 200);
+      const level = clampInt(payload.level, 1, LUTHER_MATCH_MAX_LEVEL);
+      const bestLevel = clampInt(payload.bestLevel ?? level, 1, LUTHER_MATCH_MAX_LEVEL);
+      const completedLevels = clampInt(payload.completedLevels ?? Math.max(0, bestLevel - 1), 0, LUTHER_MATCH_MAX_LEVEL);
       const score = clampInt(payload.score, 0, 999999999);
       const maxCombo = clampInt(payload.maxCombo, 0, 999);
       const lutherPairUsed = payload.lutherPairUsed ? 1 : 0;
@@ -767,9 +786,10 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   const lutherMatchRow = getLutherMatchRanking.get(user.id);
   const lutherMatchMedals = achievementsForState({}, lutherMatchStats(lutherMatchRow || {}), user.id, LUTHER_MATCH_GAME_ID, LUTHER_MATCH_ACHIEVEMENTS);
   const medals = [...player.medals, ...cronicasMedals, ...lutherMatchMedals];
-  const xp = achievementXp(medals);
+  const lutherChest = lutherMatchChestRewards(lutherMatchStats(lutherMatchRow || {}).completedLevels);
+  const xp = achievementXp(medals) + lutherChest.xp;
   const rank = titleProgress(xp);
-  const points = achievementPoints(medals) + rankPointBonus(rank);
+  const points = achievementPoints(medals) + rankPointBonus(rank) + lutherChest.points;
   const unlockedMedals = medals.filter(medal => medal.unlocked).length;
   const stickers = [];
   const ranking = rankingPayload();

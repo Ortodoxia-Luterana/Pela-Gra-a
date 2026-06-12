@@ -121,6 +121,57 @@
 
     .hud strong { display: block; font-family: Georgia, serif; font-size: clamp(21px, 7vw, 30px); line-height: 1.05; }
 
+    .level-map {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      padding: 7px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(7, 15, 22, .76);
+      box-shadow: 0 12px 26px rgba(0, 0, 0, .22);
+    }
+
+    .map-node {
+      min-height: 34px;
+      border: 1px solid rgba(255, 224, 138, .32);
+      border-radius: 9px;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font-weight: 900;
+      font-size: 12px;
+      background: rgba(255, 255, 255, .06);
+      position: relative;
+    }
+
+    .map-node.done {
+      color: #171007;
+      background: linear-gradient(180deg, #ffe08a, #d59a2b);
+    }
+
+    .map-node.current {
+      color: #fff7d8;
+      border-color: var(--gold-2);
+      box-shadow: 0 0 0 2px rgba(255, 224, 138, .22), 0 0 22px rgba(213, 154, 43, .42);
+    }
+
+    .map-node.chest::after {
+      content: "B";
+      position: absolute;
+      right: 4px;
+      top: 3px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: #6f3f08;
+      color: var(--gold-2);
+      font-size: 9px;
+      font-weight: 1000;
+    }
+
     .objectives {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
@@ -246,6 +297,34 @@
     .cell.created {
       animation: created .78s ease both;
       box-shadow: 0 0 0 2px rgba(255, 224, 138, .86), 0 0 24px rgba(255, 224, 138, .72);
+    }
+
+    .cell.glass::before,
+    .cell.chain::before {
+      content: "";
+      position: absolute;
+      inset: 3px;
+      border-radius: 7px;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .cell.glass::before {
+      border: 2px solid rgba(180, 236, 255, .72);
+      background: linear-gradient(135deg, rgba(255,255,255,.34), rgba(91,169,217,.2));
+      box-shadow: inset 0 0 10px rgba(255,255,255,.28);
+    }
+
+    .cell.glass-2::before {
+      border-width: 3px;
+      background: linear-gradient(135deg, rgba(255,255,255,.48), rgba(91,169,217,.32));
+    }
+
+    .cell.chain::before {
+      border: 3px solid rgba(105, 76, 43, .84);
+      background:
+        linear-gradient(45deg, transparent 38%, rgba(255, 224, 138, .75) 42%, rgba(255, 224, 138, .75) 58%, transparent 62%),
+        linear-gradient(-45deg, transparent 38%, rgba(255, 224, 138, .75) 42%, rgba(255, 224, 138, .75) 58%, transparent 62%);
     }
 
     .cell.dragging {
@@ -475,14 +554,16 @@
     <header class="top">
       <a class="seal" href="/" aria-label="Voltar ao hub"><img src="/assets/match3-tile-rose.svg" alt=""></a>
       <div class="title"><span>Luther Metch</span><small>Soli Deo Gloria</small></div>
-      <button class="icon-btn" id="sound" type="button" aria-label="Som">♪</button>
+      <button class="icon-btn" id="sound" type="button" aria-label="Som">â™ª</button>
     </header>
 
     <section class="hud" aria-label="Status da fase">
-      <article><span>Nível</span><strong id="level">1</strong></article>
+      <article><span>NÃ­vel</span><strong id="level">1</strong></article>
       <article><span>Movimentos</span><strong id="moves">25</strong></article>
       <article><span>Pontos</span><strong id="score">0</strong></article>
     </section>
+
+    <section class="level-map" id="level-map" aria-label="Mapa de progresso"></section>
 
     <section class="objectives" id="objectives" aria-label="Objetivos"></section>
 
@@ -491,7 +572,7 @@
       <div class="combo-burst" id="combo-burst" aria-live="polite"></div>
     </section>
 
-    <div class="message" id="message">Deslize uma peça para trocar com a vizinha.</div>
+    <div class="message" id="message">Deslize uma peÃ§a para trocar com a vizinha.</div>
   </main>
 
   <div class="level-complete" id="level-complete" aria-live="polite">
@@ -507,7 +588,7 @@
   <script>
     const KEY = "ol-luther-metch-v2";
     const SIZE = 8;
-    const MAX_LEVEL = 200;
+    const MAX_LEVEL = 500;
     const PROGRESS_API = "/api/luther-metch/progress";
     const TYPES = [
       { id: "book", name: "Livro", src: "/assets/match3-tile-book.svg" },
@@ -521,6 +602,11 @@
       luther: { name: "Lutero", src: "/assets/match3-special-luther.png" },
       solas: { name: "Tres Solas", src: "/assets/match3-special-solas.png" }
     };
+    const GOAL_META = {
+      score: { name: "Pontos", icon: "*" },
+      glass: { name: "Vitral", icon: "#" },
+      chain: { name: "Corrente", icon: "C" }
+    };
     const DEFAULT_OBJECTIVE_IDS = ["book", "rose", "candle"];
     const baseState = () => ({
       level: 1,
@@ -532,6 +618,10 @@
       goalIds: DEFAULT_OBJECTIVE_IDS,
       goals: { book: 12, rose: 8, candle: 10 },
       collected: { book: 0, rose: 0, candle: 0 },
+      obstacles: [],
+      scoreTarget: 0,
+      phaseType: "collect",
+      chestRewards: [],
       boosters: { hammer: 3, shuffle: 2 },
       maxCombo: 0,
       lutherPairUsed: false,
@@ -564,26 +654,42 @@
       return TYPES.slice(0, count).map(item => item.id);
     }
 
+    function phaseTypeFor(level) {
+      if (level % 10 === 0) return "mixed";
+      if (level >= 18 && level % 6 === 0) return "chain";
+      if (level >= 12 && level % 4 === 0) return "glass";
+      if (level >= 8 && level % 5 === 0) return "score";
+      return "collect";
+    }
+
     function levelConfig(level) {
       const capped = Math.max(1, Math.min(MAX_LEVEL, Math.floor(Number(level) || 1)));
       const tier = Math.floor((capped - 1) / 20);
       const activeTypes = levelTypeIds(capped);
-      const objectiveCount = capped >= 130 ? 5 : capped >= 45 ? 4 : 3;
+      const phaseType = phaseTypeFor(capped);
+      const objectiveCount = phaseType === "mixed" ? 3 : capped >= 130 ? 4 : capped >= 45 ? 3 : 2;
       const offset = Math.floor((capped - 1) / 2) % activeTypes.length;
       const goalIds = uniqueList(Array.from({ length: objectiveCount + 1 }, (_, index) => activeTypes[(offset + index) % activeTypes.length])).slice(0, objectiveCount);
       const pressure = capped % 10 === 0 ? 5 : capped % 5 === 0 ? 3 : 0;
-      const styleName = capped % 10 === 0 ? "Desafio apertado" : capped % 5 === 0 ? "Coleta intensa" : objectiveCount >= 5 ? "Muitos objetivos" : "Coleta rotativa";
+      const styleName = phaseType === "mixed" ? "Bau da Reforma" : phaseType === "chain" ? "Quebre correntes" : phaseType === "glass" ? "Quebre vitrais" : phaseType === "score" ? "Meta de pontos" : "Coleta rotativa";
       const goals = {};
       goalIds.forEach((id, index) => {
         const wave = (capped + index * 4) % 9;
         goals[id] = Math.min(48, 7 + Math.floor(capped * .18) + index * 4 + tier + wave + pressure);
       });
+      const obstacleBase = Math.min(30, 5 + Math.floor(capped / 12) + tier);
+      if (phaseType === "glass" || phaseType === "mixed") goals.glass = Math.min(38, obstacleBase + (phaseType === "mixed" ? 5 : 0));
+      if (phaseType === "chain" || phaseType === "mixed") goals.chain = Math.min(32, Math.max(4, obstacleBase - 2 + (phaseType === "mixed" ? 3 : 0)));
+      const scoreTarget = phaseType === "score" || phaseType === "mixed" ? Math.min(28000, 1200 + capped * 130 + tier * 450) : 0;
+      if (scoreTarget) goals.score = scoreTarget;
       return {
         level: capped,
         activeTypes,
+        phaseType,
         styleName,
         goalIds,
         goals,
+        scoreTarget,
         moves: Math.max(18, 30 - Math.floor(capped / 30) - Math.floor(tier / 3) + (objectiveCount >= 5 ? 4 : objectiveCount >= 4 ? 2 : 0)),
         boosters: {
           hammer: Math.max(1, 3 - Math.floor(capped / 55)),
@@ -595,10 +701,15 @@
       const config = levelConfig(target.level);
       target.level = config.level;
       target.activeTypes = config.activeTypes;
+      target.phaseType = config.phaseType;
       target.styleName = config.styleName;
       target.goalIds = config.goalIds;
       target.goals = { ...config.goals };
-      target.collected = Object.fromEntries(config.goalIds.map(id => [id, Number(target.collected?.[id] || 0)]));
+      target.scoreTarget = config.scoreTarget;
+      target.collected = Object.fromEntries([...config.goalIds, "glass", "chain"].map(id => [id, Number(target.collected?.[id] || 0)]));
+      target.obstacles = normalizeObstacles(target.obstacles);
+      const hasNeededObstacles = (!config.goals.glass || target.obstacles.some(item => item.glass > 0)) && (!config.goals.chain || target.obstacles.some(item => item.chain > 0));
+      if (!hasNeededObstacles) target.obstacles = makeObstacles(target);
       if (!Number.isFinite(Number(target.moves)) || target.moves <= 0) target.moves = config.moves;
       target.boosters = {
         hammer: Number.isFinite(Number(target.boosters?.hammer)) ? target.boosters.hammer : config.boosters.hammer,
@@ -609,6 +720,7 @@
       target.maxCombo = Math.max(0, Math.floor(Number(target.maxCombo) || 0));
       target.lutherPairUsed = Boolean(target.lutherPairUsed);
       target.solasPairUsed = Boolean(target.solasPairUsed);
+      target.chestRewards = Array.isArray(target.chestRewards) ? target.chestRewards.map(value => Number(value)).filter(value => Number.isFinite(value)) : [];
       target.mode = null;
       target.over = false;
       return target;
@@ -624,6 +736,7 @@
       const fresh = baseState();
       applyLevelConfig(fresh);
       fresh.board = makeBoard(fresh.activeTypes);
+      fresh.obstacles = makeObstacles(fresh);
       return fresh;
     }
 
@@ -667,7 +780,8 @@
             score: state.score,
             maxCombo: state.maxCombo || 0,
             lutherPairUsed: Boolean(state.lutherPairUsed),
-            solasPairUsed: Boolean(state.solasPairUsed)
+            solasPairUsed: Boolean(state.solasPairUsed),
+            chestRewards: state.chestRewards || []
           })
         });
         if (!response.ok) return;
@@ -699,12 +813,52 @@
         (row >= 2 && tileType(board[index - SIZE]) === type && tileType(board[index - SIZE * 2]) === type);
     }
 
+    function normalizeObstacles(obstacles) {
+      const source = Array.isArray(obstacles) ? obstacles : [];
+      return Array.from({ length: SIZE * SIZE }, (_, index) => {
+        const item = source[index] || {};
+        return { glass: Math.max(0, Math.min(2, Number(item.glass || 0))), chain: Math.max(0, Math.min(1, Number(item.chain || 0))) };
+      });
+    }
+
+    function makeObstacles(target) {
+      const obstacles = normalizeObstacles([]);
+      const phase = target.phaseType;
+      const level = target.level || 1;
+      const glassCount = phase === "glass" || phase === "mixed" ? Math.min(28, 5 + Math.floor(level / 12)) : 0;
+      const chainCount = phase === "chain" || phase === "mixed" ? Math.min(22, 4 + Math.floor(level / 15)) : 0;
+      const candidates = Array.from({ length: SIZE * SIZE }, (_, index) => index).sort((a, b) => ((a * 37 + level * 11) % 97) - ((b * 37 + level * 11) % 97));
+      candidates.slice(0, glassCount).forEach((index, order) => { obstacles[index].glass = level >= 120 && order % 3 === 0 ? 2 : 1; });
+      candidates.slice(glassCount, glassCount + chainCount).forEach(index => { obstacles[index].chain = 1; });
+      return obstacles;
+    }
+
+    function mapLevels() {
+      const current = state.level || 1;
+      const start = Math.max(1, Math.min(MAX_LEVEL - 4, current - 2));
+      return Array.from({ length: 5 }, (_, index) => start + index);
+    }
+
     function render() {
       document.querySelector("#level").textContent = state.level;
       document.querySelector("#moves").textContent = state.moves;
       document.querySelector("#score").textContent = state.score;
-      const objectiveIds = state.goalIds || DEFAULT_OBJECTIVE_IDS;
+      document.querySelector("#level-map").innerHTML = mapLevels().map(level => {
+        const current = level === state.level ? " current" : "";
+        const done = level <= state.completedLevels ? " done" : "";
+        const chest = level % 10 === 0 ? " chest" : "";
+        return '<span class="map-node' + current + done + chest + '">' + level + '</span>';
+      }).join("");
+      const objectiveIds = [...(state.goalIds || DEFAULT_OBJECTIVE_IDS)];
+      if (state.goals.glass) objectiveIds.push("glass");
+      if (state.goals.chain) objectiveIds.push("chain");
+      if (state.goals.score) objectiveIds.push("score");
       document.querySelector("#objectives").innerHTML = objectiveIds.map(id => {
+        if (GOAL_META[id]) {
+          const meta = GOAL_META[id];
+          const done = id === "score" ? Math.min(state.score, state.goals.score) : Math.min(state.collected[id] || 0, state.goals[id]);
+          return '<article class="objective"><b>' + meta.icon + '</b><span><small>' + meta.name + '</small><b>' + done + '/' + state.goals[id] + '</b></span></article>';
+        }
         const type = TYPES.find(item => item.id === id);
         const done = Math.min(state.collected[id] || 0, state.goals[id]);
         return '<article class="objective"><img src="' + type.src + '" alt=""><span><small>' + type.name + '</small><b>' + done + '/' + state.goals[id] + '</b></span></article>';
@@ -715,7 +869,9 @@
         const visual = special ? SPECIALS[special] : base;
         const selected = state.selected === index ? " selected" : "";
         const specialClass = special ? " special" : "";
-        return '<button class="cell' + selected + '" type="button" data-index="' + index + '" aria-label="' + visual.name + '"><img class="piece' + specialClass + '" src="' + visual.src + '" alt=""></button>';
+        const obstacle = state.obstacles[index] || {};
+        const obstacleClass = (obstacle.glass ? " glass glass-" + obstacle.glass : "") + (obstacle.chain ? " chain" : "");
+        return '<button class="cell' + selected + obstacleClass + '" type="button" data-index="' + index + '" aria-label="' + visual.name + '"><img class="piece' + specialClass + '" src="' + visual.src + '" alt=""></button>';
       }).join("");
     }
 
@@ -926,6 +1082,15 @@
     function removeCells(cells, hammer = false, expand = true) {
       const expanded = expand ? expandSpecialCells(cells) : [...new Set(cells)];
       expanded.forEach(index => {
+        const obstacle = state.obstacles[index];
+        if (obstacle?.glass > 0) {
+          obstacle.glass -= 1;
+          state.collected.glass = (state.collected.glass || 0) + 1;
+        }
+        if (obstacle?.chain > 0) {
+          obstacle.chain -= 1;
+          state.collected.chain = (state.collected.chain || 0) + 1;
+        }
         const id = tileType(state.board[index]);
         if ((state.goalIds || DEFAULT_OBJECTIVE_IDS).includes(id)) state.collected[id] = (state.collected[id] || 0) + 1;
         state.board[index] = null;
@@ -1080,7 +1245,21 @@
     }
 
     function goalsDone() {
-      return (state.goalIds || DEFAULT_OBJECTIVE_IDS).every(id => (state.collected[id] || 0) >= state.goals[id]);
+      const collectDone = (state.goalIds || DEFAULT_OBJECTIVE_IDS).every(id => (state.collected[id] || 0) >= state.goals[id]);
+      const glassDone = !state.goals.glass || (state.collected.glass || 0) >= state.goals.glass;
+      const chainDone = !state.goals.chain || (state.collected.chain || 0) >= state.goals.chain;
+      const scoreDone = !state.goals.score || state.score >= state.goals.score;
+      return collectDone && glassDone && chainDone && scoreDone;
+    }
+
+    function chestRewardFor(level) {
+      if (level % 10 !== 0) return null;
+      const chest = Math.floor(level / 10);
+      return {
+        level,
+        points: 90 + Math.floor(chest / 5) * 25,
+        xp: 120 + Math.floor(chest / 5) * 45
+      };
     }
 
     function afterMove() {
@@ -1096,13 +1275,17 @@
       if (win) {
         state.completedLevels = Math.max(state.completedLevels || 0, state.level);
         state.bestLevel = Math.max(state.bestLevel || 1, Math.min(MAX_LEVEL, state.level + 1));
+        const chest = chestRewardFor(state.level);
+        if (chest) {
+          state.chestRewards = uniqueList([...(state.chestRewards || []), state.level]);
+        }
       }
       saveState();
       message(win
-        ? state.level >= MAX_LEVEL ? "Campanha completa. Recarregando o nivel 200." : `Nivel ${state.level} concluido. Indo para o proximo...`
+        ? state.level >= MAX_LEVEL ? "Campanha completa. Recarregando o nivel 500." : `Nivel ${state.level} concluido. Indo para o proximo...`
         : "Sem movimentos. Reiniciando a fase...");
       render();
-      if (win) showLevelComplete(state.level, state.level >= MAX_LEVEL);
+      if (win) showLevelComplete(state.level, state.level >= MAX_LEVEL, chestRewardFor(state.level));
       await wait(win ? 2300 : 1100);
       hideLevelComplete();
       nextLevel();
@@ -1120,7 +1303,13 @@
       next.goals = config.goals;
       next.collected = Object.fromEntries(config.goalIds.map(id => [id, 0]));
       next.boosters = config.boosters;
+      next.activeTypes = config.activeTypes;
+      next.phaseType = config.phaseType;
+      next.styleName = config.styleName;
+      next.scoreTarget = config.scoreTarget;
+      next.chestRewards = state.chestRewards || [];
       next.board = makeBoard(next.activeTypes);
+      next.obstacles = makeObstacles(next);
       state = next;
       saveState();
       message(goalsDone() ? "Fase reiniciada." : `Nivel ${state.level}: ${state.styleName}.`);
@@ -1131,10 +1320,10 @@
       messageEl.textContent = text;
     }
 
-    function showLevelComplete(level, campaignDone = false) {
+    function showLevelComplete(level, campaignDone = false, chest = null) {
       if (!levelComplete) return;
       levelCompleteTitle.textContent = campaignDone ? "Campanha completa" : "Voce passou pelo nivel " + level;
-      levelCompleteNext.textContent = campaignDone ? "Recarregando o nivel 200..." : "Indo para o proximo nivel...";
+      levelCompleteNext.textContent = chest ? "Bau aberto: +" + chest.points + " pontos e +" + chest.xp + " XP." : campaignDone ? "Recarregando o nivel 500..." : "Indo para o proximo nivel...";
       levelComplete.classList.add("show");
     }
 

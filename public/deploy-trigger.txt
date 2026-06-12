@@ -1,1 +1,1 @@
-Game hub update: Luther Metch fixes stuck swipes and adds rotating level progression.
+Game hub update: Luther Metch 500 levels, map, phase types, obstacles and level chests.

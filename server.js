@@ -12,7 +12,7 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v3.22.0-luther-metch-combo-medals';
+const GAME_VERSION = 'v3.22.1-ranking-cleanup';
 const GAME_ID = 'pela-graca-1904';
 const CRONICAS_GAME_ID = 'cronicas-do-levante';
 const LUTHER_MATCH_GAME_ID = 'luther-metch';
@@ -782,20 +782,19 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     return {
       user: rankUser,
       summary: userSummary,
-      medals: userSummary.medals.filter(medal => medal.unlocked).length + lutherMedals,
-      lutherMatch: lutherMatch ? publicLutherMatchRow(lutherMatch) : { bestLevel: 1, completedLevels: 0, score: 0 }
+      medals: userSummary.medals.filter(medal => medal.unlocked).length + lutherMedals
     };
-  }).sort((a, b) => b.lutherMatch.bestLevel - a.lutherMatch.bestLevel || b.medals - a.medals || b.summary.points - a.summary.points || b.summary.xp - a.summary.xp || a.user.name.localeCompare(b.user.name)).map((item, index) => {
+  }).sort((a, b) => b.medals - a.medals || b.summary.points - a.summary.points || b.summary.xp - a.summary.xp || a.user.name.localeCompare(b.user.name)).map((item, index) => {
     const userRank = item.summary.rank.current;
-    return `<div class="hub-rank-row hub-rank-player"><b>${index + 1}</b><span>${escapeHtml(item.user.name)}<small>Luther Metch: nível ${item.lutherMatch.bestLevel} · ${item.lutherMatch.completedLevels} fases vencidas</small><img class="mini-rank-badge" src="${userRank.file}?v=${GAME_VERSION}" alt="${escapeHtml(userRank.title)}"></span><strong>${item.medals} medalhas · ${item.summary.points} pontos · ${item.summary.xp} XP</strong></div>`;
+    return `<div class="hub-rank-row hub-rank-player"><b>${index + 1}</b><span>${escapeHtml(item.user.name)}<img class="mini-rank-badge" src="${userRank.file}?v=${GAME_VERSION}" alt="${escapeHtml(userRank.title)}"></span><strong>${item.medals} medalhas � ${item.summary.points} pontos � ${item.summary.xp} XP</strong></div>`;
   }).join('');
   const prestigeItems = ranking.prestige.slice(0, 6);
   const liveRows = prestigeItems.length ? prestigeItems.map(item => `<article><img class="feed-avatar achievement-feed-icon" src="${escapeHtml(item.icon)}?v=${GAME_VERSION}" alt="${escapeHtml(item.medal)}"><span>${escapeHtml(item.player)} conquistou ${escapeHtml(item.medal)}</span><small>+${item.xp} XP · +${item.points} pontos</small></article>`).join('') : '<article><b class="feed-avatar">OL</b><span>Nenhum prestigio conquistado ainda. As novas medalhas vao aparecer aqui.</span></article>';
   const eventPanel = `<section class="ol-panel ol-event"><p>Evento em destaque</p><h3>Desafio da Reforma</h3><span>Espaço reservado para temporadas especiais da comunidade.</span><button disabled>Em breve</button></section>`;
-  const gameRankingList = `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><h3>Rankings por jogo</h3></div><div class="game-rank-list"><a href="/?section=ranking&game=pela-graca-1904"><span>Pela Graça 1904</span><strong>Ver ranking</strong></a><a href="/?section=ranking&game=luther-metch"><span>Luther Metch</span><strong>Níveis vencidos</strong></a></div></section>`;
+  const gameRankingList = `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><h3>Rankings por jogo</h3></div><div class="game-rank-list"><a href="/?section=ranking&game=pela-graca-1904"><span>Pela Graça 1904</span><strong>Ver ranking</strong></a><a href="/?section=ranking&game=luther-metch"><span>Luther Metch</span><strong>Ver ranking</strong></a></div></section>`;
   const generalRanking = `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><h3>Ranking geral</h3></div>${generalRankingRows || '<p>Nenhum jogador cadastrado ainda.</p>'}</section>${gameRankingList}`;
   const ielbRanking = `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><div><p>Ranking do jogo</p><h3>Pela Graça 1904</h3></div><a href="/?section=ranking">Voltar</a></div><h4>Mais anos jogados</h4>${rankingRows(ranking.byYear, item => item.year)}<h4>Mais igrejas até 2026</h4>${rankingRows(ranking.byChurches, item => item.totalChurches, ' igrejas')}</section>`;
-  const lutherRanking = `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><div><p>Ranking do jogo</p><h3>Luther Metch</h3></div><a href="/?section=ranking">Voltar</a></div><h4>Quem chegou mais longe</h4>${rankingRows(ranking.lutherMatch, item => `Nível ${item.bestLevel} · ${item.completedLevels} fases · ${item.score} pts`)}</section>`;
+  const lutherRanking = `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><div><p>Ranking do jogo</p><h3>Luther Metch</h3></div><a href="/?section=ranking">Voltar</a></div><h4>Quem chegou mais longe</h4>${rankingRows(ranking.lutherMatch, item => `Nivel ${item.bestLevel}`)}</section>`;
   const rankingSection = selectedGame === 'pela-graca-1904' ? ielbRanking : selectedGame === 'luther-metch' ? lutherRanking : generalRanking;
   const nav = [
     ['inicio', 'Início', '/', 'inicio'],

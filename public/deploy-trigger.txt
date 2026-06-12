@@ -1,1 +1,1 @@
-Game hub update: Luther Metch combo achievement medals and special-pair tracking.
+Game hub update: clean Luther Metch ranking labels and general rank rows.

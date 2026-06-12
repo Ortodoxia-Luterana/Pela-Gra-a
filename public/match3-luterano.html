@@ -683,25 +683,39 @@
       return "collect";
     }
 
+    function obstaclePlan(level, phase) {
+      const capped = Math.max(1, Math.min(MAX_LEVEL, Math.floor(Number(level) || 1)));
+      const glassCount = phase === "glass" || phase === "mixed" ? Math.min(32, 4 + Math.floor(capped / 10)) : 0;
+      const chainCount = phase === "chain" || phase === "mixed" ? Math.min(24, 3 + Math.floor(capped / 16)) : 0;
+      const doubleGlass = capped >= 120 ? Math.ceil(glassCount / 3) : 0;
+      return {
+        glassCount,
+        chainCount,
+        glassHits: glassCount + doubleGlass,
+        chainHits: chainCount
+      };
+    }
+
     function levelConfig(level) {
       const capped = Math.max(1, Math.min(MAX_LEVEL, Math.floor(Number(level) || 1)));
       const tier = Math.floor((capped - 1) / 20);
       const activeTypes = levelTypeIds(capped);
       const phaseType = phaseTypeFor(capped);
-      const objectiveCount = phaseType === "mixed" ? 3 : capped >= 130 ? 4 : capped >= 45 ? 3 : 2;
+      const objectiveCount = phaseType === "mixed" ? 2 : capped >= 120 ? 3 : 2;
       const offset = Math.floor((capped - 1) / 2) % activeTypes.length;
       const goalIds = uniqueList(Array.from({ length: objectiveCount + 1 }, (_, index) => activeTypes[(offset + index) % activeTypes.length])).slice(0, objectiveCount);
-      const pressure = capped % 10 === 0 ? 5 : capped % 5 === 0 ? 3 : 0;
+      const pressure = capped % 10 === 0 ? 2 : capped % 5 === 0 ? 1 : 0;
       const styleName = phaseType === "mixed" ? "Bau da Reforma" : phaseType === "chain" ? "Quebre correntes" : phaseType === "glass" ? "Quebre vitrais" : phaseType === "score" ? "Meta de pontos" : "Coleta rotativa";
+      const moves = Math.max(22, 31 - Math.floor(capped / 80) - Math.floor(tier / 8) + (phaseType === "mixed" ? 2 : phaseType === "score" ? 1 : 0));
+      const obstacle = obstaclePlan(capped, phaseType);
       const goals = {};
       goalIds.forEach((id, index) => {
-        const wave = (capped + index * 4) % 9;
-        goals[id] = Math.min(48, 7 + Math.floor(capped * .18) + index * 4 + tier + wave + pressure);
+        const wave = (capped + index * 3) % 4;
+        goals[id] = Math.min(18, 5 + Math.floor(capped / 45) + index * 2 + wave + pressure);
       });
-      const obstacleBase = Math.min(30, 5 + Math.floor(capped / 12) + tier);
-      if (phaseType === "glass" || phaseType === "mixed") goals.glass = Math.min(38, obstacleBase + (phaseType === "mixed" ? 5 : 0));
-      if (phaseType === "chain" || phaseType === "mixed") goals.chain = Math.min(32, Math.max(4, obstacleBase - 2 + (phaseType === "mixed" ? 3 : 0)));
-      const scoreTarget = phaseType === "score" || phaseType === "mixed" ? Math.min(28000, 1200 + capped * 130 + tier * 450) : 0;
+      if (phaseType === "glass" || phaseType === "mixed") goals.glass = Math.max(1, Math.min(obstacle.glassHits, Math.ceil(obstacle.glassHits * (phaseType === "mixed" ? .72 : .82))));
+      if (phaseType === "chain" || phaseType === "mixed") goals.chain = Math.max(1, Math.min(obstacle.chainHits, Math.ceil(obstacle.chainHits * (phaseType === "mixed" ? .72 : .82))));
+      const scoreTarget = phaseType === "score" || phaseType === "mixed" ? Math.min(9000, Math.round((moves * (95 + Math.min(165, capped * .42) + (phaseType === "mixed" ? 25 : 0))) / 10) * 10) : 0;
       if (scoreTarget) goals.score = scoreTarget;
       return {
         level: capped,
@@ -711,7 +725,7 @@
         goalIds,
         goals,
         scoreTarget,
-        moves: Math.max(18, 30 - Math.floor(capped / 30) - Math.floor(tier / 3) + (objectiveCount >= 5 ? 4 : objectiveCount >= 4 ? 2 : 0)),
+        moves,
         boosters: {
           hammer: Math.max(1, 3 - Math.floor(capped / 55)),
           shuffle: Math.max(1, 2 - Math.floor(capped / 120))
@@ -854,11 +868,10 @@
       const obstacles = normalizeObstacles([]);
       const phase = target.phaseType;
       const level = target.level || 1;
-      const glassCount = phase === "glass" || phase === "mixed" ? Math.min(28, 5 + Math.floor(level / 12)) : 0;
-      const chainCount = phase === "chain" || phase === "mixed" ? Math.min(22, 4 + Math.floor(level / 15)) : 0;
+      const plan = obstaclePlan(level, phase);
       const candidates = Array.from({ length: SIZE * SIZE }, (_, index) => index).sort((a, b) => ((a * 37 + level * 11) % 97) - ((b * 37 + level * 11) % 97));
-      candidates.slice(0, glassCount).forEach((index, order) => { obstacles[index].glass = level >= 120 && order % 3 === 0 ? 2 : 1; });
-      candidates.slice(glassCount, glassCount + chainCount).forEach(index => { obstacles[index].chain = 1; });
+      candidates.slice(0, plan.glassCount).forEach((index, order) => { obstacles[index].glass = level >= 120 && order % 3 === 0 ? 2 : 1; });
+      candidates.slice(plan.glassCount, plan.glassCount + plan.chainCount).forEach(index => { obstacles[index].chain = 1; });
       return obstacles;
     }
 

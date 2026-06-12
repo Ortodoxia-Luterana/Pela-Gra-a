@@ -1,1 +1,1 @@
-Game hub update: Luther Metch level score reset and total score sync separation.
+Game hub update: Luther Metch level requirement balance audit for all 500 levels.

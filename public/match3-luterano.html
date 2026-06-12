@@ -815,6 +815,10 @@
     }
 
     function uniqueCells(groups) { return [...new Set(groups.flat())]; }
+    function comboGroupCount(groups) {
+      return Math.max(1, comboCandidates(groups).length || groups.length || 1);
+    }
+
     function comboCandidates(groups) {
       const components = [];
       groups.forEach(group => {
@@ -933,12 +937,15 @@
     async function resolveMatches(initialGroups, preferredIndex = null) {
       let groups = initialGroups;
       let chain = 0;
+      let comboMultiplier = 1;
       while (groups.length) {
         chain += 1;
+        const automaticGroupCount = comboGroupCount(groups);
         if (chain > 1) {
-          state.maxCombo = Math.max(state.maxCombo || 0, chain);
-          showComboBurst(chain);
-          message("Combo " + chain + "x!");
+          comboMultiplier += automaticGroupCount;
+          state.maxCombo = Math.max(state.maxCombo || 0, comboMultiplier);
+          showComboBurst(comboMultiplier);
+          message("Combo " + comboMultiplier + "x!");
           await wait(260);
         }
         const specialGroup = comboCandidates(groups).sort((a, b) => b.cells.length - a.cells.length).find(group => group.cells.length >= 4);
@@ -970,7 +977,7 @@
         groups = findMatchGroups();
         preferredIndex = null;
       }
-      message(chain > 1 ? "Combo x" + chain + "." : "Boa combinacao.");
+      message(chain > 1 ? "Combo x" + comboMultiplier + "." : "Boa combinacao.");
     }
 
     async function settle() {

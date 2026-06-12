@@ -237,42 +237,12 @@ const upsertRanking = db.prepare(`
   ON CONFLICT(save_id) DO UPDATE SET user_name = excluded.user_name, save_name = excluded.save_name, year = excluded.year, month = excluded.month, total_churches = excluded.total_churches, total_members = excluded.total_members, doctrine_correct = excluded.doctrine_correct, reached_final = excluded.reached_final, state_churches_json = excluded.state_churches_json, updated_at = excluded.updated_at
 `);
 
-const QUIZ_QUESTIONS = [
-  { q: 'Qual princípio afirma que a Escritura é a norma final da doutrina?', a: ['Sola Scriptura', 'Sola Cultura', 'Sola Ratio', 'Sola História'], c: 0 },
-  { q: 'Na fé luterana, a justificação é recebida por:', a: ['Obras acumuladas', 'Fé em Cristo', 'Cargo eclesiástico', 'Tradição familiar'], c: 1 },
-  { q: 'Qual documento apresentou a fé luterana ao imperador em 1530?', a: ['Confissão de Augsburgo', 'Edito de Worms', 'Vulgata', 'Didachê'], c: 0 },
-  { q: 'O centro da pregação cristã é:', a: ['Autoajuda', 'Cristo crucificado e ressuscitado', 'Política partidária', 'Genealogias sem fim'], c: 1 },
-  { q: 'O Catecismo serve principalmente para:', a: ['Substituir a Bíblia', 'Ensinar a fé com clareza', 'Criar ranking social', 'Evitar perguntas'], c: 1 },
-  { q: 'Batismo e Ceia devem ser tratados como:', a: ['Brincadeiras religiosas', 'Meios ligados à promessa de Deus', 'Símbolos vazios', 'Prêmios por pontuação'], c: 1 },
-  { q: 'Na distinção Lei e Evangelho, a Lei principalmente:', a: ['Mostra o pecado e acusa', 'Perdoa pecados por si mesma', 'Elimina a necessidade de Cristo', 'Troca a fé por mérito'], c: 0 },
-  { q: 'O Evangelho anuncia principalmente:', a: ['A condenação sem saída', 'A obra de Cristo por pecadores', 'Uma lista de méritos', 'Um método político'], c: 1 },
-  { q: 'Qual é uma das Três Solas confessadas no luteranismo?', a: ['Sola Gratia', 'Sola Roma', 'Sola Opinio', 'Sola Potestas'], c: 0 },
-  { q: 'A Ceia do Senhor, na confissão luterana, entrega:', a: ['Apenas lembrança mental', 'Corpo e sangue de Cristo com pão e vinho', 'Somente símbolo social', 'Um prêmio para perfeitos'], c: 1 },
-  { q: 'Quem escreveu o Catecismo Menor?', a: ['Martinho Lutero', 'João Calvino', 'Tomás de Aquino', 'Eusébio de Cesareia'], c: 0 },
-  { q: 'A vocação cristã ensina que:', a: ['Só pastores servem a Deus', 'Deus serve o próximo por meio de chamados comuns', 'Trabalho comum não importa', 'Família não tem relação com fé'], c: 1 },
-  { q: 'O primeiro mandamento ensina a:', a: ['Temer, amar e confiar em Deus sobre todas as coisas', 'Confiar primeiro no próprio coração', 'Trocar Deus por sinais', 'Servir apenas quando houver recompensa'], c: 0 },
-  { q: 'Na tradição luterana, fé salvadora é:', a: ['Confiança na promessa de Deus em Cristo', 'Opinião religiosa genérica', 'Força interior independente de Cristo', 'Obra que compra perdão'], c: 0 },
-  { q: 'A Reforma Luterana começou publicamente ligada a qual debate?', a: ['Indulgências e arrependimento', 'Calendário romano', 'Arquitetura gótica', 'Rotas marítimas'], c: 0 },
-  { q: 'O que significa “católico” no Credo, em sentido clássico?', a: ['Universal', 'Romano moderno apenas', 'Europeu', 'Político'], c: 0 },
-  { q: 'A ressurreição de Cristo significa que:', a: ['A morte venceu', 'Cristo venceu a morte', 'Tudo foi só metáfora', 'A fé não depende de fato histórico'], c: 1 },
-  { q: 'A oração do Pai Nosso começa dirigindo-se a:', a: ['Nossa força interior', 'Nosso Pai que está nos céus', 'Um anjo protetor', 'A comunidade local'], c: 1 },
-  { q: 'A Confissão de Augsburgo foi apresentada em qual século?', a: ['Século XVI', 'Século XII', 'Século XIX', 'Século IV'], c: 0 },
-  { q: 'O ofício pastoral existe para:', a: ['Dominar consciências', 'Pregar a Palavra e administrar os Sacramentos', 'Substituir Cristo', 'Garantir status social'], c: 1 },
-  { q: 'Qual destes pertence ao Credo Apostólico?', a: ['Creio em Deus Pai todo-poderoso', 'Tudo depende da sorte', 'A matéria é má por natureza', 'A salvação vem do Império'], c: 0 },
-  { q: 'A fé cristã confessa um Deus:', a: ['Triúno: Pai, Filho e Espírito Santo', 'Dividido em três deuses', 'Impessoal e distante', 'Criado pelo mundo'], c: 0 },
-  { q: 'O pecado original ensina que:', a: ['O ser humano nasce sem necessidade de graça', 'A corrupção do pecado atinge a natureza humana', 'Só atos públicos são pecado', 'Crianças não precisam de Cristo'], c: 1 },
-  { q: 'A absolvição anuncia:', a: ['Perdão em nome de Cristo', 'Apenas conselho psicológico', 'Que pecado não existe', 'Que obras compram graça'], c: 0 },
-  { q: 'A boa obra cristã é fruto de:', a: ['Fé viva em Cristo', 'Tentativa de comprar salvação', 'Vaidade necessária', 'Medo sem promessa'], c: 0 },
-  { q: 'A palavra “Evangelho” significa:', a: ['Boa notícia', 'Lei civil', 'Tradição secreta', 'Contrato comercial'], c: 0 },
-  { q: 'Quem é o mediador entre Deus e os homens?', a: ['Cristo Jesus', 'Mérito próprio', 'O acaso', 'Qualquer poder político'], c: 0 },
-  { q: 'No culto cristão, Deus serve seu povo principalmente por meio de:', a: ['Palavra e Sacramentos', 'Entretenimento religioso', 'Esforço humano', 'Promessas de prosperidade'], c: 0 },
-  { q: 'A Escritura aponta para:', a: ['Cristo e sua obra salvadora', 'Autoexaltação humana', 'Mitos sem promessa', 'Poder sem arrependimento'], c: 0 },
-  { q: 'A esperança cristã inclui:', a: ['Ressurreição do corpo e vida eterna', 'Fuga eterna do corpo criado', 'Reencarnação infinita', 'Apenas sucesso presente'], c: 0 }
-];
+const QUIZ_QUESTIONS = [];
 
 function isoNow() { return new Date().toISOString(); }
 function isoSecondsAgo(seconds) { return new Date(Date.now() - seconds * 1000).toISOString(); }
 function msUntil(iso) { return Math.max(0, new Date(iso).getTime() - Date.now()); }
+function quizQuestionsReady() { return QUIZ_QUESTIONS.length >= QUIZ_QUESTION_COUNT; }
 function quizQuestion(id) { return QUIZ_QUESTIONS[Number(id) % QUIZ_QUESTIONS.length]; }
 function publicQuizQuestion(id) {
   const q = quizQuestion(id);
@@ -998,12 +968,14 @@ async function handleApi(req, res, url, user) {
       return;
     }
     if (req.method === 'POST' && url.pathname === '/api/quiz/solo') {
+      if (!quizQuestionsReady()) { json(res, 409, { error: 'Banco de perguntas em revisão. Aguarde as novas perguntas aprovadas.' }); return; }
       deleteQuizQueueUser.run(user.id);
       const match = createQuizMatch('solo', [user]);
       json(res, 200, { match: publicQuizMatch(match, user.id) });
       return;
     }
     if (req.method === 'POST' && url.pathname === '/api/quiz/queue') {
+      if (!quizQuestionsReady()) { json(res, 409, { error: 'Banco de perguntas em revisão. Aguarde as novas perguntas aprovadas.' }); return; }
       const payload = safeJsonParse(await readBody(req) || '{}', {});
       const mode = payload.mode === 'general' ? 'general' : 'duel';
       deleteQuizQueueUser.run(user.id);
@@ -1065,6 +1037,7 @@ async function handleApi(req, res, url, user) {
         json(res, 200, { ok: true });
         return;
       }
+      if (!quizQuestionsReady()) { json(res, 409, { error: 'Banco de perguntas em revisão. Aguarde as novas perguntas aprovadas.' }); return; }
       const match = createQuizMatch('invite', [
         { user_id: invite.from_user_id, user_name: invite.from_user_name },
         { user_id: invite.to_user_id, user_name: invite.to_user_name }

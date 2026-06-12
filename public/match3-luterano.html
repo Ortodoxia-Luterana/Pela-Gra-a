@@ -937,12 +937,11 @@
     async function resolveMatches(initialGroups, preferredIndex = null) {
       let groups = initialGroups;
       let chain = 0;
-      let comboMultiplier = 1;
+      let comboMultiplier = 0;
       while (groups.length) {
         chain += 1;
-        const automaticGroupCount = comboGroupCount(groups);
-        if (chain > 1) {
-          comboMultiplier += automaticGroupCount;
+        comboMultiplier += comboGroupCount(groups);
+        if (comboMultiplier > 1) {
           state.maxCombo = Math.max(state.maxCombo || 0, comboMultiplier);
           showComboBurst(comboMultiplier);
           message("Combo " + comboMultiplier + "x!");
@@ -977,7 +976,7 @@
         groups = findMatchGroups();
         preferredIndex = null;
       }
-      message(chain > 1 ? "Combo x" + comboMultiplier + "." : "Boa combinacao.");
+      message(comboMultiplier > 1 ? "Combo x" + comboMultiplier + "." : "Boa combinacao.");
     }
 
     async function settle() {

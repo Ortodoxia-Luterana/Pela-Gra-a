@@ -1,1 +1,1 @@
-Game hub update: clean non-player test accounts from rankings.
+Game hub update: clean remaining placeholder accounts from rankings.

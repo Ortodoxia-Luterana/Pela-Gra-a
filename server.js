@@ -22,6 +22,9 @@ const QUIZ_ROUND_SECONDS = 20;
 const QUIZ_QUESTION_COUNT = 8;
 const QUIZ_GENERAL_WAIT_SECONDS = 15;
 const QUIZ_ONLINE_SECONDS = 45;
+const QUIZ_REVEAL_SECONDS = 2;
+const QUIZ_WIN_POINTS = 10;
+const QUIZ_WIN_XP = 15;
 const RAW_PUBLIC_URL = 'https://cdn.jsdelivr.net/gh/Ortodoxia-Luterana/Pela-Gra-a@main/public';
 const CRONICAS_SAVE_NAME = 'Crônicas do Levante';
 const STATE_NAMES = {
@@ -108,16 +111,24 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS cronicas_saves (user_id TEXT PRIMARY KEY, state_json TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS quiz_presence (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, last_seen TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS quiz_queue (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, mode TEXT NOT NULL, joined_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
-  CREATE TABLE IF NOT EXISTS quiz_matches (id TEXT PRIMARY KEY, mode TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, started_at TEXT NOT NULL, question_ids_json TEXT NOT NULL, round_seconds INTEGER NOT NULL, finalized INTEGER NOT NULL DEFAULT 0);
+  CREATE TABLE IF NOT EXISTS quiz_matches (id TEXT PRIMARY KEY, mode TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, started_at TEXT NOT NULL, question_ids_json TEXT NOT NULL, round_seconds INTEGER NOT NULL, finalized INTEGER NOT NULL DEFAULT 0, round_index INTEGER NOT NULL DEFAULT 0, round_started_at TEXT, reveal_until TEXT);
   CREATE TABLE IF NOT EXISTS quiz_match_players (match_id TEXT NOT NULL, user_id TEXT NOT NULL, user_name TEXT NOT NULL, score INTEGER NOT NULL DEFAULT 0, joined_at TEXT NOT NULL, PRIMARY KEY (match_id, user_id), FOREIGN KEY (match_id) REFERENCES quiz_matches(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS quiz_answers (match_id TEXT NOT NULL, user_id TEXT NOT NULL, question_index INTEGER NOT NULL, answer_index INTEGER NOT NULL, correct INTEGER NOT NULL, answered_at TEXT NOT NULL, PRIMARY KEY (match_id, user_id, question_index), FOREIGN KEY (match_id) REFERENCES quiz_matches(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS quiz_invites (id TEXT PRIMARY KEY, from_user_id TEXT NOT NULL, from_user_name TEXT NOT NULL, to_user_id TEXT NOT NULL, to_user_name TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, match_id TEXT, FOREIGN KEY (from_user_id) REFERENCES users(id) ON DELETE CASCADE, FOREIGN KEY (to_user_id) REFERENCES users(id) ON DELETE CASCADE);
-  CREATE TABLE IF NOT EXISTS quiz_rankings (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, best_score INTEGER NOT NULL DEFAULT 0, wins INTEGER NOT NULL DEFAULT 0, matches_played INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
+  CREATE TABLE IF NOT EXISTS quiz_rankings (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, best_score INTEGER NOT NULL DEFAULT 0, wins INTEGER NOT NULL DEFAULT 0, duel_wins INTEGER NOT NULL DEFAULT 0, general_wins INTEGER NOT NULL DEFAULT 0, invite_wins INTEGER NOT NULL DEFAULT 0, matches_played INTEGER NOT NULL DEFAULT 0, reward_points INTEGER NOT NULL DEFAULT 0, reward_xp INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
 `);
 try { db.exec('ALTER TABLE users ADD COLUMN avatar_data TEXT'); } catch {}
 try { db.exec('ALTER TABLE luther_match_rankings ADD COLUMN max_combo INTEGER NOT NULL DEFAULT 0'); } catch {}
 try { db.exec('ALTER TABLE luther_match_rankings ADD COLUMN luther_pair_used INTEGER NOT NULL DEFAULT 0'); } catch {}
 try { db.exec('ALTER TABLE luther_match_rankings ADD COLUMN solas_pair_used INTEGER NOT NULL DEFAULT 0'); } catch {}
+try { db.exec('ALTER TABLE quiz_matches ADD COLUMN round_index INTEGER NOT NULL DEFAULT 0'); } catch {}
+try { db.exec('ALTER TABLE quiz_matches ADD COLUMN round_started_at TEXT'); } catch {}
+try { db.exec('ALTER TABLE quiz_matches ADD COLUMN reveal_until TEXT'); } catch {}
+try { db.exec('ALTER TABLE quiz_rankings ADD COLUMN duel_wins INTEGER NOT NULL DEFAULT 0'); } catch {}
+try { db.exec('ALTER TABLE quiz_rankings ADD COLUMN general_wins INTEGER NOT NULL DEFAULT 0'); } catch {}
+try { db.exec('ALTER TABLE quiz_rankings ADD COLUMN invite_wins INTEGER NOT NULL DEFAULT 0'); } catch {}
+try { db.exec('ALTER TABLE quiz_rankings ADD COLUMN reward_points INTEGER NOT NULL DEFAULT 0'); } catch {}
+try { db.exec('ALTER TABLE quiz_rankings ADD COLUMN reward_xp INTEGER NOT NULL DEFAULT 0'); } catch {}
 
 const getUserByName = db.prepare('SELECT * FROM users WHERE name = ? COLLATE NOCASE');
 const getUserById = db.prepare('SELECT * FROM users WHERE id = ?');
@@ -195,7 +206,7 @@ const getQuizDuelOpponent = db.prepare('SELECT * FROM quiz_queue WHERE mode = ? 
 const getQuizGeneralQueue = db.prepare('SELECT * FROM quiz_queue WHERE mode = ? ORDER BY joined_at ASC');
 const deleteQuizQueueUser = db.prepare('DELETE FROM quiz_queue WHERE user_id = ?');
 const deleteOldQuizQueue = db.prepare('DELETE FROM quiz_queue WHERE joined_at < ?');
-const insertQuizMatch = db.prepare('INSERT INTO quiz_matches (id, mode, status, created_at, started_at, question_ids_json, round_seconds, finalized) VALUES (?, ?, ?, ?, ?, ?, ?, 0)');
+const insertQuizMatch = db.prepare('INSERT INTO quiz_matches (id, mode, status, created_at, started_at, question_ids_json, round_seconds, finalized, round_index, round_started_at, reveal_until) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, ?, NULL)');
 const getQuizMatch = db.prepare('SELECT * FROM quiz_matches WHERE id = ?');
 const getActiveQuizMatchForUser = db.prepare("SELECT quiz_matches.* FROM quiz_matches JOIN quiz_match_players ON quiz_match_players.match_id = quiz_matches.id WHERE quiz_match_players.user_id = ? AND quiz_matches.status = 'active' ORDER BY quiz_matches.created_at DESC LIMIT 1");
 const insertQuizMatchPlayer = db.prepare('INSERT OR IGNORE INTO quiz_match_players (match_id, user_id, user_name, score, joined_at) VALUES (?, ?, ?, 0, ?)');
@@ -205,6 +216,8 @@ const getQuizAnswer = db.prepare('SELECT * FROM quiz_answers WHERE match_id = ? 
 const insertQuizAnswer = db.prepare('INSERT OR IGNORE INTO quiz_answers (match_id, user_id, question_index, answer_index, correct, answered_at) VALUES (?, ?, ?, ?, ?, ?)');
 const updateQuizPlayerScore = db.prepare('UPDATE quiz_match_players SET score = ? WHERE match_id = ? AND user_id = ?');
 const updateQuizMatchStatus = db.prepare('UPDATE quiz_matches SET status = ? WHERE id = ?');
+const updateQuizMatchRound = db.prepare('UPDATE quiz_matches SET round_index = ?, round_started_at = ?, reveal_until = ? WHERE id = ?');
+const updateQuizMatchReveal = db.prepare('UPDATE quiz_matches SET reveal_until = ? WHERE id = ?');
 const finalizeQuizMatchRow = db.prepare('UPDATE quiz_matches SET finalized = 1 WHERE id = ?');
 const insertQuizInvite = db.prepare('INSERT INTO quiz_invites (id, from_user_id, from_user_name, to_user_id, to_user_name, status, created_at, match_id) VALUES (?, ?, ?, ?, ?, ?, ?, NULL)');
 const getQuizInvite = db.prepare('SELECT * FROM quiz_invites WHERE id = ?');
@@ -212,8 +225,8 @@ const getQuizIncomingInvites = db.prepare("SELECT * FROM quiz_invites WHERE to_u
 const updateQuizInvite = db.prepare('UPDATE quiz_invites SET status = ?, match_id = ? WHERE id = ?');
 const deleteOldQuizInvites = db.prepare("DELETE FROM quiz_invites WHERE created_at < ? OR status <> 'pending'");
 const getQuizRanking = db.prepare('SELECT * FROM quiz_rankings WHERE user_id = ?');
-const getQuizRankings = db.prepare('SELECT * FROM quiz_rankings ORDER BY wins DESC, best_score DESC, matches_played ASC, updated_at ASC LIMIT 20');
-const upsertQuizRanking = db.prepare('INSERT INTO quiz_rankings (user_id, user_name, best_score, wins, matches_played, updated_at) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET user_name = excluded.user_name, best_score = max(quiz_rankings.best_score, excluded.best_score), wins = quiz_rankings.wins + excluded.wins, matches_played = quiz_rankings.matches_played + excluded.matches_played, updated_at = excluded.updated_at');
+const getQuizRankings = db.prepare('SELECT * FROM quiz_rankings ORDER BY wins DESC, general_wins DESC, duel_wins DESC, best_score DESC, matches_played ASC, updated_at ASC LIMIT 20');
+const upsertQuizRanking = db.prepare('INSERT INTO quiz_rankings (user_id, user_name, best_score, wins, duel_wins, general_wins, invite_wins, matches_played, reward_points, reward_xp, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET user_name = excluded.user_name, best_score = max(quiz_rankings.best_score, excluded.best_score), wins = quiz_rankings.wins + excluded.wins, duel_wins = quiz_rankings.duel_wins + excluded.duel_wins, general_wins = quiz_rankings.general_wins + excluded.general_wins, invite_wins = quiz_rankings.invite_wins + excluded.invite_wins, matches_played = quiz_rankings.matches_played + excluded.matches_played, reward_points = quiz_rankings.reward_points + excluded.reward_points, reward_xp = quiz_rankings.reward_xp + excluded.reward_xp, updated_at = excluded.updated_at');
 const upsertRanking = db.prepare(`
   INSERT INTO rankings (save_id, user_id, user_name, save_name, year, month, total_churches, total_members, doctrine_correct, reached_final, state_churches_json, updated_at)
   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -281,7 +294,7 @@ function touchQuizPresence(user) {
 function createQuizMatch(mode, players) {
   const id = crypto.randomUUID();
   const now = isoNow();
-  insertQuizMatch.run(id, mode, 'active', now, now, JSON.stringify(quizQuestionIds()), QUIZ_ROUND_SECONDS);
+  insertQuizMatch.run(id, mode, 'active', now, now, JSON.stringify(quizQuestionIds()), QUIZ_ROUND_SECONDS, now);
   players.forEach(player => insertQuizMatchPlayer.run(id, player.user_id || player.id, player.user_name || player.name, now));
   return getQuizMatch.get(id);
 }
@@ -292,12 +305,40 @@ function quizAnswerMap(matchId) {
 }
 function quizRoundInfo(match) {
   const questionIds = safeJsonParse(match.question_ids_json, []);
-  const elapsed = Math.max(0, Date.now() - new Date(match.started_at).getTime());
-  const rawIndex = Math.floor(elapsed / (match.round_seconds * 1000));
-  const complete = rawIndex >= questionIds.length;
-  const index = Math.min(rawIndex, Math.max(0, questionIds.length - 1));
-  const roundEndsAt = new Date(new Date(match.started_at).getTime() + (index + 1) * match.round_seconds * 1000).toISOString();
-  return { questionIds, index, complete, roundEndsAt, msLeft: complete ? 0 : msUntil(roundEndsAt) };
+  const index = Math.max(0, Math.min(Number(match.round_index || 0), Math.max(0, questionIds.length - 1)));
+  const complete = Number(match.round_index || 0) >= questionIds.length;
+  const startedAt = match.round_started_at || match.started_at;
+  const roundEndsAt = new Date(new Date(startedAt).getTime() + (match.round_seconds * 1000)).toISOString();
+  return { questionIds, index, complete, roundEndsAt, msLeft: complete ? 0 : msUntil(roundEndsAt), revealUntil: match.reveal_until || null };
+}
+function ensureQuizMatchProgress(match) {
+  if (!match || match.status !== 'active') return match;
+  let current = match;
+  for (let guard = 0; guard < 3; guard += 1) {
+    const round = quizRoundInfo(current);
+    if (round.complete) {
+      finalizeQuizMatch(current);
+      return getQuizMatch.get(current.id);
+    }
+    const players = getQuizMatchPlayers.all(current.id);
+    const answers = quizAnswerMap(current.id);
+    const allAnswered = players.length > 0 && players.every(player => answers.has(`${player.user_id}:${round.index}`));
+    const timeExpired = round.msLeft <= 0;
+    if (!allAnswered && !timeExpired) return current;
+    if (!current.reveal_until) {
+      updateQuizMatchReveal.run(new Date(Date.now() + QUIZ_REVEAL_SECONDS * 1000).toISOString(), current.id);
+      return getQuizMatch.get(current.id);
+    }
+    if (msUntil(current.reveal_until) > 0) return current;
+    const nextIndex = round.index + 1;
+    if (nextIndex >= round.questionIds.length) {
+      finalizeQuizMatch(current);
+      return getQuizMatch.get(current.id);
+    }
+    updateQuizMatchRound.run(nextIndex, isoNow(), null, current.id);
+    current = getQuizMatch.get(current.id);
+  }
+  return current;
 }
 function finalizeQuizMatch(match) {
   if (!match || match.finalized) return;
@@ -307,16 +348,25 @@ function finalizeQuizMatch(match) {
   answers.forEach(answer => scoreByUser.set(answer.user_id, (scoreByUser.get(answer.user_id) || 0) + (answer.correct ? 10 : 0)));
   let best = -1;
   scoreByUser.forEach(score => { if (score > best) best = score; });
+  const winners = players.filter(player => (scoreByUser.get(player.user_id) || 0) === best);
+  const hasSingleMultiplayerWinner = players.length > 1 && winners.length === 1;
   players.forEach(player => {
     const score = scoreByUser.get(player.user_id) || 0;
+    const won = hasSingleMultiplayerWinner && winners[0].user_id === player.user_id;
+    const duelWins = won && match.mode === 'duel' ? 1 : 0;
+    const generalWins = won && match.mode === 'general' ? 1 : 0;
+    const inviteWins = won && match.mode === 'invite' ? 1 : 0;
+    const rewardPoints = won ? QUIZ_WIN_POINTS : 0;
+    const rewardXp = won ? QUIZ_WIN_XP : 0;
     updateQuizPlayerScore.run(score, match.id, player.user_id);
-    upsertQuizRanking.run(player.user_id, player.user_name, score, score === best && players.length > 1 ? 1 : 0, 1, isoNow());
+    upsertQuizRanking.run(player.user_id, player.user_name, score, won ? 1 : 0, duelWins, generalWins, inviteWins, 1, rewardPoints, rewardXp, isoNow());
   });
   updateQuizMatchStatus.run('complete', match.id);
   finalizeQuizMatchRow.run(match.id);
 }
 function publicQuizMatch(match, userId) {
   if (!match) return null;
+  match = ensureQuizMatchProgress(match);
   const round = quizRoundInfo(match);
   if (round.complete && match.status !== 'complete') {
     finalizeQuizMatch(match);
@@ -325,7 +375,7 @@ function publicQuizMatch(match, userId) {
   const players = getQuizMatchPlayers.all(match.id);
   const answers = quizAnswerMap(match.id);
   const allAnswered = players.every(player => answers.has(`${player.user_id}:${round.index}`));
-  const reveal = match.status === 'complete' || round.complete || round.msLeft <= 250 || allAnswered;
+  const reveal = match.status === 'complete' || round.complete || Boolean(match.reveal_until) || round.msLeft <= 250 || allAnswered;
   const qid = round.questionIds[round.index];
   const question = qid === undefined ? null : publicQuizQuestion(qid);
   const userAnswer = answers.get(`${userId}:${round.index}`) || null;
@@ -337,7 +387,8 @@ function publicQuizMatch(match, userId) {
     totalRounds: round.questionIds.length,
     roundSeconds: match.round_seconds,
     roundEndsAt: round.roundEndsAt,
-    msLeft: round.msLeft,
+    revealUntil: match.reveal_until || null,
+    msLeft: match.reveal_until ? msUntil(match.reveal_until) : round.msLeft,
     question,
     reveal,
     correctIndex: reveal && qid !== undefined ? quizQuestion(qid).c : null,
@@ -674,6 +725,16 @@ function lutherMatchChestRewards(completedLevels = 0) {
   }
   return { chests, xp, points };
 }
+function quizRewards(row = {}) {
+  return {
+    xp: Math.max(0, Number(row?.reward_xp || 0)),
+    points: Math.max(0, Number(row?.reward_points || 0)),
+    duelWins: Math.max(0, Number(row?.duel_wins || 0)),
+    generalWins: Math.max(0, Number(row?.general_wins || 0)),
+    inviteWins: Math.max(0, Number(row?.invite_wins || 0)),
+    wins: Math.max(0, Number(row?.wins || 0))
+  };
+}
 function lutherMatchStats(rowOrPayload = {}) {
   const hasProgress = Boolean(rowOrPayload && (
     rowOrPayload.entered ||
@@ -732,6 +793,15 @@ function rankingPayload() {
   backfillRankings();
   const rows = getGameRankingRows.all();
   const lutherMatch = getLutherMatchRankings.all().slice(0, 20).map(publicLutherMatchRow);
+  const quizOrtodoxia = getQuizRankings.all().map((row, index) => ({
+    position: index + 1,
+    player: row.user_name,
+    duelWins: Number(row.duel_wins || 0),
+    generalWins: Number(row.general_wins || 0),
+    inviteWins: Number(row.invite_wins || 0),
+    wins: Number(row.wins || 0),
+    matchesPlayed: Number(row.matches_played || 0)
+  }));
   const byYear = [...rows].sort((a, b) => b.year - a.year || b.month - a.month || b.total_churches - a.total_churches).slice(0, 10).map(publicRankingRow);
   const byChurches = [...rows].sort((a, b) => b.total_churches - a.total_churches || b.reached_final - a.reached_final || b.year - a.year).slice(0, 10).map(publicRankingRow);
   const byDoctrine = [...rows].sort((a, b) => b.doctrine_correct - a.doctrine_correct || b.year - a.year || b.total_churches - a.total_churches).slice(0, 10).map(publicRankingRow);
@@ -754,7 +824,7 @@ function rankingPayload() {
       unlockedAt: item.unlocked_at
     };
   }).filter(Boolean).sort((a, b) => String(b.unlockedAt || '').localeCompare(String(a.unlockedAt || ''))).slice(0, 12);
-  return { generatedAt: new Date().toISOString(), byYear, byChurches, byState, byDoctrine, lutherMatch, prestige };
+  return { generatedAt: new Date().toISOString(), byYear, byChurches, byState, byDoctrine, lutherMatch, quizOrtodoxia, prestige };
 }
 function hubSaveForUser(user) {
   const existing = getSaveSlot.get(user.id, 1);
@@ -837,10 +907,11 @@ async function handleApi(req, res, url, user) {
     const lutherStats = lutherMatchStats(lutherMatch || {});
     const lutherMedals = achievementsForState({}, lutherStats, user.id, LUTHER_MATCH_GAME_ID, LUTHER_MATCH_ACHIEVEMENTS);
     const lutherChest = lutherMatchChestRewards(lutherStats.completedLevels);
+    const quizReward = quizRewards(getQuizRanking.get(user.id));
     const medals = [...summary.medals, ...lutherMedals];
-    const xp = achievementXp(medals) + lutherChest.xp;
+    const xp = achievementXp(medals) + lutherChest.xp + quizReward.xp;
     const rank = titleProgress(xp);
-    const points = achievementPoints(medals) + rankPointBonus(rank) + lutherChest.points;
+    const points = achievementPoints(medals) + rankPointBonus(rank) + lutherChest.points + quizReward.points;
     json(res, 200, {
       user: { id: user.id, name: user.name, hasAvatar: Boolean(user.avatar_data) },
       xp,
@@ -850,6 +921,7 @@ async function handleApi(req, res, url, user) {
       progress: Math.round(rank.progress),
       medals,
       lutherChest,
+      quizReward,
       stickers: { owned: summary.stickersOwned, total: summary.stickersTotal }
     });
     return;
@@ -889,7 +961,7 @@ async function handleApi(req, res, url, user) {
           title: 'Quiz Ortodoxia',
           status: 'prototype',
           playUrl: '/quiz-ortodoxia',
-          rankingUrl: null
+          rankingUrl: '/?section=ranking&game=quiz-ortodoxia'
         }
       ]
     });
@@ -1001,7 +1073,7 @@ async function handleApi(req, res, url, user) {
       return;
     }
     if (req.method === 'GET' && url.pathname === '/api/quiz/ranking') {
-      json(res, 200, { rows: getQuizRankings.all().map((row, index) => ({ position: index + 1, player: row.user_name, bestScore: row.best_score, wins: row.wins, matchesPlayed: row.matches_played })) });
+      json(res, 200, { rows: getQuizRankings.all().map((row, index) => ({ position: index + 1, player: row.user_name, duelWins: row.duel_wins, generalWins: row.general_wins, inviteWins: row.invite_wins, wins: row.wins, matchesPlayed: row.matches_played })) });
       return;
     }
     json(res, 404, { error: 'API do quiz não encontrada' });
@@ -1125,9 +1197,10 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   const lutherMatchMedals = achievementsForState({}, lutherMatchStats(lutherMatchRow || {}), user.id, LUTHER_MATCH_GAME_ID, LUTHER_MATCH_ACHIEVEMENTS);
   const medals = [...player.medals, ...cronicasMedals, ...lutherMatchMedals];
   const lutherChest = lutherMatchChestRewards(lutherMatchStats(lutherMatchRow || {}).completedLevels);
-  const xp = achievementXp(medals) + lutherChest.xp;
+  const quizReward = quizRewards(getQuizRanking.get(user.id));
+  const xp = achievementXp(medals) + lutherChest.xp + quizReward.xp;
   const rank = titleProgress(xp);
-  const points = achievementPoints(medals) + rankPointBonus(rank) + lutherChest.points;
+  const points = achievementPoints(medals) + rankPointBonus(rank) + lutherChest.points + quizReward.points;
   const unlockedMedals = medals.filter(medal => medal.unlocked).length;
   const stickers = [];
   const ranking = rankingPayload();
@@ -1149,11 +1222,13 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   const prestigeItems = ranking.prestige.slice(0, 6);
   const liveRows = prestigeItems.length ? prestigeItems.map(item => `<article><img class="feed-avatar achievement-feed-icon" src="${escapeHtml(item.icon)}?v=${GAME_VERSION}" alt="${escapeHtml(item.medal)}"><span>${escapeHtml(item.player)} conquistou ${escapeHtml(item.medal)}</span><small>+${item.xp} XP · +${item.points} pontos</small></article>`).join('') : '<article><b class="feed-avatar">OL</b><span>Nenhum prestigio conquistado ainda. As novas medalhas vao aparecer aqui.</span></article>';
   const eventPanel = `<section class="ol-panel ol-event"><p>Evento em destaque</p><h3>Desafio da Reforma</h3><span>Espaço reservado para temporadas especiais da comunidade.</span><button disabled>Em breve</button></section>`;
-  const gameRankingList = `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><h3>Rankings por jogo</h3></div><div class="game-rank-list"><a href="/?section=ranking&game=pela-graca-1904"><span>Pela Graça 1904</span><strong>Ver ranking</strong></a><a href="/?section=ranking&game=luther-metch"><span>Luther Metch</span><strong>Ver ranking</strong></a></div></section>`;
+  const gameRankingList = `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><h3>Rankings por jogo</h3></div><div class="game-rank-list"><a href="/?section=ranking&game=pela-graca-1904"><span>Pela Graça 1904</span><strong>Ver ranking</strong></a><a href="/?section=ranking&game=luther-metch"><span>Luther Metch</span><strong>Ver ranking</strong></a><a href="/?section=ranking&game=quiz-ortodoxia"><span>Quiz Ortodoxia</span><strong>Ver ranking</strong></a></div></section>`;
   const generalRanking = `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><h3>Ranking geral</h3></div>${generalRankingRows || '<p>Nenhum jogador cadastrado ainda.</p>'}</section>${gameRankingList}`;
   const ielbRanking = `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><div><p>Ranking do jogo</p><h3>Pela Graça 1904</h3></div><a href="/?section=ranking">Voltar</a></div><h4>Mais anos jogados</h4>${rankingRows(ranking.byYear, item => item.year)}<h4>Mais igrejas até 2026</h4>${rankingRows(ranking.byChurches, item => item.totalChurches, ' igrejas')}</section>`;
   const lutherRanking = `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><div><p>Ranking do jogo</p><h3>Luther Metch</h3></div><a href="/?section=ranking">Voltar</a></div><h4>Quem chegou mais longe</h4>${rankingRows(ranking.lutherMatch, item => `Nivel ${item.bestLevel}`)}</section>`;
-  const rankingSection = selectedGame === 'pela-graca-1904' ? ielbRanking : selectedGame === 'luther-metch' ? lutherRanking : generalRanking;
+  const quizRankingRows = ranking.quizOrtodoxia.length ? ranking.quizOrtodoxia.slice(0, 12).map((item, index) => `<div class="hub-rank-row"><b>${index + 1}</b><span>${escapeHtml(item.player)}</span><strong>${item.duelWins} duelo · ${item.generalWins} geral</strong></div>`).join('') : '<p>Nenhuma vitória ranqueada ainda.</p>';
+  const quizRanking = `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><div><p>Ranking do jogo</p><h3>Quiz Ortodoxia</h3></div><a href="/?section=ranking">Voltar</a></div><h4>Vitórias online</h4>${quizRankingRows}</section>`;
+  const rankingSection = selectedGame === 'pela-graca-1904' ? ielbRanking : selectedGame === 'luther-metch' ? lutherRanking : selectedGame === 'quiz-ortodoxia' ? quizRanking : generalRanking;
   const nav = [
     ['inicio', 'Início', '/', 'inicio'],
     ['jogos', 'Jogos', '/?section=jogos', 'jogos'],

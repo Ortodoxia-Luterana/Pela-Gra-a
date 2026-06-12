@@ -44,7 +44,7 @@
       margin: 0 auto;
       padding: max(10px, env(safe-area-inset-top)) 10px max(14px, env(safe-area-inset-bottom));
       display: grid;
-      grid-template-rows: auto auto 1fr auto;
+      grid-template-rows: auto auto auto 1fr auto;
       gap: 10px;
       overflow-x: hidden;
     }
@@ -96,7 +96,7 @@
       gap: 8px;
     }
 
-    .hud article, .objectives, .boosters, .board-wrap, .message {
+    .hud article, .objectives, .board-wrap, .message {
       border: 1px solid var(--line);
       border-radius: 10px;
       background: linear-gradient(180deg, rgba(255, 246, 214, .95), rgba(231, 207, 153, .94));
@@ -273,45 +273,65 @@
         drop-shadow(0 7px 5px rgba(0, 0, 0, .38));
     }
 
-    .boosters {
-      display: grid;
-      grid-template-columns: 1fr 1fr auto;
-      gap: 8px;
-      padding: 8px;
-    }
-
-    .booster, .restart {
-      min-height: 58px;
-      border: 1px solid rgba(115, 80, 29, .24);
-      border-radius: 9px;
-      color: var(--ink);
-      background: rgba(255, 255, 255, .36);
-      display: grid;
-      grid-template-columns: 40px 1fr;
-      align-items: center;
-      gap: 7px;
-      padding: 6px 8px;
-      cursor: pointer;
-    }
-
-    .booster.active { outline: 3px solid var(--gold); }
-    .booster img { width: 38px; height: 38px; }
-    .booster strong { display: block; font-size: 13px; }
-    .booster span { display: block; color: #73501d; font-size: 12px; font-weight: 800; }
-
-    .restart {
-      grid-template-columns: 1fr;
-      min-width: 54px;
-      text-align: center;
-      font-size: 22px;
-      color: #703226;
-    }
-
     .message {
       min-height: 40px;
       padding: 9px 12px;
       color: var(--ink);
       text-align: center;
+      font-weight: 800;
+    }
+
+    .level-complete {
+      position: fixed;
+      inset: 0;
+      display: none;
+      place-items: center;
+      padding: 22px;
+      background: rgba(4, 8, 12, .58);
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    .level-complete.show {
+      display: grid;
+      animation: overlay-fade .22s ease both;
+    }
+
+    .level-card {
+      width: min(100%, 360px);
+      border: 2px solid rgba(255, 224, 138, .82);
+      border-radius: 16px;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(255, 224, 138, .28), transparent 45%),
+        linear-gradient(180deg, rgba(22, 17, 28, .98), rgba(8, 12, 18, .98));
+      color: #fff7d8;
+      text-align: center;
+      padding: 24px 18px 22px;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, .62);
+      animation: level-card-in .42s cubic-bezier(.18, .9, .22, 1) .08s both;
+    }
+
+    .level-card small {
+      display: block;
+      color: var(--gold-2);
+      font-size: 12px;
+      font-weight: 1000;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .level-card strong {
+      display: block;
+      margin-top: 8px;
+      font-family: Georgia, serif;
+      font-size: 30px;
+      line-height: 1.08;
+    }
+
+    .level-card span {
+      display: block;
+      margin-top: 10px;
+      color: var(--muted);
       font-weight: 800;
     }
 
@@ -436,8 +456,17 @@
       .hud strong { font-size: 34px; }
       .objectives { grid-template-columns: 1fr; }
       .board-wrap { grid-column: 2; grid-row: 2 / span 2; }
-      .boosters, .message { grid-column: 3; }
-      .boosters { grid-template-columns: 1fr; }
+      .message { grid-column: 3; }
+    }
+
+    @keyframes overlay-fade {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes level-card-in {
+      from { opacity: 0; transform: translateY(18px) scale(.92); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
     }
   </style>
 </head>
@@ -462,14 +491,16 @@
       <div class="combo-burst" id="combo-burst" aria-live="polite"></div>
     </section>
 
-    <section class="boosters" aria-label="Ferramentas">
-      <button class="booster" id="hammer" type="button"><img src="/assets/match3-booster-hammer.svg" alt=""><span><strong>Martelo</strong><span id="hammer-count">3</span></span></button>
-      <button class="booster" id="shuffle" type="button"><img src="/assets/match3-booster-shuffle.svg" alt=""><span><strong>Embaralhar</strong><span id="shuffle-count">2</span></span></button>
-      <button class="restart" id="restart" type="button" aria-label="Reiniciar">↻</button>
-    </section>
-
     <div class="message" id="message">Deslize uma peça para trocar com a vizinha.</div>
   </main>
+
+  <div class="level-complete" id="level-complete" aria-live="polite">
+    <div class="level-card">
+      <small>Parabens</small>
+      <strong id="level-complete-title">Voce passou pelo nivel 1</strong>
+      <span id="level-complete-next">Indo para o proximo nivel...</span>
+    </div>
+  </div>
 
   <div class="achievement-toast" id="achievement-toast" aria-live="polite"></div>
 
@@ -516,6 +547,9 @@
     const boardEl = document.querySelector("#board");
     const messageEl = document.querySelector("#message");
     const comboBurst = document.querySelector("#combo-burst");
+    const levelComplete = document.querySelector("#level-complete");
+    const levelCompleteTitle = document.querySelector("#level-complete-title");
+    const levelCompleteNext = document.querySelector("#level-complete-next");
     const achievementToast = document.querySelector("#achievement-toast");
 
     function makeTile(type = randType(), special = null) { return { type, special }; }
@@ -559,6 +593,7 @@
       target.maxCombo = Math.max(0, Math.floor(Number(target.maxCombo) || 0));
       target.lutherPairUsed = Boolean(target.lutherPairUsed);
       target.solasPairUsed = Boolean(target.solasPairUsed);
+      target.mode = null;
       return target;
     }
 
@@ -648,10 +683,6 @@
       document.querySelector("#level").textContent = state.level;
       document.querySelector("#moves").textContent = state.moves;
       document.querySelector("#score").textContent = state.score;
-      document.querySelector("#hammer-count").textContent = state.boosters.hammer;
-      document.querySelector("#shuffle-count").textContent = state.boosters.shuffle;
-      document.querySelector("#hammer").classList.toggle("active", state.mode === "hammer");
-      document.querySelector("#shuffle").classList.toggle("active", state.mode === "shuffle");
       const objectiveIds = state.goalIds || DEFAULT_OBJECTIVE_IDS;
       document.querySelector("#objectives").innerHTML = objectiveIds.map(id => {
         const type = TYPES.find(item => item.id === id);
@@ -1045,7 +1076,9 @@
         ? state.level >= MAX_LEVEL ? "Campanha completa. Recarregando o nivel 200." : `Nivel ${state.level} concluido. Indo para o proximo...`
         : "Sem movimentos. Reiniciando a fase...");
       render();
-      await wait(win ? 900 : 1100);
+      if (win) showLevelComplete(state.level, state.level >= MAX_LEVEL);
+      await wait(win ? 2300 : 1100);
+      hideLevelComplete();
       nextLevel();
     }
 
@@ -1068,18 +1101,19 @@
       render();
     }
 
-    function restart() {
-      localStorage.removeItem(KEY);
-      state = baseState();
-      applyLevelConfig(state);
-      state.board = makeBoard();
-      message("Fase reiniciada.");
-      saveState();
-      render();
-    }
-
     function message(text) {
       messageEl.textContent = text;
+    }
+
+    function showLevelComplete(level, campaignDone = false) {
+      if (!levelComplete) return;
+      levelCompleteTitle.textContent = campaignDone ? "Campanha completa" : "Voce passou pelo nivel " + level;
+      levelCompleteNext.textContent = campaignDone ? "Recarregando o nivel 200..." : "Indo para o proximo nivel...";
+      levelComplete.classList.add("show");
+    }
+
+    function hideLevelComplete() {
+      if (levelComplete) levelComplete.classList.remove("show");
     }
 
     function showComboBurst(multiplier) {
@@ -1163,25 +1197,6 @@
       pointerStart = null;
     });
 
-    document.querySelector("#hammer").addEventListener("click", () => {
-      if (state.boosters.hammer <= 0 || state.over) return;
-      state.mode = state.mode === "hammer" ? null : "hammer";
-      state.selected = null;
-      message(state.mode ? "Martelo ativo: toque em uma peca para remover." : "Martelo cancelado.");
-      render();
-    });
-
-    document.querySelector("#shuffle").addEventListener("click", async () => {
-      if (state.boosters.shuffle <= 0 || state.over) return;
-      state.boosters.shuffle -= 1;
-      state.moves -= 1;
-      state.board = state.board.sort(() => Math.random() - .5);
-      state.mode = null;
-      await settle();
-      afterMove();
-    });
-
-    document.querySelector("#restart").addEventListener("click", restart);
     document.querySelector("#sound").addEventListener("click", () => message("Som reservado para a proxima etapa."));
 
     render();

@@ -1,1 +1,1 @@
-Game hub update: restore meaningful rank point rewards while keeping general ranking medal-only.
+Game hub update: Luther Metch level completion overlay and simplified play controls.

@@ -123,7 +123,7 @@
 
     .objectives {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
       gap: 6px;
       padding: 7px;
     }
@@ -557,20 +557,34 @@
     function tileSpecial(tile) { return typeof tile === "object" ? tile?.special : null; }
     function matchType(tile) { return tileSpecial(tile) ? null : tileType(tile); }
     function normalizeBoard(board) { return board.map(tile => tile ? makeTile(tileType(tile), tileSpecial(tile)) : null); }
+    function uniqueList(items) { return [...new Set(items)]; }
+    function levelTypeIds(level) {
+      const capped = Math.max(1, Math.min(MAX_LEVEL, Math.floor(Number(level) || 1)));
+      const count = capped >= 30 ? 6 : capped >= 10 ? 5 : 4;
+      return TYPES.slice(0, count).map(item => item.id);
+    }
+
     function levelConfig(level) {
       const capped = Math.max(1, Math.min(MAX_LEVEL, Math.floor(Number(level) || 1)));
       const tier = Math.floor((capped - 1) / 20);
-      const objectiveCount = capped >= 120 ? 6 : capped >= 70 ? 5 : capped >= 25 ? 4 : 3;
-      const goalIds = TYPES.slice(0, objectiveCount).map(item => item.id);
+      const activeTypes = levelTypeIds(capped);
+      const objectiveCount = capped >= 130 ? 5 : capped >= 45 ? 4 : 3;
+      const offset = Math.floor((capped - 1) / 2) % activeTypes.length;
+      const goalIds = uniqueList(Array.from({ length: objectiveCount + 1 }, (_, index) => activeTypes[(offset + index) % activeTypes.length])).slice(0, objectiveCount);
+      const pressure = capped % 10 === 0 ? 5 : capped % 5 === 0 ? 3 : 0;
+      const styleName = capped % 10 === 0 ? "Desafio apertado" : capped % 5 === 0 ? "Coleta intensa" : objectiveCount >= 5 ? "Muitos objetivos" : "Coleta rotativa";
       const goals = {};
       goalIds.forEach((id, index) => {
-        goals[id] = Math.min(70, 8 + Math.floor(capped * 1.15) + index * 3 + tier * 2);
+        const wave = (capped + index * 4) % 9;
+        goals[id] = Math.min(48, 7 + Math.floor(capped * .18) + index * 4 + tier + wave + pressure);
       });
       return {
         level: capped,
+        activeTypes,
+        styleName,
         goalIds,
         goals,
-        moves: Math.max(14, 30 - Math.floor(capped / 12) - tier),
+        moves: Math.max(18, 30 - Math.floor(capped / 30) - Math.floor(tier / 3) + (objectiveCount >= 5 ? 4 : objectiveCount >= 4 ? 2 : 0)),
         boosters: {
           hammer: Math.max(1, 3 - Math.floor(capped / 55)),
           shuffle: Math.max(1, 2 - Math.floor(capped / 120))
@@ -580,6 +594,8 @@
     function applyLevelConfig(target) {
       const config = levelConfig(target.level);
       target.level = config.level;
+      target.activeTypes = config.activeTypes;
+      target.styleName = config.styleName;
       target.goalIds = config.goalIds;
       target.goals = { ...config.goals };
       target.collected = Object.fromEntries(config.goalIds.map(id => [id, Number(target.collected?.[id] || 0)]));
@@ -594,6 +610,7 @@
       target.lutherPairUsed = Boolean(target.lutherPairUsed);
       target.solasPairUsed = Boolean(target.solasPairUsed);
       target.mode = null;
+      target.over = false;
       return target;
     }
 
@@ -606,7 +623,7 @@
       } catch {}
       const fresh = baseState();
       applyLevelConfig(fresh);
-      fresh.board = makeBoard();
+      fresh.board = makeBoard(fresh.activeTypes);
       return fresh;
     }
 
@@ -660,13 +677,16 @@
         });
       } catch {}
     }
-    function randType() { return TYPES[Math.floor(Math.random() * TYPES.length)].id; }
+    function randType(pool = null) {
+      const activeTypes = pool?.length ? pool : state.activeTypes;
+      return activeTypes[Math.floor(Math.random() * activeTypes.length)];
+    }
 
-    function makeBoard() {
+    function makeBoard(activeTypes = null) {
       const b = [];
       for (let i = 0; i < SIZE * SIZE; i += 1) {
-        let type = randType();
-        while (wouldMatchAt(b, i, type)) type = randType();
+        let type = randType(activeTypes);
+        while (wouldMatchAt(b, i, type)) type = randType(activeTypes);
         b[i] = makeTile(type);
       }
       return b;
@@ -1100,10 +1120,10 @@
       next.goals = config.goals;
       next.collected = Object.fromEntries(config.goalIds.map(id => [id, 0]));
       next.boosters = config.boosters;
-      next.board = makeBoard();
+      next.board = makeBoard(next.activeTypes);
       state = next;
       saveState();
-      message(goalsDone() ? "Fase reiniciada." : `Nivel ${state.level} carregado.`);
+      message(goalsDone() ? "Fase reiniciada." : `Nivel ${state.level}: ${state.styleName}.`);
       render();
     }
 
@@ -1159,6 +1179,7 @@
       if (isBusy || state.over) return;
       const cell = event.target.closest("[data-index]");
       if (!cell) return;
+      event.preventDefault();
       pointerStart = {
         index: Number(cell.dataset.index),
         x: event.clientX,
@@ -1173,6 +1194,7 @@
 
     boardEl.addEventListener("pointermove", event => {
       if (!pointerStart) return;
+      event.preventDefault();
       const dx = event.clientX - pointerStart.x;
       const dy = event.clientY - pointerStart.y;
       const limit = pointerStart.cell.getBoundingClientRect().width * .72;
@@ -1184,6 +1206,7 @@
 
     boardEl.addEventListener("pointerup", event => {
       if (!pointerStart) return;
+      event.preventDefault();
       const start = pointerStart;
       pointerStart = null;
       start.cell.classList.remove("dragging");

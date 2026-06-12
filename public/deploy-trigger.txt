@@ -1,1 +1,1 @@
-Game hub update: Luther Metch combo display uses total resolved matches without a 5x cap.
+Game hub update: Luther Metch fixes stuck swipes and adds rotating level progression.

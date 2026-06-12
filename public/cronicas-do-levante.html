@@ -44,6 +44,11 @@ body{padding:16px;display:flex;justify-content:center}
 .side h3:first-child{margin-top:0}
 .item{font-size:13.5px;line-height:1.55;color:var(--ink2);border-bottom:1px solid rgba(139,105,20,.08);padding:5px 0}
 .dim{opacity:.55;font-style:italic}
+.meters{display:grid;gap:8px}
+.meter{display:grid;gap:3px;font-size:12px;color:var(--ink2)}
+.meter-top{display:flex;justify-content:space-between;gap:8px}
+.meter-bar{height:6px;border-radius:99px;background:rgba(139,105,20,.12);overflow:hidden;border:1px solid rgba(139,105,20,.14)}
+.meter-bar span{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));width:0%}
 .ending{border:2px solid var(--gold);background:rgba(139,105,20,.08);border-radius:var(--r);padding:24px}
 .ending-badge{text-align:center;font-family:Cinzel,serif;font-size:10px;letter-spacing:3px;color:var(--gold2);margin-bottom:10px}
 .ending-title{text-align:center;font-family:Cinzel,serif;font-size:24px;margin-bottom:14px}
@@ -62,7 +67,7 @@ body{padding:16px;display:flex;justify-content:center}
 <div class="shell">
   <div class="hdr"><div class="hdr-title">CRÔNICAS DO LEVANTE</div><div class="hdr-sub"><span id="pill-ano">Ano: ???</span><span id="pill-local" class="hidden"></span><span id="pill-rei" class="hidden"></span></div></div>
   <div class="tabs"><div class="tab active" onclick="tab('jogo')">Jogo</div><div class="tab" onclick="tab('linha')">Descobertas</div><div class="tab" onclick="tab('ajuda')">Como jogar</div></div>
-  <div id="jogo" class="content active"><div class="game"><div class="main"><div class="log" id="log"><div>Você acordou longe do seu mundo.</div></div><div class="scene" id="scene"></div><div class="act-head"><div class="act-label">O que você faz?</div><button class="back" id="back" onclick="voltar()" disabled>Voltar</button></div><div class="acts" id="acts"></div></div><aside class="side"><h3>Você</h3><div class="item" id="nome">estrangeiro</div><h3>Descobertas</h3><div id="desc"><div class="item dim">Nada claro ainda.</div></div><h3>Relações</h3><div id="rel"><div class="item dim">Ninguém confia em você ainda.</div></div><h3>Marcas</h3><div id="marks"><div class="item dim">Nenhuma decisão profunda ainda.</div></div><h3>Caminho</h3><div id="cam"><div class="item dim">Indefinido</div></div></aside></div></div>
+  <div id="jogo" class="content active"><div class="game"><div class="main"><div class="log" id="log"><div>Você acordou longe do seu mundo.</div></div><div class="scene" id="scene"></div><div class="act-head"><div class="act-label">O que você faz?</div><button class="back" id="back" onclick="voltar()" disabled>Voltar</button></div><div class="acts" id="acts"></div></div><aside class="side"><h3>Você</h3><div class="item" id="nome">estrangeiro</div><h3>Descobertas</h3><div id="desc"><div class="item dim">Nada claro ainda.</div></div><h3>Relações</h3><div id="rel"><div class="item dim">Ninguém confia em você ainda.</div></div><h3>Marcas</h3><div id="marks"><div class="item dim">Nenhuma decisão profunda ainda.</div></div><h3>Caminho</h3><div id="cam"><div class="item dim">Indefinido</div></div><h3>Postura</h3><div id="posture"><div class="item dim">Suas escolhas ainda não formaram um padrão.</div></div></aside></div></div>
   <div id="linha" class="content"><div class="grid" id="linha-grid"></div></div>
   <div id="ajuda" class="content"><div class="grid"><div class="card"><h2>Ideia central</h2><p>Você não recebe a história pronta. Primeiro sobrevive, escuta nomes e descobre aos poucos em que parte da Bíblia caiu.</p></div><div class="card"><h2>Como avançar</h2><p>Escolha pela intenção do personagem, não tentando adivinhar final certo. Algumas decisões aproximam você de pessoas, lugares e responsabilidades diferentes.</p></div><div class="card"><h2>Descobertas</h2><p>O painel guarda nomes, relações e marcas importantes. Ele mostra o que você aprendeu durante a jornada, sem entregar o que ainda não viveu.</p></div><div class="card"><h2>Duração</h2><p>Cada jornada é longa o bastante para explorar conversas, consequências e detalhes históricos antes de chegar a um final.</p></div></div></div>
 </div>
@@ -426,12 +431,58 @@ function buildDeepPath(base,cfg){
       const s=phase(ch);
       const opts=phaseOptions(ch,pi,ci,cfg.name);
       const actionStats=['escuta','servico','prudencia','ousadia'];
-      const actions=opts.map((t,ai)=>({t:contextAction(t),p:next,mark:s.mark,rel:s.rel,desc:s.desc,stat:actionStats[ai]}));
+      const actions=opts.map((t,ai)=>{
+        const stat=actionStats[ai];
+        const responseId=responseSceneId(base,ci,pi,ai);
+        return {
+          t:contextAction(t),
+          p:pi>=2?responseId:next,
+          mark:s.mark,
+          rel:s.rel,
+          desc:s.desc,
+          stat
+        };
+      });
       makeScene(id,cfg.name,s.title,s.body,actions,{path:cfg.name});
+      if(pi>=2){
+        opts.forEach((choice,ai)=>{
+          const stat=actionStats[ai];
+          makeScene(responseSceneId(base,ci,pi,ai),cfg.name,responseTitle(s.title,ai),responseBody(ch,s,choice,ai),[
+            {t:responseContinueText(ch,cfg.name,ai),p:next,mark:responseMark(stat,cfg.name,ch)}
+          ],{path:cfg.name});
+        });
+      }
     });
   });
 }
 Object.entries(DEEP_PATHS).forEach(([base,cfg])=>buildDeepPath(Number(base),cfg));
+
+function responseSceneId(base,ci,pi,ai){
+  return 900000+(base*1000)+(ci*40)+(pi*10)+ai;
+}
+
+function responseMark(stat,pathName,ch){
+  const place=ch[0];
+  const route=pathFrame(pathName);
+  const marks={
+    escuta:`Você guardou um detalhe de ${place} ${route}.`,
+    servico:`Você ganhou confiança servindo antes de exigir respostas em ${place}.`,
+    prudencia:`Você protegeu uma pista antes que ela virasse rumor em ${place}.`,
+    ousadia:`Você abriu uma porta arriscada em ${place}.`
+  };
+  return marks[stat];
+}
+
+function responseContinueText(ch,pathName,ai){
+  const route=pathFrame(pathName);
+  const verbs=[
+    `Levar esse detalhe adiante ${route}`,
+    `Seguir depois de terminar a ajuda`,
+    `Avançar sem espalhar a pista`,
+    `Aceitar o risco e continuar`
+  ];
+  return verbs[ai] || `Continuar em ${ch[0]}`;
+}
 
 function responseBody(ch,s,choice,ai){
   const tones=[
@@ -440,7 +491,7 @@ function responseBody(ch,s,choice,ai){
     `Você se aproxima da pista sem espalhar o assunto. Alguém poderia se ferir se o nome errado fosse dito no lugar errado.`,
     `Você fala antes que a cena se feche. Algumas pessoas olham para você com surpresa. Outras se calam, e esse silêncio também diz alguma coisa.`
   ];
-  return `${tones[ai]}<br><br><span class="quote">${esc(choice)}</span>A reação não demora. Uma pessoa muda de assunto, outra se aproxima, e ${ch[1]} deixa escapar mais uma informação sobre ${ch[0]}. ${ch[5]}`;
+  return `${tones[ai]}<br><br><span class="quote">${esc(choice)}</span><br>A reação não demora. Uma pessoa muda de assunto, outra se aproxima, e ${ch[1]} deixa escapar mais uma informação sobre ${ch[0]}. ${ch[5]}`;
 }
 
 function responseTitle(title,ai){
@@ -630,7 +681,7 @@ const OPENING_REWRITE={
   ],desc:'As ruas não pertencem ao seu tempo.'},
   2:{body:`No bolso há vidro, metal e silêncio. O aparelho não acende. Sua carteira, suas chaves e seus documentos parecem relíquias de um reino que ninguém aqui saberia nomear.<br><br>Você guarda tudo sob a roupa e sente medo de que uma prova da sua vida vire acusação contra você. Agora precisa sair sem parecer alguém carregando um segredo perigoso.`,acao:[
     {t:'Esconder tudo e procurar a rua mais movimentada',p:3},
-    {t:'Cobrir melhor as roupas antes de sair',p:1,desc:'Suas roupas e objetos não pertencem a esta época.'},
+    {t:'Cobrir melhor as roupas antes de sair',p:3,desc:'Suas roupas e objetos não pertencem a esta época.'},
     {t:'Ir ao poço com as mãos abertas, pedindo ajuda por gestos',p:4},
     {t:'Aproximar-se de um mercador que parece menos desconfiado',p:5}
   ],desc:'Seu objeto moderno não funciona aqui.'},
@@ -693,6 +744,15 @@ makeEnding(590,'FINAL V - O CAMINHO DE CUXE',`No caminho para Cuxe, você encont
 makeEnding(690,'FINAL VI - À SOMBRA DOS RIOS',`Na Mesopotâmia, você aprendeu que impérios não governam apenas com espadas. Eles governam com arquivos, tributos, listas, escolas, medidas e memória. Tudo é escrito, contado e organizado. Pessoas viram números, cidades viram obrigações, reis viram nomes em tábuas. Esse mundo parece sólido o bastante para engolir povos inteiros.<br><br>Ao observar escribas e oficiais, você começou a perceber uma sombra que ainda não pertencia aos dias de Davi, mas que cresceria na história bíblica: o exílio. Um dia, Jerusalém cairia. Um dia, filhos de Judá chorariam junto a rios estrangeiros. Um dia, a fé de Israel teria de aprender a sobreviver longe da terra, do templo e da segurança política.<br><br>A crise da casa de Davi ajudou você a entender isso. O colapso de um povo raramente começa apenas quando o inimigo aparece. Antes do cerco externo, há rachaduras internas: pecado sem arrependimento, justiça adiada, liderança enfraquecida, famílias reais incapazes de cuidar dos vulneráveis. Tamar, Amnom, Absalão e Davi pertencem ao presente do jogo, mas também ensinam a ler futuros juízos com mais seriedade.<br><br>Este final não romantiza Babilônia. O exílio será dor, disciplina e perda real. Mas também não retrata Deus como derrotado fora de Jerusalém. A Escritura mostrará que ele preserva seu povo mesmo em terra estranha, levanta testemunhas em cortes estrangeiras e mantém sua aliança quando tudo parece politicamente acabado.<br><br>Você termina carregando uma advertência: Deus pode guardar seu povo no exílio, mas isso não torna a infidelidade leve. A misericórdia que preserva também é a mesma santidade que disciplina.`)
 makeEnding(790,'FINAL VII - CEDROS PARA O FUTURO',`Em Tiro, você descobriu um lado da história bíblica que às vezes passa despercebido: alianças, materiais, artesãos, rotas marítimas, contratos e trabalho comum. Cedro não parece espiritual quando está empilhado num armazém. Bronze não parece promessa quando ainda é metal pesado nas mãos de um artesão. Mesmo assim, um dia essas coisas serviriam à construção do templo nos dias de Salomão.<br><br>Você conviveu com homens que não falavam como sacerdotes, mas sabiam medir madeira, negociar transporte, avaliar risco e manter confiança entre povos diferentes. Quando chegaram notícias da crise em Jerusalém, muitos pensaram primeiro em instabilidade comercial. Você precisou insistir, pelo menos pela sua própria consciência, que Tamar, Amnom, Absalão e Davi não eram apenas fatores de mercado. Eram pessoas numa história santa e ferida.<br><br>A linha principal seguiu sem você: Tamar sofreu, Amnom morreu, Absalão fugiu, voltou, rebelou-se e caiu. Você não impediu a dor da casa de Davi. Seu papel ficou em outra escala. Ao proteger relações honestas entre Israel e Tiro, ao recusar oportunismo e ao valorizar trabalho bem feito, você ajudou a preservar uma ponte material para algo que viria depois.<br><br>Este final ensina que nem toda participação no plano de Deus parece grandiosa no momento. Algumas pessoas pregam. Outras escrevem. Outras protegem vítimas. Outras carregam madeira, fazem contas justas, impedem acordos desonestos e preparam condições para uma obediência futura.<br><br>Você termina sem glória aparente. Mas entende que Deus também usa tarefas concretas. Às vezes, o que hoje parece armazém amanhã fará parte de uma casa de adoração.`)
 
+// Reescrita final: menos resumo, mais cena, peso e consequência.
+makeEnding(190,'FINAL I - A LINHA INTERROMPIDA',`Tamar não entra sozinha no quarto de Amnom. O aviso chega antes. Um servo muda de porta, uma criada permanece perto, Absalão ouve um rumor cedo demais. A noite que você temia passa sem o crime que marcaria aquela casa.<br><br>Por alguns anos, isso parece vitória. Tamar vive sem aquela ferida. Amnom perde a ocasião. Absalão não prepara o banquete de sangue. Davi não rasga as roupas por aquele filho. Mas a história não fica apenas menos dolorosa. Ela fica outra. Casamentos mudam de hora. Alianças não se formam. Filhos que nasceriam não nascem. Nomes que deveriam atravessar gerações desaparecem sem fazer barulho.<br><br>Você começa a perceber o horror devagar. Não como trovão, mas como ausência. Cânticos que deveriam apontar para o Filho de Davi perdem encaixe. Promessas continuam sendo ditas, mas já não encontram a mesma estrada. Você não sabe medir tudo que tocou; sabe apenas que pegou o leme de uma providência que não cabia em suas mãos.<br><br>No último sonho, Jerusalém está calma demais. A tenda brilha no alto. Ninguém chora no palácio. E, ainda assim, o mundo parece sem porta. Você salvou uma noite terrível. Talvez tenha perdido o caminho inteiro pelo qual Deus conduziria redenção.`)
+makeEnding(290,'FINAL II - O REINO FERIDO',`Você fica em Jerusalém. Não como herói escondido, mas como testemunha presa ao chão da história. Primeiro vêm frases cortadas: Amnom recolhido, Tamar chamada, servos que desviam o olhar. Depois, um silêncio mais pesado que grito. O nome de Tamar some das conversas públicas, como se apagar o nome pudesse apagar o mal.<br><br>Absalão recebe a irmã em casa. Davi se entristece, mas a justiça não caminha com a mesma força da dor. Os anos passam e a vingança cresce em silêncio, alimentada por uma casa onde o pecado foi conhecido, mas não tratado. Quando Amnom morre no banquete, ninguém pode fingir que o sangue veio do nada.<br><br>Então vêm Gesur, retorno incompleto, política no portão, povo seduzido por promessas de justiça e a guerra contra o próprio pai. A morte de Absalão não parece triunfo. O lamento de Davi corta qualquer vontade de transformar essa história em moral simples.<br><br>Você sai com uma memória difícil: a Escritura não protege seus personagens principais da verdade. Tamar não é detalhe. Amnom não é peça sem alma. Absalão não é apenas rebelde. Davi é escolhido por Deus e, mesmo assim, sua casa sangra. A promessa de Deus atravessa a família quebrada sem chamar o mal de bem.`)
+makeEnding(390,'FINAL III - O AVISO QUE VIROU ESCÂNDALO',`Você tenta impedir o mal, mas fala antes de proteger quem seria ferida. O nome de Tamar corre pelos corredores mais rápido que qualquer cuidado. Servos repetem pedaços. Mulheres completam silêncios. Homens discutem culpa como se a dor dela fosse tabuleiro de disputa.<br><br>Amnom percebe a suspeita e aprende a esconder melhor o desejo. Absalão ouve metade da história e preenche o resto com ira. Davi recebe muitas vozes e pouca verdade. Tamar, que precisava de abrigo, vira assunto. Alguns dizem defendê-la, mas usam seu sofrimento para vencer discussões.<br><br>A tragédia não desaparece. Ela chega cercada de boatos. Quando Amnom morre, a cidade já havia escolhido versões antes de conhecer fatos. Depois vêm fuga, retorno, cálculo político, portões cheios e revolta contra Davi.<br><br>Você termina entendendo uma diferença amarga: denunciar o mal não é espalhar suspeita. Verdade sem proteção pode cair primeiro sobre a vítima. Coragem sem ordem pode virar ruído. O bem que você quis fazer não era falso, mas foi feito depressa demais. A última imagem é Tamar atravessando um pátio onde todos baixam a voz. Ninguém a toca. Ainda assim, todos a ferem com os olhos.`)
+makeEnding(490,'FINAL IV - A SEMENTE DISTANTE',`A Índia não recebe você como destino grandioso. Recebe como poeira nos pés, comida estranha, palavras que escapam e noites em que a saudade pesa mais que a fé. Antes de falar do Deus de Israel, você aprende a pedir água, a negociar sem arrogância e a depender de casas que não te devem nada.<br><br>A primeira conversa séria não acontece diante de multidão. Acontece numa sala quente, com um mercador curioso e uma lâmpada quase apagando. Ele pergunta se o Deus que criou todas as coisas pertence só a um povo. Pergunta por que reis escolhidos ainda pecam. Pergunta se estrangeiros podem se aproximar de uma aliança que não nasceu com eles.<br><br>Você não funda uma comunidade completa. Não escreve uma nova Escritura. O que fica é pequeno: letras hebraicas copiadas com erro, uma oração ensinada com cuidado, histórias de Abraão atravessando uma mesa de especiarias. Alguns escutam por amizade. Outros por fome verdadeira.<br><br>Jerusalém segue a linha conhecida: Tamar, Amnom, Absalão, Davi, lamento. Você não rouba o centro da narrativa. Apenas deixa uma semente numa terra que Deus já via. O final não é conquista; é fidelidade discreta. Você parte sem saber quem crerá. E talvez isso seja o ponto: a colheita nunca foi sua.`)
+makeEnding(590,'FINAL V - O CAMINHO DE CUXE',`Na estrada para Cuxe, você descobre que algumas pessoas não fogem de Deus; apenas caminham com perguntas maiores do que as respostas que receberam. Um oficial estrangeiro quer saber de Jerusalém, dos salmos, da justiça, da arca, do rei que canta e também falha.<br><br>Você fala de Davi sem polir a história. Rei escolhido, guerreiro, poeta, pecador, pai fraco diante da própria casa. Fala de Tamar sem tratá-la como nota de rodapé. Fala de Absalão sem fazer dele apenas monstro. Fala de Deus como aquele que julga o pecado do seu povo e, ainda assim, mantém sua promessa.<br><br>Ao sul, longe do palácio e dos portões de Israel, alguém passa a desejar mais que informação. Quer adorar. Quer entender. Quer se aproximar. Você não resolve todos os limites de pertencimento, pureza e culto. Mas aponta para o Deus que prometeu alcançar nações.<br><br>Jerusalém continua sua dor: Amnom, Tamar, Absalão, Davi. O que muda é uma rota de perguntas. Este caminho acende, de forma imaginativa, uma ponte com o futuro de Atos 8, quando um etíope lerá Isaías e ouvirá Cristo anunciado. A última imagem é uma estrada longa ao sul, e nela uma fome santa que ainda não conhece o próprio nome.`)
+makeEnding(690,'FINAL VI - À SOMBRA DOS RIOS',`Na Mesopotâmia, você aprende que impérios não vencem só com espada. Eles vencem com arquivos. Listas, tributos, medidas, escolas, selos, nomes gravados em barro. Tudo ali parece organizado o bastante para engolir povos inteiros sem levantar a voz.<br><br>Entre escribas e oficiais, você percebe uma sombra que ainda não pertence aos dias de Davi, mas já parece esperar no horizonte bíblico: o exílio. Um dia, Jerusalém cairá. Um dia, filhos de Judá chorarão junto a rios estrangeiros. Um dia, a fé de Israel precisará sobreviver longe da terra, do templo e da segurança política.<br><br>A crise da casa de Davi ganha outro peso. O colapso de um povo não começa apenas quando o inimigo cerca os muros. Antes, há rachaduras internas: justiça adiada, pecado abafado, liderança fraca, vulneráveis esquecidos. Tamar, Amnom, Absalão e Davi não são só tragédia familiar; são aviso.<br><br>Este final não romantiza Babilônia. O exílio será perda real. Mas também não mostra Deus derrotado fora de Jerusalém. A última cena é uma tábua de argila secando ao sol. Nela há nomes, dívidas e números. Você passa a mão pela borda e entende: até quando homens arquivam povos, Deus ainda guarda remanescentes.`)
+makeEnding(790,'FINAL VII - CEDROS PARA O FUTURO',`Em Tiro, a história bíblica cheira a madeira úmida, corda salgada e metal quente. Cedro empilhado não parece promessa. Bronze bruto não parece adoração. Contratos, medidas e transporte parecem pequenos demais para tocar o plano de Deus.<br><br>Mas você convive com artesãos que sabem quando uma viga vai rachar, capitães que conhecem ventos, negociadores que entendem que confiança entre povos vale mais que lucro rápido. Quando chegam notícias amargas de Jerusalém, muitos veem apenas risco comercial. Você insiste, ao menos para si mesmo, que Tamar, Amnom, Absalão e Davi não são fatores de mercado. São pessoas numa história santa e ferida.<br><br>A linha principal segue sem você. Tamar sofre. Amnom morre. Absalão foge, volta, conquista corações e cai. Você não impede a dor da casa de Davi. Seu papel fica menor, quase invisível: preservar relações honestas, recusar oportunismo, defender trabalho bem feito enquanto Israel treme.<br><br>No fim, você olha para um cedro marcado para viagem e entende que nem toda obediência parece grande no momento. Algumas pessoas pregam. Outras escrevem. Outras protegem vítimas. Outras carregam madeira. A casa de adoração que virá depois começa, de algum modo, num armazém onde ninguém canta ainda.`)
+
 function updateTop(){
   document.getElementById('pill-ano').textContent='Ano: '+(G.flags.ano||'???');
   const local=document.getElementById('pill-local'); local.textContent=G.flags.local||''; local.classList.toggle('hidden',!G.flags.local);
@@ -700,6 +760,21 @@ function updateTop(){
 }
 function renderList(id,list,empty,mark){
   document.getElementById(id).innerHTML=list.length?list.map(x=>`<div class="item">${mark} ${esc(x)}</div>`).join(''):`<div class="item dim">${empty}</div>`;
+}
+function updatePosture(){
+  const el=document.getElementById('posture');
+  if(!el)return;
+  const labels={escuta:'Escuta',servico:'Serviço',prudencia:'Prudência',ousadia:'Ousadia'};
+  const values=Object.keys(labels).map(key=>[key,Number(G.stats?.[key]||0)]);
+  if(!values.some(([,value])=>value>0)){
+    el.innerHTML='<div class="item dim">Suas escolhas ainda não formaram um padrão.</div>';
+    return;
+  }
+  const max=Math.max(1,...values.map(([,value])=>value));
+  el.innerHTML=`<div class="meters">${values.map(([key,value])=>{
+    const pct=Math.round((value/max)*100);
+    return `<div class="meter"><div class="meter-top"><span>${labels[key]}</span><strong>${value}</strong></div><div class="meter-bar"><span style="width:${pct}%"></span></div></div>`;
+  }).join('')}</div>`;
 }
 function updateLinha(){
   const cards=[];
@@ -715,6 +790,7 @@ function updateSide(){
   renderList('rel',G.rel,'Ninguém confia em você ainda.','-');
   renderList('marks',G.marks,'Nenhuma decisão profunda ainda.','>');
   document.getElementById('cam').innerHTML=G.path?`<div class="item">${esc(G.path)}</div>`:'<div class="item dim">Indefinido</div>';
+  updatePosture();
   updateLinha();
 }
 function endingReflection(){

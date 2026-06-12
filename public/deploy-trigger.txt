@@ -1,1 +1,1 @@
-Game hub update: show general competition join countdown.
+Game hub update: improve Quiz online presence tracking.

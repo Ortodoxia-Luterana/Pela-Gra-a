@@ -1374,6 +1374,7 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname.startsWith('/assets/')) { serveAsset(req, res); return; }
     if (await handleAuth(req, res, url)) return;
     const user = currentUser(req);
+    if (user) touchQuizPresence(user);
     if (url.pathname.startsWith('/api/')) { await handleApi(req, res, url, user); return; }
     if (!user) { redirect(res, '/login'); return; }
     if (req.method === 'GET' && url.pathname === '/') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end(renderDashboard(user, '', url.searchParams.get('section') || 'inicio', url.searchParams.get('game') || '')); return; }

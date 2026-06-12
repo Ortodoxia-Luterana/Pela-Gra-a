@@ -12,7 +12,7 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v3.26.5-hub-coming-soon-music-next';
+const GAME_VERSION = 'v3.26.6-clean-non-player-accounts';
 const GAME_ID = 'pela-graca-1904';
 const CRONICAS_GAME_ID = 'cronicas-do-levante';
 const LUTHER_MATCH_GAME_ID = 'luther-metch';
@@ -148,6 +148,14 @@ const insertUserAchievement = db.prepare(`
   INSERT OR IGNORE INTO user_achievements (user_id, game_id, medal_id, unlocked_at, source_save_name)
   VALUES (?, ?, ?, ?, ?)
 `);
+const deleteSessionsForUser = db.prepare('DELETE FROM sessions WHERE user_id = ?');
+const deleteSavesForUser = db.prepare('DELETE FROM saves WHERE user_id = ?');
+const deleteRankingsForUser = db.prepare('DELETE FROM rankings WHERE user_id = ?');
+const deleteGameRankingsForUser = db.prepare('DELETE FROM game_rankings WHERE user_id = ?');
+const deleteAchievementsForUser = db.prepare('DELETE FROM user_achievements WHERE user_id = ?');
+const deleteLutherRankingForUser = db.prepare('DELETE FROM luther_match_rankings WHERE user_id = ?');
+const deleteCronicasForUser = db.prepare('DELETE FROM cronicas_saves WHERE user_id = ?');
+const deleteUserById = db.prepare('DELETE FROM users WHERE id = ?');
 const getCronicasSave = db.prepare('SELECT * FROM cronicas_saves WHERE user_id = ?');
 const upsertCronicasSave = db.prepare(`
   INSERT INTO cronicas_saves (user_id, state_json, created_at, updated_at)
@@ -162,6 +170,37 @@ const upsertRanking = db.prepare(`
 `);
 
 function hashPin(pin, salt) { return crypto.createHash('sha256').update(`${salt}:${pin}`).digest('hex'); }
+function isNonPlayerAccountName(name) {
+  const value = String(name || '').trim().toLowerCase();
+  return /^codex/.test(value) ||
+    /^teste/.test(value) ||
+    value.includes('host') ||
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+function cleanupNonPlayerAccounts() {
+  const users = getAllUsers.all().filter(user => isNonPlayerAccountName(user.name));
+  if (!users.length) return;
+  db.exec('BEGIN');
+  try {
+    users.forEach(user => {
+      deleteSessionsForUser.run(user.id);
+      deleteRankingsForUser.run(user.id);
+      deleteGameRankingsForUser.run(user.id);
+      deleteAchievementsForUser.run(user.id);
+      deleteLutherRankingForUser.run(user.id);
+      deleteCronicasForUser.run(user.id);
+      deleteSavesForUser.run(user.id);
+      deleteUserById.run(user.id);
+    });
+    db.exec('COMMIT');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+  console.log(`[cleanup] removed ${users.length} non-player account(s): ${users.map(user => user.name).join(', ')}`);
+}
+cleanupNonPlayerAccounts();
+
 function parseCookies(req) {
   return Object.fromEntries((req.headers.cookie || '').split(';').filter(Boolean).map(part => {
     const [key, ...rest] = part.trim().split('=');

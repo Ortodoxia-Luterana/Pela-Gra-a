@@ -1,1 +1,1 @@
-Game hub update: lock upcoming games and add next music control.
+Game hub update: clean non-player test accounts from rankings.

@@ -1,1 +1,1 @@
-Game hub update: launch Quiz Ortodoxia with online matchmaking.
+Game hub update: redeploy Quiz Ortodoxia online matchmaking.

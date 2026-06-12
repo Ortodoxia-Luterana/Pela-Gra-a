@@ -1,1 +1,1 @@
-Game hub update: Luther Metch level requirement balance audit for all 500 levels.
+Game hub update: Luther Metch obstacle save persistence fix.

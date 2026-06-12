@@ -742,9 +742,13 @@
       target.goals = { ...config.goals };
       target.scoreTarget = config.scoreTarget;
       target.collected = Object.fromEntries([...config.goalIds, "glass", "chain"].map(id => [id, Number(target.collected?.[id] || 0)]));
+      const hadSavedObstacles = Array.isArray(target.obstacles) && target.obstacles.length === SIZE * SIZE;
       target.obstacles = normalizeObstacles(target.obstacles);
-      const hasNeededObstacles = (!config.goals.glass || target.obstacles.some(item => item.glass > 0)) && (!config.goals.chain || target.obstacles.some(item => item.chain > 0));
-      if (!hasNeededObstacles) target.obstacles = makeObstacles(target);
+      const needsGlass = config.goals.glass && (target.collected.glass || 0) < config.goals.glass;
+      const needsChain = config.goals.chain && (target.collected.chain || 0) < config.goals.chain;
+      const missingGlass = needsGlass && !target.obstacles.some(item => item.glass > 0);
+      const missingChain = needsChain && !target.obstacles.some(item => item.chain > 0);
+      if (!hadSavedObstacles || missingGlass || missingChain) target.obstacles = makeObstacles(target);
       if (!Number.isFinite(Number(target.moves)) || target.moves <= 0) target.moves = config.moves;
       target.boosters = {
         hammer: Number.isFinite(Number(target.boosters?.hammer)) ? target.boosters.hammer : config.boosters.hammer,

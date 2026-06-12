@@ -1,1 +1,1 @@
-Game hub update: load approved quiz bank and general elimination mode.
+Game hub update: show general competition join countdown.

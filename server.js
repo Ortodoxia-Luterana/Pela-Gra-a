@@ -988,10 +988,21 @@ async function handleApi(req, res, url, user) {
       const active = getActiveQuizMatchForUser.get(user.id);
       const queue = getQuizQueueUser.get(user.id);
       const online = getQuizOnlineUsers.all(isoSecondsAgo(QUIZ_ONLINE_SECONDS)).filter(item => item.user_id !== user.id);
+      const generalQueued = getQuizGeneralQueue.all('general');
+      const generalFirst = generalQueued[0] || null;
+      const generalSecondsLeft = generalFirst ? Math.max(0, QUIZ_GENERAL_WAIT_SECONDS - Math.floor((Date.now() - new Date(generalFirst.joined_at).getTime()) / 1000)) : 0;
       json(res, 200, {
         user: { id: user.id, name: user.name },
         online: online.map(item => ({ id: item.user_id, name: item.user_name, lastSeen: item.last_seen })),
         queue: queue ? { mode: queue.mode, joinedAt: queue.joined_at } : null,
+        generalQueue: generalFirst ? {
+          starter: { id: generalFirst.user_id, name: generalFirst.user_name },
+          joinedAt: generalFirst.joined_at,
+          size: generalQueued.length,
+          secondsLeft: generalSecondsLeft,
+          waitSeconds: QUIZ_GENERAL_WAIT_SECONDS,
+          joined: generalQueued.some(item => item.user_id === user.id)
+        } : null,
         activeMatch: active ? publicQuizMatch(active, user.id) : null,
         invites: getQuizIncomingInvites.all(user.id, isoSecondsAgo(180)).map(item => ({ id: item.id, from: { id: item.from_user_id, name: item.from_user_name }, createdAt: item.created_at }))
       });
@@ -1031,7 +1042,14 @@ async function handleApi(req, res, url, user) {
           return;
         }
       }
-      json(res, 200, { status: 'waiting', queue: getQuizQueueUser.get(user.id), queueSize: mode === 'general' ? getQuizGeneralQueue.all('general').length : 1, waitSeconds: mode === 'general' ? QUIZ_GENERAL_WAIT_SECONDS : null });
+      if (mode === 'general') {
+        const queued = getQuizGeneralQueue.all('general');
+        const first = queued[0];
+        const secondsLeft = first ? Math.max(0, QUIZ_GENERAL_WAIT_SECONDS - Math.floor((Date.now() - new Date(first.joined_at).getTime()) / 1000)) : QUIZ_GENERAL_WAIT_SECONDS;
+        json(res, 200, { status: 'waiting', queue: getQuizQueueUser.get(user.id), queueSize: queued.length, waitSeconds: QUIZ_GENERAL_WAIT_SECONDS, secondsLeft, starter: first ? { id: first.user_id, name: first.user_name } : null });
+        return;
+      }
+      json(res, 200, { status: 'waiting', queue: getQuizQueueUser.get(user.id), queueSize: 1, waitSeconds: null });
       return;
     }
     if (req.method === 'POST' && url.pathname === '/api/quiz/cancel-queue') {

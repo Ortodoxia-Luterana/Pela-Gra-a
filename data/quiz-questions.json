@@ -1,0 +1,1692 @@
+[
+  {
+    "id": "q098",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "media",
+    "q": "Qual controvérsia envolvia a validade de sacramentos administrados por ministros considerados traidores durante perseguições?",
+    "a": [
+      "Nestorianismo",
+      "Monofisismo",
+      "Donatismo",
+      "Arianismo"
+    ],
+    "c": 2
+  },
+  {
+    "id": "q117",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "dificil",
+    "q": "Qual concilio foi realizado em 431?",
+    "a": [
+      "Calcedonia",
+      "Constantinopla I",
+      "Efeso",
+      "Niceia I"
+    ],
+    "c": 2
+  },
+  {
+    "id": "q013",
+    "category": "Biblia",
+    "difficulty": "facil",
+    "q": "Quem negou Jesus tres vezes?",
+    "a": [
+      "Tomas",
+      "Joao",
+      "Pedro",
+      "Judas"
+    ],
+    "c": 2
+  },
+  {
+    "id": "q032",
+    "category": "Biblia",
+    "difficulty": "media",
+    "q": "Quem reconstruiu os muros de Jerusalem apos o exilio?",
+    "a": [
+      "Daniel",
+      "Neemias",
+      "Zorobabel",
+      "Esdras"
+    ],
+    "c": 1
+  },
+  {
+    "id": "q104",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "media",
+    "q": "Qual familia de teologos inclui Basilio de Cesareia, Gregorio de Nissa e Gregorio de Nazianzo?",
+    "a": [
+      "Escolasticos",
+      "Padres Capadocios",
+      "Pais apostolicos romanos",
+      "Reformadores magisteriais"
+    ],
+    "c": 1
+  },
+  {
+    "id": "q008",
+    "category": "Biblia",
+    "difficulty": "facil",
+    "q": "Qual rei pediu sabedoria a Deus?",
+    "a": [
+      "Saul",
+      "Salomao",
+      "Roboao",
+      "Davi"
+    ],
+    "c": 1
+  },
+  {
+    "id": "q035",
+    "category": "Biblia",
+    "difficulty": "media",
+    "q": "Em qual cidade Jesus transformou agua em vinho?",
+    "a": [
+      "Cafarnaum",
+      "Betania",
+      "Jerico",
+      "Cana"
+    ],
+    "c": 3
+  },
+  {
+    "id": "q130",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "dificil",
+    "q": "Qual concilio afirmou que o Credo niceno-constantinopolitano expressa a fé trinitaria da Igreja?",
+    "a": [
+      "Trento",
+      "Vaticano II",
+      "Constantinopla I",
+      "Worms"
+    ],
+    "c": 2
+  },
+  {
+    "id": "q025",
+    "category": "Biblia",
+    "difficulty": "media",
+    "q": "Quem sucedeu Moises na lideranca de Israel?",
+    "a": [
+      "Gideao",
+      "Josue",
+      "Samuel",
+      "Calebe"
+    ],
+    "c": 1
+  },
+  {
+    "id": "q083",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "facil",
+    "q": "Qual concilio de 451 definiu Cristo como uma pessoa em duas naturezas?",
+    "a": [
+      "Constanca",
+      "Latrao IV",
+      "Jerusalem",
+      "Calcedonia"
+    ],
+    "c": 3
+  },
+  {
+    "id": "q029",
+    "category": "Biblia",
+    "difficulty": "media",
+    "q": "Qual profeta foi levado ao ceu em um redemoinho?",
+    "a": [
+      "Ezequiel",
+      "Oséias",
+      "Elias",
+      "Eliseu"
+    ],
+    "c": 2
+  },
+  {
+    "id": "q080",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "facil",
+    "q": "Qual concilio ocorreu em Constantinopla em 381?",
+    "a": [
+      "Concilio Vaticano I",
+      "Primeiro Concilio de Constantinopla",
+      "Concilio de Worms",
+      "Concilio de Trento"
+    ],
+    "c": 1
+  },
+  {
+    "id": "q095",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "media",
+    "q": "Qual historiador e bispo escreveu uma Historia Eclesiastica importante para a Igreja antiga?",
+    "a": [
+      "Gregorio Magno",
+      "Boecio",
+      "Agostinho",
+      "Eusebio de Cesareia"
+    ],
+    "c": 3
+  },
+  {
+    "id": "q106",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "dificil",
+    "q": "Qual controvérsia do seculo II envolvia a data da celebracao da Pascoa?",
+    "a": [
+      "Controversia donatista",
+      "Controversia iconoclasta",
+      "Controversia quartodecimana",
+      "Controversia pelagiana"
+    ],
+    "c": 2
+  },
+  {
+    "id": "q014",
+    "category": "Biblia",
+    "difficulty": "facil",
+    "q": "Quem traiu Jesus por moedas de prata?",
+    "a": [
+      "Judas Iscariotes",
+      "Pilatos",
+      "Herodes",
+      "Pedro"
+    ],
+    "c": 0
+  },
+  {
+    "id": "q064",
+    "category": "Biblia",
+    "difficulty": "dificil",
+    "q": "Quem foi escolhido para ocupar o lugar de Judas entre os Doze?",
+    "a": [
+      "Apolo",
+      "Matias",
+      "Silas",
+      "Barnabe"
+    ],
+    "c": 1
+  },
+  {
+    "id": "q018",
+    "category": "Biblia",
+    "difficulty": "facil",
+    "q": "Qual livro narra o crescimento da Igreja apos a ascensao de Jesus?",
+    "a": [
+      "Romanos",
+      "Apocalipse",
+      "Atos dos Apostolos",
+      "Hebreus"
+    ],
+    "c": 2
+  },
+  {
+    "id": "q055",
+    "category": "Biblia",
+    "difficulty": "dificil",
+    "q": "Quem foi o profeta que confrontou Davi apos o pecado com Bate-Seba?",
+    "a": [
+      "Eliseu",
+      "Gad",
+      "Elias",
+      "Nata"
+    ],
+    "c": 3
+  },
+  {
+    "id": "q022",
+    "category": "Biblia",
+    "difficulty": "media",
+    "q": "Qual filho de Abraao nasceu de Sara?",
+    "a": [
+      "Isaque",
+      "Esaú",
+      "Jose",
+      "Ismael"
+    ],
+    "c": 0
+  },
+  {
+    "id": "q105",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "media",
+    "q": "Qual desses nomes e associado a defesa da divindade do Espirito Santo?",
+    "a": [
+      "Ario",
+      "Basilio de Cesareia",
+      "Nestorio",
+      "Pelagio"
+    ],
+    "c": 1
+  },
+  {
+    "id": "q027",
+    "category": "Biblia",
+    "difficulty": "media",
+    "q": "Quem foi chamado ainda menino enquanto servia no templo?",
+    "a": [
+      "Saul",
+      "Davi",
+      "Jeremias",
+      "Samuel"
+    ],
+    "c": 3
+  },
+  {
+    "id": "q057",
+    "category": "Biblia",
+    "difficulty": "dificil",
+    "q": "Qual profeta teve a visao do vale de ossos secos?",
+    "a": [
+      "Amós",
+      "Ezequiel",
+      "Jeremias",
+      "Daniel"
+    ],
+    "c": 1
+  },
+  {
+    "id": "q050",
+    "category": "Biblia",
+    "difficulty": "media",
+    "q": "Onde Joao recebeu as visoes do Apocalipse?",
+    "a": [
+      "Chipre",
+      "Tarso",
+      "Patmos",
+      "Creta"
+    ],
+    "c": 2
+  },
+  {
+    "id": "q078",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "facil",
+    "q": "Qual doutrina sobre Cristo foi defendida contra Ario?",
+    "a": [
+      "Que o Filho e verdadeiro Deus",
+      "Que Cristo nao assumiu humanidade",
+      "Que Jesus foi apenas um profeta",
+      "Que Jesus era um anjo criado"
+    ],
+    "c": 0
+  },
+  {
+    "id": "q108",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "dificil",
+    "q": "Qual movimento profetico rigorista do seculo II foi associado a Montano?",
+    "a": [
+      "Montanismo",
+      "Pelagianismo",
+      "Nestorianismo",
+      "Iconoclasmo"
+    ],
+    "c": 0
+  },
+  {
+    "id": "q054",
+    "category": "Biblia",
+    "difficulty": "dificil",
+    "q": "Qual rei de Israel foi repreendido por Samuel por poupar Agague?",
+    "a": [
+      "Saul",
+      "Davi",
+      "Acabe",
+      "Salomao"
+    ],
+    "c": 0
+  },
+  {
+    "id": "q044",
+    "category": "Biblia",
+    "difficulty": "media",
+    "q": "Quem escreveu o livro de Atos?",
+    "a": [
+      "Lucas",
+      "Pedro",
+      "Paulo",
+      "Marcos"
+    ],
+    "c": 0
+  },
+  {
+    "id": "q043",
+    "category": "Biblia",
+    "difficulty": "media",
+    "q": "Em qual cidade os discipulos foram chamados cristãos pela primeira vez?",
+    "a": [
+      "Corinto",
+      "Roma",
+      "Jerusalem",
+      "Antioquia"
+    ],
+    "c": 3
+  },
+  {
+    "id": "q111",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "dificil",
+    "q": "Qual escola teologica antiga e frequentemente associada ao metodo alegorico?",
+    "a": [
+      "Antioquia",
+      "Roma",
+      "Cartago",
+      "Alexandria"
+    ],
+    "c": 3
+  },
+  {
+    "id": "q023",
+    "category": "Biblia",
+    "difficulty": "media",
+    "q": "Quem interpretou sonhos no Egito antes de se tornar governador?",
+    "a": [
+      "Daniel",
+      "Moises",
+      "Samuel",
+      "Jose"
+    ],
+    "c": 3
+  },
+  {
+    "id": "q030",
+    "category": "Biblia",
+    "difficulty": "media",
+    "q": "Quem interpretou sonhos na Babilonia?",
+    "a": [
+      "Daniel",
+      "Jonas",
+      "Esdras",
+      "Neemias"
+    ],
+    "c": 0
+  },
+  {
+    "id": "q037",
+    "category": "Biblia",
+    "difficulty": "media",
+    "q": "Quem foi ressuscitado por Jesus em Betania?",
+    "a": [
+      "Dorcas",
+      "Eutico",
+      "Lazaro",
+      "Estevao"
+    ],
+    "c": 2
+  },
+  {
+    "id": "q017",
+    "category": "Biblia",
+    "difficulty": "facil",
+    "q": "Quem escreveu muitas cartas do Novo Testamento?",
+    "a": [
+      "Gamaliel",
+      "Paulo",
+      "Pilatos",
+      "Herodes"
+    ],
+    "c": 1
+  },
+  {
+    "id": "q015",
+    "category": "Biblia",
+    "difficulty": "facil",
+    "q": "Em que dia Jesus ressuscitou?",
+    "a": [
+      "No sexto dia",
+      "No sabado",
+      "No dia de Pentecostes",
+      "No primeiro dia da semana"
+    ],
+    "c": 3
+  },
+  {
+    "id": "q066",
+    "category": "Biblia",
+    "difficulty": "dificil",
+    "q": "Em qual cidade Paulo nasceu?",
+    "a": [
+      "Corinto",
+      "Roma",
+      "Tarso",
+      "Antioquia"
+    ],
+    "c": 2
+  },
+  {
+    "id": "q081",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "facil",
+    "q": "Qual tema foi especialmente afirmado em Constantinopla contra negacoes da divindade do Espirito Santo?",
+    "a": [
+      "A autoridade feudal",
+      "A divindade do Espirito Santo",
+      "O calendario liturgico medieval",
+      "A venda de indulgencias"
+    ],
+    "c": 1
+  },
+  {
+    "id": "q009",
+    "category": "Biblia",
+    "difficulty": "facil",
+    "q": "Quem foi engolido por um grande peixe?",
+    "a": [
+      "Eliseu",
+      "Jonas",
+      "Daniel",
+      "Elias"
+    ],
+    "c": 1
+  },
+  {
+    "id": "q113",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "dificil",
+    "q": "Qual concilio ocorreu primeiro?",
+    "a": [
+      "Efeso",
+      "Niceia I",
+      "Constantinopla I",
+      "Calcedonia"
+    ],
+    "c": 1
+  },
+  {
+    "id": "q125",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "dificil",
+    "q": "Qual cidade era a sede episcopal de Agostinho?",
+    "a": [
+      "Alexandria",
+      "Constantinopla",
+      "Hipona",
+      "Antioquia"
+    ],
+    "c": 2
+  },
+  {
+    "id": "q058",
+    "category": "Biblia",
+    "difficulty": "dificil",
+    "q": "Qual profeta falou do servo sofredor em Isaías 53?",
+    "a": [
+      "Malaquias",
+      "Zacarias",
+      "Isaías",
+      "Jeremias"
+    ],
+    "c": 2
+  },
+  {
+    "id": "q109",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "dificil",
+    "q": "Qual termo se refere ao ensino de que o Pai, o Filho e o Espirito seriam apenas modos de uma unica pessoa divina?",
+    "a": [
+      "Arianismo",
+      "Docetismo",
+      "Modalismo",
+      "Donatismo"
+    ],
+    "c": 2
+  },
+  {
+    "id": "q033",
+    "category": "Biblia",
+    "difficulty": "media",
+    "q": "Qual evangelho comeca apresentando a genealogia de Jesus a partir de Abraao?",
+    "a": [
+      "Lucas",
+      "Mateus",
+      "Joao",
+      "Marcos"
+    ],
+    "c": 1
+  },
+  {
+    "id": "q065",
+    "category": "Biblia",
+    "difficulty": "dificil",
+    "q": "Quem foi o mestre judeu citado como professor de Paulo?",
+    "a": [
+      "Nicodemos",
+      "Gamaliel",
+      "Caifas",
+      "Anas"
+    ],
+    "c": 1
+  },
+  {
+    "id": "q107",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "dificil",
+    "q": "Qual movimento do seculo II rejeitava o Antigo Testamento e contrastava o Deus criador com o Deus revelado em Cristo?",
+    "a": [
+      "Monotelismo",
+      "Arianismo",
+      "Donatismo",
+      "Marcionismo"
+    ],
+    "c": 3
+  },
+  {
+    "id": "q026",
+    "category": "Biblia",
+    "difficulty": "media",
+    "q": "Qual cidade teve seus muros derrubados nos dias de Josue?",
+    "a": [
+      "Nínive",
+      "Damasco",
+      "Jerico",
+      "Samaria"
+    ],
+    "c": 2
+  },
+  {
+    "id": "q122",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "dificil",
+    "q": "Qual expressao resume a definicao de Calcedonia sobre Cristo?",
+    "a": [
+      "Uma criatura exaltada",
+      "Um profeta sem divindade",
+      "Uma pessoa em duas naturezas",
+      "Duas pessoas em uma natureza"
+    ],
+    "c": 2
+  },
+  {
+    "id": "q056",
+    "category": "Biblia",
+    "difficulty": "dificil",
+    "q": "Qual rei de Juda encontrou o Livro da Lei durante reformas no templo?",
+    "a": [
+      "Manasses",
+      "Josias",
+      "Uzias",
+      "Ezequias"
+    ],
+    "c": 1
+  },
+  {
+    "id": "q011",
+    "category": "Biblia",
+    "difficulty": "facil",
+    "q": "Quem batizou Jesus no rio Jordao?",
+    "a": [
+      "Pedro",
+      "Tiago",
+      "Andre",
+      "Joao Batista"
+    ],
+    "c": 3
+  },
+  {
+    "id": "q077",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "facil",
+    "q": "Qual heresia foi combatida no Concilio de Niceia?",
+    "a": [
+      "Montanismo",
+      "Pelagianismo",
+      "Arianismo",
+      "Donatismo"
+    ],
+    "c": 2
+  },
+  {
+    "id": "q059",
+    "category": "Biblia",
+    "difficulty": "dificil",
+    "q": "Qual profeta menciona que o justo vivera pela sua fé?",
+    "a": [
+      "Obadias",
+      "Sofonias",
+      "Ageu",
+      "Habacuque"
+    ],
+    "c": 3
+  },
+  {
+    "id": "q060",
+    "category": "Biblia",
+    "difficulty": "dificil",
+    "q": "Qual profeta termina o Antigo Testamento na ordem comum das Biblias cristas?",
+    "a": [
+      "Malaquias",
+      "Joel",
+      "Zacarias",
+      "Ageu"
+    ],
+    "c": 0
+  },
+  {
+    "id": "q103",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "media",
+    "q": "Qual bispo de Roma escreveu o Tomo que influenciou Calcedonia?",
+    "a": [
+      "Gregorio I",
+      "Sisto III",
+      "Damaso I",
+      "Leao I"
+    ],
+    "c": 3
+  },
+  {
+    "id": "q090",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "media",
+    "q": "Qual apologista escreveu uma Primeira Apologia dirigida ao imperador?",
+    "a": [
+      "Nestorio",
+      "Ario",
+      "Justino Martir",
+      "Pelagio"
+    ],
+    "c": 2
+  },
+  {
+    "id": "q110",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "dificil",
+    "q": "Qual heresia afirmava que Cristo apenas parecia ter corpo humano?",
+    "a": [
+      "Docetismo",
+      "Arianismo",
+      "Pelagianismo",
+      "Nestorianismo"
+    ],
+    "c": 0
+  },
+  {
+    "id": "q102",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "media",
+    "q": "Qual concilio respondeu ao monofisismo/eutiquianismo afirmando duas naturezas em Cristo?",
+    "a": [
+      "Calcedonia",
+      "Niceia I",
+      "Jerusalem",
+      "Efeso"
+    ],
+    "c": 0
+  },
+  {
+    "id": "q052",
+    "category": "Biblia",
+    "difficulty": "dificil",
+    "q": "Qual era o nome original de Josue antes de Moises chama-lo Josue?",
+    "a": [
+      "Oseias",
+      "Fineias",
+      "Hur",
+      "Eleazar"
+    ],
+    "c": 0
+  },
+  {
+    "id": "q087",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "media",
+    "q": "Qual imperador iniciou a grande perseguicao no inicio do seculo IV?",
+    "a": [
+      "Constantino",
+      "Carlos Magno",
+      "Teodosio",
+      "Diocleciano"
+    ],
+    "c": 3
+  },
+  {
+    "id": "q093",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "media",
+    "q": "Qual teologo de Alexandria e conhecido por grande producao exegetica e pelo metodo alegorico?",
+    "a": [
+      "Hilario",
+      "Cipriano",
+      "Origenes",
+      "Ambrosio"
+    ],
+    "c": 2
+  },
+  {
+    "id": "q074",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "facil",
+    "q": "Qual imperador romano e tradicionalmente associado a perseguicao contra cristãos apos o incendio de Roma?",
+    "a": [
+      "Teodosio",
+      "Constantino",
+      "Nero",
+      "Justiniano"
+    ],
+    "c": 2
+  },
+  {
+    "id": "q040",
+    "category": "Biblia",
+    "difficulty": "media",
+    "q": "Em que festa o Espirito Santo foi derramado sobre os discipulos em Atos 2?",
+    "a": [
+      "Dedicação",
+      "Pentecostes",
+      "Tabernaculos",
+      "Pascoa"
+    ],
+    "c": 1
+  },
+  {
+    "id": "q097",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "media",
+    "q": "Qual bispo de Milao influenciou Agostinho?",
+    "a": [
+      "Atanasio",
+      "Ambrosio",
+      "Gregorio de Nissa",
+      "Cirilo"
+    ],
+    "c": 1
+  },
+  {
+    "id": "q129",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "dificil",
+    "q": "Qual controversia girou em torno dos lapsi, cristãos que cederam durante perseguições?",
+    "a": [
+      "Data da Reforma",
+      "Disciplina dos caidos e readmissao",
+      "Uso de orgao no culto",
+      "Traducao da Biblia para o alemão"
+    ],
+    "c": 1
+  },
+  {
+    "id": "q002",
+    "category": "Biblia",
+    "difficulty": "facil",
+    "q": "Qual foi o primeiro casal mencionado em Genesis?",
+    "a": [
+      "Jacó e Raquel",
+      "Abraao e Sara",
+      "Adao e Eva",
+      "Isaque e Rebeca"
+    ],
+    "c": 2
+  },
+  {
+    "id": "q048",
+    "category": "Biblia",
+    "difficulty": "media",
+    "q": "Qual livro do Novo Testamento enfatiza que a fé sem obras é morta?",
+    "a": [
+      "Romanos",
+      "Tiago",
+      "Hebreus",
+      "Apocalipse"
+    ],
+    "c": 1
+  },
+  {
+    "id": "q116",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "dificil",
+    "q": "Qual concilio foi realizado em 381?",
+    "a": [
+      "Constantinopla I",
+      "Niceia I",
+      "Calcedonia",
+      "Efeso"
+    ],
+    "c": 0
+  },
+  {
+    "id": "q007",
+    "category": "Biblia",
+    "difficulty": "facil",
+    "q": "Quem derrotou Golias?",
+    "a": [
+      "Saul",
+      "Jonatas",
+      "Salomao",
+      "Davi"
+    ],
+    "c": 3
+  },
+  {
+    "id": "q071",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "facil",
+    "q": "Qual apostolo e conhecido por suas viagens missionarias entre os gentios?",
+    "a": [
+      "Tome",
+      "Judas Iscariotes",
+      "Filipe",
+      "Paulo"
+    ],
+    "c": 3
+  },
+  {
+    "id": "q092",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "media",
+    "q": "Qual escritor latino disse que \"o sangue dos martires e semente\" em defesa dos cristãos?",
+    "a": [
+      "Tertuliano",
+      "Jeronimo",
+      "Eusébio",
+      "Origenes"
+    ],
+    "c": 0
+  },
+  {
+    "id": "q021",
+    "category": "Biblia",
+    "difficulty": "media",
+    "q": "Qual foi o sinal da aliança de Deus com Noe apos o diluvio?",
+    "a": [
+      "A coluna de fogo",
+      "A circuncisao",
+      "O arco nas nuvens",
+      "O templo"
+    ],
+    "c": 2
+  },
+  {
+    "id": "q099",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "media",
+    "q": "Qual controversia envolvia a natureza da graça e do pecado original contra Pelagio?",
+    "a": [
+      "Controversia monotelita",
+      "Controversia iconoclasta",
+      "Controversia ariana",
+      "Controversia pelagiana"
+    ],
+    "c": 3
+  },
+  {
+    "id": "q123",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "dificil",
+    "q": "Qual obra de Agostinho respondeu em parte ao choque causado pelo saque de Roma?",
+    "a": [
+      "O Pastor",
+      "Historia Eclesiastica",
+      "Contra as Heresias",
+      "A Cidade de Deus"
+    ],
+    "c": 3
+  },
+  {
+    "id": "q082",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "facil",
+    "q": "Qual concilio de 431 afirmou Maria como Theotokos para proteger a unidade da pessoa de Cristo?",
+    "a": [
+      "Niceia II",
+      "Pisa",
+      "Efeso",
+      "Trento"
+    ],
+    "c": 2
+  },
+  {
+    "id": "q127",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "dificil",
+    "q": "Qual escrito antigo e conhecido como \"Ensino dos Doze Apostolos\"?",
+    "a": [
+      "Vulgata",
+      "Tomo de Leao",
+      "Hexapla",
+      "Didaque"
+    ],
+    "c": 3
+  },
+  {
+    "id": "q119",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "dificil",
+    "q": "Qual bispo de Alexandria sucedeu Alexandre e se tornou grande adversario do arianismo?",
+    "a": [
+      "Nestorio",
+      "Eutiques",
+      "Pelagio",
+      "Atanasio"
+    ],
+    "c": 3
+  },
+  {
+    "id": "q028",
+    "category": "Biblia",
+    "difficulty": "media",
+    "q": "Qual profeta confrontou os profetas de Baal no monte Carmelo?",
+    "a": [
+      "Elias",
+      "Eliseu",
+      "Isaías",
+      "Jeremias"
+    ],
+    "c": 0
+  },
+  {
+    "id": "q041",
+    "category": "Biblia",
+    "difficulty": "media",
+    "q": "Quem foi o primeiro martir cristao em Atos?",
+    "a": [
+      "Barnabe",
+      "Estevao",
+      "Tiago",
+      "Filipe"
+    ],
+    "c": 1
+  },
+  {
+    "id": "q046",
+    "category": "Biblia",
+    "difficulty": "media",
+    "q": "Qual carta foi escrita a uma igreja marcada por muitos problemas internos?",
+    "a": [
+      "1 Corintios",
+      "Judas",
+      "1 Pedro",
+      "2 João"
+    ],
+    "c": 0
+  },
+  {
+    "id": "q042",
+    "category": "Biblia",
+    "difficulty": "media",
+    "q": "Quem acompanhou Paulo em sua primeira viagem missionaria?",
+    "a": [
+      "Lucas",
+      "Timoteo",
+      "Barnabe",
+      "Silas"
+    ],
+    "c": 2
+  },
+  {
+    "id": "q069",
+    "category": "Biblia",
+    "difficulty": "dificil",
+    "q": "Qual jovem caiu de uma janela enquanto Paulo pregava?",
+    "a": [
+      "Tito",
+      "Marcos",
+      "Eutico",
+      "Timoteo"
+    ],
+    "c": 2
+  },
+  {
+    "id": "q118",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "dificil",
+    "q": "Qual concilio foi realizado em 451?",
+    "a": [
+      "Calcedonia",
+      "Niceia I",
+      "Constantinopla I",
+      "Efeso"
+    ],
+    "c": 0
+  },
+  {
+    "id": "q049",
+    "category": "Biblia",
+    "difficulty": "media",
+    "q": "Qual livro apresenta Jesus como sumo sacerdote superior?",
+    "a": [
+      "Judas",
+      "Hebreus",
+      "2 Pedro",
+      "Filemom"
+    ],
+    "c": 1
+  },
+  {
+    "id": "q085",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "facil",
+    "q": "Qual autor e conhecido pelas Confissoes e pela Cidade de Deus?",
+    "a": [
+      "Policarpo",
+      "Irineu",
+      "Agostinho",
+      "Inacio de Antioquia"
+    ],
+    "c": 2
+  },
+  {
+    "id": "q003",
+    "category": "Biblia",
+    "difficulty": "facil",
+    "q": "Quem foi vendido por seus irmaos e levado ao Egito?",
+    "a": [
+      "Elias",
+      "Jonas",
+      "Samuel",
+      "Jose"
+    ],
+    "c": 3
+  },
+  {
+    "id": "q019",
+    "category": "Biblia",
+    "difficulty": "facil",
+    "q": "Quem teve uma visao de um lençol com animais em Atos?",
+    "a": [
+      "Estevao",
+      "Paulo",
+      "Barnabe",
+      "Pedro"
+    ],
+    "c": 3
+  },
+  {
+    "id": "q024",
+    "category": "Biblia",
+    "difficulty": "media",
+    "q": "Qual festa judaica lembra a libertacao do Egito?",
+    "a": [
+      "Tabernaculos",
+      "Pascoa",
+      "Purim",
+      "Pentecostes"
+    ],
+    "c": 1
+  },
+  {
+    "id": "q094",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "media",
+    "q": "Qual bispo de Cartago escreveu sobre a unidade da Igreja em meio a conflitos?",
+    "a": [
+      "Cipriano",
+      "Efrém",
+      "Policarpo",
+      "Ireneu"
+    ],
+    "c": 0
+  },
+  {
+    "id": "q005",
+    "category": "Biblia",
+    "difficulty": "facil",
+    "q": "Qual mar foi atravessado pelos israelitas na saida do Egito?",
+    "a": [
+      "Mar Morto",
+      "Mar Mediterraneo",
+      "Mar Vermelho",
+      "Mar da Galileia"
+    ],
+    "c": 2
+  },
+  {
+    "id": "q063",
+    "category": "Biblia",
+    "difficulty": "dificil",
+    "q": "Qual evangelho nao relata diretamente a instituicao da Ceia na ultima noite?",
+    "a": [
+      "Marcos",
+      "Mateus",
+      "Lucas",
+      "Joao"
+    ],
+    "c": 3
+  },
+  {
+    "id": "q086",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "media",
+    "q": "Qual documento imperial de 313 e associado a tolerancia ao cristianismo?",
+    "a": [
+      "Edito de Milao",
+      "Decreto de Graciano",
+      "Edito de Worms",
+      "Dieta de Speyer"
+    ],
+    "c": 0
+  },
+  {
+    "id": "q070",
+    "category": "Biblia",
+    "difficulty": "dificil",
+    "q": "Qual carta Paulo escreveu a respeito de um escravo chamado Onesimo?",
+    "a": [
+      "Filemom",
+      "Tito",
+      "2 Timoteo",
+      "Efesios"
+    ],
+    "c": 0
+  },
+  {
+    "id": "q075",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "facil",
+    "q": "Qual cidade deu nome ao primeiro grande concilio ecumenico?",
+    "a": [
+      "Corinto",
+      "Tarso",
+      "Filipos",
+      "Niceia"
+    ],
+    "c": 3
+  },
+  {
+    "id": "q068",
+    "category": "Biblia",
+    "difficulty": "dificil",
+    "q": "Em qual cidade Paulo pregou no Areopago?",
+    "a": [
+      "Atenas",
+      "Efeso",
+      "Filipos",
+      "Tessalonica"
+    ],
+    "c": 0
+  },
+  {
+    "id": "q101",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "media",
+    "q": "Qual titulo mariano foi usado em Efeso para confessar que o nascido de Maria e verdadeiro Deus encarnado?",
+    "a": [
+      "Filioque",
+      "Pontifex",
+      "Theotokos",
+      "Paraclito"
+    ],
+    "c": 2
+  },
+  {
+    "id": "q124",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "dificil",
+    "q": "Qual concilio local do seculo V e frequentemente citado nas discussoes contra o pelagianismo no Ocidente?",
+    "a": [
+      "Cartago",
+      "Constanca",
+      "Trento",
+      "Niceia II"
+    ],
+    "c": 0
+  },
+  {
+    "id": "q088",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "media",
+    "q": "Qual bispo de Antioquia escreveu cartas a caminho do martirio em Roma?",
+    "a": [
+      "Atanasio",
+      "Inacio de Antioquia",
+      "Jeronimo",
+      "Cipriano de Cartago"
+    ],
+    "c": 1
+  },
+  {
+    "id": "q031",
+    "category": "Biblia",
+    "difficulty": "media",
+    "q": "Qual profeta pregou em Nínive?",
+    "a": [
+      "Ageu",
+      "Naum",
+      "Amós",
+      "Jonas"
+    ],
+    "c": 3
+  },
+  {
+    "id": "q001",
+    "category": "Biblia",
+    "difficulty": "facil",
+    "q": "Quem construiu a arca antes do diluvio?",
+    "a": [
+      "Davi",
+      "Noe",
+      "Moises",
+      "Abraao"
+    ],
+    "c": 1
+  },
+  {
+    "id": "q079",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "facil",
+    "q": "Qual termo ficou associado a ideia de que o Filho e da mesma substancia do Pai?",
+    "a": [
+      "Apocrifo",
+      "Parusia",
+      "Diatribe",
+      "Homoousios"
+    ],
+    "c": 3
+  },
+  {
+    "id": "q072",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "facil",
+    "q": "Qual cidade se tornou um centro importante da Igreja antiga e tambem capital do Imperio?",
+    "a": [
+      "Jerico",
+      "Roma",
+      "Ninive",
+      "Babilonia"
+    ],
+    "c": 1
+  },
+  {
+    "id": "q012",
+    "category": "Biblia",
+    "difficulty": "facil",
+    "q": "Quantos apostolos Jesus escolheu?",
+    "a": [
+      "12",
+      "7",
+      "10",
+      "70"
+    ],
+    "c": 0
+  },
+  {
+    "id": "q089",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "media",
+    "q": "Qual bispo de Esmirna e lembrado como discipulo de Joao e martir?",
+    "a": [
+      "Tertuliano",
+      "Policarpo",
+      "Origenes",
+      "Eusebio"
+    ],
+    "c": 1
+  },
+  {
+    "id": "q006",
+    "category": "Biblia",
+    "difficulty": "facil",
+    "q": "Quem recebeu os Dez Mandamentos no Sinai?",
+    "a": [
+      "Moises",
+      "Josue",
+      "Samuel",
+      "Arão"
+    ],
+    "c": 0
+  },
+  {
+    "id": "q120",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "dificil",
+    "q": "Qual figura foi associada a divisao excessiva entre a natureza divina e humana em Cristo, combatida em Efeso?",
+    "a": [
+      "Donato",
+      "Nestorio",
+      "Pelagio",
+      "Ario"
+    ],
+    "c": 1
+  },
+  {
+    "id": "q100",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "media",
+    "q": "Qual concilio esta ligado a condenacao do nestorianismo?",
+    "a": [
+      "Efeso",
+      "Constantinopla I",
+      "Niceia II",
+      "Niceia I"
+    ],
+    "c": 0
+  },
+  {
+    "id": "q091",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "media",
+    "q": "Qual escritor combateu doutrinas gnosticas em Contra as Heresias?",
+    "a": [
+      "Agostinho",
+      "Atanasio",
+      "Cirilo de Alexandria",
+      "Irineu de Liao"
+    ],
+    "c": 3
+  },
+  {
+    "id": "q128",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "dificil",
+    "q": "Qual obra de Origenes comparava colunas de textos biblicos em diferentes versoes?",
+    "a": [
+      "Confissoes",
+      "Hexapla",
+      "Pastor de Hermas",
+      "Cidade de Deus"
+    ],
+    "c": 1
+  },
+  {
+    "id": "q112",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "dificil",
+    "q": "Qual escola teologica antiga e frequentemente associada a maior atencao ao sentido historico e literal?",
+    "a": [
+      "Alexandria",
+      "Antioquia",
+      "Hipona",
+      "Milao"
+    ],
+    "c": 1
+  },
+  {
+    "id": "q036",
+    "category": "Biblia",
+    "difficulty": "media",
+    "q": "Quem subiu numa arvore para ver Jesus?",
+    "a": [
+      "Zaqueu",
+      "Jairo",
+      "Nicodemos",
+      "Bartimeu"
+    ],
+    "c": 0
+  },
+  {
+    "id": "q076",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "facil",
+    "q": "Qual imperador convocou o Concilio de Niceia em 325?",
+    "a": [
+      "Constantino",
+      "Nero",
+      "Diocleciano",
+      "Trajano"
+    ],
+    "c": 0
+  },
+  {
+    "id": "q096",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "media",
+    "q": "Qual tradutor e estudioso ficou associado a Vulgata latina?",
+    "a": [
+      "Leao Magno",
+      "Jeronimo",
+      "Basílio",
+      "Ambrósio"
+    ],
+    "c": 1
+  },
+  {
+    "id": "q062",
+    "category": "Biblia",
+    "difficulty": "dificil",
+    "q": "Qual evangelho registra de forma mais extensa o nascimento de Joao Batista?",
+    "a": [
+      "Lucas",
+      "Joao",
+      "Marcos",
+      "Mateus"
+    ],
+    "c": 0
+  },
+  {
+    "id": "q073",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "facil",
+    "q": "Quem foi martirizado por apedrejamento em Atos?",
+    "a": [
+      "Paulo",
+      "Estevao",
+      "Pedro",
+      "Barnabe"
+    ],
+    "c": 1
+  },
+  {
+    "id": "q039",
+    "category": "Biblia",
+    "difficulty": "media",
+    "q": "Quem pediu o corpo de Jesus a Pilatos?",
+    "a": [
+      "Gamaliel",
+      "Caifas",
+      "Barnabe",
+      "Jose de Arimateia"
+    ],
+    "c": 3
+  },
+  {
+    "id": "q016",
+    "category": "Biblia",
+    "difficulty": "facil",
+    "q": "Quem duvidou da ressurreicao ate ver Jesus?",
+    "a": [
+      "Mateus",
+      "Tomas",
+      "Andre",
+      "Filipe"
+    ],
+    "c": 1
+  },
+  {
+    "id": "q051",
+    "category": "Biblia",
+    "difficulty": "dificil",
+    "q": "Qual sacerdote-rei abencoou Abraao em Genesis 14?",
+    "a": [
+      "Eli",
+      "Jetro",
+      "Zadoque",
+      "Melquisedeque"
+    ],
+    "c": 3
+  },
+  {
+    "id": "q115",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "dificil",
+    "q": "Qual concilio foi realizado em 325?",
+    "a": [
+      "Constantinopla I",
+      "Efeso",
+      "Calcedonia",
+      "Niceia I"
+    ],
+    "c": 3
+  },
+  {
+    "id": "q053",
+    "category": "Biblia",
+    "difficulty": "dificil",
+    "q": "Quem foi o sacerdote que criou Samuel?",
+    "a": [
+      "Abiatar",
+      "Zadoque",
+      "Eli",
+      "Samuel"
+    ],
+    "c": 2
+  },
+  {
+    "id": "q020",
+    "category": "Biblia",
+    "difficulty": "facil",
+    "q": "Qual e o ultimo livro da Biblia?",
+    "a": [
+      "Apocalipse",
+      "Hebreus",
+      "Atos",
+      "Judas"
+    ],
+    "c": 0
+  },
+  {
+    "id": "q084",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "facil",
+    "q": "Quem foi um dos grandes defensores da fé nicena contra o arianismo?",
+    "a": [
+      "Atanasio",
+      "Marcião",
+      "Ario",
+      "Celso"
+    ],
+    "c": 0
+  },
+  {
+    "id": "q067",
+    "category": "Biblia",
+    "difficulty": "dificil",
+    "q": "Qual casal instruiu Apolo mais precisamente no caminho de Deus?",
+    "a": [
+      "Ananias e Safira",
+      "Filemom e Apia",
+      "Zacarias e Isabel",
+      "Priscila e Aquila"
+    ],
+    "c": 3
+  },
+  {
+    "id": "q061",
+    "category": "Biblia",
+    "difficulty": "dificil",
+    "q": "Qual evangelho menciona os magos do Oriente?",
+    "a": [
+      "Joao",
+      "Marcos",
+      "Mateus",
+      "Lucas"
+    ],
+    "c": 2
+  },
+  {
+    "id": "q121",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "dificil",
+    "q": "Qual figura foi associada a confusao ou absorcao da humanidade de Cristo pela divindade, combatida em Calcedonia?",
+    "a": [
+      "Ario",
+      "Eutiques",
+      "Marcião",
+      "Montano"
+    ],
+    "c": 1
+  },
+  {
+    "id": "q045",
+    "category": "Biblia",
+    "difficulty": "media",
+    "q": "Qual carta de Paulo trata amplamente da justificação pela fé e da vida em Cristo?",
+    "a": [
+      "Filemom",
+      "Judas",
+      "Romanos",
+      "3 João"
+    ],
+    "c": 2
+  },
+  {
+    "id": "q010",
+    "category": "Biblia",
+    "difficulty": "facil",
+    "q": "Em que cidade Jesus nasceu?",
+    "a": [
+      "Jerusalem",
+      "Nazare",
+      "Belem",
+      "Cafarnaum"
+    ],
+    "c": 2
+  },
+  {
+    "id": "q004",
+    "category": "Biblia",
+    "difficulty": "facil",
+    "q": "Quem conduziu Israel para fora do Egito?",
+    "a": [
+      "Moises",
+      "Gideao",
+      "Josue",
+      "Salomao"
+    ],
+    "c": 0
+  },
+  {
+    "id": "q038",
+    "category": "Biblia",
+    "difficulty": "media",
+    "q": "Quem carregou a cruz de Jesus por parte do caminho?",
+    "a": [
+      "Simao de Cirene",
+      "Jose de Arimateia",
+      "Barrabas",
+      "Nicodemos"
+    ],
+    "c": 0
+  },
+  {
+    "id": "q034",
+    "category": "Biblia",
+    "difficulty": "media",
+    "q": "Qual evangelho comeca com \"No principio era o Verbo\"?",
+    "a": [
+      "Lucas",
+      "Mateus",
+      "Joao",
+      "Marcos"
+    ],
+    "c": 2
+  },
+  {
+    "id": "q126",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "dificil",
+    "q": "Qual termo designa os primeiros escritores cristaos proximos ao periodo apostolico?",
+    "a": [
+      "Pais Apostolicos",
+      "Escolasticos",
+      "Puritanos",
+      "Reformadores"
+    ],
+    "c": 0
+  },
+  {
+    "id": "q047",
+    "category": "Biblia",
+    "difficulty": "media",
+    "q": "Em qual carta Paulo fala da armadura de Deus?",
+    "a": [
+      "Colossenses",
+      "Galatas",
+      "Filipenses",
+      "Efesios"
+    ],
+    "c": 3
+  },
+  {
+    "id": "q114",
+    "category": "Historia da Igreja: de Paulo aos Concilios",
+    "difficulty": "dificil",
+    "q": "Qual e a ordem historica correta desses concilios?",
+    "a": [
+      "Efeso, Niceia I, Calcedonia, Constantinopla I",
+      "Constantinopla I, Niceia I, Calcedonia, Efeso",
+      "Niceia I, Constantinopla I, Efeso, Calcedonia",
+      "Calcedonia, Efeso, Niceia I, Constantinopla I"
+    ],
+    "c": 2
+  }
+]

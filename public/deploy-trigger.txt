@@ -1,1 +1,1 @@
-Game hub update: reset Quiz Ortodoxia question bank for approval.
+Game hub update: load approved quiz bank and general elimination mode.

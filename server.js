@@ -265,7 +265,7 @@ const QUIZ_QUESTIONS = [
   { q: 'A boa obra cristã é fruto de:', a: ['Fé viva em Cristo', 'Tentativa de comprar salvação', 'Vaidade necessária', 'Medo sem promessa'], c: 0 },
   { q: 'A palavra “Evangelho” significa:', a: ['Boa notícia', 'Lei civil', 'Tradição secreta', 'Contrato comercial'], c: 0 },
   { q: 'Quem é o mediador entre Deus e os homens?', a: ['Cristo Jesus', 'Mérito próprio', 'O acaso', 'Qualquer poder político'], c: 0 },
-  { q: 'No culto cristão, Deus primeiro:', a: ['Serve seu povo com Palavra e dons', 'Recebe entretenimento', 'Compra nossa atenção', 'Depende da nossa força'], c: 0 },
+  { q: 'No culto cristão, Deus serve seu povo principalmente por meio de:', a: ['Palavra e Sacramentos', 'Entretenimento religioso', 'Esforço humano', 'Promessas de prosperidade'], c: 0 },
   { q: 'A Escritura aponta para:', a: ['Cristo e sua obra salvadora', 'Autoexaltação humana', 'Mitos sem promessa', 'Poder sem arrependimento'], c: 0 },
   { q: 'A esperança cristã inclui:', a: ['Ressurreição do corpo e vida eterna', 'Fuga eterna do corpo criado', 'Reencarnação infinita', 'Apenas sucesso presente'], c: 0 }
 ];

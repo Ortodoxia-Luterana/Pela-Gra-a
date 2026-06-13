@@ -1,39 +1,69 @@
 (() => {
+  const DRAFT_KEY = 'concordium-character-draft-v2';
   const ORIGINS = [
-    ['Roma', 'Tradicao, ordem e lideranca.', { resistencia: 1, lideranca: 1 }],
-    ['Alexandria', 'Estudo, sabedoria e interpretacao.', { inteligencia: 1, fe: 1 }],
-    ['Antioquia', 'Missao, viagem e pregacao.', { carisma: 1, agilidade: 1 }],
-    ['Jerusalem', 'Raiz apostolica e perseveranca.', { fe: 1, resistencia: 1 }],
-    ['Constantinopla', 'Estrategia, imperio e diplomacia.', { lideranca: 1, inteligencia: 1 }],
-    ['Cartago', 'Firmeza, defesa da fe e disciplina.', { resistencia: 1, carisma: 1 }],
-    ['Capadocia', 'Vida espiritual, ascetismo e ensino.', { fe: 1, inteligencia: 1 }],
-    ['India de Sao Tome', 'Missao oriental, comercio e jornadas.', { agilidade: 1, comercio: 1 }],
-    ['Etiopia/Axum', 'Reino antigo, forca e preservacao da fe.', { resistencia: 1, fe: 1 }],
-    ['Ilhas Britanicas', 'Missao celta, viagem e vida monastica.', { exploracao: 1, fe: 1 }],
-    ['Hispania', 'Resistencia, cultura latina e expansao.', { resistencia: 1, lideranca: 1 }],
-    ['Galia', 'Fronteira missionaria e contato com povos.', { carisma: 1, exploracao: 1 }]
-  ].map(([name, description, bonus]) => ({ name, description, bonus }));
+    ['Roma', 'flag_roma', { resistencia: 1, forca: 1 }],
+    ['Alexandria', 'flag_alexandria', { inteligencia: 2 }],
+    ['Antioquia', 'flag_antioquia', { agilidade: 1, inteligencia: 1 }],
+    ['Jerusalem', 'flag_jerusalem', { resistencia: 1, inteligencia: 1 }],
+    ['Constantinopla', 'flag_constantinopla', { inteligencia: 1, resistencia: 1 }],
+    ['Cartago', 'flag_cartago', { resistencia: 2 }],
+    ['Capadocia', 'flag_capadocia', { inteligencia: 1, agilidade: 1 }],
+    ['India de Sao Tome', 'flag_india', { agilidade: 2 }],
+    ['Etiopia/Axum', 'flag_axum', { forca: 1, resistencia: 1 }],
+    ['Ilhas Britanicas', 'flag_britanicas', { agilidade: 1, resistencia: 1 }],
+    ['Hispania', 'flag_hispania', { forca: 1, resistencia: 1 }],
+    ['Galia', 'flag_galia', { forca: 1, agilidade: 1 }]
+  ].map(([name, flag, bonus]) => ({ name, flag, bonus }));
 
   const WEAPONS = [
-    ['Espada curta', 'Equilibrada', 9, 'forca'],
-    ['Cajado', 'Fe e suporte', 7, 'fe'],
-    ['Lanca', 'Maior alcance', 8, 'forca'],
-    ['Arco simples', 'Distancia', 7, 'agilidade'],
-    ['Livro', 'Ensino e estrategia', 6, 'inteligencia'],
-    ['Martelo', 'Forte e lento', 12, 'forca']
-  ].map(([name, description, damage, stat]) => ({ name, description, damage, stat }));
+    ['Espada longa', 'weapon_long_sword', 11, 'forca'],
+    ['Machado', 'weapon_axe', 12, 'forca'],
+    ['Arco e flecha', 'weapon_bow', 9, 'agilidade']
+  ].map(([name, icon, damage, stat]) => ({ name, icon, damage, stat }));
 
-  const LOOKS = ['#b94a3c', '#3c7ab9', '#4b9c61', '#9b5bc9', '#c08b2f', '#d8d0b0'];
+  const SKIN_COLORS = ['#c58b63', '#8d5a3a', '#e0b48a', '#6a3d2a'];
+  const HAIR_COLORS = ['#2c1a12', '#6b4428', '#d8c69a', '#1b1b1d'];
+  const TUNIC_COLORS = ['#9a4b33', '#3c638f', '#4f7b45', '#8b5bc9'];
+  const SPRITE_PATHS = {
+    tileGrass: '/assets/concordium/sprites/tile_grass.png',
+    tileStone: '/assets/concordium/sprites/tile_stone.png',
+    tileDirt: '/assets/concordium/sprites/tile_dirt.png',
+    buildingHouse: '/assets/concordium/sprites/building_house.png',
+    buildingBasilica: '/assets/concordium/sprites/building_basilica.png',
+    stallRed: '/assets/concordium/sprites/stall_red.png',
+    stallBlue: '/assets/concordium/sprites/stall_blue.png',
+    stallGold: '/assets/concordium/sprites/stall_gold.png',
+    tree: '/assets/concordium/sprites/tree.png',
+    playerRed: '/assets/concordium/sprites/player_red.png',
+    playerBlue: '/assets/concordium/sprites/player_blue.png',
+    playerGreen: '/assets/concordium/sprites/player_green.png',
+    npcElder: '/assets/concordium/sprites/npc_elder.png',
+    npcMerchant: '/assets/concordium/sprites/npc_merchant.png',
+    npcScribe: '/assets/concordium/sprites/npc_scribe.png',
+    npcGuard: '/assets/concordium/sprites/npc_guard.png',
+    npcTraveler: '/assets/concordium/sprites/npc_traveler.png',
+    trainingDummy: '/assets/concordium/sprites/training_dummy.png',
+    weaponLongSword: '/assets/concordium/sprites/weapon_long_sword.png',
+    weaponAxe: '/assets/concordium/sprites/weapon_axe.png',
+    weaponBow: '/assets/concordium/sprites/weapon_bow.png',
+    flagRoma: '/assets/concordium/sprites/flag_roma.png',
+    flagAlexandria: '/assets/concordium/sprites/flag_alexandria.png',
+    flagAntioquia: '/assets/concordium/sprites/flag_antioquia.png',
+    flagJerusalem: '/assets/concordium/sprites/flag_jerusalem.png',
+    flagConstantinopla: '/assets/concordium/sprites/flag_constantinopla.png',
+    flagCartago: '/assets/concordium/sprites/flag_cartago.png',
+    flagCapadocia: '/assets/concordium/sprites/flag_capadocia.png',
+    flagIndia: '/assets/concordium/sprites/flag_india.png',
+    flagAxum: '/assets/concordium/sprites/flag_axum.png',
+    flagBritanicas: '/assets/concordium/sprites/flag_britanicas.png',
+    flagHispania: '/assets/concordium/sprites/flag_hispania.png',
+    flagGalia: '/assets/concordium/sprites/flag_galia.png'
+  };
   const ATTRS = [
     ['forca', 'Forca'],
     ['resistencia', 'Resistencia'],
     ['agilidade', 'Agilidade'],
-    ['inteligencia', 'Inteligencia'],
-    ['fe', 'Fe'],
-    ['carisma', 'Carisma'],
-    ['lideranca', 'Lideranca'],
-    ['comercio', 'Comercio'],
-    ['exploracao', 'Exploracao']
+    ['inteligencia', 'Inteligencia']
   ];
 
   const state = {
@@ -44,7 +74,7 @@
     character: null,
     selectedOrigin: 0,
     selectedWeapon: 0,
-    selectedLook: 0,
+    avatar: { gender: 'male', skin: SKIN_COLORS[0], hair: HAIR_COLORS[0], tunic: TUNIC_COLORS[0] },
     baseAttrs: Object.fromEntries(ATTRS.map(([key]) => [key, 1])),
     freePoints: 6,
     keys: new Set(),
@@ -54,7 +84,8 @@
     quest: { elder: false, market: false, training: false, done: false },
     panel: null,
     lastMoveSent: 0,
-    joystick: { active: false, dx: 0, dy: 0 }
+    joystick: { active: false, dx: 0, dy: 0 },
+    sprites: loadSprites()
   };
 
   const canvas = document.querySelector('#world');
@@ -67,26 +98,26 @@
 
   const world = { w: 1500, h: 1000 };
   const npcs = [
-    { name: 'Anciao da Praca', role: 'elder', x: 690, y: 410, color: '#d7b46a' },
-    { name: 'Mercador do Oriente', role: 'market', x: 930, y: 365, color: '#8ec5d9' },
-    { name: 'Escriba', role: 'scribe', x: 540, y: 310, color: '#d9d0b6' },
-    { name: 'Guarda da Cidade', role: 'guard', x: 450, y: 575, color: '#9aa3b1' },
-    { name: 'Viajante de Antioquia', role: 'traveler', x: 1030, y: 610, color: '#b88963' }
+    { name: 'Anciao da Praca', role: 'elder', x: 690, y: 410, color: '#d7b46a', sprite: 'npcElder' },
+    { name: 'Mercador do Oriente', role: 'market', x: 930, y: 365, color: '#8ec5d9', sprite: 'npcMerchant' },
+    { name: 'Escriba', role: 'scribe', x: 540, y: 310, color: '#d9d0b6', sprite: 'npcScribe' },
+    { name: 'Guarda da Cidade', role: 'guard', x: 450, y: 575, color: '#9aa3b1', sprite: 'npcGuard' },
+    { name: 'Viajante de Antioquia', role: 'traveler', x: 1030, y: 610, color: '#b88963', sprite: 'npcTraveler' }
   ];
 
   const buildings = [
-    { x: 640, y: 160, w: 250, h: 170, color: '#896341', roof: '#5f2e26', label: 'Igreja antiga' },
-    { x: 230, y: 270, w: 170, h: 115, color: '#76573d', roof: '#493029' },
-    { x: 1100, y: 280, w: 180, h: 125, color: '#7e6144', roof: '#513326' },
-    { x: 230, y: 690, w: 160, h: 120, color: '#6f563e', roof: '#442f27' },
-    { x: 1080, y: 705, w: 170, h: 120, color: '#806044', roof: '#513327' },
-    { x: 880, y: 250, w: 150, h: 95, color: '#8f6840', roof: '#674025' }
+    { x: 765, y: 315, w: 220, h: 184, color: '#896341', roof: '#5f2e26', label: 'Igreja antiga', sprite: 'buildingBasilica' },
+    { x: 315, y: 390, w: 122, h: 122, color: '#76573d', roof: '#493029', sprite: 'buildingHouse' },
+    { x: 1190, y: 405, w: 128, h: 128, color: '#7e6144', roof: '#513326', sprite: 'buildingHouse' },
+    { x: 310, y: 810, w: 122, h: 122, color: '#6f563e', roof: '#442f27', sprite: 'buildingHouse' },
+    { x: 1170, y: 825, w: 122, h: 122, color: '#806044', roof: '#513327', sprite: 'buildingHouse' },
+    { x: 955, y: 345, w: 116, h: 116, color: '#8f6840', roof: '#674025', sprite: 'buildingHouse' }
   ];
 
   const marketStalls = [
-    { x: 960, y: 430, color: '#9d4139' },
-    { x: 1040, y: 470, color: '#2f7382' },
-    { x: 880, y: 470, color: '#a88432' }
+    { x: 960, y: 430, color: '#9d4139', sprite: 'stallRed' },
+    { x: 1040, y: 470, color: '#2f7382', sprite: 'stallBlue' },
+    { x: 880, y: 470, color: '#a88432', sprite: 'stallGold' }
   ];
 
   initCreator();
@@ -94,11 +125,21 @@
   resize();
   requestAnimationFrame(loop);
 
+  function loadSprites() {
+    return Object.fromEntries(Object.entries(SPRITE_PATHS).map(([key, src]) => {
+      const image = new Image();
+      image.src = src;
+      return [key, image];
+    }));
+  }
+
   function initCreator() {
+    restoreDraft();
     renderOrigins();
-    renderLooks();
+    renderAvatarEditor();
     renderWeapons();
     renderAttrs();
+    document.querySelector('#char-name').addEventListener('input', saveDraft);
     document.querySelector('#creator-form').addEventListener('submit', event => {
       event.preventDefault();
       const name = document.querySelector('#char-name').value.trim().slice(0, 28) || 'Viajante';
@@ -111,7 +152,8 @@
       state.character = {
         name,
         origin: origin.name,
-        appearance: LOOKS[state.selectedLook],
+        appearance: state.avatar.tunic,
+        avatar: { ...state.avatar },
         weapon: weapon.name,
         weaponDamage: weapon.damage,
         weaponStat: weapon.stat,
@@ -126,41 +168,152 @@
     });
   }
 
+  function restoreDraft() {
+    try {
+      const draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}');
+      if (typeof draft.name === 'string') document.querySelector('#char-name').value = draft.name.slice(0, 28);
+      if (Number.isInteger(draft.selectedOrigin)) state.selectedOrigin = clamp(draft.selectedOrigin, 0, ORIGINS.length - 1);
+      if (Number.isInteger(draft.selectedWeapon)) state.selectedWeapon = clamp(draft.selectedWeapon, 0, WEAPONS.length - 1);
+      if (draft.avatar && typeof draft.avatar === 'object') {
+        state.avatar = {
+          gender: draft.avatar.gender === 'female' ? 'female' : 'male',
+          skin: SKIN_COLORS.includes(draft.avatar.skin) ? draft.avatar.skin : state.avatar.skin,
+          hair: HAIR_COLORS.includes(draft.avatar.hair) ? draft.avatar.hair : state.avatar.hair,
+          tunic: TUNIC_COLORS.includes(draft.avatar.tunic) ? draft.avatar.tunic : state.avatar.tunic
+        };
+      }
+      if (draft.baseAttrs && typeof draft.baseAttrs === 'object') {
+        ATTRS.forEach(([key]) => {
+          const value = Number(draft.baseAttrs[key]);
+          if (Number.isFinite(value)) state.baseAttrs[key] = clamp(value, 1, 8);
+        });
+        state.freePoints = Math.max(0, 6 - ATTRS.reduce((sum, [key]) => sum + Math.max(0, state.baseAttrs[key] - 1), 0));
+      }
+    } catch {}
+  }
+
+  function saveDraft() {
+    const draft = {
+      name: document.querySelector('#char-name')?.value || '',
+      selectedOrigin: state.selectedOrigin,
+      selectedWeapon: state.selectedWeapon,
+      avatar: state.avatar,
+      baseAttrs: state.baseAttrs
+    };
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+  }
+
   function renderOrigins() {
     const root = document.querySelector('#origins');
     root.innerHTML = ORIGINS.map((origin, i) => `
-      <button type="button" class="choice ${i === state.selectedOrigin ? 'active' : ''}" data-origin="${i}">
-        <b>${origin.name}</b><small>${origin.description}</small>
+      <button type="button" class="choice origin-card ${i === state.selectedOrigin ? 'active' : ''}" data-origin="${i}">
+        <img src="/assets/concordium/sprites/${origin.flag}.png" alt="">
+        <b>${origin.name}</b>
       </button>`).join('');
     root.querySelectorAll('button').forEach(button => {
       button.addEventListener('click', () => {
         state.selectedOrigin = Number(button.dataset.origin);
         renderOrigins();
+        saveDraft();
       });
     });
   }
 
-  function renderLooks() {
+  function renderAvatarEditor() {
     const root = document.querySelector('#looks');
-    root.innerHTML = LOOKS.map((color, i) => `<button type="button" class="swatch ${i === state.selectedLook ? 'active' : ''}" data-look="${i}" style="background:${color}" title="Aparencia ${i + 1}"></button>`).join('');
-    root.querySelectorAll('button').forEach(button => {
+    root.className = 'avatar-editor';
+    root.innerHTML = `
+      <div class="avatar-preview" aria-label="Previa do avatar"></div>
+      <div class="avatar-controls">
+        <div class="segmented">
+          <button type="button" data-gender="male" class="${state.avatar.gender === 'male' ? 'active' : ''}">Homem</button>
+          <button type="button" data-gender="female" class="${state.avatar.gender === 'female' ? 'active' : ''}">Mulher</button>
+        </div>
+        ${avatarSwatches('skin', 'Pele', SKIN_COLORS)}
+        ${avatarSwatches('hair', 'Cabelo', HAIR_COLORS)}
+        ${avatarSwatches('tunic', 'Tunica', TUNIC_COLORS)}
+      </div>`;
+    paintAvatarPreview(root.querySelector('.avatar-preview'), state.avatar);
+    root.querySelectorAll('button[data-gender]').forEach(button => {
       button.addEventListener('click', () => {
-        state.selectedLook = Number(button.dataset.look);
-        renderLooks();
+        state.avatar.gender = button.dataset.gender;
+        renderAvatarEditor();
+        saveDraft();
       });
     });
+    root.querySelectorAll('button[data-avatar-field]').forEach(button => {
+      button.addEventListener('click', () => {
+        state.avatar[button.dataset.avatarField] = button.dataset.color;
+        renderAvatarEditor();
+        saveDraft();
+      });
+    });
+  }
+
+  function avatarSwatches(field, label, colors) {
+    return `<div class="avatar-row"><span>${label}</span><div>${colors.map(color => `
+      <button type="button" class="mini-swatch ${state.avatar[field] === color ? 'active' : ''}" data-avatar-field="${field}" data-color="${color}" style="background:${color}" title="${label}"></button>`).join('')}</div></div>`;
+  }
+
+  function paintAvatarPreview(root, avatar) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 80;
+    canvas.height = 96;
+    root.innerHTML = '';
+    root.appendChild(canvas);
+    const avatarCtx = canvas.getContext('2d');
+    avatarCtx.imageSmoothingEnabled = false;
+    drawAvatarPixel(avatarCtx, 40, 82, 3, avatar);
+  }
+
+  function drawAvatarPixel(context, x, y, scale, avatar = {}) {
+    const skin = avatar.skin || '#c58b63';
+    const hair = avatar.hair || '#2c1a12';
+    const tunic = avatar.tunic || '#9a4b33';
+    const female = avatar.gender === 'female';
+    const px = (rx, ry, w, h, color) => {
+      context.fillStyle = color;
+      context.fillRect(Math.round(x + rx * scale), Math.round(y + ry * scale), Math.round(w * scale), Math.round(h * scale));
+    };
+    context.fillStyle = 'rgba(0,0,0,.32)';
+    context.beginPath();
+    context.ellipse(x, y + 2 * scale, 9 * scale, 3 * scale, 0, 0, Math.PI * 2);
+    context.fill();
+    px(-5, -22, 10, 6, hair);
+    px(-6, -18, 12, 7, skin);
+    px(-4, -19, 8, 2, hair);
+    if (female) {
+      px(-7, -16, 2, 6, hair);
+      px(5, -16, 2, 6, hair);
+    }
+    px(-5, -10, 10, 13, tunic);
+    px(-4, -8, 8, 2, lightenColor(tunic, 24));
+    px(-7, -8, 2, 8, skin);
+    px(5, -8, 2, 8, skin);
+    px(-5, 3, 3, 6, '#3b2619');
+    px(2, 3, 3, 6, '#3b2619');
+    px(-2, -17, 1, 1, '#20120d');
+    px(3, -17, 1, 1, '#20120d');
+  }
+
+  function lightenColor(color, amount) {
+    const hex = color.replace('#', '');
+    const parts = [0, 2, 4].map(index => Math.min(255, parseInt(hex.slice(index, index + 2), 16) + amount));
+    return `rgb(${parts[0]},${parts[1]},${parts[2]})`;
   }
 
   function renderWeapons() {
     const root = document.querySelector('#weapons');
     root.innerHTML = WEAPONS.map((weapon, i) => `
-      <button type="button" class="choice ${i === state.selectedWeapon ? 'active' : ''}" data-weapon="${i}">
-        <b>${weapon.name}</b><small>${weapon.description}</small>
+      <button type="button" class="choice weapon-card ${i === state.selectedWeapon ? 'active' : ''}" data-weapon="${i}">
+        <img src="/assets/concordium/sprites/${weapon.icon}.png" alt="">
+        <b>${weapon.name}</b>
       </button>`).join('');
     root.querySelectorAll('button').forEach(button => {
       button.addEventListener('click', () => {
         state.selectedWeapon = Number(button.dataset.weapon);
         renderWeapons();
+        saveDraft();
       });
     });
   }
@@ -176,6 +329,7 @@
         state.baseAttrs[button.dataset.attr] += 1;
         state.freePoints -= 1;
         renderAttrs();
+        saveDraft();
       });
     });
   }
@@ -302,6 +456,8 @@
     canvas.style.width = `${window.innerWidth}px`;
     canvas.style.height = `${window.innerHeight}px`;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.imageSmoothingEnabled = false;
+    miniCtx.imageSmoothingEnabled = false;
   }
 
   function loop(now) {
@@ -333,7 +489,7 @@
     }
     if (!dx && !dy) return;
     const len = Math.max(1, Math.hypot(dx, dy));
-    const speed = 2.7 + (me.attrs?.agilidade || 1) * 0.08 + (me.attrs?.exploracao || 1) * 0.04;
+    const speed = 2.7 + (me.attrs?.agilidade || 1) * 0.1;
     me.x = clamp(me.x + (dx / len) * speed, 70, world.w - 70);
     me.y = clamp(me.y + (dy / len) * speed, 80, world.h - 80);
     if (now - state.lastMoveSent > 45) {
@@ -366,10 +522,8 @@
   }
 
   function drawWorld() {
-    const gradient = ctx.createLinearGradient(0, 0, world.w, world.h);
-    gradient.addColorStop(0, '#3d3020');
-    gradient.addColorStop(1, '#1c2119');
-    ctx.fillStyle = gradient;
+    drawTiled(state.sprites.tileGrass, 0, 0, world.w, world.h, 128, '#5f8c3a');
+    ctx.fillStyle = 'rgba(35, 45, 26, .22)';
     ctx.fillRect(0, 0, world.w, world.h);
     drawStonePath(720, 500, 980, 360, 28);
     drawStonePath(720, 500, 260, 720, 24);
@@ -382,11 +536,47 @@
     drawTrees();
   }
 
+  function spriteKey(name) {
+    return String(name || '').replace(/_([a-z])/g, (_, char) => char.toUpperCase());
+  }
+
+  function ready(image) {
+    return image && image.complete && image.naturalWidth > 0;
+  }
+
+  function drawTiled(image, x, y, w, h, size, fallback) {
+    if (!ready(image)) {
+      ctx.fillStyle = fallback;
+      ctx.fillRect(x, y, w, h);
+      return;
+    }
+    ctx.imageSmoothingEnabled = false;
+    for (let yy = y; yy < y + h; yy += size) {
+      for (let xx = x; xx < x + w; xx += size) {
+        ctx.drawImage(image, xx, yy, size, size);
+      }
+    }
+  }
+
+  function drawSpriteBottom(image, x, y, w, h) {
+    if (!ready(image)) return false;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(image, Math.round(x - w / 2), Math.round(y - h), Math.round(w), Math.round(h));
+    return true;
+  }
+
+  function drawSpriteBox(image, x, y, w, h) {
+    if (!ready(image)) return false;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(image, Math.round(x - w / 2), Math.round(y - h / 2), Math.round(w), Math.round(h));
+    return true;
+  }
+
   function drawPlaza() {
     ctx.save();
     ctx.translate(720, 500);
     ctx.rotate(Math.PI / 4);
-    ctx.fillStyle = '#746b58';
+    ctx.fillStyle = '#756b58';
     ctx.strokeStyle = '#b59860';
     ctx.lineWidth = 4;
     ctx.fillRect(-165, -165, 330, 330);
@@ -421,6 +611,11 @@
   }
 
   function drawBuilding(b) {
+    const image = state.sprites[b.sprite];
+    if (drawSpriteBottom(image, b.x, b.y, b.w, b.h)) {
+      if (b.label) label(b.label, b.x, b.y - b.h - 8, '#f0d089');
+      return;
+    }
     ctx.fillStyle = b.color;
     ctx.fillRect(b.x, b.y, b.w, b.h);
     ctx.fillStyle = b.roof;
@@ -438,6 +633,7 @@
   }
 
   function drawStall(stall) {
+    if (drawSpriteBottom(state.sprites[stall.sprite], stall.x, stall.y, 96, 96)) return;
     ctx.fillStyle = '#594130';
     ctx.fillRect(stall.x - 48, stall.y, 96, 44);
     ctx.fillStyle = stall.color;
@@ -456,8 +652,9 @@
   }
 
   function drawTrees() {
-    const trees = [[120, 180], [170, 225], [1300, 180], [1350, 230], [118, 820], [1310, 830], [980, 820], [420, 160]];
+    const trees = [[120, 180], [170, 225], [1300, 180], [1350, 230], [118, 820], [1310, 830], [980, 820], [420, 160], [530, 760], [1010, 165]];
     trees.forEach(([x, y]) => {
+      if (drawSpriteBottom(state.sprites.tree, x, y, 96, 128)) return;
       ctx.fillStyle = '#4b3822';
       ctx.fillRect(x - 5, y + 18, 10, 24);
       ctx.fillStyle = '#315b3a';
@@ -491,15 +688,22 @@
     ctx.beginPath();
     ctx.ellipse(0, 22, 23, 9, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = player.appearance || '#b94a3c';
-    ctx.fillRect(-13, -15, 26, 34);
-    ctx.fillStyle = '#e0bb83';
-    ctx.beginPath();
-    ctx.arc(0, -28, 13, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = '#2a1710';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(-13, -15, 26, 34);
+    if (player.avatar) {
+      drawAvatarPixel(ctx, 0, 17, 2.1, player.avatar);
+    } else {
+      const sprite = state.sprites[spriteKey(player.sprite)] || state.sprites.playerRed;
+      if (!drawSpriteBottom(sprite, 0, 19, 56, 68)) {
+      ctx.fillStyle = player.appearance || '#b94a3c';
+      ctx.fillRect(-13, -15, 26, 34);
+      ctx.fillStyle = '#e0bb83';
+      ctx.beginPath();
+      ctx.arc(0, -28, 13, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#2a1710';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(-13, -15, 26, 34);
+      }
+    }
     if (player.id === state.myId) {
       ctx.strokeStyle = '#f0c76a';
       ctx.lineWidth = 3;
@@ -520,12 +724,14 @@
     ctx.beginPath();
     ctx.ellipse(0, 18, 20, 8, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = npc.color;
-    ctx.fillRect(-12, -12, 24, 30);
-    ctx.fillStyle = '#d7b58a';
-    ctx.beginPath();
-    ctx.arc(0, -24, 11, 0, Math.PI * 2);
-    ctx.fill();
+    if (!drawSpriteBottom(state.sprites[npc.sprite], 0, 16, 56, 68)) {
+      ctx.fillStyle = npc.color;
+      ctx.fillRect(-12, -12, 24, 30);
+      ctx.fillStyle = '#d7b58a';
+      ctx.beginPath();
+      ctx.arc(0, -24, 11, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.restore();
     label(npc.name, npc.x, npc.y - 48, '#f0c76a');
   }
@@ -537,18 +743,20 @@
     ctx.beginPath();
     ctx.ellipse(0, 24, 25, 9, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = '#7b4b25';
-    ctx.lineWidth = 8;
-    ctx.beginPath();
-    ctx.moveTo(0, -45);
-    ctx.lineTo(0, 24);
-    ctx.moveTo(-24, -20);
-    ctx.lineTo(24, -20);
-    ctx.stroke();
-    ctx.fillStyle = '#a47039';
-    ctx.beginPath();
-    ctx.arc(0, -54, 15, 0, Math.PI * 2);
-    ctx.fill();
+    if (!drawSpriteBottom(state.sprites.trainingDummy, 0, 25, 56, 76)) {
+      ctx.strokeStyle = '#7b4b25';
+      ctx.lineWidth = 8;
+      ctx.beginPath();
+      ctx.moveTo(0, -45);
+      ctx.lineTo(0, 24);
+      ctx.moveTo(-24, -20);
+      ctx.lineTo(24, -20);
+      ctx.stroke();
+      ctx.fillStyle = '#a47039';
+      ctx.beginPath();
+      ctx.arc(0, -54, 15, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.restore();
     healthBar(dummy.x - 38, dummy.y - 84, 76, dummy.hp / dummy.maxHp);
     label('Alvo de treino', dummy.x, dummy.y - 92, '#ffe8a8');
@@ -647,7 +855,7 @@
 
   function showMarket() {
     showPanel(`<h3>Mercado inicial</h3><div class="slot-grid">
-      ${['Pao', 'Tunica simples', 'Pergaminho', 'Pocao de cura', 'Cajado simples', 'Espada curta'].map(item => `<div class="slot">${item}</div>`).join('')}
+      ${['Pao', 'Tunica simples', 'Pergaminho', 'Pocao de cura', 'Espada longa', 'Arco e flecha'].map(item => `<div class="slot">${item}</div>`).join('')}
     </div><p>Compra e venda ficam para a proxima camada. Este mercado ja marca a missao inicial.</p>`);
   }
 

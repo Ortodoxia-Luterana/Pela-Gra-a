@@ -1518,7 +1518,10 @@ function initConcordiumMultiplayer(httpServer) {
     Lanca: 7,
     'Arco simples': 6,
     Livro: 4,
-    Martelo: 11
+    Martelo: 11,
+    'Espada longa': 11,
+    Machado: 12,
+    'Arco e flecha': 9
   };
   const weaponRange = {
     sword: 72,
@@ -1532,7 +1535,10 @@ function initConcordiumMultiplayer(httpServer) {
     Lanca: 96,
     'Arco simples': 170,
     Livro: 90,
-    Martelo: 68
+    Martelo: 68,
+    'Espada longa': 78,
+    Machado: 70,
+    'Arco e flecha': 180
   };
 
   function safeText(value, fallback = '') {
@@ -1549,6 +1555,8 @@ function initConcordiumMultiplayer(httpServer) {
       name: player.name,
       origin: player.origin,
       appearance: player.appearance,
+      avatar: player.avatar,
+      sprite: player.sprite,
       weapon: player.weapon,
       x: player.x,
       y: player.y,
@@ -1589,6 +1597,13 @@ function initConcordiumMultiplayer(httpServer) {
         name: safeText(payload?.name, `Viajante ${socket.id.slice(0, 4)}`) || `Viajante ${socket.id.slice(0, 4)}`,
         origin: safeText(payload?.origin, 'Roma'),
         appearance: safeText(payload?.appearance, 'blue'),
+        avatar: payload?.avatar && typeof payload.avatar === 'object' ? {
+          gender: safeText(payload.avatar.gender, 'male'),
+          skin: safeText(payload.avatar.skin, '#c58b63'),
+          hair: safeText(payload.avatar.hair, '#2c1a12'),
+          tunic: safeText(payload.avatar.tunic, '#9a4b33')
+        } : null,
+        sprite: safeText(payload?.sprite, 'player_red'),
         weapon: safeText(payload?.weapon, 'sword'),
         attrs: {
           forca: clamp(attrs.forca || 3, 1, 20),

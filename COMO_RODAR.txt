@@ -10,8 +10,10 @@ Suba estes arquivos/pastas no servidor:
 Para rodar localmente:
 1. Instale Node.js recente com suporte a node:sqlite.
 2. No terminal, dentro desta pasta, rode:
+   npm install
+3. Depois rode:
    npm start
-3. Abra:
+4. Abra:
    http://localhost:3000
 
 Checklist depois do deploy:
@@ -20,9 +22,11 @@ Checklist depois do deploy:
 3. Toque em Jogar no card Pela Graca 1904.
 4. Inicie a campanha e confirme que o mapa aparece.
 5. Use Culto ou Catecismo e confirme que aparece "Salvo no SQLite".
+6. Abra /concordium em dois navegadores ou abas diferentes, crie dois personagens e confirme que ambos aparecem no mesmo mapa.
 
 Observacoes:
 - O jogo com login usa public/game.js, public/game-body.html, public/game.css, public/persistence.js e public/site.css.
+- Concordium: The First Age usa Socket.IO para multiplayer em tempo real e fica em public/concordium.html, public/concordium.css e public/concordium.js.
 - O banco fica em data/cultivando.sqlite.
 - Se o arquivo cultivando.sqlite nao for enviado por causa do .gitignore, mantenha a pasta data/ no servidor; o server.js cria as tabelas sozinho.
 - Nao suba arquivos server.out.log, server.err.log ou server.detached.log.

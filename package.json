@@ -6,5 +6,8 @@
   "scripts": {
     "start": "node --no-warnings start.js",
     "dev": "node --no-warnings start.js"
+  },
+  "dependencies": {
+    "socket.io": "^4.8.3"
   }
 }

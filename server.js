@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { DatabaseSync } = require('node:sqlite');
+const { Server: SocketIOServer } = require('socket.io');
 
 const ROOT = __dirname;
 const PUBLIC_DIR = path.join(ROOT, 'public');
@@ -18,6 +19,7 @@ const GAME_ID = 'pela-graca-1904';
 const CRONICAS_GAME_ID = 'cronicas-do-levante';
 const LUTHER_MATCH_GAME_ID = 'luther-metch';
 const QUIZ_GAME_ID = 'quiz-ortodoxia';
+const CONCORDIUM_GAME_ID = 'concordium-first-age';
 const LUTHER_MATCH_MAX_LEVEL = 500;
 const QUIZ_ROUND_SECONDS = 20;
 const QUIZ_QUESTION_COUNT = 8;
@@ -996,10 +998,10 @@ async function handleApi(req, res, url, user) {
           rankingUrl: '/?section=ranking&game=luther-metch'
         },
         {
-          id: 'peregrino-confessional',
-          title: 'Peregrino Confessional',
-          status: 'coming-soon',
-          playUrl: null,
+          id: CONCORDIUM_GAME_ID,
+          title: 'Concordium: The First Age',
+          status: 'prototype',
+          playUrl: '/concordium',
           rankingUrl: null
         },
         {
@@ -1328,7 +1330,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     <article class="ol-game-card pela-cover"><div><h4>Pela Graça 1904</h4><p>Gerencie igrejas, forme pastores, responda perguntas doutrinárias e acompanhe a história da IELB no Brasil.</p></div><a href="/play">Jogar</a></article>
     <article class="ol-game-card cronicas-cover"><div><h4>Crônicas do Levante</h4><p>Uma narrativa bíblica interativa nos dias do rei Davi, com escolhas, descobertas, relações e consequências pelo caminho.</p></div><a href="/cronicas-do-levante">${cronicasSave ? 'Continuar' : 'Jogar'}</a></article>
     <article class="ol-game-card match3-cover"><div><h4>Luther Metch</h4><p>Junte 3 ou mais peças iguais para cumprir objetivos e avançar de fase.</p></div><a href="/luther-metch">Jogar</a></article>
-    <article class="ol-game-card peregrino-cover"><div><h4>Peregrino Confessional</h4><p>Jornada curta de formação sobre Escritura, confissão, culto e vida comunitária, com escolhas e anotações salvas no navegador.</p></div><span class="soon-badge">Em breve</span></article>
+    <article class="ol-game-card concordium-cover"><div><h4>Concordium: The First Age</h4><p>RPG multiplayer isométrico na Praça de Niceia, com criação de personagem, chat, treino e jogadores em tempo real.</p></div><a href="/concordium">Jogar</a></article>
     <article class="ol-game-card quiz-cover"><div><h4>Quiz Ortodoxia</h4><p>Dispute perguntas de Bíblia, Reforma e luteranismo em modo solo, duelo online, convite ou competição geral.</p></div><a href="/quiz-ortodoxia">Jogar</a></article>
   </section>`;
   const rankCard = `<aside class="ol-panel ol-rank"><p>Seu rank geral</p><img class="rank-badge" src="${rank.current.file}?v=${GAME_VERSION}" alt="${escapeHtml(rank.current.title)}"><div class="rank-xp"><strong>${xp} XP</strong><span>${rank.next ? `${Math.max(0, rank.next.xp - rank.currentXp)} XP para ${escapeHtml(rank.next.title)}` : 'Rank maximo alcancado'}</span><div class="rank-bar"><span style="width:${Math.round(rank.progress)}%"></span></div></div><a href="/?section=ranking">Ver ranking geral</a></aside>`;
@@ -1339,7 +1341,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     medalhas: `<section class="ol-panel" id="medalhas"><div class="panel-head"><h3>Medalhas</h3><span>${unlockedMedals}/${medals.length}</span></div><div class="medal-grid">${medals.map(medal => `<article class="${medal.unlocked ? '' : 'locked'}">${renderAchievementIcon(medal)}<span>${escapeHtml(medal.title)}</span><p>${escapeHtml(medal.description)}</p><small>+${medal.xp} XP · +${medal.points} pontos</small></article>`).join('')}</div></section>`,
     album: `<section class="ol-panel" id="album"><div class="panel-head"><h3>Álbum</h3><span>0/0 figurinhas</span></div><p>Nenhuma figurinha foi criada ainda.</p></section>`,
     loja: `<section class="ol-panel" id="loja"><div class="panel-head"><h3>Loja</h3></div><div class="shop-grid"><article><h4>Pacote Comum</h4><p>100 pontos</p><small>Maior chance de figurinhas comuns.</small><button disabled>Comprar em breve</button></article><article><h4>Pacote Raro</h4><p>250 pontos</p><small>Chance melhor de raras e especiais.</small><button disabled>Comprar em breve</button></article><article><h4>Pacote Lendario</h4><p>600 pontos</p><small>Chance alta de figurinhas raras e lendarias.</small><button disabled>Comprar em breve</button></article></div><div class="daily-wheel"><h4>Roleta diaria</h4><p>A cada 24h, o jogador podera tentar ganhar um pacote comum, raro ou lendario de graca.</p><button disabled>Disponivel em breve</button></div></section>`,
-    configuracoes: `<section class="ol-panel ol-settings" id="configuracoes"><div class="panel-head"><h3>Configurações</h3></div><form method="POST" action="/profile" class="profile-edit"><div class="profile-box">${renderAvatar(user, 'profile-avatar')}<div><label>Nome público<input name="name" maxlength="40" value="${escapeHtml(user.name)}" required></label><label>Foto do perfil<input id="avatar-file" type="file" accept="image/png,image/jpeg,image/webp"></label><input id="avatar-data" type="hidden" name="avatar_data" value="${escapeHtml(user.avatar_data || '')}"><button type="submit">Salvar perfil</button></div></div></form><hr><div class="saved-games-head"><h4>Campanhas por jogo</h4><p>Medalhas e melhor ranking ficam salvos na conta. Os protótipos novos usam save local automático no navegador.</p></div><div class="saved-game-list"><article class="saved-game-row"><div><span>Pela Graça 1904</span><strong>${mainSave ? escapeHtml(mainSave.name) : 'Nenhuma campanha atual'}</strong><small>${mainSave ? 'Apaga só esta campanha atual.' : 'Crie uma campanha para jogar novamente.'}</small></div>${mainSave ? `<form method="POST" action="/saves/${encodeURIComponent(mainSave.id)}/delete" onsubmit="return confirm('Apagar a campanha atual de Pela Graça 1904? Medalhas e melhor ranking serão mantidos.')"><button>Apagar campanha</button></form>` : '<a href="/play">Criar campanha</a>'}</article><article class="saved-game-row"><div><span>Crônicas do Levante</span><strong>${cronicasSave ? 'Campanha em andamento' : 'Nenhuma campanha atual'}</strong><small>${cronicasSave ? 'Apaga só o progresso narrativo. Medalhas futuras serão mantidas.' : 'Comece uma jornada para criar o save automático.'}</small></div>${cronicasSave ? `<form method="POST" action="/cronicas-do-levante/delete" onsubmit="return confirm('Apagar a campanha atual de Crônicas do Levante? Medalhas futuras serão mantidas.')"><button>Apagar campanha</button></form>` : '<a href="/cronicas-do-levante">Criar campanha</a>'}</article><article class="saved-game-row"><div><span>Luther Metch</span><strong>Save local automático</strong><small>Fase, objetivos, pontos e tabuleiro ficam salvos neste navegador.</small></div><a href="/luther-metch">Abrir</a></article><article class="saved-game-row"><div><span>Peregrino Confessional</span><strong>Save local automático</strong><small>Etapas, virtudes e anotações ficam salvas neste navegador.</small></div><span class="soon-badge">Em breve</span></article><article class="saved-game-row"><div><span>Quiz Ortodoxia</span><strong>Multiplayer online</strong><small>Duelo, convite e competição geral rodam com pareamento pelo servidor.</small></div><a href="/quiz-ortodoxia">Abrir</a></article></div></section>`
+    configuracoes: `<section class="ol-panel ol-settings" id="configuracoes"><div class="panel-head"><h3>Configurações</h3></div><form method="POST" action="/profile" class="profile-edit"><div class="profile-box">${renderAvatar(user, 'profile-avatar')}<div><label>Nome público<input name="name" maxlength="40" value="${escapeHtml(user.name)}" required></label><label>Foto do perfil<input id="avatar-file" type="file" accept="image/png,image/jpeg,image/webp"></label><input id="avatar-data" type="hidden" name="avatar_data" value="${escapeHtml(user.avatar_data || '')}"><button type="submit">Salvar perfil</button></div></div></form><hr><div class="saved-games-head"><h4>Campanhas por jogo</h4><p>Medalhas e melhor ranking ficam salvos na conta. Os protótipos novos usam save local automático no navegador.</p></div><div class="saved-game-list"><article class="saved-game-row"><div><span>Pela Graça 1904</span><strong>${mainSave ? escapeHtml(mainSave.name) : 'Nenhuma campanha atual'}</strong><small>${mainSave ? 'Apaga só esta campanha atual.' : 'Crie uma campanha para jogar novamente.'}</small></div>${mainSave ? `<form method="POST" action="/saves/${encodeURIComponent(mainSave.id)}/delete" onsubmit="return confirm('Apagar a campanha atual de Pela Graça 1904? Medalhas e melhor ranking serão mantidos.')"><button>Apagar campanha</button></form>` : '<a href="/play">Criar campanha</a>'}</article><article class="saved-game-row"><div><span>Crônicas do Levante</span><strong>${cronicasSave ? 'Campanha em andamento' : 'Nenhuma campanha atual'}</strong><small>${cronicasSave ? 'Apaga só o progresso narrativo. Medalhas futuras serão mantidas.' : 'Comece uma jornada para criar o save automático.'}</small></div>${cronicasSave ? `<form method="POST" action="/cronicas-do-levante/delete" onsubmit="return confirm('Apagar a campanha atual de Crônicas do Levante? Medalhas futuras serão mantidas.')"><button>Apagar campanha</button></form>` : '<a href="/cronicas-do-levante">Criar campanha</a>'}</article><article class="saved-game-row"><div><span>Luther Metch</span><strong>Save local automático</strong><small>Fase, objetivos, pontos e tabuleiro ficam salvos neste navegador.</small></div><a href="/luther-metch">Abrir</a></article><article class="saved-game-row"><div><span>Concordium: The First Age</span><strong>MVP multiplayer online</strong><small>Personagem, Praça de Niceia, chat, treino e presença em tempo real.</small></div><a href="/concordium">Abrir</a></article><article class="saved-game-row"><div><span>Quiz Ortodoxia</span><strong>Multiplayer online</strong><small>Duelo, convite e competição geral rodam com pareamento pelo servidor.</small></div><a href="/quiz-ortodoxia">Abrir</a></article></div></section>`
   };
   return pageShell('Ortodoxia Luterana Gaming', `
 <main class="ol-hub">
@@ -1452,8 +1454,13 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (req.method === 'GET' && url.pathname === '/peregrino-confessional') {
+      redirect(res, '/concordium');
+      return;
+    }
+    if (req.method === 'GET' && url.pathname === '/concordium') {
+      const body = fs.readFileSync(path.join(PUBLIC_DIR, 'concordium.html'), 'utf8');
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-      res.end(renderDashboard(user, 'Peregrino Confessional esta em breve.', 'jogos'));
+      res.end(body);
       return;
     }
     if (req.method === 'GET' && url.pathname === '/quiz-ortodoxia') {
@@ -1494,4 +1501,201 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
+function initConcordiumMultiplayer(httpServer) {
+  const io = new SocketIOServer(httpServer, { cors: { origin: false } });
+  const players = new Map();
+  const mapBounds = { minX: 70, minY: 80, maxX: 1430, maxY: 920 };
+  const dummy = { id: 'training-dummy', x: 760, y: 520, hp: 80, maxHp: 80 };
+  const weaponPower = {
+    sword: 8,
+    staff: 5,
+    spear: 7,
+    bow: 6,
+    book: 4,
+    hammer: 11,
+    'Espada curta': 8,
+    Cajado: 5,
+    Lanca: 7,
+    'Arco simples': 6,
+    Livro: 4,
+    Martelo: 11
+  };
+  const weaponRange = {
+    sword: 72,
+    staff: 78,
+    spear: 96,
+    bow: 170,
+    book: 90,
+    hammer: 68,
+    'Espada curta': 72,
+    Cajado: 78,
+    Lanca: 96,
+    'Arco simples': 170,
+    Livro: 90,
+    Martelo: 68
+  };
+
+  function safeText(value, fallback = '') {
+    return String(value || fallback).replace(/[<>]/g, '').trim().slice(0, 48);
+  }
+  function clamp(value, min, max) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return min;
+    return Math.max(min, Math.min(max, number));
+  }
+  function publicPlayer(player) {
+    return {
+      id: player.id,
+      name: player.name,
+      origin: player.origin,
+      appearance: player.appearance,
+      weapon: player.weapon,
+      x: player.x,
+      y: player.y,
+      attrs: player.attrs,
+      hp: player.hp,
+      maxHp: player.maxHp,
+      energy: player.energy,
+      maxEnergy: player.maxEnergy,
+      level: player.level,
+      xp: player.xp,
+      coins: player.coins,
+      lastMessage: player.lastMessage || ''
+    };
+  }
+  function nextLevelXp(level) {
+    return 60 + Math.max(0, Number(level || 1) - 1) * 35;
+  }
+  function addXp(player, amount) {
+    player.xp += Math.max(0, Math.floor(Number(amount) || 0));
+    let leveled = false;
+    while (player.xp >= nextLevelXp(player.level)) {
+      player.xp -= nextLevelXp(player.level);
+      player.level += 1;
+      player.attrPoints += 2;
+      player.maxHp += 6;
+      player.hp = player.maxHp;
+      leveled = true;
+    }
+    return leveled;
+  }
+
+  io.on('connection', socket => {
+    socket.on('concordium:join', payload => {
+      const attrs = payload?.attrs && typeof payload.attrs === 'object' ? payload.attrs : {};
+      const baseRes = clamp(attrs.resistencia || 3, 1, 20);
+      const player = {
+        id: socket.id,
+        name: safeText(payload?.name, `Viajante ${socket.id.slice(0, 4)}`) || `Viajante ${socket.id.slice(0, 4)}`,
+        origin: safeText(payload?.origin, 'Roma'),
+        appearance: safeText(payload?.appearance, 'blue'),
+        weapon: safeText(payload?.weapon, 'sword'),
+        attrs: {
+          forca: clamp(attrs.forca || 3, 1, 20),
+          resistencia: baseRes,
+          agilidade: clamp(attrs.agilidade || 3, 1, 20),
+          inteligencia: clamp(attrs.inteligencia || 3, 1, 20),
+          fe: clamp(attrs.fe || 3, 1, 20),
+          carisma: clamp(attrs.carisma || 3, 1, 20),
+          lideranca: clamp(attrs.lideranca || 3, 1, 20),
+          comercio: clamp(attrs.comercio || 3, 1, 20),
+          exploracao: clamp(attrs.exploracao || 3, 1, 20)
+        },
+        x: 610 + Math.random() * 80,
+        y: 420 + Math.random() * 60,
+        hp: 100 + baseRes * 8,
+        maxHp: 100 + baseRes * 8,
+        energy: 80,
+        maxEnergy: 80,
+        level: 1,
+        xp: 0,
+        attrPoints: 0,
+        coins: 12,
+        lastAttack: 0,
+        lastMessage: ''
+      };
+      players.set(socket.id, player);
+      socket.emit('concordium:init', { id: socket.id, players: [...players.values()].map(publicPlayer), dummy });
+      socket.broadcast.emit('concordium:player-joined', publicPlayer(player));
+    });
+
+    socket.on('concordium:move', payload => {
+      const player = players.get(socket.id);
+      if (!player) return;
+      player.x = clamp(payload?.x, mapBounds.minX, mapBounds.maxX);
+      player.y = clamp(payload?.y, mapBounds.minY, mapBounds.maxY);
+      player.dir = safeText(payload?.dir, player.dir || 'down');
+      io.emit('concordium:player-update', publicPlayer(player));
+    });
+
+    socket.on('concordium:chat', text => {
+      const player = players.get(socket.id);
+      if (!player) return;
+      const message = safeText(text, '').slice(0, 140);
+      if (!message) return;
+      player.lastMessage = message.slice(0, 56);
+      const payload = { id: player.id, name: player.name, message, at: Date.now() };
+      io.emit('concordium:chat', payload);
+      io.emit('concordium:player-bubble', { id: player.id, message: player.lastMessage });
+      setTimeout(() => {
+        const current = players.get(player.id);
+        if (current && current.lastMessage === player.lastMessage) {
+          current.lastMessage = '';
+          io.emit('concordium:player-bubble', { id: player.id, message: '' });
+        }
+      }, 4200);
+    });
+
+    socket.on('concordium:attack', () => {
+      const player = players.get(socket.id);
+      if (!player) return;
+      const now = Date.now();
+      if (now - player.lastAttack < 650) return;
+      player.lastAttack = now;
+      const dx = player.x - dummy.x;
+      const dy = player.y - dummy.y;
+      const range = weaponRange[player.weapon] || 72;
+      if (Math.hypot(dx, dy) > range) {
+        socket.emit('concordium:notice', 'Aproxime-se do alvo de treino.');
+        return;
+      }
+      const damage = Math.max(3, Math.floor((weaponPower[player.weapon] || 6) + player.attrs.forca * 1.4 + (player.weapon === 'book' ? player.attrs.inteligencia : 0) + (player.weapon === 'staff' ? player.attrs.fe : 0)));
+      dummy.hp = Math.max(0, dummy.hp - damage);
+      let leveled = false;
+      if (dummy.hp <= 0) {
+        leveled = addXp(player, 24);
+        player.coins += 2;
+        setTimeout(() => {
+          dummy.hp = dummy.maxHp;
+          io.emit('concordium:dummy-update', dummy);
+        }, 1200);
+      }
+      io.emit('concordium:dummy-update', dummy);
+      io.emit('concordium:player-update', publicPlayer(player));
+      socket.emit('concordium:combat', { damage, xp: player.xp, level: player.level, attrPoints: player.attrPoints, coins: player.coins, leveled });
+    });
+
+    socket.on('concordium:allocate-attr', attr => {
+      const player = players.get(socket.id);
+      const key = safeText(attr, '');
+      if (!player || player.attrPoints <= 0 || !Object.hasOwn(player.attrs, key)) return;
+      player.attrs[key] += 1;
+      player.attrPoints -= 1;
+      if (key === 'resistencia') {
+        player.maxHp += 8;
+        player.hp = player.maxHp;
+      }
+      socket.emit('concordium:progress', { attrs: player.attrs, attrPoints: player.attrPoints, hp: player.hp, maxHp: player.maxHp, level: player.level, xp: player.xp, coins: player.coins });
+      io.emit('concordium:player-update', publicPlayer(player));
+    });
+
+    socket.on('disconnect', () => {
+      if (!players.has(socket.id)) return;
+      players.delete(socket.id);
+      io.emit('concordium:player-left', socket.id);
+    });
+  });
+}
+
+initConcordiumMultiplayer(server);
 server.listen(PORT, () => console.log(`Cultivando SSR rodando em http://localhost:${PORT}`));

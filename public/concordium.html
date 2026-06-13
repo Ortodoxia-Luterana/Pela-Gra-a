@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Concordium: The First Age</title>
+  <link rel="stylesheet" href="/assets/concordium.css">
+</head>
+<body>
+  <main id="shell">
+    <section id="creator" class="creator">
+      <div class="creator-art"></div>
+      <form id="creator-form" class="creator-panel">
+        <p class="eyebrow">Praca de Niceia</p>
+        <h1>Concordium: The First Age</h1>
+        <label>Nome do personagem
+          <input id="char-name" maxlength="28" required placeholder="Ex.: Marcus de Antioquia">
+        </label>
+        <div>
+          <p class="label">Origem historica</p>
+          <div id="origins" class="choice-grid"></div>
+        </div>
+        <div>
+          <p class="label">Aparencia</p>
+          <div id="looks" class="swatches"></div>
+        </div>
+        <div>
+          <p class="label">Arma inicial</p>
+          <div id="weapons" class="choice-grid compact"></div>
+        </div>
+        <div>
+          <div class="attr-head"><p class="label">Atributos</p><span id="points-left">6 pontos</span></div>
+          <div id="attrs" class="attrs"></div>
+        </div>
+        <button class="primary" type="submit">Entrar em Niceia</button>
+      </form>
+    </section>
+
+    <section id="game" class="game hidden">
+      <canvas id="world" width="1280" height="820"></canvas>
+      <div class="top-hud">
+        <a href="/" class="hub">Hub</a>
+        <div class="identity"><b id="hud-name">Viajante</b><span id="hud-origin">Roma</span></div>
+        <div class="bars"><div><span>Vida</span><i><b id="hp-bar"></b></i></div><div><span>Energia</span><i><b id="energy-bar"></b></i></div></div>
+      </div>
+      <div class="quest-chip">
+        <b>Chegada a Niceia</b>
+        <span id="quest-text">Fale com o Anciao da Praca.</span>
+      </div>
+      <div class="minimap"><canvas id="minimap" width="150" height="110"></canvas></div>
+      <div class="right-actions">
+        <button id="inventory-btn">Inventario</button>
+        <button id="sheet-btn">Ficha</button>
+        <button id="settings-btn">Config</button>
+      </div>
+      <section class="chat">
+        <div id="chat-log"></div>
+        <form id="chat-form"><input id="chat-input" maxlength="140" placeholder="Enter para conversar"><button>Enviar</button></form>
+      </section>
+      <div id="mobile-controls">
+        <div id="stick"><span></span></div>
+        <button id="mobile-action">Acao</button>
+        <button id="mobile-interact">E</button>
+      </div>
+      <section id="panel" class="panel hidden"></section>
+    </section>
+  </main>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/assets/concordium.js"></script>
+</body>
+</html>

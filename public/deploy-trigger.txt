@@ -1,1 +1,1 @@
-Game hub update: auto-forfeit abandoned Quiz matches.
+Game hub update: add Concordium multiplayer MVP.

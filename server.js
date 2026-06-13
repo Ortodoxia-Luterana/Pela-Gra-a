@@ -23,6 +23,7 @@ const QUIZ_ROUND_SECONDS = 20;
 const QUIZ_QUESTION_COUNT = 8;
 const QUIZ_GENERAL_WAIT_SECONDS = 15;
 const QUIZ_ONLINE_SECONDS = 45;
+const QUIZ_MATCH_ABANDON_SECONDS = 45;
 const QUIZ_REVEAL_SECONDS = 2;
 const QUIZ_WIN_POINTS = 10;
 const QUIZ_WIN_XP = 15;
@@ -114,6 +115,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS quiz_queue (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, mode TEXT NOT NULL, joined_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS quiz_matches (id TEXT PRIMARY KEY, mode TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, started_at TEXT NOT NULL, question_ids_json TEXT NOT NULL, round_seconds INTEGER NOT NULL, finalized INTEGER NOT NULL DEFAULT 0, round_index INTEGER NOT NULL DEFAULT 0, round_started_at TEXT, reveal_until TEXT);
   CREATE TABLE IF NOT EXISTS quiz_match_players (match_id TEXT NOT NULL, user_id TEXT NOT NULL, user_name TEXT NOT NULL, score INTEGER NOT NULL DEFAULT 0, joined_at TEXT NOT NULL, PRIMARY KEY (match_id, user_id), FOREIGN KEY (match_id) REFERENCES quiz_matches(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
+  CREATE TABLE IF NOT EXISTS quiz_match_presence (match_id TEXT NOT NULL, user_id TEXT NOT NULL, last_seen TEXT NOT NULL, PRIMARY KEY (match_id, user_id), FOREIGN KEY (match_id) REFERENCES quiz_matches(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS quiz_match_leaves (match_id TEXT NOT NULL, user_id TEXT NOT NULL, left_at TEXT NOT NULL, PRIMARY KEY (match_id, user_id), FOREIGN KEY (match_id) REFERENCES quiz_matches(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS quiz_match_eliminations (match_id TEXT NOT NULL, user_id TEXT NOT NULL, question_index INTEGER NOT NULL, eliminated_at TEXT NOT NULL, PRIMARY KEY (match_id, user_id), FOREIGN KEY (match_id) REFERENCES quiz_matches(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS quiz_answers (match_id TEXT NOT NULL, user_id TEXT NOT NULL, question_index INTEGER NOT NULL, answer_index INTEGER NOT NULL, correct INTEGER NOT NULL, answered_at TEXT NOT NULL, PRIMARY KEY (match_id, user_id, question_index), FOREIGN KEY (match_id) REFERENCES quiz_matches(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
@@ -193,6 +195,7 @@ const deleteUserById = db.prepare('DELETE FROM users WHERE id = ?');
 const deleteQuizPresenceForUser = db.prepare('DELETE FROM quiz_presence WHERE user_id = ?');
 const deleteQuizQueueForUser = db.prepare('DELETE FROM quiz_queue WHERE user_id = ?');
 const deleteQuizRankingForUser = db.prepare('DELETE FROM quiz_rankings WHERE user_id = ?');
+const deleteQuizMatchPresenceForUser = db.prepare('DELETE FROM quiz_match_presence WHERE user_id = ?');
 const getCronicasSave = db.prepare('SELECT * FROM cronicas_saves WHERE user_id = ?');
 const upsertCronicasSave = db.prepare(`
   INSERT INTO cronicas_saves (user_id, state_json, created_at, updated_at)
@@ -214,6 +217,8 @@ const getQuizMatch = db.prepare('SELECT * FROM quiz_matches WHERE id = ?');
 const getActiveQuizMatchForUser = db.prepare("SELECT quiz_matches.* FROM quiz_matches JOIN quiz_match_players ON quiz_match_players.match_id = quiz_matches.id LEFT JOIN quiz_match_leaves ON quiz_match_leaves.match_id = quiz_matches.id AND quiz_match_leaves.user_id = quiz_match_players.user_id WHERE quiz_match_players.user_id = ? AND quiz_matches.status = 'active' AND quiz_match_leaves.user_id IS NULL ORDER BY quiz_matches.created_at DESC LIMIT 1");
 const insertQuizMatchPlayer = db.prepare('INSERT OR IGNORE INTO quiz_match_players (match_id, user_id, user_name, score, joined_at) VALUES (?, ?, ?, 0, ?)');
 const getQuizMatchPlayers = db.prepare('SELECT * FROM quiz_match_players WHERE match_id = ? ORDER BY joined_at ASC');
+const upsertQuizMatchPresence = db.prepare('INSERT INTO quiz_match_presence (match_id, user_id, last_seen) VALUES (?, ?, ?) ON CONFLICT(match_id, user_id) DO UPDATE SET last_seen = excluded.last_seen');
+const getQuizMatchPresenceRows = db.prepare('SELECT * FROM quiz_match_presence WHERE match_id = ?');
 const getQuizMatchLeavers = db.prepare('SELECT * FROM quiz_match_leaves WHERE match_id = ?');
 const getQuizMatchLeave = db.prepare('SELECT * FROM quiz_match_leaves WHERE match_id = ? AND user_id = ?');
 const insertQuizMatchLeave = db.prepare('INSERT OR IGNORE INTO quiz_match_leaves (match_id, user_id, left_at) VALUES (?, ?, ?)');
@@ -280,7 +285,11 @@ function createQuizMatch(mode, players) {
   const now = isoNow();
   const questionCount = mode === 'general' ? QUIZ_QUESTIONS.length : QUIZ_QUESTION_COUNT;
   insertQuizMatch.run(id, mode, 'active', now, now, JSON.stringify(quizQuestionIds(questionCount)), QUIZ_ROUND_SECONDS, now);
-  players.forEach(player => insertQuizMatchPlayer.run(id, player.user_id || player.id, player.user_name || player.name, now));
+  players.forEach(player => {
+    const playerId = player.user_id || player.id;
+    insertQuizMatchPlayer.run(id, playerId, player.user_name || player.name, now);
+    upsertQuizMatchPresence.run(id, playerId, now);
+  });
   return getQuizMatch.get(id);
 }
 function quizAnswerMap(matchId) {
@@ -295,6 +304,20 @@ function quizActivePlayers(matchOrId) {
   const eliminated = match?.mode === 'general' ? new Set(getQuizMatchEliminations.all(matchId).map(row => row.user_id)) : new Set();
   return getQuizMatchPlayers.all(matchId).filter(player => !leavers.has(player.user_id) && !eliminated.has(player.user_id));
 }
+function touchQuizMatchHeartbeat(matchId, userId) {
+  if (matchId && userId) upsertQuizMatchPresence.run(matchId, userId, isoNow());
+}
+function markAbandonedQuizPlayers(match) {
+  if (!match || match.status !== 'active') return;
+  const cutoff = Date.now() - QUIZ_MATCH_ABANDON_SECONDS * 1000;
+  const heartbeats = new Map(getQuizMatchPresenceRows.all(match.id).map(row => [row.user_id, row.last_seen]));
+  quizActivePlayers(match).forEach(player => {
+    const seenAt = heartbeats.get(player.user_id) || player.joined_at || match.started_at;
+    if (new Date(seenAt).getTime() < cutoff) {
+      insertQuizMatchLeave.run(match.id, player.user_id, isoNow());
+    }
+  });
+}
 function quizRoundInfo(match) {
   const questionIds = safeJsonParse(match.question_ids_json, []);
   const index = Math.max(0, Math.min(Number(match.round_index || 0), Math.max(0, questionIds.length - 1)));
@@ -307,14 +330,19 @@ function ensureQuizMatchProgress(match) {
   if (!match || match.status !== 'active') return match;
   let current = match;
   for (let guard = 0; guard < 3; guard += 1) {
+    markAbandonedQuizPlayers(current);
     const round = quizRoundInfo(current);
     if (round.complete) {
       finalizeQuizMatch(current);
       return getQuizMatch.get(current.id);
     }
     let players = quizActivePlayers(current);
-    if (!players.length) return current;
-    if (current.mode === 'general' && players.length <= 1) {
+    const totalPlayers = getQuizMatchPlayers.all(current.id).length;
+    if (!players.length) {
+      finalizeQuizMatch(current);
+      return getQuizMatch.get(current.id);
+    }
+    if (totalPlayers > 1 && players.length <= 1) {
       finalizeQuizMatch(current);
       return getQuizMatch.get(current.id);
     }
@@ -360,8 +388,8 @@ function finalizeQuizMatch(match) {
     const score = scoreByUser.get(player.user_id) || 0;
     if (score > best) best = score;
   });
-  const winners = activePlayers.filter(player => (scoreByUser.get(player.user_id) || 0) === best);
-  const hasSingleMultiplayerWinner = match.mode === 'general' ? activePlayers.length === 1 && winners.length === 1 : activePlayers.length > 1 && winners.length === 1;
+  const winners = activePlayers.length === 1 ? activePlayers : activePlayers.filter(player => (scoreByUser.get(player.user_id) || 0) === best);
+  const hasSingleMultiplayerWinner = players.length > 1 && winners.length === 1;
   players.forEach(player => {
     const score = scoreByUser.get(player.user_id) || 0;
     const won = activePlayerIds.has(player.user_id) && hasSingleMultiplayerWinner && winners[0].user_id === player.user_id;
@@ -376,9 +404,11 @@ function finalizeQuizMatch(match) {
   updateQuizMatchStatus.run('complete', match.id);
   finalizeQuizMatchRow.run(match.id);
 }
-function publicQuizMatch(match, userId) {
+function publicQuizMatch(match, userId, options = {}) {
   if (!match) return null;
   match = ensureQuizMatchProgress(match);
+  if (match?.status === 'active' && getQuizMatchLeave.get(match.id, userId)) return null;
+  if (options.heartbeat && match?.status === 'active') touchQuizMatchHeartbeat(match.id, userId);
   const round = quizRoundInfo(match);
   if (round.complete && match.status !== 'complete') {
     finalizeQuizMatch(match);
@@ -441,6 +471,7 @@ function cleanupNonPlayerAccounts() {
       deleteCronicasForUser.run(user.id);
       deleteQuizPresenceForUser.run(user.id);
       deleteQuizQueueForUser.run(user.id);
+      deleteQuizMatchPresenceForUser.run(user.id);
       deleteQuizRankingForUser.run(user.id);
       deleteSavesForUser.run(user.id);
       deleteUserById.run(user.id);
@@ -1100,14 +1131,19 @@ async function handleApi(req, res, url, user) {
       const match = getQuizMatch.get(url.searchParams.get('id') || '');
       const players = match ? getQuizMatchPlayers.all(match.id) : [];
       if (!match || !players.some(player => player.user_id === user.id) || getQuizMatchLeave.get(match.id, user.id)) { json(res, 404, { error: 'Partida não encontrada.' }); return; }
-      json(res, 200, { match: publicQuizMatch(match, user.id) });
+      const publicMatch = publicQuizMatch(match, user.id, { heartbeat: true });
+      if (!publicMatch) { json(res, 404, { error: 'Partida não encontrada.' }); return; }
+      json(res, 200, { match: publicMatch });
       return;
     }
     if (req.method === 'POST' && url.pathname === '/api/quiz/answer') {
       const payload = safeJsonParse(await readBody(req) || '{}', {});
-      const match = getQuizMatch.get(String(payload.matchId || ''));
+      let match = getQuizMatch.get(String(payload.matchId || ''));
       const players = match ? getQuizMatchPlayers.all(match.id) : [];
       if (!match || match.status !== 'active' || !players.some(player => player.user_id === user.id) || getQuizMatchLeave.get(match.id, user.id)) { json(res, 404, { error: 'Partida não encontrada.' }); return; }
+      match = ensureQuizMatchProgress(match);
+      if (!match || match.status !== 'active' || getQuizMatchLeave.get(match.id, user.id)) { json(res, 409, { error: 'Você foi marcado como desistente.', match: match ? publicQuizMatch(match, user.id) : null }); return; }
+      touchQuizMatchHeartbeat(match.id, user.id);
       if (match.mode === 'general' && getQuizMatchElimination.get(match.id, user.id)) { json(res, 409, { error: 'Você já foi desclassificado.', match: publicQuizMatch(match, user.id) }); return; }
       const round = quizRoundInfo(match);
       if (round.complete || round.msLeft <= 0) { json(res, 409, { error: 'Tempo esgotado.', match: publicQuizMatch(match, user.id) }); return; }

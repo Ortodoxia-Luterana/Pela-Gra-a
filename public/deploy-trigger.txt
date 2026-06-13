@@ -1,1 +1,1 @@
-Game hub update: improve Quiz online presence tracking.
+Game hub update: auto-forfeit abandoned Quiz matches.

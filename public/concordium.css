@@ -185,15 +185,13 @@ button { border: 0; }
   padding: 18px;
 }
 .queue-card h2,
-.profile-details h2,
-.operator-card h2 {
+.profile-details h2 {
   margin: 4px 0 8px;
   color: var(--gold-soft);
   font: 900 30px/1 Georgia, serif;
 }
 .queue-card p,
-.profile-details p,
-.operator-card p { margin: 0; color: var(--muted); line-height: 1.38; }
+.profile-details p { margin: 0; color: var(--muted); line-height: 1.38; }
 .primary-action {
   min-height: 50px;
   border-radius: 7px;

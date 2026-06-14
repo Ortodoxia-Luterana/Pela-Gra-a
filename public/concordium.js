@@ -62,7 +62,8 @@ const state = {
   enemy: { x: 6, z: 0, hp: 100, cooldown: 0 },
   projectiles: [],
   matchOver: false,
-  weaponAction: { active: false, type: '', t: 0, duration: .3 }
+  weaponAction: { active: false, type: '', t: 0, duration: .3 },
+  touch: { moveX: 0, moveY: 0, moveId: null, lookId: null, lookX: 0, lookY: 0 }
 };
 
 let renderer;
@@ -181,12 +182,83 @@ function initMenuEvents() {
   document.addEventListener('mousemove', onMouseMove);
   document.addEventListener('mousedown', event => {
     if (!state.running) return;
+    if (event.pointerType && event.pointerType !== 'mouse') return;
     if (!state.pointerLocked) {
       viewport.requestPointerLock();
       return;
     }
     if (event.button === 0) attack();
   });
+  initTouchControls();
+}
+
+function initTouchControls() {
+  const stick = document.querySelector('#move-stick');
+  const knob = document.querySelector('#move-knob');
+  const attackButton = document.querySelector('#attack-touch');
+  const resetStick = () => {
+    state.touch.moveId = null;
+    state.touch.moveX = 0;
+    state.touch.moveY = 0;
+    if (knob) {
+      knob.style.transform = 'translate(0px, 0px)';
+    }
+  };
+  stick?.addEventListener('pointerdown', event => {
+    event.preventDefault();
+    stick.setPointerCapture?.(event.pointerId);
+    state.touch.moveId = event.pointerId;
+    updateStick(event, stick, knob);
+  });
+  stick?.addEventListener('pointermove', event => {
+    if (state.touch.moveId === event.pointerId) updateStick(event, stick, knob);
+  });
+  stick?.addEventListener('pointerup', resetStick);
+  stick?.addEventListener('pointercancel', resetStick);
+  attackButton?.addEventListener('pointerdown', event => {
+    event.preventDefault();
+    if (state.running) attack();
+  });
+  viewport?.addEventListener('pointerdown', event => {
+    if (!state.running || event.pointerType === 'mouse') return;
+    if (event.target.closest?.('.mobile-controls')) return;
+    event.preventDefault();
+    state.touch.lookId = event.pointerId;
+    state.touch.lookX = event.clientX;
+    state.touch.lookY = event.clientY;
+    viewport.setPointerCapture?.(event.pointerId);
+  });
+  viewport?.addEventListener('pointermove', event => {
+    if (!state.running || state.touch.lookId !== event.pointerId) return;
+    event.preventDefault();
+    const sensitivity = (state.profile.options.sensitivity || 50) / 50;
+    state.yaw -= (event.clientX - state.touch.lookX) * 0.006 * sensitivity;
+    state.pitch = Math.max(-1.05, Math.min(1.05, state.pitch - (event.clientY - state.touch.lookY) * 0.005 * sensitivity));
+    state.touch.lookX = event.clientX;
+    state.touch.lookY = event.clientY;
+  });
+  viewport?.addEventListener('pointerup', event => {
+    if (state.touch.lookId === event.pointerId) state.touch.lookId = null;
+  });
+  viewport?.addEventListener('pointercancel', event => {
+    if (state.touch.lookId === event.pointerId) state.touch.lookId = null;
+  });
+}
+
+function updateStick(event, stick, knob) {
+  const rect = stick.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  const max = rect.width * .36;
+  const dx = clamp(event.clientX - cx, -max, max);
+  const dy = clamp(event.clientY - cy, -max, max);
+  const len = Math.hypot(dx, dy);
+  const scale = len > max ? max / len : 1;
+  const x = dx * scale;
+  const y = dy * scale;
+  state.touch.moveX = x / max;
+  state.touch.moveY = y / max;
+  if (knob) knob.style.transform = `translate(${x}px, ${y}px)`;
 }
 
 function selectTab(tab) {
@@ -376,6 +448,9 @@ async function startMatch() {
 
 function leaveMatch() {
   state.running = false;
+  state.touch.moveX = 0;
+  state.touch.moveY = 0;
+  state.touch.lookId = null;
   document.exitPointerLock?.();
   game.classList.add('hidden');
   menu.classList.remove('hidden');
@@ -573,9 +648,9 @@ function makeWeapon() {
     const model = kitClone(weapon.type === 'bow' ? 'view_bow' : 'view_sword');
     if (model) {
       model.name = 'viewWeapon';
-      model.scale.setScalar(weapon.type === 'bow' ? .9 : .78);
-      model.position.set(weapon.type === 'bow' ? .46 : .44, weapon.type === 'bow' ? -.22 : -.48, weapon.type === 'bow' ? -1.05 : -.92);
-      model.rotation.set(weapon.type === 'bow' ? .1 : -.25, weapon.type === 'bow' ? .18 : -.22, weapon.type === 'bow' ? -1.45 : -.62);
+      model.scale.setScalar(weapon.type === 'bow' ? .34 : .42);
+      model.position.set(weapon.type === 'bow' ? .5 : .43, weapon.type === 'bow' ? -.24 : -.5, weapon.type === 'bow' ? -1.18 : -1.0);
+      model.rotation.set(weapon.type === 'bow' ? .08 : -.18, weapon.type === 'bow' ? .1 : -.18, weapon.type === 'bow' ? -1.42 : -.46);
       model.userData.basePosition = model.position.clone();
       model.userData.baseRotation = model.rotation.clone();
       return model;
@@ -585,30 +660,30 @@ function makeWeapon() {
   group.name = 'viewWeapon';
   if (weapon.type === 'bow') {
     const bowMat = new THREE.MeshStandardMaterial({ color: 0x8a542f, roughness: .65 });
-    const bow = new THREE.Mesh(new THREE.TorusGeometry(.62, .028, 8, 34, Math.PI), bowMat);
+    const bow = new THREE.Mesh(new THREE.TorusGeometry(.36, .022, 8, 34, Math.PI), bowMat);
     bow.name = 'bow';
-    bow.rotation.set(0, .18, Math.PI / 2);
-    bow.position.set(.52, -.26, -1.04);
-    const string = new THREE.Mesh(new THREE.CylinderGeometry(.01, .01, 1.18, 6), new THREE.MeshBasicMaterial({ color: 0xe7d7b0 }));
+    bow.rotation.set(.02, .08, Math.PI / 2);
+    bow.position.set(.52, -.2, -1.08);
+    const string = new THREE.Mesh(new THREE.CylinderGeometry(.008, .008, .72, 6), new THREE.MeshBasicMaterial({ color: 0xe7d7b0 }));
     string.name = 'bowString';
     string.rotation.z = Math.PI / 2;
-    string.position.set(.52, -.26, -1.04);
+    string.position.set(.52, -.2, -1.08);
     const arrow = makeArrowMesh();
     arrow.name = 'heldArrow';
-    arrow.scale.setScalar(.82);
-    arrow.position.set(.18, -.31, -1.12);
+    arrow.scale.setScalar(.55);
+    arrow.position.set(.28, -.21, -1.14);
     arrow.rotation.x = Math.PI / 2;
     group.add(bow, string, arrow);
   } else {
-    const blade = new THREE.Mesh(new THREE.BoxGeometry(.09, 1.05, .035), new THREE.MeshStandardMaterial({ color: 0xd8e2e5, metalness: .55, roughness: .28 }));
-    blade.position.set(.48, -.22, -.92);
-    blade.rotation.z = -.54;
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(.055, .82, .026), new THREE.MeshStandardMaterial({ color: 0xd8e2e5, metalness: .55, roughness: .28 }));
+    blade.position.set(.43, -.34, -1.0);
+    blade.rotation.z = -.34;
     const hilt = new THREE.Mesh(new THREE.BoxGeometry(.42, .07, .07), new THREE.MeshStandardMaterial({ color: 0xb98732, roughness: .55 }));
-    hilt.position.set(.31, -.62, -.82);
-    hilt.rotation.z = -.54;
+    hilt.position.set(.31, -.66, -.9);
+    hilt.rotation.z = -.34;
     const grip = new THREE.Mesh(new THREE.CylinderGeometry(.045, .045, .35, 10), new THREE.MeshStandardMaterial({ color: 0x3d2415, roughness: .72 }));
-    grip.position.set(.23, -.76, -.79);
-    grip.rotation.z = -.54;
+    grip.position.set(.26, -.82, -.86);
+    grip.rotation.z = -.34;
     group.add(blade, hilt, grip);
   }
   group.userData.basePosition = group.position.clone();
@@ -623,19 +698,22 @@ function getWeapon() {
 
 function makeArrowMesh() {
   const group = new THREE.Group();
-  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(.018, .018, 1.15, 8), new THREE.MeshStandardMaterial({ color: 0xc7a267, roughness: .65 }));
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(.026, .026, 1.15, 8), new THREE.MeshStandardMaterial({ color: 0xc7a267, roughness: .65 }));
   shaft.rotation.x = Math.PI / 2;
-  const head = new THREE.Mesh(new THREE.ConeGeometry(.06, .18, 8), new THREE.MeshStandardMaterial({ color: 0xd8d2c1, metalness: .25, roughness: .34 }));
+  const head = new THREE.Mesh(new THREE.ConeGeometry(.09, .24, 10), new THREE.MeshStandardMaterial({ color: 0xf2e3a5, metalness: .25, roughness: .28 }));
   head.position.z = -.66;
   head.rotation.x = -Math.PI / 2;
   const featherMat = new THREE.MeshStandardMaterial({ color: 0xeee5ca, roughness: .8, side: THREE.DoubleSide });
   for (const angle of [0, Math.PI * 2 / 3, Math.PI * 4 / 3]) {
-    const feather = new THREE.Mesh(new THREE.PlaneGeometry(.08, .22), featherMat);
+    const feather = new THREE.Mesh(new THREE.PlaneGeometry(.11, .25), featherMat);
     feather.position.z = .56;
     feather.rotation.set(Math.PI / 2, 0, angle);
     group.add(feather);
   }
+  const glow = new THREE.Mesh(new THREE.SphereGeometry(.055, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffdf86 }));
+  glow.position.z = -.73;
   group.add(shaft, head);
+  group.add(glow);
   return group;
 }
 
@@ -707,8 +785,8 @@ function loop(now) {
 
 function updatePlayer(dt) {
   const classDef = CLASSES[state.selectedClass];
-  const forward = Number(state.keys.has('w')) - Number(state.keys.has('s'));
-  const strafe = Number(state.keys.has('d')) - Number(state.keys.has('a'));
+  const forward = Number(state.keys.has('w')) - Number(state.keys.has('s')) - state.touch.moveY;
+  const strafe = Number(state.keys.has('d')) - Number(state.keys.has('a')) + state.touch.moveX;
   const move = new THREE.Vector3(strafe, 0, -forward);
   if (move.lengthSq()) {
     move.normalize().applyAxisAngle(new THREE.Vector3(0, 1, 0), state.yaw);
@@ -775,8 +853,10 @@ function attack() {
     beginWeaponAction('slash', .34);
     const dist = Math.hypot(state.enemy.x - state.player.x, state.enemy.z - state.player.z);
     const aim = new THREE.Vector3(0, 0, -1).applyEuler(camera.rotation);
+    aim.y = 0;
+    aim.normalize();
     const toEnemy = new THREE.Vector3(state.enemy.x - state.player.x, 0, state.enemy.z - state.player.z).normalize();
-    if (dist <= weapon.range && aim.dot(toEnemy) > .55) damageEnemy(weapon.damage);
+    if (dist <= weapon.range && aim.dot(toEnemy) > .76) damageEnemy(weapon.damage);
     else flashMessage('Errou');
   }
 }
@@ -802,10 +882,10 @@ function updateWeaponAnimation(dt) {
   const p = Math.min(1, state.weaponAction.t / state.weaponAction.duration);
   const e = Math.sin(p * Math.PI);
   if (state.weaponAction.type === 'slash') {
-    weaponMesh.rotation.x = baseRotation.x - .82 * e;
-    weaponMesh.rotation.y = baseRotation.y + .22 * e;
-    weaponMesh.position.z = basePosition.z - .28 * e;
-    weaponMesh.position.y = basePosition.y - .1 * e + bob;
+    weaponMesh.rotation.x = baseRotation.x - .38 * e;
+    weaponMesh.rotation.y = baseRotation.y + .12 * e;
+    weaponMesh.position.z = basePosition.z - .48 * e;
+    weaponMesh.position.y = basePosition.y + .03 * e + bob;
   } else if (state.weaponAction.type === 'bow') {
     weaponMesh.position.z = basePosition.z + .12 * e;
     if (heldArrow) {

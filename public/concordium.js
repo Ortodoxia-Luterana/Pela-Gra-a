@@ -1,6 +1,8 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js';
+import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/loaders/GLTFLoader.js';
 
 const SAVE_KEY = 'concordium-arena-profile-v2';
+const KIT_URL = '/assets/concordium-medieval-kit-v1.glb';
 
 const ITEMS = [
   { id: 'training-dagger', name: 'Adaga de treino', classId: 'rogue', type: 'melee', damage: 18, range: 2.0, owned: true, blurb: 'Curta, rapida e silenciosa.' },
@@ -73,6 +75,8 @@ let enemyHead;
 let weaponMesh;
 let arenaGroup;
 let saveTimer = null;
+let assetKit = null;
+let assetKitPromise = null;
 
 const menu = document.querySelector('#menu');
 const game = document.querySelector('#game');
@@ -186,18 +190,8 @@ function initMenuEvents() {
 }
 
 function selectTab(tab) {
-  document.querySelectorAll('.rail-button').forEach(item => item.classList.toggle('active', item.dataset.tab === tab));
+  document.querySelectorAll('.nav-button').forEach(item => item.classList.toggle('active', item.dataset.tab === tab));
   document.querySelectorAll('.tab-page').forEach(page => page.classList.toggle('active', page.id === `tab-${tab}`));
-  const copy = {
-    play: ['Fila 1x1', 'Arena Medieval', 'Escolha classe, arma e entre direto.'],
-    profile: ['Conta', 'Perfil do jogador', 'Seu nick vem do login e o progresso fica salvo na conta.'],
-    classes: ['Classes', 'Caminhos de combate', 'Ficam aqui as classes liberadas e futuras.'],
-    shop: ['Mercado', 'Loja de equipamentos', 'Compre armas e visuais para usar antes de entrar na arena.'],
-    options: ['Sistema', 'Opcoes', 'Ajustes iniciais para deixar o jogo confortavel.']
-  }[tab] || ['Concordium', 'Arena Medieval', ''];
-  document.querySelector('#stage-label').textContent = copy[0];
-  document.querySelector('#stage-title').textContent = copy[1];
-  document.querySelector('#stage-text').textContent = copy[2];
 }
 
 function showCreation(visible) {
@@ -220,6 +214,7 @@ function renderHeader() {
   document.querySelector('#top-name').textContent = state.user.name || 'Jogador';
   document.querySelector('#top-class').textContent = state.profile.created ? classDef.name : 'Criar perfil';
   document.querySelector('#creation-name').textContent = state.user.name || 'Jogador';
+  document.querySelector('#current-class-name').textContent = classDef.name;
 }
 
 function renderClassCards() {
@@ -228,7 +223,7 @@ function renderClassCards() {
   const treeRoot = document.querySelector('#class-tree');
   const classButtons = Object.entries(CLASSES).map(([id, classDef]) => classCard(id, classDef)).join('');
   const locks = Array.from({ length: LOCKED_CLASSES }, () => lockedCard()).join('');
-  playRoot.innerHTML = classButtons;
+  if (playRoot) playRoot.innerHTML = classButtons;
   creationRoot.innerHTML = classButtons + locks;
   treeRoot.innerHTML = classButtons + locks;
   document.querySelectorAll('[data-class]').forEach(card => {
@@ -321,7 +316,7 @@ function renderOptions() {
   document.querySelector('#opt-effects').value = state.profile.options.effects;
 }
 
-function startMatch() {
+async function startMatch() {
   state.profile.created = true;
   state.profile.classId = state.selectedClass;
   saveProfile(true);
@@ -335,7 +330,7 @@ function startMatch() {
   state.projectiles = [];
   state.yaw = -Math.PI / 2;
   state.pitch = 0;
-  setupScene();
+  await setupScene();
   updateHud();
   message.textContent = 'Clique para capturar o mouse';
   requestAnimationFrame(loop);
@@ -350,7 +345,42 @@ function leaveMatch() {
   renderer?.dispose();
 }
 
-function setupScene() {
+async function loadAssetKit() {
+  if (assetKit) return assetKit;
+  if (!assetKitPromise) {
+    assetKitPromise = new GLTFLoader().loadAsync(KIT_URL)
+      .then(gltf => {
+        assetKit = gltf.scene;
+        assetKit.traverse(obj => {
+          if (obj.isMesh) {
+            obj.castShadow = true;
+            obj.receiveShadow = true;
+          }
+        });
+        return assetKit;
+      })
+      .catch(error => {
+        console.warn('Falha ao carregar kit GLB do Concordium', error);
+        return null;
+      });
+  }
+  return assetKitPromise;
+}
+
+function kitClone(name) {
+  const source = assetKit?.getObjectByName(name);
+  if (!source) return null;
+  const clone = source.clone(true);
+  clone.traverse(obj => {
+    if (obj.isMesh) {
+      obj.castShadow = true;
+      obj.receiveShadow = true;
+    }
+  });
+  return clone;
+}
+
+async function setupScene() {
   viewport.innerHTML = '';
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x5f6a66);
@@ -373,6 +403,7 @@ function setupScene() {
 
   arenaGroup = new THREE.Group();
   scene.add(arenaGroup);
+  await loadAssetKit();
   buildArena();
   playerBody = makeFighter(getSkinColor(), true);
   scene.add(playerBody);
@@ -385,6 +416,28 @@ function setupScene() {
 }
 
 function buildArena() {
+  if (assetKit) {
+    const arenaNames = [
+      'arena_ground',
+      'wall_north', 'wall_south', 'wall_west', 'wall_east'
+    ];
+    assetKit.traverse(obj => {
+      if (!obj.parent || !obj.isMesh) return;
+      const name = obj.name;
+      if (
+        arenaNames.includes(name) ||
+        name.startsWith('merlon_') ||
+        name.startsWith('limestone_column_') ||
+        name.startsWith('column_base_') ||
+        name.startsWith('column_cap_') ||
+        name.startsWith('hanging_banner_') ||
+        name.startsWith('wooden_crate_')
+      ) {
+        arenaGroup.add(obj.clone(true));
+      }
+    });
+    return;
+  }
   const stoneTexture = makeStoneTexture();
   const dirtTexture = makeDirtTexture();
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(44, 34), new THREE.MeshStandardMaterial({ map: dirtTexture, color: 0x9b8060, roughness: .95 }));
@@ -436,6 +489,17 @@ function buildArena() {
 }
 
 function makeFighter(color, player) {
+  if (assetKit) {
+    const modelName = player
+      ? (state.selectedClass === 'archer' ? 'archer_player_model' : 'rogue_player_model')
+      : 'enemy_fighter_model';
+    const model = kitClone(modelName);
+    if (model) {
+      model.scale.setScalar(1.05);
+      model.position.set(0, 0, 0);
+      return model;
+    }
+  }
   const group = new THREE.Group();
   const cloak = new THREE.MeshStandardMaterial({ color, roughness: .72 });
   const leather = new THREE.MeshStandardMaterial({ color: 0x4a2d1d, roughness: .8 });
@@ -463,6 +527,18 @@ function makeFighter(color, player) {
 
 function makeWeapon() {
   const weapon = getWeapon();
+  if (assetKit) {
+    const model = kitClone(weapon.type === 'bow' ? 'view_bow' : 'view_sword');
+    if (model) {
+      model.name = 'viewWeapon';
+      model.scale.setScalar(weapon.type === 'bow' ? .9 : .78);
+      model.position.set(weapon.type === 'bow' ? .46 : .44, weapon.type === 'bow' ? -.22 : -.48, weapon.type === 'bow' ? -1.05 : -.92);
+      model.rotation.set(weapon.type === 'bow' ? .1 : -.25, weapon.type === 'bow' ? .18 : -.22, weapon.type === 'bow' ? -1.45 : -.62);
+      model.userData.basePosition = model.position.clone();
+      model.userData.baseRotation = model.rotation.clone();
+      return model;
+    }
+  }
   const group = new THREE.Group();
   group.name = 'viewWeapon';
   if (weapon.type === 'bow') {
@@ -493,7 +569,8 @@ function makeWeapon() {
     grip.rotation.z = -.54;
     group.add(blade, hilt, grip);
   }
-  group.userData.rest = { position: group.position.clone(), rotation: group.rotation.clone() };
+  group.userData.basePosition = group.position.clone();
+  group.userData.baseRotation = group.rotation.clone();
   return group;
 }
 
@@ -646,7 +723,8 @@ function attack() {
   if (weapon.type === 'bow') {
     beginWeaponAction('bow', .42);
     const dir = new THREE.Vector3(0, 0, -1).applyEuler(camera.rotation).normalize();
-    const arrow = makeArrowMesh();
+    const arrow = kitClone('flying_arrow') || makeArrowMesh();
+    arrow.scale.setScalar(1.1);
     arrow.position.copy(camera.position).addScaledVector(dir, 1.25);
     arrow.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, -1), dir);
     scene.add(arrow);
@@ -668,10 +746,13 @@ function beginWeaponAction(type, duration) {
 function updateWeaponAnimation(dt) {
   if (!weaponMesh) return;
   const bob = Math.sin(performance.now() * .006) * .015;
-  weaponMesh.position.set(0, bob, 0);
-  weaponMesh.rotation.set(0, 0, 0);
-  const heldArrow = weaponMesh.getObjectByName('heldArrow');
-  const bowString = weaponMesh.getObjectByName('bowString');
+  const basePosition = weaponMesh.userData.basePosition || new THREE.Vector3();
+  const baseRotation = weaponMesh.userData.baseRotation || new THREE.Euler();
+  weaponMesh.position.copy(basePosition);
+  weaponMesh.position.y += bob;
+  weaponMesh.rotation.copy(baseRotation);
+  const heldArrow = weaponMesh.getObjectByName('heldArrow') || findDescendant(weaponMesh, 'held_arrow');
+  const bowString = weaponMesh.getObjectByName('bowString') || findDescendant(weaponMesh, 'string');
   if (heldArrow) heldArrow.visible = true;
   if (bowString) bowString.position.x = .52;
   if (!state.weaponAction.active) return;
@@ -679,12 +760,12 @@ function updateWeaponAnimation(dt) {
   const p = Math.min(1, state.weaponAction.t / state.weaponAction.duration);
   const e = Math.sin(p * Math.PI);
   if (state.weaponAction.type === 'slash') {
-    weaponMesh.rotation.z = -1.15 * e;
-    weaponMesh.rotation.x = .32 * e;
-    weaponMesh.position.x = -.18 * e;
-    weaponMesh.position.y = -.08 * e;
+    weaponMesh.rotation.x = baseRotation.x - .82 * e;
+    weaponMesh.rotation.y = baseRotation.y + .22 * e;
+    weaponMesh.position.z = basePosition.z - .28 * e;
+    weaponMesh.position.y = basePosition.y - .1 * e + bob;
   } else if (state.weaponAction.type === 'bow') {
-    weaponMesh.position.z = .12 * e;
+    weaponMesh.position.z = basePosition.z + .12 * e;
     if (heldArrow) {
       heldArrow.position.z = -1.12 + .34 * e;
       heldArrow.visible = p < .68;
@@ -692,6 +773,14 @@ function updateWeaponAnimation(dt) {
     if (bowString) bowString.position.x = .52 - .22 * e;
   }
   if (p >= 1) state.weaponAction.active = false;
+}
+
+function findDescendant(root, text) {
+  let found = null;
+  root.traverse(obj => {
+    if (!found && obj.name && obj.name.toLowerCase().includes(text)) found = obj;
+  });
+  return found;
 }
 
 function damageEnemy(amount) {

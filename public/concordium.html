@@ -3,27 +3,22 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>Concordium Arena</title>
+  <title>Concordium</title>
   <link rel="stylesheet" href="/assets/concordium.css">
 </head>
 <body>
   <main id="arena-shell">
     <section id="menu" class="lobby-screen" aria-label="Lobby do Concordium">
       <div class="lobby-bg"></div>
-      <aside class="side-rail" aria-label="Navegacao">
-        <a class="brand-mark" href="/" aria-label="Voltar ao hub">C</a>
-        <button class="rail-button active" data-tab="play" aria-label="Jogar"><b>J</b><span>Jogar</span></button>
-        <button class="rail-button" data-tab="profile" aria-label="Perfil"><b>P</b><span>Perfil</span></button>
-        <button class="rail-button" data-tab="classes" aria-label="Classes"><b>C</b><span>Classes</span></button>
-        <button class="rail-button" data-tab="shop" aria-label="Loja"><b>L</b><span>Loja</span></button>
-        <button class="rail-button" data-tab="options" aria-label="Opcoes"><b>O</b><span>Opcoes</span></button>
-      </aside>
-
-      <header class="top-bar">
-        <div>
-          <span class="mode-label">Concordium</span>
-          <strong>Arena Medieval</strong>
-        </div>
+      <header class="lobby-top">
+        <a class="brand-mark" href="/" aria-label="Voltar ao hub">Concordium</a>
+        <nav class="main-nav" aria-label="Menu principal">
+          <button class="nav-button active" data-tab="play">Jogar</button>
+          <button class="nav-button" data-tab="profile">Perfil</button>
+          <button class="nav-button" data-tab="classes">Classes</button>
+          <button class="nav-button" data-tab="shop">Loja</button>
+          <button class="nav-button" data-tab="options">Opcoes</button>
+        </nav>
         <button class="profile-chip" data-tab="profile">
           <span id="top-initials">--</span>
           <b id="top-name">Carregando</b>
@@ -33,71 +28,51 @@
 
       <section id="onboarding" class="creation-overlay hidden">
         <div class="creation-panel">
-          <div class="creation-copy">
-            <span class="mode-label">Primeiro acesso</span>
-            <h1>Escolha seu primeiro caminho</h1>
-            <p>O nome vem da sua conta. A classe escolhida fica salva no seu perfil do Concordium.</p>
-            <div class="account-name">Jogador: <b id="creation-name">...</b></div>
-          </div>
+          <span class="mode-label">Primeiro acesso</span>
+          <h1>Escolha sua classe inicial</h1>
+          <p>Jogador: <b id="creation-name">...</b></p>
           <div class="creation-grid" id="creation-grid"></div>
-          <button id="finish-creation" class="primary-action">Confirmar perfil</button>
+          <button id="finish-creation" class="primary-action">Confirmar</button>
         </div>
       </section>
 
       <section class="lobby-stage" id="lobby-stage">
-        <div class="stage-copy">
-          <span class="mode-label" id="stage-label">Fila 1x1</span>
-          <h1 id="stage-title">Arena Medieval</h1>
-          <p id="stage-text">Selecione sua classe, equipe sua arma e entre em uma arena curta de teste.</p>
-        </div>
-
         <section class="tab-page active" id="tab-play">
-          <div class="queue-card">
-            <div>
-              <span class="card-kicker">Partida rapida</span>
-              <h2>Arena 1x1</h2>
-              <p>Escolha classe, arma e entre direto.</p>
+          <div class="play-panel">
+            <span class="mode-label">1x1</span>
+            <h1>Concordium</h1>
+            <p id="play-status">Classe atual: <b id="current-class-name">Ladino</b></p>
+            <div class="loadout-grid">
+              <label>Arma
+                <select id="weapon-select"></select>
+              </label>
+              <label>Visual
+                <select id="skin-select"></select>
+              </label>
             </div>
-            <button id="start-match" class="primary-action">Entrar na arena</button>
-          </div>
-          <div class="class-row" id="play-class-row"></div>
-          <div class="loadout-grid">
-            <label>Arma
-              <select id="weapon-select"></select>
-            </label>
-            <label>Visual
-              <select id="skin-select"></select>
-            </label>
+            <button id="start-match" class="primary-action">Jogar</button>
           </div>
         </section>
 
         <section class="tab-page" id="tab-profile">
           <div class="profile-panel">
-            <div class="profile-portrait" id="profile-portrait"></div>
-            <div class="profile-details">
-              <span class="card-kicker">Perfil do jogador</span>
-              <h2 id="profile-name">Jogador</h2>
-              <p id="profile-summary">Classe inicial ainda nao escolhida.</p>
-              <div class="stat-strip">
-                <span><b id="profile-coins">0</b> moedas</span>
-                <span><b id="profile-items">0</b> itens</span>
-                <span><b id="profile-status">Novo</b></span>
-              </div>
+            <span class="mode-label">Perfil</span>
+            <h2 id="profile-name">Jogador</h2>
+            <div class="stat-strip">
+              <span><b id="profile-coins">0</b> moedas</span>
+              <span><b id="profile-items">0</b> itens</span>
+              <span><b id="profile-status">Novo</b></span>
             </div>
           </div>
         </section>
 
         <section class="tab-page" id="tab-classes">
-          <div class="classes-note">
-            <span class="card-kicker">Classes</span>
-            <h2>Caminhos atuais</h2>
-          </div>
           <div class="class-tree" id="class-tree"></div>
         </section>
 
         <section class="tab-page" id="tab-shop">
           <div class="shop-head">
-            <span class="card-kicker">Loja</span>
+            <span class="mode-label">Loja</span>
             <strong><b id="coins">0</b> moedas</strong>
           </div>
           <div id="shop-grid" class="shop-grid"></div>
@@ -117,7 +92,6 @@
           </div>
         </section>
       </section>
-
     </section>
 
     <section id="game" class="game-screen hidden">
@@ -132,7 +106,7 @@
         <span>Igreja</span><b id="score-player">0</b><small>1x1</small><b id="score-enemy">0</b><span>Oponente</span>
       </div>
       <div class="combat-panel combat-right">
-        <strong>Alvo</strong>
+        <strong>Herege</strong>
         <span>Espadachim</span>
         <ul>
           <li>Aproxima</li>

@@ -1,5 +1,5 @@
 {
   "source": "PK EMR (PT-BR).bak",
-  "derivedFrom": ["Advance Map PETALBURG reference", "0144_off_56F5CC", "0145_off_56F814", "0048_off_2FC064"],
-  "note": "Prototype atlas assembled from the recovered ROM reference and recolored/cropped into a browser-safe tilesheet."
+  "derivedFrom": ["Advance Map PETALBURG reference", "PK EMR LZ77 preview blocks", "concordium-vila-prisma-map-v2.png", "concordium-characters-v2.png"],
+  "note": "Prototype rebuilt around the recovered GBA map reference, with exact portal coordinates and browser-safe spritesheets."
 }

@@ -860,6 +860,18 @@ img.feed-avatar {
   background: linear-gradient(90deg, rgba(0, 0, 0, .08), rgba(0, 0, 0, .78)), url("/assets/concordium-exploracao-card.png") center/cover;
 }
 
+.ol-game-card.locked-game {
+  filter: saturate(.78);
+}
+
+.ol-game-card.locked-game .soon-badge {
+  justify-self: stretch;
+  color: #f3e5bd;
+  background: linear-gradient(180deg, rgba(78, 78, 78, .9), rgba(35, 35, 35, .92));
+  border-color: rgba(246, 232, 189, .3);
+  cursor: not-allowed;
+}
+
 .ol-game-card span {
   display: inline-flex;
   border: 1px solid rgba(205, 148, 46, .45);

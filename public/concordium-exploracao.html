@@ -2,49 +2,62 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#15251d">
   <title>Concordium</title>
-  <link rel="stylesheet" href="/assets/concordium-exploracao.css?v=20260614e">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/assets/concordium-exploracao.css?v=20260614f">
 </head>
 <body>
-  <main class="pk-shell">
-    <header class="pk-topbar">
-      <a href="/" class="pk-brand">Concordium</a>
-      <div class="pk-status">
-        <span id="pk-place">Vila Prisma</span>
-        <span id="pk-hint">Setas/WASD para andar · Espaço/E para falar</span>
+  <main class="cx-shell">
+    <header class="cx-topbar">
+      <a href="/" class="cx-back" aria-label="Voltar ao hub">‹</a>
+      <div>
+        <strong>Concordium</strong>
+        <span id="cx-place">Vila Prisma</span>
       </div>
+      <button id="cx-menu" type="button" aria-label="Menu">☰</button>
     </header>
 
-    <section class="pk-stage">
-      <div id="game-canvas" class="pk-canvas" aria-label="Mapa jogavel"></div>
-      <aside class="pk-panel">
+    <section class="cx-stage" aria-label="Concordium">
+      <div id="game-canvas" class="cx-canvas"></div>
+      <div id="cx-title" class="cx-title">
         <h1>Concordium</h1>
-        <p>Explore uma vila inicial, converse com moradores e entre nas casas.</p>
-        <dl>
-          <div><dt>Motor</dt><dd>Phaser 2D</dd></div>
-          <div><dt>Save</dt><dd>Local automático</dd></div>
-          <div><dt>Objetivo</dt><dd>Fale com os moradores e visite as casas.</dd></div>
-        </dl>
-      </aside>
+        <p>pokemon luterano</p>
+        <button id="cx-start" type="button">Iniciar</button>
+      </div>
+      <div id="cx-toast" class="cx-toast hidden"></div>
     </section>
 
-    <div class="pk-mobile" aria-label="Controles mobile">
-      <button data-move="up" aria-label="Cima">▲</button>
-      <button data-move="left" aria-label="Esquerda">◀</button>
-      <button data-action="confirm" aria-label="Interagir">A</button>
-      <button data-move="right" aria-label="Direita">▶</button>
-      <button data-move="down" aria-label="Baixo">▼</button>
-    </div>
+    <section class="cx-touch" aria-label="Controles de toque">
+      <div class="cx-dpad">
+        <button data-move="up" aria-label="Cima">▲</button>
+        <button data-move="left" aria-label="Esquerda">◀</button>
+        <button data-move="down" aria-label="Baixo">▼</button>
+        <button data-move="right" aria-label="Direita">▶</button>
+      </div>
+      <button class="cx-action" data-action="confirm" aria-label="Interagir">A</button>
+    </section>
 
-    <div id="dialog" class="pk-dialog hidden" role="dialog" aria-live="polite">
+    <dialog id="dialog" class="cx-dialog">
       <strong id="dialog-name"></strong>
       <p id="dialog-text"></p>
       <button id="dialog-next" type="button">Continuar</button>
-    </div>
+    </dialog>
+
+    <aside id="cx-panel" class="cx-panel" aria-hidden="true">
+      <button id="cx-panel-close" type="button" aria-label="Fechar">×</button>
+      <h2>Concordium</h2>
+      <p>pokemon luterano</p>
+      <dl>
+        <div><dt>Estado</dt><dd>alpha local</dd></div>
+        <div><dt>Salvar</dt><dd>automatico</dd></div>
+        <div><dt>Controles</dt><dd>segure para andar</dd></div>
+      </dl>
+    </aside>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js"></script>
-  <script src="/assets/concordium-exploracao.js?v=20260614e"></script>
+  <script src="/assets/concordium-exploracao.js?v=20260614f"></script>
 </body>
 </html>

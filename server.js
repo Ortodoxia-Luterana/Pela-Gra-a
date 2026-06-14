@@ -535,6 +535,11 @@ function json(res, status, payload) {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Content-Length': Buffer.byteLength(body) });
   res.end(body);
 }
+function isLocalRequest(req) {
+  const rawHost = String(req.headers.host || '').toLowerCase();
+  const host = rawHost.startsWith('[') ? rawHost.slice(1, rawHost.indexOf(']')) : rawHost.split(':')[0];
+  return ['localhost', '127.0.0.1', '::1'].includes(host);
+}
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let data = '';
@@ -1057,8 +1062,9 @@ async function handleApi(req, res, url, user) {
         {
           id: CONCORDIUM_EXPLORACAO_GAME_ID,
           title: 'Concordium',
-          status: 'prototype',
-          playUrl: '/concordium-exploracao',
+          description: 'pokemon luterano',
+          status: 'locked',
+          playUrl: null,
           rankingUrl: null
         }
       ]
@@ -1401,7 +1407,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     <article class="ol-game-card cronicas-cover"><div><h4>Crônicas do Levante</h4><p>Uma narrativa bíblica interativa nos dias do rei Davi, com escolhas, descobertas, relações e consequências pelo caminho.</p></div><a href="/cronicas-do-levante">${cronicasSave ? 'Continuar' : 'Jogar'}</a></article>
     <article class="ol-game-card match3-cover"><div><h4>Luther Metch</h4><p>Junte 3 ou mais peças iguais para cumprir objetivos e avançar de fase.</p></div><a href="/luther-metch">Jogar</a></article>
     <article class="ol-game-card quiz-cover"><div><h4>Quiz Ortodoxia</h4><p>Dispute perguntas de Bíblia, Reforma e luteranismo em modo solo, duelo online, convite ou competição geral.</p></div><a href="/quiz-ortodoxia">Jogar</a></article>
-    <article class="ol-game-card concordium-exploracao-cover"><div><h4>Concordium</h4><p>Explore uma vila, converse com moradores e entre nas casas.</p></div><a href="/concordium-exploracao">Jogar</a></article>
+    <article class="ol-game-card concordium-exploracao-cover locked-game"><div><h4>Concordium</h4><p>pokemon luterano</p></div><span class="soon-badge">Bloqueado</span></article>
   </section>`;
   const rankCard = `<aside class="ol-panel ol-rank"><p>Seu rank geral</p><img class="rank-badge" src="${rank.current.file}?v=${GAME_VERSION}" alt="${escapeHtml(rank.current.title)}"><div class="rank-xp"><strong>${xp} XP</strong><span>${rank.next ? `${Math.max(0, rank.next.xp - rank.currentXp)} XP para ${escapeHtml(rank.next.title)}` : 'Rank maximo alcancado'}</span><div class="rank-bar"><span style="width:${Math.round(rank.progress)}%"></span></div></div><a href="/?section=ranking">Ver ranking geral</a></aside>`;
   const sections = {
@@ -1540,6 +1546,13 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (req.method === 'GET' && url.pathname === '/concordium-exploracao') {
+      if (!isLocalRequest(req)) {
+        const body = pageShell('Concordium bloqueado', `
+<main class="auth-wrap"><section class="auth-card"><h1>Concordium</h1><p>pokemon luterano</p><div class="form-error">Este teste esta bloqueado no servidor publico. Ele abre apenas no host local durante desenvolvimento.</div><a class="auth-link" href="/">Voltar ao hub</a></section></main>`);
+        res.writeHead(403, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(body);
+        return;
+      }
       const body = fs.readFileSync(path.join(PUBLIC_DIR, 'concordium-exploracao.html'), 'utf8');
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       res.end(body);

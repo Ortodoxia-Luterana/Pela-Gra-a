@@ -8,32 +8,60 @@
 </head>
 <body>
   <main id="arena-shell">
-    <section id="menu" class="menu-screen">
-      <div class="menu-bg"></div>
-      <div class="menu-panel">
-        <p class="eyebrow">Concordium</p>
-        <h1>Arena Medieval</h1>
-        <div class="tabs" role="tablist">
-          <button class="tab active" data-tab="play">Jogar</button>
-          <button class="tab" data-tab="classes">Classes</button>
-          <button class="tab" data-tab="shop">Loja</button>
+    <section id="menu" class="lobby-screen" aria-label="Lobby do Concordium">
+      <div class="lobby-bg"></div>
+      <aside class="side-rail" aria-label="Navegacao">
+        <a class="brand-mark" href="/" aria-label="Voltar ao hub">C</a>
+        <button class="rail-button active" data-tab="play" aria-label="Jogar"><span>Jogar</span></button>
+        <button class="rail-button" data-tab="profile" aria-label="Perfil"><span>Perfil</span></button>
+        <button class="rail-button" data-tab="classes" aria-label="Classes"><span>Classes</span></button>
+        <button class="rail-button" data-tab="shop" aria-label="Loja"><span>Loja</span></button>
+        <button class="rail-button" data-tab="options" aria-label="Opcoes"><span>Opcoes</span></button>
+      </aside>
+
+      <header class="top-bar">
+        <div>
+          <span class="mode-label">Concordium</span>
+          <strong>Arena Medieval</strong>
+        </div>
+        <button class="profile-chip" data-tab="profile">
+          <span id="top-initials">--</span>
+          <b id="top-name">Carregando</b>
+          <small id="top-class">Perfil</small>
+        </button>
+      </header>
+
+      <section id="onboarding" class="creation-overlay hidden">
+        <div class="creation-panel">
+          <div class="creation-copy">
+            <span class="mode-label">Primeiro acesso</span>
+            <h1>Escolha seu primeiro caminho</h1>
+            <p>O nome vem da sua conta. A classe escolhida fica salva no seu perfil do Concordium.</p>
+            <div class="account-name">Jogador: <b id="creation-name">...</b></div>
+          </div>
+          <div class="creation-grid" id="creation-grid"></div>
+          <button id="finish-creation" class="primary-action">Confirmar perfil</button>
+        </div>
+      </section>
+
+      <section class="lobby-stage" id="lobby-stage">
+        <div class="stage-copy">
+          <span class="mode-label" id="stage-label">Fila 1x1</span>
+          <h1 id="stage-title">Arena Medieval</h1>
+          <p id="stage-text">Selecione sua classe, equipe sua arma e entre em uma arena curta de teste.</p>
         </div>
 
         <section class="tab-page active" id="tab-play">
-          <div class="selection-grid">
-            <article class="choice-card active" data-class="rogue">
-              <span class="class-mark">L</span>
-              <h2>Ladino</h2>
-              <p>Rapido, curto alcance, ideal para flanquear.</p>
-            </article>
-            <article class="choice-card" data-class="archer">
-              <span class="class-mark">A</span>
-              <h2>Arqueiro</h2>
-              <p>Controle de distancia, tiro carregado e mobilidade.</p>
-            </article>
+          <div class="queue-card">
+            <div>
+              <span class="card-kicker">Partida rapida</span>
+              <h2>Arena 1x1</h2>
+              <p>Mapa pequeno de treino, combate em primeira pessoa e loadout salvo na conta.</p>
+            </div>
+            <button id="start-match" class="primary-action">Entrar na arena</button>
           </div>
-
-          <div class="loadout">
+          <div class="class-row" id="play-class-row"></div>
+          <div class="loadout-grid">
             <label>Arma
               <select id="weapon-select"></select>
             </label>
@@ -41,38 +69,66 @@
               <select id="skin-select"></select>
             </label>
           </div>
-
-          <button id="start-match" class="primary">Entrar na arena 1x1</button>
         </section>
 
-        <section class="tab-page" id="tab-classes">
-          <div class="tree">
-            <div class="tree-node unlocked">
-              <b>Ladino</b><span>Disponivel</span>
-            </div>
-            <div class="tree-node locked">
-              <b>Assassino</b><span>Em breve</span>
-            </div>
-            <div class="tree-node locked">
-              <b>Duelista</b><span>Em breve</span>
-            </div>
-            <div class="tree-node unlocked">
-              <b>Arqueiro</b><span>Disponivel</span>
-            </div>
-            <div class="tree-node locked">
-              <b>Patrulheiro</b><span>Em breve</span>
-            </div>
-            <div class="tree-node locked">
-              <b>Batedor</b><span>Em breve</span>
+        <section class="tab-page" id="tab-profile">
+          <div class="profile-panel">
+            <div class="profile-portrait" id="profile-portrait"></div>
+            <div class="profile-details">
+              <span class="card-kicker">Perfil do jogador</span>
+              <h2 id="profile-name">Jogador</h2>
+              <p id="profile-summary">Classe inicial ainda nao escolhida.</p>
+              <div class="stat-strip">
+                <span><b id="profile-coins">0</b> moedas</span>
+                <span><b id="profile-items">0</b> itens</span>
+                <span><b id="profile-status">Novo</b></span>
+              </div>
             </div>
           </div>
         </section>
 
+        <section class="tab-page" id="tab-classes">
+          <div class="class-tree" id="class-tree"></div>
+        </section>
+
         <section class="tab-page" id="tab-shop">
-          <div class="wallet">Moedas: <b id="coins">0</b></div>
+          <div class="shop-head">
+            <span class="card-kicker">Loja</span>
+            <strong><b id="coins">0</b> moedas</strong>
+          </div>
           <div id="shop-grid" class="shop-grid"></div>
         </section>
-      </div>
+
+        <section class="tab-page" id="tab-options">
+          <div class="options-panel">
+            <label>Sensibilidade
+              <input id="opt-sensitivity" type="range" min="1" max="100">
+            </label>
+            <label>Musica
+              <input id="opt-music" type="range" min="0" max="100">
+            </label>
+            <label>Efeitos
+              <input id="opt-effects" type="range" min="0" max="100">
+            </label>
+          </div>
+        </section>
+      </section>
+
+      <aside class="loadout-panel">
+        <div class="operator-card">
+          <div class="operator-art" id="operator-art"></div>
+          <div>
+            <span class="card-kicker">Selecionado</span>
+            <h2 id="selected-class-name">Ladino</h2>
+            <p id="selected-class-desc">Rapido, curto alcance, ideal para flanquear.</p>
+          </div>
+        </div>
+        <div class="weapon-card">
+          <span class="card-kicker">Equipamento</span>
+          <strong id="selected-weapon-name">Adaga de treino</strong>
+          <small id="selected-skin-name">Manto de mercenario</small>
+        </div>
+      </aside>
     </section>
 
     <section id="game" class="game-screen hidden">

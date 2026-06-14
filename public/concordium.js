@@ -1,24 +1,55 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js';
 
-const SAVE_KEY = 'concordium-arena-profile-v1';
+const SAVE_KEY = 'concordium-arena-profile-v2';
 
 const ITEMS = [
-  { id: 'rusty-dagger', name: 'Adaga de treino', classId: 'rogue', type: 'melee', damage: 18, range: 2.0, owned: true },
-  { id: 'long-sword', name: 'Espada longa', classId: 'rogue', type: 'melee', damage: 26, range: 2.35, price: 120 },
-  { id: 'short-bow', name: 'Arco simples', classId: 'archer', type: 'bow', damage: 20, range: 34, owned: true },
-  { id: 'war-bow', name: 'Arco de guerra', classId: 'archer', type: 'bow', damage: 30, range: 40, price: 140 },
-  { id: 'red-cloak', name: 'Manto rubro', type: 'skin', color: '#8d3027', owned: true },
-  { id: 'blue-cloak', name: 'Manto azul', type: 'skin', color: '#2e5f91', price: 80 },
-  { id: 'green-cloak', name: 'Manto verde', type: 'skin', color: '#3f6f3e', price: 80 }
+  { id: 'training-dagger', name: 'Adaga de treino', classId: 'rogue', type: 'melee', damage: 18, range: 2.0, owned: true, blurb: 'Curta, rapida e silenciosa.' },
+  { id: 'long-sword', name: 'Espada longa', classId: 'rogue', type: 'melee', damage: 26, range: 2.35, price: 120, blurb: 'Mais alcance para duelo frontal.' },
+  { id: 'simple-bow', name: 'Arco simples', classId: 'archer', type: 'bow', damage: 20, range: 34, owned: true, blurb: 'Confiavel para tiro medio.' },
+  { id: 'war-bow', name: 'Arco de guerra', classId: 'archer', type: 'bow', damage: 30, range: 40, price: 140, blurb: 'Tiro pesado para arena aberta.' },
+  { id: 'sellsword-cloak', name: 'Manto de mercenario', type: 'skin', color: '#8d3027', owned: true, blurb: 'Vermelho gasto de campo.' },
+  { id: 'ash-cloak', name: 'Manto cinza', type: 'skin', color: '#60666d', price: 80, blurb: 'Discreto, frio e urbano.' },
+  { id: 'forest-cloak', name: 'Manto verde', type: 'skin', color: '#3f6f3e', price: 80, blurb: 'Bom para emboscada.' }
 ];
 
 const CLASSES = {
-  rogue: { name: 'Ladino', speed: 7.2, hp: 105, color: '#8d3027' },
-  archer: { name: 'Arqueiro', speed: 6.3, hp: 90, color: '#2e5f91' }
+  rogue: {
+    name: 'Ladino',
+    mark: 'L',
+    speed: 7.2,
+    hp: 105,
+    color: '#a94434',
+    accent: '#c95a43',
+    desc: 'Rapido, curto alcance, ideal para flanquear e punir erro de posicionamento.',
+    role: 'Movimento e pressao'
+  },
+  archer: {
+    name: 'Arqueiro',
+    mark: 'A',
+    speed: 6.3,
+    hp: 90,
+    color: '#355f86',
+    accent: '#73a7c8',
+    desc: 'Controle de distancia, tiro carregado e vantagem quando mantem espaco.',
+    role: 'Precisao e distancia'
+  }
 };
 
+const LOCKED_CLASSES = 4;
+
+const defaultProfile = () => ({
+  created: false,
+  classId: 'rogue',
+  coins: 60,
+  owned: ITEMS.filter(item => item.owned).map(item => item.id),
+  skin: 'sellsword-cloak',
+  loadout: { rogue: 'training-dagger', archer: 'simple-bow' },
+  options: { sensitivity: 50, music: 70, effects: 80 }
+});
+
 const state = {
-  profile: loadProfile(),
+  user: { name: 'Jogador' },
+  profile: defaultProfile(),
   selectedClass: 'rogue',
   keys: new Set(),
   pointerLocked: false,
@@ -40,48 +71,102 @@ let enemyBody;
 let enemyHead;
 let weaponMesh;
 let arenaGroup;
+let saveTimer = null;
 
 const menu = document.querySelector('#menu');
 const game = document.querySelector('#game');
 const viewport = document.querySelector('#viewport');
 const message = document.querySelector('#match-message');
 
-initMenu();
+init();
 
-function loadProfile() {
+async function init() {
+  await loadProfile();
+  state.selectedClass = state.profile.classId || 'rogue';
+  initMenuEvents();
+  renderAll();
+  if (!state.profile.created) showCreation(true);
+}
+
+async function loadProfile() {
   try {
-    const saved = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
-    return {
-      coins: Number.isFinite(saved.coins) ? saved.coins : 60,
-      owned: Array.isArray(saved.owned) ? saved.owned : ITEMS.filter(item => item.owned).map(item => item.id),
-      skin: saved.skin || 'red-cloak',
-      loadout: saved.loadout || { rogue: 'rusty-dagger', archer: 'short-bow' }
-    };
+    const response = await fetch('/api/concordium/profile', { cache: 'no-store' });
+    if (!response.ok) throw new Error('profile api unavailable');
+    const payload = await response.json();
+    state.user = payload.user || state.user;
+    state.profile = normalizeProfile(payload.profile);
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ user: state.user, profile: state.profile }));
   } catch {
-    return { coins: 60, owned: ['rusty-dagger', 'short-bow', 'red-cloak'], skin: 'red-cloak', loadout: { rogue: 'rusty-dagger', archer: 'short-bow' } };
+    const cached = safeJson(localStorage.getItem(SAVE_KEY), {});
+    state.user = cached.user || state.user;
+    state.profile = normalizeProfile(cached.profile || cached);
   }
 }
 
-function saveProfile() {
-  localStorage.setItem(SAVE_KEY, JSON.stringify(state.profile));
+function normalizeProfile(value) {
+  const defaults = defaultProfile();
+  const profile = value && typeof value === 'object' ? value : {};
+  const owned = Array.isArray(profile.owned) ? [...new Set(profile.owned.filter(id => ITEMS.some(item => item.id === id)))] : defaults.owned;
+  defaults.owned.forEach(id => { if (!owned.includes(id)) owned.push(id); });
+  return {
+    created: Boolean(profile.created),
+    classId: CLASSES[profile.classId] ? profile.classId : defaults.classId,
+    coins: Number.isFinite(profile.coins) ? profile.coins : defaults.coins,
+    owned,
+    skin: owned.includes(profile.skin) ? profile.skin : defaults.skin,
+    loadout: {
+      rogue: owned.includes(profile.loadout?.rogue) ? profile.loadout.rogue : defaults.loadout.rogue,
+      archer: owned.includes(profile.loadout?.archer) ? profile.loadout.archer : defaults.loadout.archer
+    },
+    options: {
+      sensitivity: clamp(profile.options?.sensitivity ?? defaults.options.sensitivity, 1, 100),
+      music: clamp(profile.options?.music ?? defaults.options.music, 0, 100),
+      effects: clamp(profile.options?.effects ?? defaults.options.effects, 0, 100)
+    }
+  };
 }
 
-function initMenu() {
-  document.querySelectorAll('.tab').forEach(button => {
-    button.addEventListener('click', () => {
-      document.querySelectorAll('.tab').forEach(item => item.classList.toggle('active', item === button));
-      document.querySelectorAll('.tab-page').forEach(page => page.classList.toggle('active', page.id === `tab-${button.dataset.tab}`));
-    });
+function saveProfile(immediate = false) {
+  localStorage.setItem(SAVE_KEY, JSON.stringify({ user: state.user, profile: state.profile }));
+  const persist = async () => {
+    try {
+      await fetch('/api/concordium/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profile: state.profile })
+      });
+    } catch {}
+  };
+  if (immediate) {
+    clearTimeout(saveTimer);
+    persist();
+    return;
+  }
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(persist, 250);
+}
+
+function initMenuEvents() {
+  document.querySelectorAll('[data-tab]').forEach(button => {
+    button.addEventListener('click', () => selectTab(button.dataset.tab));
   });
-  document.querySelectorAll('[data-class]').forEach(card => {
-    card.addEventListener('click', () => {
-      state.selectedClass = card.dataset.class;
-      document.querySelectorAll('[data-class]').forEach(item => item.classList.toggle('active', item === card));
-      renderLoadout();
-    });
+  document.querySelector('#finish-creation').addEventListener('click', () => {
+    state.profile.created = true;
+    state.profile.classId = state.selectedClass;
+    saveProfile(true);
+    showCreation(false);
+    selectTab('play');
+    renderAll();
   });
   document.querySelector('#start-match').addEventListener('click', startMatch);
   document.querySelector('#leave-match').addEventListener('click', leaveMatch);
+  ['sensitivity', 'music', 'effects'].forEach(key => {
+    const input = document.querySelector(`#opt-${key}`);
+    input.addEventListener('input', () => {
+      state.profile.options[key] = Number(input.value);
+      saveProfile();
+    });
+  });
   window.addEventListener('keydown', event => state.keys.add(event.key.toLowerCase()));
   window.addEventListener('keyup', event => state.keys.delete(event.key.toLowerCase()));
   document.addEventListener('pointerlockchange', () => {
@@ -97,8 +182,81 @@ function initMenu() {
     }
     if (event.button === 0) attack();
   });
+}
+
+function selectTab(tab) {
+  document.querySelectorAll('.rail-button').forEach(item => item.classList.toggle('active', item.dataset.tab === tab));
+  document.querySelectorAll('.tab-page').forEach(page => page.classList.toggle('active', page.id === `tab-${tab}`));
+  const copy = {
+    play: ['Fila 1x1', 'Arena Medieval', 'Escolha classe, equipe arma e entre no mapa de teste.'],
+    profile: ['Conta', 'Perfil do jogador', 'Seu nick vem do login e o progresso fica salvo na conta.'],
+    classes: ['Arvore de classes', 'Caminhos de combate', 'As classes futuras ficam bloqueadas ate voce decidir quais serao.'],
+    shop: ['Mercado', 'Loja de equipamentos', 'Compre armas e visuais para usar antes de entrar na arena.'],
+    options: ['Sistema', 'Opcoes', 'Ajustes iniciais para deixar o jogo confortavel.']
+  }[tab] || ['Concordium', 'Arena Medieval', ''];
+  document.querySelector('#stage-label').textContent = copy[0];
+  document.querySelector('#stage-title').textContent = copy[1];
+  document.querySelector('#stage-text').textContent = copy[2];
+}
+
+function showCreation(visible) {
+  document.querySelector('#onboarding').classList.toggle('hidden', !visible);
+}
+
+function renderAll() {
+  renderHeader();
+  renderClassCards();
   renderLoadout();
   renderShop();
+  renderProfile();
+  renderOptions();
+  renderSelectedPanel();
+}
+
+function renderHeader() {
+  const initials = initialsFor(state.user.name);
+  const classDef = CLASSES[state.profile.classId] || CLASSES.rogue;
+  document.querySelector('#top-initials').textContent = initials;
+  document.querySelector('#top-name').textContent = state.user.name || 'Jogador';
+  document.querySelector('#top-class').textContent = state.profile.created ? classDef.name : 'Criar perfil';
+  document.querySelector('#creation-name').textContent = state.user.name || 'Jogador';
+}
+
+function renderClassCards() {
+  const playRoot = document.querySelector('#play-class-row');
+  const creationRoot = document.querySelector('#creation-grid');
+  const treeRoot = document.querySelector('#class-tree');
+  const classButtons = Object.entries(CLASSES).map(([id, classDef]) => classCard(id, classDef)).join('');
+  const locks = Array.from({ length: LOCKED_CLASSES }, () => lockedCard()).join('');
+  playRoot.innerHTML = classButtons + locks;
+  creationRoot.innerHTML = classButtons + locks;
+  treeRoot.innerHTML = classButtons + locks;
+  document.querySelectorAll('[data-class]').forEach(card => {
+    card.classList.toggle('active', card.dataset.class === state.selectedClass);
+    card.addEventListener('click', () => {
+      state.selectedClass = card.dataset.class;
+      state.profile.classId = state.selectedClass;
+      saveProfile();
+      renderAll();
+    });
+  });
+}
+
+function classCard(id, classDef) {
+  const active = id === state.selectedClass ? ' active' : '';
+  return `<button class="class-card${active}" data-class="${id}" style="--accent:${classDef.accent}">
+    <span class="class-icon">${classDef.mark}</span>
+    <h3>${classDef.name}</h3>
+    <p>${classDef.role}</p>
+  </button>`;
+}
+
+function lockedCard() {
+  return `<article class="locked-class">
+    <span class="class-icon">?</span>
+    <h3>???</h3>
+    <p>Bloqueado</p>
+  </article>`;
 }
 
 function renderLoadout() {
@@ -106,10 +264,11 @@ function renderLoadout() {
   const skinSelect = document.querySelector('#skin-select');
   const ownedWeapons = ITEMS.filter(item => item.classId === state.selectedClass && state.profile.owned.includes(item.id));
   weaponSelect.innerHTML = ownedWeapons.map(item => `<option value="${item.id}">${item.name}</option>`).join('');
-  weaponSelect.value = state.profile.loadout[state.selectedClass] || ownedWeapons[0]?.id;
+  weaponSelect.value = state.profile.loadout[state.selectedClass] || ownedWeapons[0]?.id || '';
   weaponSelect.onchange = () => {
     state.profile.loadout[state.selectedClass] = weaponSelect.value;
     saveProfile();
+    renderSelectedPanel();
   };
   const skins = ITEMS.filter(item => item.type === 'skin' && state.profile.owned.includes(item.id));
   skinSelect.innerHTML = skins.map(item => `<option value="${item.id}">${item.name}</option>`).join('');
@@ -117,6 +276,7 @@ function renderLoadout() {
   skinSelect.onchange = () => {
     state.profile.skin = skinSelect.value;
     saveProfile();
+    renderSelectedPanel();
   };
 }
 
@@ -125,9 +285,11 @@ function renderShop() {
   const root = document.querySelector('#shop-grid');
   root.innerHTML = ITEMS.filter(item => !item.owned).map(item => {
     const owned = state.profile.owned.includes(item.id);
+    const locked = !owned && state.profile.coins < (item.price || 0);
     return `<button class="shop-item ${owned ? 'owned' : ''}" data-buy="${item.id}" ${owned ? 'disabled' : ''}>
       <b>${item.name}</b>
-      <span>${owned ? 'Comprado' : `${item.price || 0} moedas`}</span>
+      <span>${item.blurb}</span>
+      <span>${owned ? 'Comprado' : locked ? `${item.price} moedas - faltam ${item.price - state.profile.coins}` : `${item.price} moedas`}</span>
     </button>`;
   }).join('');
   root.querySelectorAll('[data-buy]').forEach(button => {
@@ -138,14 +300,45 @@ function renderShop() {
       state.profile.owned.push(item.id);
       if (item.type === 'skin') state.profile.skin = item.id;
       if (item.classId) state.profile.loadout[item.classId] = item.id;
-      saveProfile();
-      renderLoadout();
-      renderShop();
+      saveProfile(true);
+      renderAll();
     });
   });
 }
 
+function renderProfile() {
+  const classDef = CLASSES[state.profile.classId] || CLASSES.rogue;
+  const portrait = document.querySelector('#profile-portrait');
+  portrait.style.background = `linear-gradient(145deg, ${classDef.accent}66, rgba(12,13,16,.86))`;
+  document.querySelector('#profile-name').textContent = state.user.name || 'Jogador';
+  document.querySelector('#profile-summary').textContent = state.profile.created ? `${classDef.name}: ${classDef.desc}` : 'Escolha uma classe para liberar o lobby.';
+  document.querySelector('#profile-coins').textContent = state.profile.coins;
+  document.querySelector('#profile-items').textContent = state.profile.owned.length;
+  document.querySelector('#profile-status').textContent = state.profile.created ? 'Pronto' : 'Novo';
+}
+
+function renderOptions() {
+  document.querySelector('#opt-sensitivity').value = state.profile.options.sensitivity;
+  document.querySelector('#opt-music').value = state.profile.options.music;
+  document.querySelector('#opt-effects').value = state.profile.options.effects;
+}
+
+function renderSelectedPanel() {
+  const classDef = CLASSES[state.selectedClass] || CLASSES.rogue;
+  const weapon = getWeapon();
+  const skin = ITEMS.find(item => item.id === state.profile.skin);
+  const art = document.querySelector('#operator-art');
+  art.style.setProperty('--accent', skin?.color || classDef.accent);
+  document.querySelector('#selected-class-name').textContent = classDef.name;
+  document.querySelector('#selected-class-desc').textContent = classDef.desc;
+  document.querySelector('#selected-weapon-name').textContent = weapon?.name || 'Sem arma';
+  document.querySelector('#selected-skin-name').textContent = skin?.name || 'Visual padrao';
+}
+
 function startMatch() {
+  state.profile.created = true;
+  state.profile.classId = state.selectedClass;
+  saveProfile(true);
   menu.classList.add('hidden');
   game.classList.remove('hidden');
   state.running = true;
@@ -288,8 +481,9 @@ function getSkinColor() {
 
 function onMouseMove(event) {
   if (!state.running || !state.pointerLocked) return;
-  state.yaw -= event.movementX * 0.0024;
-  state.pitch = Math.max(-1.05, Math.min(1.05, state.pitch - event.movementY * 0.002));
+  const sensitivity = (state.profile.options.sensitivity || 50) / 50;
+  state.yaw -= event.movementX * 0.0024 * sensitivity;
+  state.pitch = Math.max(-1.05, Math.min(1.05, state.pitch - event.movementY * 0.002 * sensitivity));
 }
 
 function loop(now) {
@@ -387,8 +581,8 @@ function endMatch(won) {
   state.matchOver = true;
   if (won) {
     state.profile.coins += 35;
-    saveProfile();
-    renderShop();
+    saveProfile(true);
+    renderAll();
     message.textContent = 'Vitoria! +35 moedas';
   } else {
     message.textContent = 'Derrota. Tente outra classe ou arma.';
@@ -421,6 +615,14 @@ function resizeRenderer() {
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
+function initialsFor(name) {
+  return String(name || 'J').trim().split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'J';
+}
+
+function safeJson(raw, fallback) {
+  try { return raw ? JSON.parse(raw) : fallback; } catch { return fallback; }
+}
+
 function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
+  return Math.max(min, Math.min(max, Number(value) || 0));
 }

@@ -113,6 +113,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS game_rankings (user_id TEXT NOT NULL, game_id TEXT NOT NULL, user_name TEXT NOT NULL, save_name TEXT NOT NULL, year INTEGER NOT NULL, month INTEGER NOT NULL, total_churches INTEGER NOT NULL, total_members REAL NOT NULL, doctrine_correct INTEGER NOT NULL, reached_final INTEGER NOT NULL, state_churches_json TEXT NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY (user_id, game_id), FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS luther_match_rankings (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, level INTEGER NOT NULL, best_level INTEGER NOT NULL, completed_levels INTEGER NOT NULL, score INTEGER NOT NULL, max_combo INTEGER NOT NULL DEFAULT 0, luther_pair_used INTEGER NOT NULL DEFAULT 0, solas_pair_used INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS cronicas_saves (user_id TEXT PRIMARY KEY, state_json TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
+  CREATE TABLE IF NOT EXISTS concordium_profiles (user_id TEXT PRIMARY KEY, profile_json TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS quiz_presence (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, last_seen TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS quiz_queue (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, mode TEXT NOT NULL, joined_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS quiz_matches (id TEXT PRIMARY KEY, mode TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, started_at TEXT NOT NULL, question_ids_json TEXT NOT NULL, round_seconds INTEGER NOT NULL, finalized INTEGER NOT NULL DEFAULT 0, round_index INTEGER NOT NULL DEFAULT 0, round_started_at TEXT, reveal_until TEXT);
@@ -193,6 +194,7 @@ const deleteGameRankingsForUser = db.prepare('DELETE FROM game_rankings WHERE us
 const deleteAchievementsForUser = db.prepare('DELETE FROM user_achievements WHERE user_id = ?');
 const deleteLutherRankingForUser = db.prepare('DELETE FROM luther_match_rankings WHERE user_id = ?');
 const deleteCronicasForUser = db.prepare('DELETE FROM cronicas_saves WHERE user_id = ?');
+const deleteConcordiumForUser = db.prepare('DELETE FROM concordium_profiles WHERE user_id = ?');
 const deleteUserById = db.prepare('DELETE FROM users WHERE id = ?');
 const deleteQuizPresenceForUser = db.prepare('DELETE FROM quiz_presence WHERE user_id = ?');
 const deleteQuizQueueForUser = db.prepare('DELETE FROM quiz_queue WHERE user_id = ?');
@@ -205,6 +207,12 @@ const upsertCronicasSave = db.prepare(`
   ON CONFLICT(user_id) DO UPDATE SET state_json = excluded.state_json, updated_at = excluded.updated_at
 `);
 const deleteCronicasSave = db.prepare('DELETE FROM cronicas_saves WHERE user_id = ?');
+const getConcordiumProfile = db.prepare('SELECT * FROM concordium_profiles WHERE user_id = ?');
+const upsertConcordiumProfile = db.prepare(`
+  INSERT INTO concordium_profiles (user_id, profile_json, created_at, updated_at)
+  VALUES (?, ?, ?, ?)
+  ON CONFLICT(user_id) DO UPDATE SET profile_json = excluded.profile_json, updated_at = excluded.updated_at
+`);
 const upsertQuizPresence = db.prepare('INSERT INTO quiz_presence (user_id, user_name, last_seen) VALUES (?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET user_name = excluded.user_name, last_seen = excluded.last_seen');
 const getQuizOnlineUsers = db.prepare('SELECT user_id, user_name, last_seen FROM quiz_presence WHERE last_seen >= ? ORDER BY user_name COLLATE NOCASE ASC');
 const deleteOldQuizPresence = db.prepare('DELETE FROM quiz_presence WHERE last_seen < ?');
@@ -471,6 +479,7 @@ function cleanupNonPlayerAccounts() {
       deleteAchievementsForUser.run(user.id);
       deleteLutherRankingForUser.run(user.id);
       deleteCronicasForUser.run(user.id);
+      deleteConcordiumForUser.run(user.id);
       deleteQuizPresenceForUser.run(user.id);
       deleteQuizQueueForUser.run(user.id);
       deleteQuizMatchPresenceForUser.run(user.id);
@@ -541,6 +550,46 @@ function escapeHtml(value) {
   return String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
 }
 function safeJsonParse(raw, fallback = null) { try { return raw ? JSON.parse(raw) : fallback; } catch { return fallback; } }
+function defaultConcordiumProfile() {
+  return {
+    created: false,
+    classId: 'rogue',
+    coins: 60,
+    owned: ['training-dagger', 'simple-bow', 'sellsword-cloak'],
+    skin: 'sellsword-cloak',
+    loadout: { rogue: 'training-dagger', archer: 'simple-bow' },
+    options: { sensitivity: 50, music: 70, effects: 80 }
+  };
+}
+function sanitizeConcordiumProfile(input) {
+  const defaults = defaultConcordiumProfile();
+  const value = input && typeof input === 'object' ? input : {};
+  const allowedClasses = new Set(['rogue', 'archer']);
+  const allowedItems = new Set(['training-dagger', 'long-sword', 'simple-bow', 'war-bow', 'sellsword-cloak', 'ash-cloak', 'forest-cloak']);
+  const owned = Array.isArray(value.owned)
+    ? [...new Set(value.owned.map(String).filter(id => allowedItems.has(id)))]
+    : defaults.owned;
+  for (const id of defaults.owned) if (!owned.includes(id)) owned.push(id);
+  const classId = allowedClasses.has(String(value.classId)) ? String(value.classId) : defaults.classId;
+  const loadout = value.loadout && typeof value.loadout === 'object' ? value.loadout : {};
+  const rogueWeapon = owned.includes(String(loadout.rogue)) && ['training-dagger', 'long-sword'].includes(String(loadout.rogue)) ? String(loadout.rogue) : defaults.loadout.rogue;
+  const archerWeapon = owned.includes(String(loadout.archer)) && ['simple-bow', 'war-bow'].includes(String(loadout.archer)) ? String(loadout.archer) : defaults.loadout.archer;
+  const skin = owned.includes(String(value.skin)) && ['sellsword-cloak', 'ash-cloak', 'forest-cloak'].includes(String(value.skin)) ? String(value.skin) : defaults.skin;
+  const options = value.options && typeof value.options === 'object' ? value.options : {};
+  return {
+    created: Boolean(value.created),
+    classId,
+    coins: clampInt(value.coins, 0, 999999),
+    owned,
+    skin,
+    loadout: { rogue: rogueWeapon, archer: archerWeapon },
+    options: {
+      sensitivity: clampInt(options.sensitivity ?? defaults.options.sensitivity, 1, 100),
+      music: clampInt(options.music ?? defaults.options.music, 0, 100),
+      effects: clampInt(options.effects ?? defaults.options.effects, 0, 100)
+    }
+  };
+}
 function isSafeAvatarData(value) {
   return !value || /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(value);
 }
@@ -1014,6 +1063,26 @@ async function handleApi(req, res, url, user) {
       ]
     });
     return;
+  }
+  if (url.pathname === '/api/concordium/profile') {
+    const row = getConcordiumProfile.get(user.id);
+    const profile = sanitizeConcordiumProfile(safeJsonParse(row?.profile_json, null));
+    if (req.method === 'GET') {
+      json(res, 200, {
+        user: { id: user.id, name: user.name, hasAvatar: Boolean(user.avatar_data) },
+        profile,
+        updatedAt: row?.updated_at || null
+      });
+      return;
+    }
+    if (req.method === 'POST' || req.method === 'PUT') {
+      const payload = safeJsonParse(await readBody(req) || '{}', {});
+      const nextProfile = sanitizeConcordiumProfile(payload.profile || payload);
+      const now = new Date().toISOString();
+      upsertConcordiumProfile.run(user.id, JSON.stringify(nextProfile), row?.created_at || now, now);
+      json(res, 200, { ok: true, profile: nextProfile, updatedAt: now });
+      return;
+    }
   }
   if (url.pathname.startsWith('/api/quiz')) {
     touchQuizPresence(user);

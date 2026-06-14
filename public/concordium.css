@@ -26,7 +26,7 @@ button { border: 0; }
   width: 100%;
   height: 100%;
   display: grid;
-  grid-template-columns: 72px minmax(520px, 1fr) minmax(310px, 420px);
+  grid-template-columns: 72px minmax(520px, 880px) 1fr;
   grid-template-rows: 74px 1fr;
   gap: 18px;
   padding: 18px 22px 22px 0;
@@ -37,10 +37,10 @@ button { border: 0; }
   inset: 0;
   z-index: -2;
   background:
-    linear-gradient(90deg, rgba(5, 7, 10, .86) 0%, rgba(5, 7, 10, .24) 38%, rgba(5, 7, 10, .86) 100%),
-    linear-gradient(180deg, rgba(8, 8, 10, .15), rgba(8, 8, 10, .82)),
+    linear-gradient(90deg, rgba(5, 7, 10, .92) 0%, rgba(5, 7, 10, .58) 52%, rgba(5, 7, 10, .94) 100%),
+    linear-gradient(180deg, rgba(8, 8, 10, .28), rgba(8, 8, 10, .9)),
     url("/assets/concordium-card.png") center/cover;
-  filter: saturate(.92) contrast(1.05);
+  filter: saturate(.78) contrast(.95);
 }
 .lobby-screen:after {
   content: "";
@@ -48,8 +48,7 @@ button { border: 0; }
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background: radial-gradient(circle at 68% 20%, rgba(244, 195, 95, .18), transparent 32%),
-    linear-gradient(90deg, rgba(0,0,0,.22), transparent 24%, rgba(0,0,0,.32));
+  background: linear-gradient(90deg, rgba(0,0,0,.18), rgba(0,0,0,.42) 56%, rgba(0,0,0,.72));
 }
 
 .side-rail {
@@ -77,15 +76,8 @@ button { border: 0; }
 }
 .brand-mark { color: #160e05; background: linear-gradient(180deg, var(--gold-soft), var(--gold)); font-weight: 950; font-size: 24px; }
 .rail-button { position: relative; }
-.rail-button:before {
-  content: "";
-  width: 18px;
-  height: 18px;
-  border-radius: 3px;
-  border: 2px solid currentColor;
-  transform: rotate(45deg);
-  opacity: .86;
-}
+.rail-button:before { content: none; }
+.rail-button b { font-size: 17px; line-height: 1; }
 .rail-button span {
   position: absolute;
   left: 58px;
@@ -105,7 +97,7 @@ button { border: 0; }
 .rail-button.active { color: var(--gold); border-color: var(--line); background: rgba(244,195,95,.14); }
 
 .top-bar {
-  grid-column: 2 / 4;
+  grid-column: 2 / 3;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -160,15 +152,15 @@ button { border: 0; }
   grid-row: 2;
   align-self: stretch;
   display: grid;
-  align-content: end;
-  gap: 18px;
-  max-width: 930px;
-  padding-bottom: 22px;
+  align-content: center;
+  gap: 16px;
+  max-width: 860px;
+  padding-bottom: 0;
 }
 .stage-copy { max-width: 680px; text-shadow: 0 3px 18px rgba(0,0,0,.68); }
 .stage-copy h1 {
   margin: 6px 0 8px;
-  font: 950 clamp(48px, 6vw, 84px)/.9 Georgia, serif;
+  font: 950 clamp(42px, 5vw, 72px)/.92 Georgia, serif;
   color: var(--gold-soft);
 }
 .stage-copy p { margin: 0; max-width: 560px; color: #ecdfc3; font-size: 17px; line-height: 1.45; }
@@ -217,13 +209,13 @@ button { border: 0; }
 .creation-grid,
 .class-tree {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 .class-card,
 .shop-item,
 .locked-class {
-  min-height: 148px;
+  min-height: 118px;
   border: 1px solid var(--line-soft);
   border-radius: 8px;
   padding: 14px;
@@ -248,8 +240,8 @@ button { border: 0; }
   background: linear-gradient(145deg, rgba(244,195,95,.2), rgba(13,14,18,.86));
 }
 .class-icon {
-  width: 48px;
-  height: 48px;
+  width: 42px;
+  height: 42px;
   border-radius: 6px;
   display: grid;
   place-items: center;
@@ -266,6 +258,14 @@ button { border: 0; }
 .locked-class p { margin: 0; color: var(--muted); line-height: 1.35; }
 .locked-class { opacity: .72; cursor: default; filter: grayscale(.25); }
 .locked-class h3 { letter-spacing: .22em; }
+.class-row .locked-class { display: none; }
+.classes-note {
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  padding: 14px 16px;
+  background: rgba(10,11,14,.78);
+}
+.classes-note h2 { margin: 4px 0 0; color: var(--gold-soft); font: 900 28px/1 Georgia, serif; }
 
 .loadout-grid {
   display: grid;
@@ -289,37 +289,6 @@ select {
   background: rgba(14,15,18,.9);
 }
 option { color: #111; }
-
-.loadout-panel {
-  grid-column: 3;
-  grid-row: 2;
-  align-self: end;
-  display: grid;
-  gap: 14px;
-  padding-bottom: 22px;
-}
-.operator-card,
-.weapon-card {
-  border: 1px solid var(--line-soft);
-  border-radius: 8px;
-  background: var(--panel);
-  backdrop-filter: blur(14px);
-  box-shadow: 0 18px 60px rgba(0,0,0,.4);
-}
-.operator-card { padding: 16px; display: grid; gap: 16px; }
-.operator-art {
-  height: min(42vh, 360px);
-  min-height: 250px;
-  border-radius: 7px;
-  border: 1px solid rgba(255,255,255,.1);
-  background:
-    linear-gradient(180deg, rgba(7,8,10,.06), rgba(7,8,10,.12) 52%, rgba(7,8,10,.62)),
-    url("/assets/concordium-operator-v1.png") center 18% / cover;
-  box-shadow: inset 0 -70px 90px rgba(0,0,0,.44);
-}
-.weapon-card { padding: 16px; display: grid; gap: 6px; }
-.weapon-card strong { color: var(--gold-soft); font-size: 22px; }
-.weapon-card small { color: var(--muted); }
 
 .profile-panel { display: grid; grid-template-columns: 170px 1fr; gap: 18px; padding: 18px; }
 .profile-portrait {
@@ -376,11 +345,55 @@ input[type="range"] { accent-color: var(--gold); }
 .game-screen { position: relative; width: 100%; height: 100%; background: #111; }
 #viewport { position: absolute; inset: 0; }
 #viewport canvas { display: block; width: 100% !important; height: 100% !important; }
-.hud { position: absolute; z-index: 5; border: 1px solid var(--line); border-radius: 9px; background: rgba(8,10,13,.74); backdrop-filter: blur(6px); padding: 10px 12px; display: grid; gap: 3px; box-shadow: 0 10px 30px rgba(0,0,0,.32); }
-.top-left { left: 14px; top: 14px; }
-.top-right { right: 14px; top: 14px; min-width: 170px; }
-.hud b { color: var(--gold); }
-.hud span { color: var(--muted); font-size: 13px; }
+.combat-panel {
+  position: absolute;
+  top: 22px;
+  z-index: 5;
+  width: 230px;
+  border: 1px solid rgba(255,255,255,.16);
+  background: linear-gradient(180deg, rgba(7,8,11,.78), rgba(7,8,11,.48));
+  backdrop-filter: blur(8px);
+  padding: 14px;
+  box-shadow: 0 10px 34px rgba(0,0,0,.36);
+}
+.combat-left { left: 24px; }
+.combat-right { right: 24px; text-align: right; }
+.combat-panel strong { display: block; color: #fff2d2; font: 900 24px/1 Georgia, serif; }
+.combat-panel span { display: block; color: var(--muted); font-size: 12px; margin-top: 4px; }
+.combat-panel ul { list-style: none; padding: 12px 0 8px; margin: 0; display: grid; gap: 7px; color: #eadfc4; font-size: 12px; }
+.combat-panel li:before { content: "+"; color: var(--gold); font-weight: 950; margin-right: 6px; }
+.combat-right li:before { content: none; }
+.combat-right li:after { content: " +"; color: var(--gold); font-weight: 950; }
+.score-strip {
+  position: absolute;
+  left: 50%;
+  top: 14px;
+  z-index: 5;
+  transform: translateX(-50%);
+  min-width: 340px;
+  height: 42px;
+  display: grid;
+  grid-template-columns: 1fr 44px 70px 44px 1fr;
+  align-items: center;
+  border: 1px solid rgba(255,255,255,.18);
+  background: rgba(7,8,11,.72);
+  color: #f3e7ca;
+  text-align: center;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: .08em;
+}
+.score-strip b { color: #fff2d2; font-size: 18px; }
+.score-strip small { color: var(--gold); font-weight: 950; }
+.bar {
+  position: relative;
+  height: 18px;
+  border: 1px solid rgba(0,0,0,.5);
+  background: rgba(0,0,0,.45);
+  overflow: hidden;
+}
+.bar i { position: absolute; inset: 0 auto 0 0; width: 100%; background: linear-gradient(90deg, #7a1518, #c5362e); }
+.bar b { position: relative; z-index: 1; display: block; color: #fff; font-size: 11px; line-height: 16px; text-align: center; }
 #crosshair { position: absolute; left: 50%; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px; z-index: 4; pointer-events: none; }
 #crosshair:before, #crosshair:after { content: ""; position: absolute; background: rgba(255,243,216,.82); }
 #crosshair:before { left: 8px; top: 2px; width: 2px; height: 14px; }
@@ -391,12 +404,10 @@ input[type="range"] { accent-color: var(--gold); }
 @media (max-width: 1100px) {
   .lobby-screen {
     grid-template-columns: 64px 1fr;
-    grid-template-rows: 68px minmax(0, 1fr) auto;
+    grid-template-rows: 68px minmax(0, 1fr);
     padding-right: 14px;
   }
-  .top-bar, .lobby-stage, .loadout-panel { grid-column: 2; }
-  .loadout-panel { grid-row: 3; grid-template-columns: 1fr; padding-bottom: 0; }
-  .operator-art { display: none; }
+  .top-bar, .lobby-stage { grid-column: 2; }
 }
 
 @media (max-width: 760px) {
@@ -420,11 +431,14 @@ input[type="range"] { accent-color: var(--gold); }
     border-radius: 8px;
   }
   .rail-button span { display: none; }
-  .top-bar, .lobby-stage, .loadout-panel { grid-column: 1; }
-  .top-bar, .lobby-stage, .loadout-panel { grid-row: auto; }
+  .top-bar, .lobby-stage { grid-column: 1; }
+  .top-bar, .lobby-stage { grid-row: auto; }
   .top-bar { align-items: start; gap: 12px; }
   .profile-chip { min-width: 0; width: 168px; }
   .stage-copy h1, .creation-copy h1 { font-size: 38px; }
   .queue-card, .profile-panel, .loadout-grid, .class-row, .creation-grid, .class-tree, .shop-grid { grid-template-columns: 1fr; }
   .creation-overlay { position: fixed; overflow: auto; align-items: start; }
+  .combat-panel { width: 150px; padding: 10px; }
+  .combat-panel ul { display: none; }
+  .score-strip { top: 8px; min-width: 220px; grid-template-columns: 1fr 30px 44px 30px 1fr; font-size: 10px; }
 }

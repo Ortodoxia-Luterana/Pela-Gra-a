@@ -12,11 +12,11 @@
       <div class="lobby-bg"></div>
       <aside class="side-rail" aria-label="Navegacao">
         <a class="brand-mark" href="/" aria-label="Voltar ao hub">C</a>
-        <button class="rail-button active" data-tab="play" aria-label="Jogar"><span>Jogar</span></button>
-        <button class="rail-button" data-tab="profile" aria-label="Perfil"><span>Perfil</span></button>
-        <button class="rail-button" data-tab="classes" aria-label="Classes"><span>Classes</span></button>
-        <button class="rail-button" data-tab="shop" aria-label="Loja"><span>Loja</span></button>
-        <button class="rail-button" data-tab="options" aria-label="Opcoes"><span>Opcoes</span></button>
+        <button class="rail-button active" data-tab="play" aria-label="Jogar"><b>J</b><span>Jogar</span></button>
+        <button class="rail-button" data-tab="profile" aria-label="Perfil"><b>P</b><span>Perfil</span></button>
+        <button class="rail-button" data-tab="classes" aria-label="Classes"><b>C</b><span>Classes</span></button>
+        <button class="rail-button" data-tab="shop" aria-label="Loja"><b>L</b><span>Loja</span></button>
+        <button class="rail-button" data-tab="options" aria-label="Opcoes"><b>O</b><span>Opcoes</span></button>
       </aside>
 
       <header class="top-bar">
@@ -56,7 +56,7 @@
             <div>
               <span class="card-kicker">Partida rapida</span>
               <h2>Arena 1x1</h2>
-              <p>Mapa pequeno de treino, combate em primeira pessoa e loadout salvo na conta.</p>
+              <p>Escolha classe, arma e entre direto.</p>
             </div>
             <button id="start-match" class="primary-action">Entrar na arena</button>
           </div>
@@ -88,6 +88,10 @@
         </section>
 
         <section class="tab-page" id="tab-classes">
+          <div class="classes-note">
+            <span class="card-kicker">Classes</span>
+            <h2>Caminhos atuais</h2>
+          </div>
           <div class="class-tree" id="class-tree"></div>
         </section>
 
@@ -114,32 +118,28 @@
         </section>
       </section>
 
-      <aside class="loadout-panel">
-        <div class="operator-card">
-          <div class="operator-art" id="operator-art"></div>
-          <div>
-            <span class="card-kicker">Selecionado</span>
-            <h2 id="selected-class-name">Ladino</h2>
-            <p id="selected-class-desc">Rapido, curto alcance, ideal para flanquear.</p>
-          </div>
-        </div>
-        <div class="weapon-card">
-          <span class="card-kicker">Equipamento</span>
-          <strong id="selected-weapon-name">Adaga de treino</strong>
-          <small id="selected-skin-name">Manto de mercenario</small>
-        </div>
-      </aside>
     </section>
 
     <section id="game" class="game-screen hidden">
       <div id="viewport"></div>
-      <div class="hud top-left">
-        <b id="hud-class">Ladino</b>
+      <div class="combat-panel combat-left">
+        <strong id="hud-class">Ladino</strong>
         <span id="hud-weapon">Adaga</span>
+        <ul id="hud-skills"></ul>
+        <div class="bar hp"><i id="player-hp-bar"></i><b id="player-hp">100</b></div>
       </div>
-      <div class="hud top-right">
-        <span>Voce <b id="player-hp">100</b></span>
-        <span>Inimigo <b id="enemy-hp">100</b></span>
+      <div class="score-strip">
+        <span>Igreja</span><b id="score-player">0</b><small>1x1</small><b id="score-enemy">0</b><span>Oponente</span>
+      </div>
+      <div class="combat-panel combat-right">
+        <strong>Alvo</strong>
+        <span>Espadachim</span>
+        <ul>
+          <li>Aproxima</li>
+          <li>Golpe curto</li>
+          <li>Sem escudo</li>
+        </ul>
+        <div class="bar hp"><i id="enemy-hp-bar"></i><b id="enemy-hp">100</b></div>
       </div>
       <div id="crosshair"></div>
       <div id="match-message" class="match-message">Clique para capturar o mouse</div>

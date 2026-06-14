@@ -60,7 +60,8 @@ const state = {
   player: { x: -6, z: 0, hp: 100 },
   enemy: { x: 6, z: 0, hp: 100, cooldown: 0 },
   projectiles: [],
-  matchOver: false
+  matchOver: false,
+  weaponAction: { active: false, type: '', t: 0, duration: .3 }
 };
 
 let renderer;
@@ -188,9 +189,9 @@ function selectTab(tab) {
   document.querySelectorAll('.rail-button').forEach(item => item.classList.toggle('active', item.dataset.tab === tab));
   document.querySelectorAll('.tab-page').forEach(page => page.classList.toggle('active', page.id === `tab-${tab}`));
   const copy = {
-    play: ['Fila 1x1', 'Arena Medieval', 'Escolha classe, equipe arma e entre no mapa de teste.'],
+    play: ['Fila 1x1', 'Arena Medieval', 'Escolha classe, arma e entre direto.'],
     profile: ['Conta', 'Perfil do jogador', 'Seu nick vem do login e o progresso fica salvo na conta.'],
-    classes: ['Arvore de classes', 'Caminhos de combate', 'As classes futuras ficam bloqueadas ate voce decidir quais serao.'],
+    classes: ['Classes', 'Caminhos de combate', 'Ficam aqui as classes liberadas e futuras.'],
     shop: ['Mercado', 'Loja de equipamentos', 'Compre armas e visuais para usar antes de entrar na arena.'],
     options: ['Sistema', 'Opcoes', 'Ajustes iniciais para deixar o jogo confortavel.']
   }[tab] || ['Concordium', 'Arena Medieval', ''];
@@ -210,7 +211,6 @@ function renderAll() {
   renderShop();
   renderProfile();
   renderOptions();
-  renderSelectedPanel();
 }
 
 function renderHeader() {
@@ -228,7 +228,7 @@ function renderClassCards() {
   const treeRoot = document.querySelector('#class-tree');
   const classButtons = Object.entries(CLASSES).map(([id, classDef]) => classCard(id, classDef)).join('');
   const locks = Array.from({ length: LOCKED_CLASSES }, () => lockedCard()).join('');
-  playRoot.innerHTML = classButtons + locks;
+  playRoot.innerHTML = classButtons;
   creationRoot.innerHTML = classButtons + locks;
   treeRoot.innerHTML = classButtons + locks;
   document.querySelectorAll('[data-class]').forEach(card => {
@@ -268,7 +268,6 @@ function renderLoadout() {
   weaponSelect.onchange = () => {
     state.profile.loadout[state.selectedClass] = weaponSelect.value;
     saveProfile();
-    renderSelectedPanel();
   };
   const skins = ITEMS.filter(item => item.type === 'skin' && state.profile.owned.includes(item.id));
   skinSelect.innerHTML = skins.map(item => `<option value="${item.id}">${item.name}</option>`).join('');
@@ -276,7 +275,6 @@ function renderLoadout() {
   skinSelect.onchange = () => {
     state.profile.skin = skinSelect.value;
     saveProfile();
-    renderSelectedPanel();
   };
 }
 
@@ -323,18 +321,6 @@ function renderOptions() {
   document.querySelector('#opt-effects').value = state.profile.options.effects;
 }
 
-function renderSelectedPanel() {
-  const classDef = CLASSES[state.selectedClass] || CLASSES.rogue;
-  const weapon = getWeapon();
-  const skin = ITEMS.find(item => item.id === state.profile.skin);
-  const art = document.querySelector('#operator-art');
-  art.style.setProperty('--accent', skin?.color || classDef.accent);
-  document.querySelector('#selected-class-name').textContent = classDef.name;
-  document.querySelector('#selected-class-desc').textContent = classDef.desc;
-  document.querySelector('#selected-weapon-name').textContent = weapon?.name || 'Sem arma';
-  document.querySelector('#selected-skin-name').textContent = skin?.name || 'Visual padrao';
-}
-
 function startMatch() {
   state.profile.created = true;
   state.profile.classId = state.selectedClass;
@@ -367,8 +353,8 @@ function leaveMatch() {
 function setupScene() {
   viewport.innerHTML = '';
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x8ca06c);
-  scene.fog = new THREE.Fog(0x8ca06c, 28, 58);
+  scene.background = new THREE.Color(0x5f6a66);
+  scene.fog = new THREE.Fog(0x5f6a66, 24, 62);
   camera = new THREE.PerspectiveCamera(76, window.innerWidth / window.innerHeight, 0.1, 120);
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
@@ -377,11 +363,12 @@ function setupScene() {
   viewport.appendChild(renderer.domElement);
   window.addEventListener('resize', resizeRenderer);
 
-  const hemi = new THREE.HemisphereLight(0xffedd0, 0x36442b, 1.4);
+  const hemi = new THREE.HemisphereLight(0xffedd0, 0x2d332f, 1.15);
   scene.add(hemi);
-  const sun = new THREE.DirectionalLight(0xffd9a0, 1.6);
-  sun.position.set(-8, 14, 6);
+  const sun = new THREE.DirectionalLight(0xffd9a0, 2.1);
+  sun.position.set(-11, 18, 8);
   sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
   scene.add(sun);
 
   arenaGroup = new THREE.Group();
@@ -398,29 +385,53 @@ function setupScene() {
 }
 
 function buildArena() {
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(44, 34), new THREE.MeshStandardMaterial({ color: 0x6f7f43, roughness: .9 }));
+  const stoneTexture = makeStoneTexture();
+  const dirtTexture = makeDirtTexture();
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(44, 34), new THREE.MeshStandardMaterial({ map: dirtTexture, color: 0x9b8060, roughness: .95 }));
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
   arenaGroup.add(ground);
-  const sand = new THREE.Mesh(new THREE.CircleGeometry(11, 64), new THREE.MeshStandardMaterial({ color: 0x9d7d4f, roughness: .85 }));
+  const sand = new THREE.Mesh(new THREE.CircleGeometry(11, 80), new THREE.MeshStandardMaterial({ map: dirtTexture, color: 0xb99562, roughness: .9 }));
   sand.rotation.x = -Math.PI / 2;
   sand.position.y = .015;
   sand.receiveShadow = true;
   arenaGroup.add(sand);
-  const wallMat = new THREE.MeshStandardMaterial({ color: 0x7f6650, roughness: .82 });
+  const wallMat = new THREE.MeshStandardMaterial({ map: stoneTexture, color: 0x9a8a73, roughness: .86 });
   for (const [x, z, w, d] of [[0, -17, 44, 1], [0, 17, 44, 1], [-22, 0, 1, 34], [22, 0, 1, 34]]) {
-    const wall = new THREE.Mesh(new THREE.BoxGeometry(w, 3, d), wallMat);
-    wall.position.set(x, 1.5, z);
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(w, 5.2, d), wallMat);
+    wall.position.set(x, 2.6, z);
     wall.castShadow = true;
     wall.receiveShadow = true;
     arenaGroup.add(wall);
   }
-  const pillarMat = new THREE.MeshStandardMaterial({ color: 0xb9a47d, roughness: .8 });
+  const capMat = new THREE.MeshStandardMaterial({ color: 0x6f5a45, roughness: .82 });
+  for (const [x, z, w, d] of [[0, -17.65, 44, .35], [0, 17.65, 44, .35], [-22.65, 0, .35, 34], [22.65, 0, .35, 34]]) {
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(w, .35, d), capMat);
+    cap.position.set(x, 5.35, z);
+    cap.castShadow = true;
+    arenaGroup.add(cap);
+  }
+  const pillarMat = new THREE.MeshStandardMaterial({ map: stoneTexture, color: 0xb9a47d, roughness: .8 });
   for (const [x, z] of [[-13, -9], [13, -9], [-13, 9], [13, 9]]) {
-    const pillar = new THREE.Mesh(new THREE.CylinderGeometry(.55, .7, 4, 14), pillarMat);
-    pillar.position.set(x, 2, z);
+    const pillar = new THREE.Mesh(new THREE.CylinderGeometry(.65, .82, 5.2, 18), pillarMat);
+    pillar.position.set(x, 2.6, z);
     pillar.castShadow = true;
     arenaGroup.add(pillar);
+  }
+  const bannerMatBlue = new THREE.MeshStandardMaterial({ color: 0x18395f, roughness: .75, side: THREE.DoubleSide });
+  const bannerMatRed = new THREE.MeshStandardMaterial({ color: 0x6d2020, roughness: .75, side: THREE.DoubleSide });
+  for (const [x, z, rot, mat] of [[-8, -16.42, 0, bannerMatBlue], [8, -16.42, 0, bannerMatRed], [-21.42, -5, Math.PI / 2, bannerMatBlue], [21.42, 5, Math.PI / 2, bannerMatRed]]) {
+    const banner = new THREE.Mesh(new THREE.PlaneGeometry(2.1, 3.2), mat);
+    banner.position.set(x, 3.05, z);
+    banner.rotation.y = rot;
+    arenaGroup.add(banner);
+  }
+  for (const [x, z] of [[-18, -13], [18, -13], [-18, 13], [18, 13]]) {
+    const crate = new THREE.Mesh(new THREE.BoxGeometry(2, 1.4, 2), new THREE.MeshStandardMaterial({ color: 0x5b3a22, roughness: .8 }));
+    crate.position.set(x, .7, z);
+    crate.castShadow = true;
+    crate.receiveShadow = true;
+    arenaGroup.add(crate);
   }
 }
 
@@ -453,26 +464,103 @@ function makeFighter(color, player) {
 function makeWeapon() {
   const weapon = getWeapon();
   const group = new THREE.Group();
+  group.name = 'viewWeapon';
   if (weapon.type === 'bow') {
-    const bow = new THREE.Mesh(new THREE.TorusGeometry(.42, .025, 6, 28, Math.PI), new THREE.MeshStandardMaterial({ color: 0x8a542f, roughness: .65 }));
-    bow.rotation.set(0, 0, Math.PI / 2);
-    bow.position.set(.55, -.32, -1.05);
-    group.add(bow);
+    const bowMat = new THREE.MeshStandardMaterial({ color: 0x8a542f, roughness: .65 });
+    const bow = new THREE.Mesh(new THREE.TorusGeometry(.62, .028, 8, 34, Math.PI), bowMat);
+    bow.name = 'bow';
+    bow.rotation.set(0, .18, Math.PI / 2);
+    bow.position.set(.52, -.26, -1.04);
+    const string = new THREE.Mesh(new THREE.CylinderGeometry(.01, .01, 1.18, 6), new THREE.MeshBasicMaterial({ color: 0xe7d7b0 }));
+    string.name = 'bowString';
+    string.rotation.z = Math.PI / 2;
+    string.position.set(.52, -.26, -1.04);
+    const arrow = makeArrowMesh();
+    arrow.name = 'heldArrow';
+    arrow.scale.setScalar(.82);
+    arrow.position.set(.18, -.31, -1.12);
+    arrow.rotation.x = Math.PI / 2;
+    group.add(bow, string, arrow);
   } else {
-    const blade = new THREE.Mesh(new THREE.BoxGeometry(.08, .78, .035), new THREE.MeshStandardMaterial({ color: 0xd8e2e5, metalness: .45, roughness: .35 }));
-    blade.position.set(.48, -.25, -.95);
-    blade.rotation.z = -.42;
-    const hilt = new THREE.Mesh(new THREE.BoxGeometry(.36, .06, .06), new THREE.MeshStandardMaterial({ color: 0xb98732, roughness: .55 }));
-    hilt.position.set(.34, -.56, -.86);
-    hilt.rotation.z = -.42;
-    group.add(blade, hilt);
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(.09, 1.05, .035), new THREE.MeshStandardMaterial({ color: 0xd8e2e5, metalness: .55, roughness: .28 }));
+    blade.position.set(.48, -.22, -.92);
+    blade.rotation.z = -.54;
+    const hilt = new THREE.Mesh(new THREE.BoxGeometry(.42, .07, .07), new THREE.MeshStandardMaterial({ color: 0xb98732, roughness: .55 }));
+    hilt.position.set(.31, -.62, -.82);
+    hilt.rotation.z = -.54;
+    const grip = new THREE.Mesh(new THREE.CylinderGeometry(.045, .045, .35, 10), new THREE.MeshStandardMaterial({ color: 0x3d2415, roughness: .72 }));
+    grip.position.set(.23, -.76, -.79);
+    grip.rotation.z = -.54;
+    group.add(blade, hilt, grip);
   }
+  group.userData.rest = { position: group.position.clone(), rotation: group.rotation.clone() };
   return group;
 }
 
 function getWeapon() {
   const id = state.profile.loadout[state.selectedClass];
   return ITEMS.find(item => item.id === id) || ITEMS.find(item => item.classId === state.selectedClass);
+}
+
+function makeArrowMesh() {
+  const group = new THREE.Group();
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(.018, .018, 1.15, 8), new THREE.MeshStandardMaterial({ color: 0xc7a267, roughness: .65 }));
+  shaft.rotation.x = Math.PI / 2;
+  const head = new THREE.Mesh(new THREE.ConeGeometry(.06, .18, 8), new THREE.MeshStandardMaterial({ color: 0xd8d2c1, metalness: .25, roughness: .34 }));
+  head.position.z = -.66;
+  head.rotation.x = -Math.PI / 2;
+  const featherMat = new THREE.MeshStandardMaterial({ color: 0xeee5ca, roughness: .8, side: THREE.DoubleSide });
+  for (const angle of [0, Math.PI * 2 / 3, Math.PI * 4 / 3]) {
+    const feather = new THREE.Mesh(new THREE.PlaneGeometry(.08, .22), featherMat);
+    feather.position.z = .56;
+    feather.rotation.set(Math.PI / 2, 0, angle);
+    group.add(feather);
+  }
+  group.add(shaft, head);
+  return group;
+}
+
+function makeStoneTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#887865';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  for (let y = 0; y < 512; y += 42) {
+    const offset = (y / 42) % 2 ? 48 : 0;
+    for (let x = -offset; x < 512; x += 96) {
+      const shade = 105 + Math.floor(Math.random() * 34);
+      ctx.fillStyle = `rgb(${shade},${shade - 12},${shade - 24})`;
+      ctx.fillRect(x + 2, y + 2, 92, 38);
+      ctx.strokeStyle = 'rgba(33,25,18,.42)';
+      ctx.strokeRect(x + 2, y + 2, 92, 38);
+    }
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(5, 2);
+  return texture;
+}
+
+function makeDirtTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#9c8060';
+  ctx.fillRect(0, 0, 512, 512);
+  for (let i = 0; i < 4500; i++) {
+    const v = 95 + Math.floor(Math.random() * 72);
+    ctx.fillStyle = `rgba(${v},${Math.floor(v * .78)},${Math.floor(v * .5)},.34)`;
+    ctx.fillRect(Math.random() * 512, Math.random() * 512, 1 + Math.random() * 3, 1 + Math.random() * 3);
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(6, 5);
+  return texture;
 }
 
 function getSkinColor() {
@@ -493,6 +581,7 @@ function loop(now) {
   updatePlayer(dt);
   updateEnemy(dt);
   updateProjectiles(dt);
+  updateWeaponAnimation(dt);
   renderFrame();
   requestAnimationFrame(loop);
 }
@@ -555,19 +644,54 @@ function attack() {
   if (state.matchOver) return;
   const weapon = getWeapon();
   if (weapon.type === 'bow') {
+    beginWeaponAction('bow', .42);
     const dir = new THREE.Vector3(0, 0, -1).applyEuler(camera.rotation).normalize();
-    const arrow = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, .9, 8), new THREE.MeshStandardMaterial({ color: 0xd8c08a }));
-    arrow.rotation.z = Math.PI / 2;
-    arrow.position.copy(camera.position).addScaledVector(dir, 1.2);
+    const arrow = makeArrowMesh();
+    arrow.position.copy(camera.position).addScaledVector(dir, 1.25);
+    arrow.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, -1), dir);
     scene.add(arrow);
-    state.projectiles.push({ mesh: arrow, velocity: dir.multiplyScalar(26), damage: weapon.damage, life: 1.7 });
+    state.projectiles.push({ mesh: arrow, velocity: dir.clone().multiplyScalar(34), damage: weapon.damage, life: 2.2 });
   } else {
+    beginWeaponAction('slash', .34);
     const dist = Math.hypot(state.enemy.x - state.player.x, state.enemy.z - state.player.z);
     const aim = new THREE.Vector3(0, 0, -1).applyEuler(camera.rotation);
     const toEnemy = new THREE.Vector3(state.enemy.x - state.player.x, 0, state.enemy.z - state.player.z).normalize();
     if (dist <= weapon.range && aim.dot(toEnemy) > .55) damageEnemy(weapon.damage);
     else flashMessage('Errou');
   }
+}
+
+function beginWeaponAction(type, duration) {
+  state.weaponAction = { active: true, type, t: 0, duration };
+}
+
+function updateWeaponAnimation(dt) {
+  if (!weaponMesh) return;
+  const bob = Math.sin(performance.now() * .006) * .015;
+  weaponMesh.position.set(0, bob, 0);
+  weaponMesh.rotation.set(0, 0, 0);
+  const heldArrow = weaponMesh.getObjectByName('heldArrow');
+  const bowString = weaponMesh.getObjectByName('bowString');
+  if (heldArrow) heldArrow.visible = true;
+  if (bowString) bowString.position.x = .52;
+  if (!state.weaponAction.active) return;
+  state.weaponAction.t += dt;
+  const p = Math.min(1, state.weaponAction.t / state.weaponAction.duration);
+  const e = Math.sin(p * Math.PI);
+  if (state.weaponAction.type === 'slash') {
+    weaponMesh.rotation.z = -1.15 * e;
+    weaponMesh.rotation.x = .32 * e;
+    weaponMesh.position.x = -.18 * e;
+    weaponMesh.position.y = -.08 * e;
+  } else if (state.weaponAction.type === 'bow') {
+    weaponMesh.position.z = .12 * e;
+    if (heldArrow) {
+      heldArrow.position.z = -1.12 + .34 * e;
+      heldArrow.visible = p < .68;
+    }
+    if (bowString) bowString.position.x = .52 - .22 * e;
+  }
+  if (p >= 1) state.weaponAction.active = false;
 }
 
 function damageEnemy(amount) {
@@ -602,6 +726,11 @@ function updateHud() {
   document.querySelector('#hud-weapon').textContent = getWeapon().name;
   document.querySelector('#player-hp').textContent = Math.ceil(state.player.hp);
   document.querySelector('#enemy-hp').textContent = Math.ceil(state.enemy.hp);
+  document.querySelector('#player-hp-bar').style.width = `${clamp((state.player.hp / CLASSES[state.selectedClass].hp) * 100, 0, 100)}%`;
+  document.querySelector('#enemy-hp-bar').style.width = `${clamp(state.enemy.hp, 0, 100)}%`;
+  document.querySelector('#hud-skills').innerHTML = state.selectedClass === 'archer'
+    ? '<li>Disparo preciso</li><li>Chuva de flechas</li><li>Visao agucada</li>'
+    : '<li>Passo sombrio</li><li>Golpe nas costas</li><li>Fumaca</li>';
 }
 
 function renderFrame() {

@@ -123,23 +123,23 @@ button { cursor: pointer; border: 0; }
   text-transform: uppercase;
 }
 .play-panel {
-  max-width: 620px;
-  padding: 28px;
-  border: 1px solid var(--line-soft);
-  border-radius: 4px;
-  background: linear-gradient(135deg, rgba(12,13,17,.86), rgba(34,24,16,.72));
-  box-shadow: 0 22px 70px rgba(0,0,0,.42);
-  backdrop-filter: blur(10px);
+  max-width: 560px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 .play-panel h1 {
   margin: 8px 0 6px;
   color: var(--gold-soft);
   font: 950 clamp(48px, 7vw, 82px)/.92 Georgia, serif;
 }
-.play-panel p { margin: 0 0 22px; color: #e5d8be; font-size: 16px; }
+.play-panel p { margin: 0 0 22px; color: #e5d8be; font-size: 18px; }
 .play-panel b { color: var(--gold-soft); }
 .primary-action {
-  width: 100%;
+  width: min(360px, 100%);
   min-height: 54px;
   margin-top: 16px;
   border-radius: 4px;
@@ -149,12 +149,6 @@ button { cursor: pointer; border: 0; }
   box-shadow: inset 0 1px rgba(255,255,255,.35), 0 12px 28px rgba(0,0,0,.34);
 }
 
-.loadout-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-.loadout-grid label,
 .options-panel label {
   display: grid;
   gap: 7px;
@@ -231,13 +225,29 @@ option { color: #111; }
 
 .shop-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 .shop-head strong { color: var(--gold-soft); }
-.shop-grid {
+.shop-grid,
+.inventory-grid {
   max-width: 620px;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
-.shop-item { display: grid; gap: 7px; }
+.inventory-grid { margin-bottom: 16px; }
+.shop-item,
+.inventory-item { display: grid; gap: 7px; }
+.inventory-item {
+  min-height: 116px;
+  border: 1px solid var(--line-soft);
+  border-radius: 4px;
+  padding: 18px;
+  color: var(--text);
+  background: rgba(10,11,15,.82);
+  text-align: left;
+}
+.inventory-item.equipped { border-color: var(--gold); background: rgba(239,193,93,.14); }
+.inventory-item b { color: var(--gold-soft); font: 900 24px/1 Georgia, serif; }
+.inventory-item span { color: var(--muted); }
+.inventory-item small { color: var(--gold); font-weight: 950; text-transform: uppercase; letter-spacing: .12em; }
 .shop-item span { color: var(--muted); }
 .shop-item.owned { border-color: var(--gold); background: rgba(239,193,93,.12); }
 .shop-item:disabled { cursor: default; opacity: .72; }

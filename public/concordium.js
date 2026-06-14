@@ -1,5 +1,4 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js';
-import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/loaders/GLTFLoader.js';
 
 const SAVE_KEY = 'concordium-arena-profile-v2';
 const KIT_URL = '/assets/concordium-medieval-kit-v1.glb';
@@ -77,6 +76,7 @@ let arenaGroup;
 let saveTimer = null;
 let assetKit = null;
 let assetKitPromise = null;
+let GLTFLoaderClass = null;
 
 const menu = document.querySelector('#menu');
 const game = document.querySelector('#game');
@@ -214,7 +214,6 @@ function renderHeader() {
   document.querySelector('#top-name').textContent = state.user.name || 'Jogador';
   document.querySelector('#top-class').textContent = state.profile.created ? classDef.name : 'Criar perfil';
   document.querySelector('#creation-name').textContent = state.user.name || 'Jogador';
-  document.querySelector('#current-class-name').textContent = classDef.name;
 }
 
 function renderClassCards() {
@@ -258,25 +257,51 @@ function renderLoadout() {
   const weaponSelect = document.querySelector('#weapon-select');
   const skinSelect = document.querySelector('#skin-select');
   const ownedWeapons = ITEMS.filter(item => item.classId === state.selectedClass && state.profile.owned.includes(item.id));
-  weaponSelect.innerHTML = ownedWeapons.map(item => `<option value="${item.id}">${item.name}</option>`).join('');
-  weaponSelect.value = state.profile.loadout[state.selectedClass] || ownedWeapons[0]?.id || '';
-  weaponSelect.onchange = () => {
-    state.profile.loadout[state.selectedClass] = weaponSelect.value;
-    saveProfile();
-  };
-  const skins = ITEMS.filter(item => item.type === 'skin' && state.profile.owned.includes(item.id));
-  skinSelect.innerHTML = skins.map(item => `<option value="${item.id}">${item.name}</option>`).join('');
-  skinSelect.value = state.profile.skin;
-  skinSelect.onchange = () => {
-    state.profile.skin = skinSelect.value;
-    saveProfile();
-  };
+  if (weaponSelect) {
+    weaponSelect.innerHTML = ownedWeapons.map(item => `<option value="${item.id}">${item.name}</option>`).join('');
+    weaponSelect.value = state.profile.loadout[state.selectedClass] || ownedWeapons[0]?.id || '';
+    weaponSelect.onchange = () => {
+      state.profile.loadout[state.selectedClass] = weaponSelect.value;
+      saveProfile();
+    };
+  }
+  if (skinSelect) {
+    const skins = ITEMS.filter(item => item.type === 'skin' && state.profile.owned.includes(item.id));
+    skinSelect.innerHTML = skins.map(item => `<option value="${item.id}">${item.name}</option>`).join('');
+    skinSelect.value = state.profile.skin;
+    skinSelect.onchange = () => {
+      state.profile.skin = skinSelect.value;
+      saveProfile();
+    };
+  }
+  renderInventory();
+}
+
+function renderInventory() {
+  const root = document.querySelector('#inventory-grid');
+  if (!root) return;
+  const weapons = ITEMS.filter(item => item.classId === state.selectedClass && state.profile.owned.includes(item.id));
+  root.innerHTML = weapons.map(item => {
+    const equipped = state.profile.loadout[state.selectedClass] === item.id;
+    return `<button class="inventory-item ${equipped ? 'equipped' : ''}" data-equip="${item.id}">
+      <small>${equipped ? 'Equipada' : 'Inventario'}</small>
+      <b>${item.name}</b>
+      <span>${item.blurb}</span>
+    </button>`;
+  }).join('');
+  root.querySelectorAll('[data-equip]').forEach(button => {
+    button.addEventListener('click', () => {
+      state.profile.loadout[state.selectedClass] = button.dataset.equip;
+      saveProfile(true);
+      renderInventory();
+    });
+  });
 }
 
 function renderShop() {
   document.querySelector('#coins').textContent = state.profile.coins;
   const root = document.querySelector('#shop-grid');
-  root.innerHTML = ITEMS.filter(item => !item.owned).map(item => {
+  root.innerHTML = ITEMS.filter(item => item.classId && !item.owned).map(item => {
     const owned = state.profile.owned.includes(item.id);
     const locked = !owned && state.profile.coins < (item.price || 0);
     return `<button class="shop-item ${owned ? 'owned' : ''}" data-buy="${item.id}" ${owned ? 'disabled' : ''}>
@@ -317,6 +342,12 @@ function renderOptions() {
 }
 
 async function startMatch() {
+  const startButton = document.querySelector('#start-match');
+  if (startButton?.disabled) return;
+  if (startButton) {
+    startButton.disabled = true;
+    startButton.textContent = 'Carregando...';
+  }
   state.profile.created = true;
   state.profile.classId = state.selectedClass;
   saveProfile(true);
@@ -330,10 +361,17 @@ async function startMatch() {
   state.projectiles = [];
   state.yaw = -Math.PI / 2;
   state.pitch = 0;
-  await setupScene();
-  updateHud();
-  message.textContent = 'Clique para capturar o mouse';
-  requestAnimationFrame(loop);
+  try {
+    await setupScene();
+    updateHud();
+    message.textContent = 'Clique para capturar o mouse';
+    requestAnimationFrame(loop);
+  } finally {
+    if (startButton) {
+      startButton.disabled = false;
+      startButton.textContent = 'Jogar';
+    }
+  }
 }
 
 function leaveMatch() {
@@ -348,7 +386,11 @@ function leaveMatch() {
 async function loadAssetKit() {
   if (assetKit) return assetKit;
   if (!assetKitPromise) {
-    assetKitPromise = new GLTFLoader().loadAsync(KIT_URL)
+    assetKitPromise = import('https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/loaders/GLTFLoader.js')
+      .then(module => {
+        GLTFLoaderClass = module.GLTFLoader;
+        return new GLTFLoaderClass().loadAsync(KIT_URL);
+      })
       .then(gltf => {
         assetKit = gltf.scene;
         assetKit.traverse(obj => {

@@ -16,7 +16,7 @@
           <button class="nav-button active" data-tab="play">Jogar</button>
           <button class="nav-button" data-tab="profile">Perfil</button>
           <button class="nav-button" data-tab="classes">Classes</button>
-          <button class="nav-button" data-tab="shop">Loja</button>
+          <button class="nav-button" data-tab="shop">Inventario</button>
           <button class="nav-button" data-tab="options">Opcoes</button>
         </nav>
         <button class="profile-chip" data-tab="profile">
@@ -41,15 +41,7 @@
           <div class="play-panel">
             <span class="mode-label">1x1</span>
             <h1>Concordium</h1>
-            <p id="play-status">Classe atual: <b id="current-class-name">Ladino</b></p>
-            <div class="loadout-grid">
-              <label>Arma
-                <select id="weapon-select"></select>
-              </label>
-              <label>Visual
-                <select id="skin-select"></select>
-              </label>
-            </div>
+            <p id="play-status">Partida rapida 1x1</p>
             <button id="start-match" class="primary-action">Jogar</button>
           </div>
         </section>
@@ -72,9 +64,10 @@
 
         <section class="tab-page" id="tab-shop">
           <div class="shop-head">
-            <span class="mode-label">Loja</span>
+            <span class="mode-label">Inventario</span>
             <strong><b id="coins">0</b> moedas</strong>
           </div>
+          <div id="inventory-grid" class="inventory-grid"></div>
           <div id="shop-grid" class="shop-grid"></div>
         </section>
 

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Concordium</title>
+  <link rel="stylesheet" href="/assets/concordium-exploracao.css">
+</head>
+<body>
+  <main class="pk-shell">
+    <header class="pk-topbar">
+      <a href="/" class="pk-brand">Concordium</a>
+      <div class="pk-status">
+        <span id="pk-place">Vila Prisma</span>
+        <span id="pk-hint">Setas/WASD para andar · Espaço/E para falar</span>
+      </div>
+    </header>
+
+    <section class="pk-stage">
+      <div id="game-canvas" class="pk-canvas" aria-label="Mapa jogavel"></div>
+      <aside class="pk-panel">
+        <h1>Concordium</h1>
+        <p>Explore uma vila inicial, converse com moradores e entre nas casas.</p>
+        <dl>
+          <div><dt>Motor</dt><dd>Phaser 2D</dd></div>
+          <div><dt>Save</dt><dd>Local automático</dd></div>
+          <div><dt>Objetivo</dt><dd>Fale com os moradores e visite as casas.</dd></div>
+        </dl>
+      </aside>
+    </section>
+
+    <div class="pk-mobile" aria-label="Controles mobile">
+      <button data-move="up" aria-label="Cima">▲</button>
+      <button data-move="left" aria-label="Esquerda">◀</button>
+      <button data-action="confirm" aria-label="Interagir">A</button>
+      <button data-move="right" aria-label="Direita">▶</button>
+      <button data-move="down" aria-label="Baixo">▼</button>
+    </div>
+
+    <div id="dialog" class="pk-dialog hidden" role="dialog" aria-live="polite">
+      <strong id="dialog-name"></strong>
+      <p id="dialog-text"></p>
+      <button id="dialog-next" type="button">Continuar</button>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js"></script>
+  <script src="/assets/concordium-exploracao.js"></script>
+</body>
+</html>

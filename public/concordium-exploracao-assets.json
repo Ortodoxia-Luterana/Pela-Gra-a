@@ -1,0 +1,5 @@
+{
+  "source": "PK EMR (PT-BR).bak",
+  "derivedFrom": ["0144_off_56F5CC", "0145_off_56F814", "0048_off_2FC064"],
+  "note": "Prototype atlas assembled from recovered GBA blocks and recolored for readable browser gameplay."
+}

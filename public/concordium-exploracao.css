@@ -1,0 +1,280 @@
+:root {
+  --pk-ink: #10151d;
+  --pk-panel: rgba(18, 25, 29, .86);
+  --pk-gold: #f2c75f;
+  --pk-text: #f7efd8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  background: #0c1512;
+  color: var(--pk-text);
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+.pk-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  padding: 14px;
+  background:
+    linear-gradient(180deg, rgba(12, 21, 18, .18), rgba(12, 21, 18, .94)),
+    url("/assets/concordium-exploracao-card.png") center / cover fixed;
+}
+
+.pk-topbar {
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 14px;
+  border: 1px solid rgba(242, 199, 95, .34);
+  background: rgba(9, 14, 18, .84);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, .34);
+}
+
+.pk-brand {
+  color: var(--pk-gold);
+  text-decoration: none;
+  text-transform: uppercase;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+
+.pk-status {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 0;
+  color: #dbeed6;
+  font-size: .9rem;
+}
+
+.pk-status span {
+  white-space: nowrap;
+}
+
+#pk-place {
+  color: #fff6cf;
+  font-weight: 800;
+}
+
+.pk-stage {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 14px;
+}
+
+.pk-canvas {
+  min-width: 0;
+  min-height: 560px;
+  border: 2px solid rgba(242, 199, 95, .58);
+  background: #151d20;
+  box-shadow: 0 18px 70px rgba(0, 0, 0, .45);
+  overflow: hidden;
+}
+
+.pk-canvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+.pk-panel {
+  align-self: stretch;
+  padding: 18px;
+  border: 1px solid rgba(242, 199, 95, .26);
+  background: var(--pk-panel);
+  box-shadow: 0 18px 70px rgba(0, 0, 0, .35);
+}
+
+.pk-panel h1 {
+  margin: 0 0 10px;
+  color: #fff2c6;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.pk-panel p {
+  margin: 0 0 16px;
+  color: #cfdac8;
+  line-height: 1.5;
+}
+
+.pk-panel dl {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.pk-panel dl div {
+  display: grid;
+  gap: 2px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, .09);
+}
+
+.pk-panel dt {
+  color: var(--pk-gold);
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.pk-panel dd {
+  margin: 0;
+  color: #f3ecd8;
+  font-weight: 700;
+}
+
+.pk-dialog {
+  position: fixed;
+  left: max(14px, env(safe-area-inset-left));
+  right: max(14px, env(safe-area-inset-right));
+  bottom: max(14px, env(safe-area-inset-bottom));
+  z-index: 10;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 14px;
+  align-items: end;
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 16px;
+  border: 3px solid #1b2230;
+  outline: 2px solid #f2c75f;
+  background: #fff7da;
+  color: #1c1f2a;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, .46);
+}
+
+.pk-dialog.hidden {
+  display: none;
+}
+
+.pk-dialog strong {
+  color: #1a4b74;
+  font-size: .88rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.pk-dialog p {
+  grid-column: 1 / 2;
+  margin: 0;
+  min-height: 42px;
+  font-size: 1.05rem;
+  line-height: 1.45;
+}
+
+.pk-dialog button {
+  grid-row: 1 / 3;
+  grid-column: 2 / 3;
+  min-width: 116px;
+  min-height: 44px;
+  border: 0;
+  color: #1b1f27;
+  background: linear-gradient(180deg, #f6d56c, #d59b2f);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.pk-mobile {
+  display: none;
+  grid-template-columns: repeat(5, 54px);
+  justify-content: center;
+  gap: 8px;
+}
+
+.pk-mobile button {
+  width: 54px;
+  aspect-ratio: 1;
+  border: 1px solid rgba(242, 199, 95, .56);
+  border-radius: 7px;
+  color: #fff3ca;
+  background: rgba(11, 17, 21, .88);
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+@media (max-width: 900px) {
+  .pk-shell {
+    padding: 8px;
+  }
+
+  .pk-stage {
+    grid-template-columns: 1fr;
+  }
+
+  .pk-canvas {
+    min-height: min(68vh, 560px);
+  }
+
+  .pk-panel {
+    display: none;
+  }
+
+  .pk-status {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    font-size: .78rem;
+  }
+
+  .pk-status span {
+    white-space: normal;
+    text-align: right;
+  }
+
+  .pk-mobile {
+    display: grid;
+  }
+}
+
+@media (max-width: 520px) {
+  .pk-topbar {
+    align-items: flex-start;
+  }
+
+  .pk-brand {
+    font-size: .84rem;
+  }
+
+  .pk-canvas {
+    min-height: 58vh;
+  }
+
+  .pk-dialog {
+    grid-template-columns: 1fr;
+  }
+
+  .pk-dialog button {
+    grid-row: auto;
+    grid-column: auto;
+    width: 100%;
+  }
+
+  .pk-mobile {
+    grid-template-columns: repeat(5, minmax(44px, 52px));
+  }
+
+  .pk-mobile button {
+    width: 100%;
+  }
+}

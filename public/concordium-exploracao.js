@@ -6,6 +6,7 @@
   const dialogNameEl = document.getElementById("dialog-name");
   const dialogTextEl = document.getElementById("dialog-text");
   const dialogNext = document.getElementById("dialog-next");
+  const MOVE_DURATION = 122;
 
   const tileFrames = {
     G: 0, g: 1, P: 2, W: 3, T: 4, L: 5, R: 6, H: 7,
@@ -40,18 +41,8 @@
         "TTTTTTTTTTTTTTTTTTTTTTTTTTTT"
       ],
       doors: {
-        "6,7": { scene: "laboratorio", x: 7, y: 9, dir: "up" },
         "7,7": { scene: "laboratorio", x: 7, y: 9, dir: "up" },
-        "8,7": { scene: "laboratorio", x: 7, y: 9, dir: "up" },
-        "6,8": { scene: "laboratorio", x: 7, y: 9, dir: "up" },
-        "7,8": { scene: "laboratorio", x: 7, y: 9, dir: "up" },
-        "8,8": { scene: "laboratorio", x: 7, y: 9, dir: "up" },
-        "19,7": { scene: "casa", x: 7, y: 9, dir: "up" },
-        "20,7": { scene: "casa", x: 7, y: 9, dir: "up" },
-        "21,7": { scene: "casa", x: 7, y: 9, dir: "up" },
-        "19,8": { scene: "casa", x: 7, y: 9, dir: "up" },
-        "20,8": { scene: "casa", x: 7, y: 9, dir: "up" },
-        "21,8": { scene: "casa", x: 7, y: 9, dir: "up" }
+        "20,7": { scene: "casa", x: 7, y: 9, dir: "up" }
       },
       signs: {
         "6,11": ["Placa", "Laboratorio de testes. Aqui os assets recuperados estao sendo montados de novo."],
@@ -92,12 +83,7 @@
         "XXXXXXXXXXXXXXXX"
       ],
       exits: {
-        "6,9": { scene: "vila", x: 7, y: 8, dir: "down" },
-        "7,9": { scene: "vila", x: 7, y: 8, dir: "down" },
-        "8,9": { scene: "vila", x: 7, y: 8, dir: "down" },
-        "6,10": { scene: "vila", x: 7, y: 8, dir: "down" },
-        "7,10": { scene: "vila", x: 7, y: 8, dir: "down" },
-        "8,10": { scene: "vila", x: 7, y: 8, dir: "down" }
+        "7,10": { scene: "vila", x: 7, y: 8, dir: "down" }
       },
       signs: {
         "7,8": ["Mesa de trabalho", "Amostras LZ77, paletas candidatas e sprites estao catalogados para virar o atlas final."]
@@ -130,12 +116,7 @@
         "XXXXXXXXXXXXXXXX"
       ],
       exits: {
-        "6,9": { scene: "vila", x: 20, y: 8, dir: "down" },
-        "7,9": { scene: "vila", x: 20, y: 8, dir: "down" },
-        "8,9": { scene: "vila", x: 20, y: 8, dir: "down" },
-        "6,10": { scene: "vila", x: 20, y: 8, dir: "down" },
-        "7,10": { scene: "vila", x: 20, y: 8, dir: "down" },
-        "8,10": { scene: "vila", x: 20, y: 8, dir: "down" }
+        "7,10": { scene: "vila", x: 20, y: 8, dir: "down" }
       },
       signs: {
         "7,9": ["Tapete", "Voce sente o cheiro de madeira velha e tinta fresca. A transicao casa/rua esta funcionando."]
@@ -218,6 +199,8 @@
       this.state = loadSave();
       this.canAct = true;
       this.isMoving = false;
+      this.heldMobileDir = null;
+      this.nextMoveAt = 0;
       this.npcSprites = [];
     }
 
@@ -242,7 +225,17 @@
 
     setupMobile() {
       document.querySelectorAll("[data-move]").forEach((button) => {
-        button.addEventListener("pointerdown", () => this.tryMove(button.dataset.move));
+        button.addEventListener("pointerdown", (event) => {
+          event.preventDefault();
+          this.heldMobileDir = button.dataset.move;
+          this.tryMove(this.heldMobileDir);
+        });
+        button.addEventListener("pointerup", () => {
+          if (this.heldMobileDir === button.dataset.move) this.heldMobileDir = null;
+        });
+        button.addEventListener("pointerleave", () => {
+          if (this.heldMobileDir === button.dataset.move) this.heldMobileDir = null;
+        });
       });
       document.querySelectorAll("[data-action]").forEach((button) => {
         button.addEventListener("pointerdown", () => this.interact());
@@ -290,12 +283,20 @@
       this.player.setDepth(y * TILE + 30);
     }
 
-    update() {
+    update(time) {
       if (!this.canAct || this.isMoving || currentDialog) return;
-      if (Phaser.Input.Keyboard.JustDown(this.cursors.left) || Phaser.Input.Keyboard.JustDown(this.keys.A)) this.tryMove("left");
-      else if (Phaser.Input.Keyboard.JustDown(this.cursors.right) || Phaser.Input.Keyboard.JustDown(this.keys.D)) this.tryMove("right");
-      else if (Phaser.Input.Keyboard.JustDown(this.cursors.up) || Phaser.Input.Keyboard.JustDown(this.keys.W)) this.tryMove("up");
-      else if (Phaser.Input.Keyboard.JustDown(this.cursors.down) || Phaser.Input.Keyboard.JustDown(this.keys.S)) this.tryMove("down");
+      if (time < this.nextMoveAt) return;
+      const dir = this.currentMoveDir();
+      if (dir) this.tryMove(dir);
+    }
+
+    currentMoveDir() {
+      if (this.heldMobileDir) return this.heldMobileDir;
+      if (this.cursors.left.isDown || this.keys.A.isDown) return "left";
+      if (this.cursors.right.isDown || this.keys.D.isDown) return "right";
+      if (this.cursors.up.isDown || this.keys.W.isDown) return "up";
+      if (this.cursors.down.isDown || this.keys.S.isDown) return "down";
+      return null;
     }
 
     tryMove(dir) {
@@ -318,11 +319,12 @@
         targets: this.player,
         x: nx * TILE + TILE / 2,
         y: ny * TILE + TILE,
-        duration: 125,
+        duration: MOVE_DURATION,
         ease: "Quad.easeOut",
         onUpdate: () => this.player.setDepth(this.player.y + 30),
         onComplete: () => {
           this.isMoving = false;
+          this.nextMoveAt = this.time.now + 12;
           this.handleTileTrigger(nx, ny);
           saveState(this.state);
         }
@@ -330,13 +332,18 @@
     }
 
     bump() {
+      this.isMoving = true;
       this.tweens.add({
         targets: this.player,
         x: this.player.x + directions[this.state.dir].dx * 4,
         y: this.player.y + directions[this.state.dir].dy * 4,
         yoyo: true,
         duration: 45,
-        repeat: 0
+        repeat: 0,
+        onComplete: () => {
+          this.isMoving = false;
+          this.nextMoveAt = this.time.now + 85;
+        }
       });
     }
 
@@ -370,11 +377,6 @@
         return;
       }
       const sign = this.data.signs?.[keyFor(tx, ty)] || this.data.signs?.[keyFor(this.state.x, this.state.y)];
-      const door = this.data.doors?.[keyFor(tx, ty)] || this.data.exits?.[keyFor(tx, ty)];
-      if (door) {
-        this.handleTileTrigger(tx, ty);
-        return;
-      }
       if (sign) {
         this.canAct = false;
         openDialog(sign[0], [sign[1]]);

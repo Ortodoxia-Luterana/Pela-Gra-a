@@ -1076,7 +1076,7 @@ img.feed-avatar {
 .hub-chat {
   position: fixed;
   right: max(10px, env(safe-area-inset-right));
-  bottom: max(122px, calc(env(safe-area-inset-bottom) + 122px));
+  bottom: max(10px, env(safe-area-inset-bottom));
   z-index: 45;
   width: min(320px, calc(100vw - 20px));
   border: 1px solid rgba(242, 199, 95, .28);
@@ -1576,7 +1576,8 @@ img.feed-avatar {
 #music-next{
   width:46px!important;
   height:46px!important;
-  right:max(10px, env(safe-area-inset-right))!important;
+  right:auto!important;
+  left:max(10px, env(safe-area-inset-left))!important;
   padding:0!important;
   border-radius:999px!important;
   font-size:0!important;
@@ -1859,9 +1860,9 @@ img.feed-avatar {
 
   .hub-chat{
     right:10px;
-    left:10px;
-    bottom:max(122px, calc(env(safe-area-inset-bottom) + 122px));
-    width:auto;
+    left:auto;
+    bottom:max(10px, env(safe-area-inset-bottom));
+    width:min(320px, calc(100vw - 20px));
   }
 
   .hub-chat-messages{

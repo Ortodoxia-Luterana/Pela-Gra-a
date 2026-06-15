@@ -139,6 +139,59 @@
 
     #score { font-size: clamp(18px, 5.4vw, 27px); }
 
+    .luther-online {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(7, 15, 22, .76);
+      padding: 8px 9px;
+      box-shadow: 0 12px 26px rgba(0, 0, 0, .22);
+    }
+
+    .luther-online > strong {
+      display: block;
+      color: var(--gold-2);
+      font-size: 12px;
+      margin-bottom: 7px;
+    }
+
+    .luther-online-list {
+      display: flex;
+      gap: 7px;
+      overflow-x: auto;
+      padding-bottom: 1px;
+    }
+
+    .luther-online-list article {
+      min-width: 112px;
+      display: grid;
+      grid-template-columns: 30px minmax(0, 1fr);
+      gap: 6px;
+      align-items: center;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .luther-online-avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 224, 138, .48);
+      background: rgba(255, 255, 255, .08);
+      color: var(--gold-2);
+      display: grid;
+      place-items: center;
+      font-size: 10px;
+      font-weight: 900;
+      object-fit: cover;
+    }
+
+    .luther-online-empty {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
     .level-map {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
@@ -582,6 +635,11 @@
       <article><span>Pontos</span><strong id="score">0</strong></article>
     </section>
 
+    <section class="luther-online" aria-label="Jogadores online no Luther Metch">
+      <strong>Online no Luther Metch</strong>
+      <div class="luther-online-list" id="luther-online-list"><p class="luther-online-empty">Carregando...</p></div>
+    </section>
+
     <section class="level-map" id="level-map" aria-label="Mapa de progresso"></section>
 
     <section class="objectives" id="objectives" aria-label="Objetivos"></section>
@@ -662,6 +720,39 @@
     const levelCompleteTitle = document.querySelector("#level-complete-title");
     const levelCompleteNext = document.querySelector("#level-complete-next");
     const achievementToast = document.querySelector("#achievement-toast");
+    const lutherOnlineList = document.querySelector("#luther-online-list");
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
+    }
+
+    function renderOnlinePlayers(players) {
+      if (!lutherOnlineList) return;
+      const rows = (players || []).slice(0, 12);
+      lutherOnlineList.innerHTML = rows.length ? rows.map(player => {
+        const avatar = player.avatarData
+          ? '<img class="luther-online-avatar" src="' + escapeHtml(player.avatarData) + '" alt="' + escapeHtml(player.name) + '">'
+          : '<b class="luther-online-avatar">' + escapeHtml(String(player.name || "OL").slice(0, 2).toUpperCase()) + '</b>';
+        return '<article>' + avatar + '<span>' + escapeHtml(player.name) + '</span></article>';
+      }).join("") : '<p class="luther-online-empty">Ninguem jogando agora.</p>';
+    }
+
+    async function refreshLutherPresence() {
+      try {
+        const response = await fetch("/api/presence", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ gameId: "luther-metch" }),
+          cache: "no-store"
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        renderOnlinePlayers(data.online || []);
+      } catch {}
+    }
+
+    refreshLutherPresence();
+    setInterval(refreshLutherPresence, 20000);
 
     function makeTile(type = randType(), special = null) { return { type, special }; }
     function tileType(tile) { return typeof tile === "string" ? tile : tile?.type; }

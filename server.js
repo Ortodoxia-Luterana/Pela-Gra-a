@@ -32,6 +32,9 @@ const QUIZ_MATCH_ABANDON_SECONDS = 45;
 const QUIZ_REVEAL_SECONDS = 2;
 const QUIZ_WIN_POINTS = 10;
 const QUIZ_WIN_XP = 15;
+const PLATFORM_ONLINE_SECONDS = 90;
+const CHAT_MESSAGE_LIMIT = 50;
+const CHAT_MAX_LENGTH = 180;
 const RAW_PUBLIC_URL = 'https://cdn.jsdelivr.net/gh/Ortodoxia-Luterana/Pela-Gra-a@main/public';
 const CRONICAS_SAVE_NAME = 'Crônicas do Levante';
 const STATE_NAMES = {
@@ -117,6 +120,8 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS luther_match_rankings (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, level INTEGER NOT NULL, best_level INTEGER NOT NULL, completed_levels INTEGER NOT NULL, score INTEGER NOT NULL, max_combo INTEGER NOT NULL DEFAULT 0, luther_pair_used INTEGER NOT NULL DEFAULT 0, solas_pair_used INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS cronicas_saves (user_id TEXT PRIMARY KEY, state_json TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS concordium_profiles (user_id TEXT PRIMARY KEY, profile_json TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
+  CREATE TABLE IF NOT EXISTS platform_presence (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, avatar_data TEXT, location TEXT NOT NULL, game_id TEXT NOT NULL, last_seen TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
+  CREATE TABLE IF NOT EXISTS hub_chat_messages (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, user_name TEXT NOT NULL, message TEXT NOT NULL, created_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS quiz_presence (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, last_seen TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS quiz_queue (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, mode TEXT NOT NULL, joined_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS quiz_matches (id TEXT PRIMARY KEY, mode TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, started_at TEXT NOT NULL, question_ids_json TEXT NOT NULL, round_seconds INTEGER NOT NULL, finalized INTEGER NOT NULL DEFAULT 0, round_index INTEGER NOT NULL DEFAULT 0, round_started_at TEXT, reveal_until TEXT);
@@ -198,6 +203,8 @@ const deleteAchievementsForUser = db.prepare('DELETE FROM user_achievements WHER
 const deleteLutherRankingForUser = db.prepare('DELETE FROM luther_match_rankings WHERE user_id = ?');
 const deleteCronicasForUser = db.prepare('DELETE FROM cronicas_saves WHERE user_id = ?');
 const deleteConcordiumForUser = db.prepare('DELETE FROM concordium_profiles WHERE user_id = ?');
+const deletePlatformPresenceForUser = db.prepare('DELETE FROM platform_presence WHERE user_id = ?');
+const deleteHubChatForUser = db.prepare('DELETE FROM hub_chat_messages WHERE user_id = ?');
 const deleteUserById = db.prepare('DELETE FROM users WHERE id = ?');
 const deleteQuizPresenceForUser = db.prepare('DELETE FROM quiz_presence WHERE user_id = ?');
 const deleteQuizQueueForUser = db.prepare('DELETE FROM quiz_queue WHERE user_id = ?');
@@ -216,6 +223,16 @@ const upsertConcordiumProfile = db.prepare(`
   VALUES (?, ?, ?, ?)
   ON CONFLICT(user_id) DO UPDATE SET profile_json = excluded.profile_json, updated_at = excluded.updated_at
 `);
+const upsertPlatformPresence = db.prepare(`
+  INSERT INTO platform_presence (user_id, user_name, avatar_data, location, game_id, last_seen)
+  VALUES (?, ?, ?, ?, ?, ?)
+  ON CONFLICT(user_id) DO UPDATE SET user_name = excluded.user_name, avatar_data = excluded.avatar_data, location = excluded.location, game_id = excluded.game_id, last_seen = excluded.last_seen
+`);
+const getPlatformOnlineUsers = db.prepare('SELECT user_id, user_name, avatar_data, location, game_id, last_seen FROM platform_presence WHERE last_seen >= ? ORDER BY last_seen DESC, user_name COLLATE NOCASE ASC LIMIT 60');
+const deleteOldPlatformPresence = db.prepare('DELETE FROM platform_presence WHERE last_seen < ?');
+const insertHubChatMessage = db.prepare('INSERT INTO hub_chat_messages (id, user_id, user_name, message, created_at) VALUES (?, ?, ?, ?, ?)');
+const getHubChatMessages = db.prepare('SELECT id, user_id, user_name, message, created_at FROM hub_chat_messages ORDER BY created_at DESC LIMIT ?');
+const deleteOldHubChatMessages = db.prepare('DELETE FROM hub_chat_messages WHERE id NOT IN (SELECT id FROM hub_chat_messages ORDER BY created_at DESC LIMIT 200)');
 const upsertQuizPresence = db.prepare('INSERT INTO quiz_presence (user_id, user_name, last_seen) VALUES (?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET user_name = excluded.user_name, last_seen = excluded.last_seen');
 const getQuizOnlineUsers = db.prepare('SELECT user_id, user_name, last_seen FROM quiz_presence WHERE last_seen >= ? ORDER BY user_name COLLATE NOCASE ASC');
 const deleteOldQuizPresence = db.prepare('DELETE FROM quiz_presence WHERE last_seen < ?');
@@ -288,6 +305,32 @@ function cleanQuizTables() {
   deleteOldQuizPresence.run(isoSecondsAgo(QUIZ_ONLINE_SECONDS));
   deleteOldQuizQueue.run(isoSecondsAgo(90));
   deleteOldQuizInvites.run(isoSecondsAgo(180));
+}
+function cleanPlatformTables() {
+  deleteOldPlatformPresence.run(isoSecondsAgo(PLATFORM_ONLINE_SECONDS));
+  deleteOldHubChatMessages.run();
+}
+function normalizeGamePresence(input) {
+  const value = String(input || '').trim().toLowerCase();
+  if (value === LUTHER_MATCH_GAME_ID) return { gameId: LUTHER_MATCH_GAME_ID, location: 'Luther Metch' };
+  if (value === QUIZ_GAME_ID) return { gameId: QUIZ_GAME_ID, location: 'Quiz Ortodoxia' };
+  if (value === CRONICAS_GAME_ID) return { gameId: CRONICAS_GAME_ID, location: 'Cronicas do Levante' };
+  if (value === CONCORDIUM_EXPLORACAO_GAME_ID) return { gameId: CONCORDIUM_EXPLORACAO_GAME_ID, location: 'Concordium' };
+  if (value === GAME_ID) return { gameId: GAME_ID, location: 'Pela Graca 1904' };
+  return { gameId: 'hub', location: 'Hub' };
+}
+function presenceForPath(pathname) {
+  if (pathname === '/luther-metch' || pathname === '/match3-luterano' || pathname.startsWith('/api/luther-metch')) return normalizeGamePresence(LUTHER_MATCH_GAME_ID);
+  if (pathname === '/quiz-ortodoxia' || pathname.startsWith('/api/quiz')) return normalizeGamePresence(QUIZ_GAME_ID);
+  if (pathname === '/cronicas-do-levante' || pathname.startsWith('/api/cronicas')) return normalizeGamePresence(CRONICAS_GAME_ID);
+  if (pathname === '/concordium-exploracao' || pathname.startsWith('/api/concordium')) return normalizeGamePresence(CONCORDIUM_EXPLORACAO_GAME_ID);
+  if (pathname === '/play' || pathname === '/game' || pathname.startsWith('/api/saves')) return normalizeGamePresence(GAME_ID);
+  return normalizeGamePresence('hub');
+}
+function touchPlatformPresence(user, gameId = 'hub') {
+  const info = normalizeGamePresence(gameId);
+  upsertPlatformPresence.run(user.id, user.name, user.avatar_data || null, info.location, info.gameId, isoNow());
+  cleanPlatformTables();
 }
 function touchQuizPresence(user) {
   upsertQuizPresence.run(user.id, user.name, isoNow());
@@ -461,8 +504,19 @@ function publicQuizMatch(match, userId, options = {}) {
 }
 
 function hashPin(pin, salt) { return crypto.createHash('sha256').update(`${salt}:${pin}`).digest('hex'); }
+const SYSTEM_PLAYER_NAMES = new Set(['leave', 'deploy', 'online.reviews', 'check', 'health', 'review', 'reviews']);
+function isDisplayablePlayerName(name) {
+  const value = String(name || '').trim().toLowerCase();
+  if (!value) return false;
+  if (SYSTEM_PLAYER_NAMES.has(value)) return false;
+  if (value.includes('online.reviews')) return false;
+  if (/^(test|teste|deploy|check|leave)(\b|\d|_|-|$)/.test(value)) return false;
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return false;
+  return true;
+}
 function isNonPlayerAccountName(name) {
   const value = String(name || '').trim().toLowerCase();
+  if (!isDisplayablePlayerName(value)) return true;
   return /^codex/.test(value) ||
     /^teste/.test(value) ||
     /^direto(\b|\d|_|-)/.test(value) ||
@@ -483,6 +537,8 @@ function cleanupNonPlayerAccounts() {
       deleteLutherRankingForUser.run(user.id);
       deleteCronicasForUser.run(user.id);
       deleteConcordiumForUser.run(user.id);
+      deletePlatformPresenceForUser.run(user.id);
+      deleteHubChatForUser.run(user.id);
       deleteQuizPresenceForUser.run(user.id);
       deleteQuizQueueForUser.run(user.id);
       deleteQuizMatchPresenceForUser.run(user.id);
@@ -612,6 +668,32 @@ function isSafeAvatarData(value) {
 function renderAvatar(user, className = 'avatar') {
   const initials = escapeHtml(user.name).slice(0, 2).toUpperCase();
   return user.avatar_data ? `<img class="${className}" src="${escapeHtml(user.avatar_data)}" alt="${escapeHtml(user.name)}">` : `<b class="${className}">${initials}</b>`;
+}
+function publicPresenceRow(row) {
+  return {
+    id: row.user_id,
+    name: row.user_name,
+    avatarData: row.avatar_data || null,
+    location: row.location,
+    gameId: row.game_id,
+    lastSeen: row.last_seen
+  };
+}
+function platformOnlinePlayers(gameId = '') {
+  const rows = getPlatformOnlineUsers.all(isoSecondsAgo(PLATFORM_ONLINE_SECONDS))
+    .filter(row => isDisplayablePlayerName(row.user_name));
+  const normalized = String(gameId || '').trim();
+  return normalized ? rows.filter(row => row.game_id === normalized).map(publicPresenceRow) : rows.map(publicPresenceRow);
+}
+function renderOnlinePlayers(players) {
+  return players.length ? players.slice(0, 10).map(player => {
+    const initials = escapeHtml(player.name).slice(0, 2).toUpperCase();
+    const avatar = player.avatarData ? `<img class="online-avatar" src="${escapeHtml(player.avatarData)}" alt="${escapeHtml(player.name)}">` : `<b class="online-avatar">${initials}</b>`;
+    return `<article>${avatar}<span>${escapeHtml(player.name)}<small>${escapeHtml(player.location || 'Hub')}</small></span></article>`;
+  }).join('') : '<p class="online-empty">Ninguem online agora.</p>';
+}
+function publicChatRow(row) {
+  return { id: row.id, userId: row.user_id, player: row.user_name, message: row.message, createdAt: row.created_at };
 }
 function renderAchievementIcon(medal, className = 'achievement-icon') {
   return `<img class="${className}" src="${medal.file}?v=${GAME_VERSION}" alt="${escapeHtml(medal.title)}">`;
@@ -908,9 +990,9 @@ function clampInt(value, min, max) {
 }
 function rankingPayload() {
   backfillRankings();
-  const rows = getGameRankingRows.all();
-  const lutherMatch = getLutherMatchRankings.all().slice(0, 20).map(publicLutherMatchRow);
-  const quizOrtodoxia = getQuizRankings.all().map((row, index) => ({
+  const rows = getGameRankingRows.all().filter(row => isDisplayablePlayerName(row.user_name));
+  const lutherMatch = getLutherMatchRankings.all().filter(row => isDisplayablePlayerName(row.user_name)).slice(0, 20).map(publicLutherMatchRow);
+  const quizOrtodoxia = getQuizRankings.all().filter(row => isDisplayablePlayerName(row.user_name)).map((row, index) => ({
     position: index + 1,
     player: row.user_name,
     duelWins: Number(row.duel_wins || 0),
@@ -927,7 +1009,7 @@ function rankingPayload() {
     return best ? { state: code, stateName: STATE_NAMES[code], churches: best.count, ...publicRankingRow(best.row) } : { state: code, stateName: STATE_NAMES[code], churches: 0, player: '-', year: 1904, totalChurches: 0, doctrineCorrect: 0 };
   });
   const definitions = allAchievementDefinitions();
-  const prestigeRows = [GAME_ID, CRONICAS_GAME_ID, LUTHER_MATCH_GAME_ID].flatMap(gameId => getAllAchievementRows.all(gameId));
+  const prestigeRows = [GAME_ID, CRONICAS_GAME_ID, LUTHER_MATCH_GAME_ID].flatMap(gameId => getAllAchievementRows.all(gameId)).filter(row => isDisplayablePlayerName(row.user_name));
   const prestige = prestigeRows.map(item => {
     const medal = definitions.find(def => def.gameId === item.game_id && def.id === item.medal_id);
     if (!medal) return null;
@@ -1015,6 +1097,38 @@ async function handleAuth(req, res, url) {
 }
 
 async function handleApi(req, res, url, user) {
+  if (user && url.pathname === '/api/presence') {
+    if (req.method === 'GET') {
+      const game = String(url.searchParams.get('game') || '').trim();
+      json(res, 200, { online: platformOnlinePlayers(game) });
+      return;
+    }
+    if (req.method === 'POST') {
+      const payload = safeJsonParse(await readBody(req) || '{}', {});
+      const gameId = String(payload.gameId || payload.game || 'hub');
+      touchPlatformPresence(user, gameId);
+      const filterGame = normalizeGamePresence(gameId).gameId;
+      json(res, 200, { ok: true, online: platformOnlinePlayers(filterGame === 'hub' ? '' : filterGame) });
+      return;
+    }
+  }
+  if (user && url.pathname === '/api/chat') {
+    if (req.method === 'GET') {
+      const messages = getHubChatMessages.all(CHAT_MESSAGE_LIMIT).reverse().filter(row => isDisplayablePlayerName(row.user_name)).map(publicChatRow);
+      json(res, 200, { messages });
+      return;
+    }
+    if (req.method === 'POST') {
+      const payload = safeJsonParse(await readBody(req) || '{}', {});
+      const message = String(payload.message || '').replace(/\s+/g, ' ').trim().slice(0, CHAT_MAX_LENGTH);
+      if (!message) { json(res, 400, { error: 'Mensagem vazia.' }); return; }
+      insertHubChatMessage.run(crypto.randomUUID(), user.id, user.name, message, isoNow());
+      cleanPlatformTables();
+      const messages = getHubChatMessages.all(CHAT_MESSAGE_LIMIT).reverse().filter(row => isDisplayablePlayerName(row.user_name)).map(publicChatRow);
+      json(res, 200, { ok: true, messages });
+      return;
+    }
+  }
   if (!user) { json(res, 401, { error: 'Login necessário' }); return; }
   if (req.method === 'GET' && url.pathname === '/api/ranking') { json(res, 200, rankingPayload()); return; }
   if (req.method === 'GET' && url.pathname === '/api/me') {
@@ -1251,7 +1365,7 @@ async function handleApi(req, res, url, user) {
       return;
     }
     if (req.method === 'GET' && url.pathname === '/api/quiz/ranking') {
-      json(res, 200, { rows: getQuizRankings.all().map((row, index) => ({ position: index + 1, player: row.user_name, duelWins: row.duel_wins, generalWins: row.general_wins, inviteWins: row.invite_wins, wins: row.wins, matchesPlayed: row.matches_played })) });
+      json(res, 200, { rows: getQuizRankings.all().filter(row => isDisplayablePlayerName(row.user_name)).map((row, index) => ({ position: index + 1, player: row.user_name, duelWins: row.duel_wins, generalWins: row.general_wins, inviteWins: row.invite_wins, wins: row.wins, matchesPlayed: row.matches_played })) });
       return;
     }
     json(res, 404, { error: 'API do quiz não encontrada' });
@@ -1383,7 +1497,8 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   const stickers = [];
   const ranking = rankingPayload();
   const rankingRows = (items, score, suffix = '') => items.length ? items.slice(0, 8).map((item, index) => `<div class="hub-rank-row"><b>${index + 1}</b><span>${escapeHtml(item.player)}</span><strong>${escapeHtml(score(item))}${suffix}</strong></div>`).join('') : '<p>Nenhum registro ainda.</p>';
-  const generalRankingRows = getAllUsers.all().map(rankUser => {
+  const onlinePlayers = platformOnlinePlayers();
+  const generalRankingRows = getAllUsers.all().filter(rankUser => isDisplayablePlayerName(rankUser.name)).map(rankUser => {
     const userSave = getSaveSlot.get(rankUser.id, 1);
     const userSummary = playerStatsFromSave(userSave, rankUser.id);
     const lutherMatch = getLutherMatchRanking.get(rankUser.id);
@@ -1423,7 +1538,8 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     <article class="ol-game-card quiz-cover"><div><h4>Quiz Ortodoxia</h4><p>Dispute perguntas de Bíblia, Reforma e luteranismo em modo solo, duelo online, convite ou competição geral.</p></div><a href="/quiz-ortodoxia">Jogar</a></article>
     <article class="ol-game-card concordium-exploracao-cover"><div><h4>Concordium</h4><p>Uma jornada estilo Pokemon percorrendo a historia da igreja apostolica.</p></div><a href="/concordium-exploracao">Jogar</a></article>
   </section>`;
-  const rankCard = `<aside class="ol-panel ol-rank"><p>Seu rank geral</p><img class="rank-badge" src="${rank.current.file}?v=${GAME_VERSION}" alt="${escapeHtml(rank.current.title)}"><div class="rank-xp"><strong>${xp} XP</strong><span>${rank.next ? `${Math.max(0, rank.next.xp - rank.currentXp)} XP para ${escapeHtml(rank.next.title)}` : 'Rank maximo alcancado'}</span><div class="rank-bar"><span style="width:${Math.round(rank.progress)}%"></span></div></div><a href="/?section=ranking">Ver ranking geral</a></aside>`;
+  const rankCard = `<aside class="ol-panel ol-rank"><p>Seu rank geral</p><img class="rank-badge" src="${rank.current.file}?v=${GAME_VERSION}" alt="${escapeHtml(rank.current.title)}"><div class="rank-xp"><strong>${xp} XP</strong><span>${rank.next ? `${Math.max(0, rank.next.xp - rank.currentXp)} XP para ${escapeHtml(rank.next.title)}` : 'Rank maximo alcancado'}</span><div class="rank-bar"><span style="width:${Math.round(rank.progress)}%"></span></div></div><a href="/?section=ranking">Ver ranking geral</a><div class="hub-online-panel"><div class="panel-head"><h3>Online agora</h3></div><div id="hub-online-list" class="hub-online-list">${renderOnlinePlayers(onlinePlayers)}</div></div></aside>`;
+  const chatWidget = `<section class="hub-chat" id="hub-chat" aria-label="Chat geral"><div class="hub-chat-head"><strong>Chat geral</strong><button type="button" id="hub-chat-toggle" aria-label="Minimizar chat">-</button></div><div class="hub-chat-messages" id="hub-chat-messages"></div><form id="hub-chat-form" class="hub-chat-form"><input id="hub-chat-input" name="message" maxlength="${CHAT_MAX_LENGTH}" autocomplete="off" placeholder="Mensagem"><button type="submit">Enviar</button></form></section>`;
   const sections = {
     inicio: `<section class="ol-intro">Escolha um jogo, acompanhe seu rank geral e veja os prestígios conquistados.</section>${gameCard}${rankCard}<section class="ol-panel ol-live"><div class="panel-head"><h3>Prestígios</h3></div><div id="hub-live-feed">${liveRows}</div></section>${eventPanel}`,
     jogos: `${gameCard}`,
@@ -1453,7 +1569,56 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     </div>
   </section>
 </main>
+${chatWidget}
 <script>
+const hubEsc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+function onlineAvatar(player) {
+  return player.avatarData ? '<img class="online-avatar" src="' + hubEsc(player.avatarData) + '" alt="' + hubEsc(player.name) + '">' : '<b class="online-avatar">' + hubEsc(String(player.name || 'OL').slice(0, 2).toUpperCase()) + '</b>';
+}
+async function refreshPresence() {
+  const list = document.getElementById('hub-online-list');
+  try {
+    const response = await fetch('/api/presence', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ gameId: 'hub' }), cache: 'no-store' });
+    if (!response.ok || !list) return;
+    const data = await response.json();
+    const rows = (data.online || []).slice(0, 10);
+    list.innerHTML = rows.length ? rows.map(player => '<article>' + onlineAvatar(player) + '<span>' + hubEsc(player.name) + '<small>' + hubEsc(player.location || 'Hub') + '</small></span></article>').join('') : '<p class="online-empty">Ninguem online agora.</p>';
+  } catch {}
+}
+function renderChatMessages(messages) {
+  const box = document.getElementById('hub-chat-messages');
+  if (!box) return;
+  box.innerHTML = (messages || []).map(item => '<article><strong>' + hubEsc(item.player) + '</strong><span>' + hubEsc(item.message) + '</span></article>').join('');
+  box.scrollTop = box.scrollHeight;
+}
+async function refreshChat() {
+  try {
+    const response = await fetch('/api/chat', { cache: 'no-store' });
+    if (!response.ok) return;
+    const data = await response.json();
+    renderChatMessages(data.messages || []);
+  } catch {}
+}
+const chatForm = document.getElementById('hub-chat-form');
+if (chatForm) {
+  chatForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    const input = document.getElementById('hub-chat-input');
+    const message = String(input?.value || '').trim();
+    if (!message) return;
+    input.value = '';
+    try {
+      const response = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message }) });
+      if (response.ok) renderChatMessages((await response.json()).messages || []);
+    } catch {}
+  });
+}
+const chatToggle = document.getElementById('hub-chat-toggle');
+if (chatToggle) chatToggle.addEventListener('click', () => document.getElementById('hub-chat')?.classList.toggle('is-minimized'));
+refreshPresence();
+refreshChat();
+setInterval(refreshPresence, 20000);
+setInterval(refreshChat, 5000);
 async function refreshHubFeed() {
   const feed = document.getElementById('hub-live-feed');
   if (!feed) return;
@@ -1502,7 +1667,7 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname.startsWith('/assets/')) { serveAsset(req, res); return; }
     if (await handleAuth(req, res, url)) return;
     const user = currentUser(req);
-    if (user) touchQuizPresence(user);
+    if (user) touchPlatformPresence(user, presenceForPath(url.pathname).gameId);
     if (url.pathname.startsWith('/api/')) { await handleApi(req, res, url, user); return; }
     if (!user) { redirect(res, '/login'); return; }
     if (req.method === 'GET' && url.pathname === '/') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end(renderDashboard(user, '', url.searchParams.get('section') || 'inicio', url.searchParams.get('game') || '')); return; }

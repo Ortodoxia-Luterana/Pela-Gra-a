@@ -1773,16 +1773,7 @@ function resolveTheologyQuestion(question,index){
     G.doc=Math.max(0,G.doc-8);
     ielbChurchRefs().forEach(r=>{r.ch.members=Math.max(1,(r.ch.members||1)-30);syncDenomMembers(r.id,'IELB');});
   }
-  const result=document.createElement('div');
-  result.className='event-result '+(correct?'good':'bad');
-  result.textContent=correct?'Resposta correta: +20 membros e +20 ofertas.':'Resposta incorreta: doutrina enfraquecida e -30 membros por igreja.';
-  mc.appendChild(result);
-  const cont=document.createElement('button');
-  cont.className='mcbtn';
-  cont.textContent='Continuar';
-  cont.onclick=()=>{document.getElementById('modal').classList.remove('show');G.paused=false;document.getElementById('pausebtn').textContent='⏸ Pausar';recalc();updateRes();renderLeft();renderRight();redrawDots();processEventQueue();};
-  mc.appendChild(cont);
-  recalc();updateRes();renderLeft();renderRight();redrawDots();
+  finishConfirmedModal(correct?'Resposta correta: +20 membros e +20 ofertas.':'Resposta incorreta: doutrina enfraquecida e -30 membros por igreja.');
   checkAchievements();
 }
 
@@ -1928,10 +1919,7 @@ function showDeficitFinalChoice(item,kind){
   }
 }
 function closeDecisionModal(msg,type='good'){
-  const mc=document.getElementById('m-choices');mc.innerHTML='';
-  const result=document.createElement('div');result.className='event-result '+(type==='bad'?'bad':'good');result.textContent=msg;mc.appendChild(result);
-  const btn=document.createElement('button');btn.className='mcbtn';btn.textContent='Continuar';btn.onclick=()=>{document.getElementById('modal').classList.remove('show');G.paused=false;document.getElementById('pausebtn').textContent='⏸ Pausar';recalc();renderLeft();renderRight();redrawDots();updateRes();processEventQueue();};mc.appendChild(btn);
-  recalc();updateRes();renderLeft();renderRight();redrawDots();
+  finishConfirmedModal(msg,type);
 }
 function closeChurch(stateId,index){
   const slot=G.states[stateId].denomData.IELB;
@@ -1971,15 +1959,20 @@ function resolveChoice(ev,ch){
   const mc=document.getElementById('m-choices');
   [...mc.querySelectorAll('.mcbtn')].forEach(b=>b.disabled=true);
   ch.effect();G.doc=Math.max(0,Math.min(100,G.doc));
-  const result=document.createElement('div');result.className='event-result '+(ch.correct===false?'bad':'good');
   const prefix=ch.correct===true?'Decisão confessional correta. ':ch.correct===false?'Decisão problemática. ':'';
-  result.textContent=prefix+(ch.result||'Consequência aplicada ao jogo.');
-  mc.appendChild(result);
-  const cont=document.createElement('button');cont.className='mcbtn';cont.textContent='Continuar';cont.onclick=resumeFromEvent;mc.appendChild(cont);
-  recalc();updateRes();renderLeft();renderRight();redrawDots();
+  finishConfirmedModal(prefix+(ch.result||'Consequência aplicada ao jogo.'),ch.correct===false?'bad':'good');
 }
 
 function resumeFromEvent(){document.getElementById('modal').classList.remove('show');G.paused=false;document.getElementById('pausebtn').textContent='⏸ Pausar';processEventQueue();}
+
+function finishConfirmedModal(msg,type='good'){
+  document.getElementById('modal').classList.remove('show');
+  G.paused=false;
+  document.getElementById('pausebtn').textContent='⏸ Pausar';
+  setTick(msg);
+  recalc();updateRes();renderLeft();renderRight();redrawDots();
+  processEventQueue();
+}
 
 function updateRes(){
   document.getElementById('r-fe').textContent=Math.floor(G.fe);document.getElementById('r-of').textContent=Math.floor(G.of);document.getElementById('r-fi').textContent=Math.floor(G.fi);

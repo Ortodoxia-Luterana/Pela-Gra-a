@@ -168,6 +168,8 @@ const FIRST_STATE_MISSION_OFFER_COST=250;
 const FIRST_STATE_MISSION_MEMBER_COST=100;
 const MISSION_PROMOTION_COST=120;
 const CHURCH_DECISION_OFFER_COST=20;
+const ANNUAL_AUTO_OFFER_BUDGET_RATIO=0.15;
+const ANNUAL_AUTO_OFFER_BUDGET_CAP=240;
 const SEMINARY_MONTHLY_COST=0.5;
 const SEMINARY_SUBSIDY_PER_STUDENT=0.15;
 const SEMINARY_YEARS=7;
@@ -818,7 +820,17 @@ function processAnnualYear(){
   if(uncovered)lines.push(uncovered+' congregações estão sem pastor. Você tem '+G.availablePastors.length+' pastores disponíveis.');
   const autoDecisions=churchesNeedingAnnualDecision();
   G.annualDecisions=[];
+  G._annualAutoBudget={
+    limit:Math.max(0,Math.min(G.of*ANNUAL_AUTO_OFFER_BUDGET_RATIO,ANNUAL_AUTO_OFFER_BUDGET_CAP)),
+    remaining:Math.max(0,Math.min(G.of*ANNUAL_AUTO_OFFER_BUDGET_RATIO,ANNUAL_AUTO_OFFER_BUDGET_CAP)),
+    spent:0,
+    pastors:0,
+    stewardship:0,
+    evangelism:0,
+    skipped:0
+  };
   resolveAutomaticChurchDecisions(autoDecisions);
+  summarizeAnnualAutoBudget();
   compactAnnualNotifications();
   setTick(lines.join(' | '));
   if(G.eventQueue.length)processEventQueue();
@@ -1708,6 +1720,33 @@ function applyAnnualBatchDecisions(decisions){
   return 'Relatorio consolidado aplicado: '+stats.pastors+' pastores enviados, '+stats.stewardship+' campanhas de mordomia, '+stats.evangelism+' campanhas de evangelismo, '+stats.subsidies+' subsidios diretos. '+stats.helped+' casos melhoraram e '+stats.skipped+' ficaram para acompanhamento.';
 }
 
+function canSpendAutomaticOffers(amount){
+  const budget=G._annualAutoBudget;
+  return G.of>=amount&&(!budget||budget.remaining>=amount);
+}
+function recordAutomaticOfferSpend(amount,type){
+  const budget=G._annualAutoBudget;
+  if(!budget)return;
+  budget.remaining=Math.max(0,budget.remaining-amount);
+  budget.spent+=amount;
+  if(type&&budget[type]!==undefined)budget[type]++;
+}
+function recordAutomaticOfferSkipped(){
+  if(G._annualAutoBudget)G._annualAutoBudget.skipped++;
+}
+function summarizeAnnualAutoBudget(){
+  const budget=G._annualAutoBudget;
+  if(!budget)return;
+  delete G._annualAutoBudget;
+  if(budget.spent<=0&&budget.skipped<=0)return;
+  const parts=[];
+  if(budget.pastors)parts.push(budget.pastors+' pastorado');
+  if(budget.stewardship)parts.push(budget.stewardship+' mordomia');
+  if(budget.evangelism)parts.push(budget.evangelism+' evangelismo');
+  const skipped=budget.skipped?' '+budget.skipped+' pendencia(s) ficaram para o proximo relatorio por limite de caixa.':'';
+  addGameNotification('Gastos anuais','-'+Math.floor(budget.spent)+' ofertas em '+(parts.join(', ')||'acompanhamentos')+'. Limite anual: '+Math.floor(budget.limit)+' ofertas.'+skipped,budget.skipped?'warn':'good');
+}
+
 function resolveAutomaticChurchDecisions(decisions){
   if(!Array.isArray(decisions)||!decisions.length)return;
   decisions.forEach(item=>{
@@ -1717,12 +1756,14 @@ function resolveAutomaticChurchDecisions(decisions){
     if(item.reason==='secondPastor'){
       const currentPastor=pastorForChurch(item.stateId,item.index);
       const needsOwnPastor=ch.type==='missao'&&currentPastor&&pastorRouteIndexes(currentPastor).includes(item.index);
-      if(availablePastor()&&G.of>=PASTOR_SEND_COST){
+      if(availablePastor()&&canSpendAutomaticOffers(PASTOR_SEND_COST)){
         assignAvailablePastorAction(item.stateId,item.index,!needsOwnPastor);
+        recordAutomaticOfferSpend(PASTOR_SEND_COST,'pastors');
         ch.lastSecondPastorDecisionYear=G.year;
         addGameNotification('Pastorado',needsOwnPastor?'Pastor encarregado enviado para '+place+'.':'Segundo pastor enviado para '+place+'.','good');
       }else{
         ch.lastSecondPastorDecisionYear=G.year;
+        recordAutomaticOfferSkipped();
         addGameNotification('Pastorado pendente','Falta pastor livre ou oferta para reforçar '+place+'.','warn');
       }
       return;
@@ -1736,8 +1777,9 @@ function resolveAutomaticChurchDecisions(decisions){
         addGameNotification('Subsídio aprovado','A IELB subsidiará '+place+' por 5 anos.','good');
         return;
       }
-      if(G.of>=CHURCH_DECISION_OFFER_COST){
+      if(canSpendAutomaticOffers(CHURCH_DECISION_OFFER_COST)){
         G.of-=CHURCH_DECISION_OFFER_COST;
+        recordAutomaticOfferSpend(CHURCH_DECISION_OFFER_COST,'stewardship');
         if(Math.random()<0.6){
           const gain=0.08+Math.random()*0.1;
           ch.offerRate=Math.max(0.15,Math.min(1,(ch.offerRate||0.7)+gain));
@@ -1751,14 +1793,16 @@ function resolveAutomaticChurchDecisions(decisions){
           addGameNotification('Mordomia sem efeito',place+' ainda não melhorou o caixa. Tentativas: '+ch.failedStewardshipAttempts+'/2.','bad');
         }
       }else{
+        recordAutomaticOfferSkipped();
         addGameNotification('Mordomia pendente','Faltou oferta para trabalhar mordomia em '+place+'.','warn');
       }
       return;
     }
     if(item.reason==='stagnant'){
       ch.lastStagnationDecisionYear=G.year;
-      if(G.of>=CHURCH_DECISION_OFFER_COST){
+      if(canSpendAutomaticOffers(CHURCH_DECISION_OFFER_COST)){
         G.of-=CHURCH_DECISION_OFFER_COST;
+        recordAutomaticOfferSpend(CHURCH_DECISION_OFFER_COST,'evangelism');
         if(Math.random()<0.6){
           const n=randInt(8,18);
           const added=addMembersToChurch(ch,n);
@@ -1780,6 +1824,7 @@ function resolveAutomaticChurchDecisions(decisions){
           }
         }
       }else{
+        recordAutomaticOfferSkipped();
         addGameNotification('Evangelismo pendente','Faltou oferta para uma campanha em '+place+'.','warn');
       }
     }

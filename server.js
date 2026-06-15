@@ -21,6 +21,8 @@ const LUTHER_MATCH_GAME_ID = 'luther-metch';
 const QUIZ_GAME_ID = 'quiz-ortodoxia';
 const CONCORDIUM_GAME_ID = 'concordium-first-age';
 const CONCORDIUM_EXPLORACAO_GAME_ID = 'concordium-exploracao';
+const CONCORDIUM_ACCESS_COOKIE = 'concordium_access';
+const CONCORDIUM_ACCESS_PIN = process.env.CONCORDIUM_ACCESS_PIN || '5892';
 const LUTHER_MATCH_MAX_LEVEL = 500;
 const QUIZ_ROUND_SECONDS = 20;
 const QUIZ_QUESTION_COUNT = 8;
@@ -535,10 +537,18 @@ function json(res, status, payload) {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Content-Length': Buffer.byteLength(body) });
   res.end(body);
 }
-function isLocalRequest(req) {
-  const rawHost = String(req.headers.host || '').toLowerCase();
-  const host = rawHost.startsWith('[') ? rawHost.slice(1, rawHost.indexOf(']')) : rawHost.split(':')[0];
-  return ['localhost', '127.0.0.1', '::1'].includes(host);
+function signConcordiumAccess(userId) {
+  return crypto.createHmac('sha256', LAUNCH_SECRET).update(`concordium:${userId}`).digest('hex');
+}
+function hasConcordiumAccess(req, userId) {
+  const token = parseCookies(req)[CONCORDIUM_ACCESS_COOKIE];
+  if (!token) return false;
+  const expected = signConcordiumAccess(userId);
+  return token.length === expected.length && crypto.timingSafeEqual(Buffer.from(token), Buffer.from(expected));
+}
+function setConcordiumAccessCookie(res, userId) {
+  const token = signConcordiumAccess(userId);
+  res.setHeader('Set-Cookie', `${CONCORDIUM_ACCESS_COOKIE}=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Path=/concordium-exploracao; Max-Age=${7 * 24 * 60 * 60}`);
 }
 function readBody(req) {
   return new Promise((resolve, reject) => {
@@ -696,6 +706,10 @@ ${body}
 <script src="/assets/audio.js?v=${GAME_VERSION}"></script>
 </body>
 </html>`;
+}
+function renderConcordiumAccess(error = '') {
+  return pageShell('Concordium', `
+<main class="auth-wrap"><section class="auth-card"><h1>Concordium</h1><p>Uma jornada estilo Pokemon com criaturas, vila e imaginario luterano.</p>${error ? `<div class="form-error">${escapeHtml(error)}</div>` : ''}<form method="POST" action="/concordium-exploracao/unlock" class="auth-form"><label>Senha de acesso<input name="pin" inputmode="numeric" pattern="[0-9]*" maxlength="12" autocomplete="off" required autofocus></label><button type="submit">Entrar</button></form><a class="auth-link" href="/">Voltar ao hub</a></section></main>`);
 }
 
 function churchCountForState(stateData) { return stateData?.denomData?.IELB?.churches?.length || 0; }
@@ -1062,9 +1076,9 @@ async function handleApi(req, res, url, user) {
         {
           id: CONCORDIUM_EXPLORACAO_GAME_ID,
           title: 'Concordium',
-          description: 'pokemon luterano',
-          status: 'locked',
-          playUrl: null,
+          description: 'Uma jornada estilo Pokemon com criaturas, vila e imaginario luterano.',
+          status: 'private',
+          playUrl: '/concordium-exploracao',
           rankingUrl: null
         }
       ]
@@ -1407,7 +1421,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     <article class="ol-game-card cronicas-cover"><div><h4>Crônicas do Levante</h4><p>Uma narrativa bíblica interativa nos dias do rei Davi, com escolhas, descobertas, relações e consequências pelo caminho.</p></div><a href="/cronicas-do-levante">${cronicasSave ? 'Continuar' : 'Jogar'}</a></article>
     <article class="ol-game-card match3-cover"><div><h4>Luther Metch</h4><p>Junte 3 ou mais peças iguais para cumprir objetivos e avançar de fase.</p></div><a href="/luther-metch">Jogar</a></article>
     <article class="ol-game-card quiz-cover"><div><h4>Quiz Ortodoxia</h4><p>Dispute perguntas de Bíblia, Reforma e luteranismo em modo solo, duelo online, convite ou competição geral.</p></div><a href="/quiz-ortodoxia">Jogar</a></article>
-    <article class="ol-game-card concordium-exploracao-cover locked-game"><div><h4>Concordium</h4><p>pokemon luterano</p></div><span class="soon-badge">Bloqueado</span></article>
+    <article class="ol-game-card concordium-exploracao-cover"><div><h4>Concordium</h4><p>Uma jornada estilo Pokemon com criaturas, vila e imaginario luterano.</p></div><a href="/concordium-exploracao">Jogar</a></article>
   </section>`;
   const rankCard = `<aside class="ol-panel ol-rank"><p>Seu rank geral</p><img class="rank-badge" src="${rank.current.file}?v=${GAME_VERSION}" alt="${escapeHtml(rank.current.title)}"><div class="rank-xp"><strong>${xp} XP</strong><span>${rank.next ? `${Math.max(0, rank.next.xp - rank.currentXp)} XP para ${escapeHtml(rank.next.title)}` : 'Rank maximo alcancado'}</span><div class="rank-bar"><span style="width:${Math.round(rank.progress)}%"></span></div></div><a href="/?section=ranking">Ver ranking geral</a></aside>`;
   const sections = {
@@ -1546,16 +1560,27 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (req.method === 'GET' && url.pathname === '/concordium-exploracao') {
-      if (!isLocalRequest(req)) {
-        const body = pageShell('Concordium bloqueado', `
-<main class="auth-wrap"><section class="auth-card"><h1>Concordium</h1><p>pokemon luterano</p><div class="form-error">Este teste esta bloqueado no servidor publico. Ele abre apenas no host local durante desenvolvimento.</div><a class="auth-link" href="/">Voltar ao hub</a></section></main>`);
-        res.writeHead(403, { 'Content-Type': 'text/html; charset=utf-8' });
+      if (!hasConcordiumAccess(req, user.id)) {
+        const body = renderConcordiumAccess();
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
         res.end(body);
         return;
       }
       const body = fs.readFileSync(path.join(PUBLIC_DIR, 'concordium-exploracao.html'), 'utf8');
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       res.end(body);
+      return;
+    }
+    if (req.method === 'POST' && url.pathname === '/concordium-exploracao/unlock') {
+      const form = await readForm(req);
+      const pin = String(form.get('pin') || '').trim();
+      if (pin !== CONCORDIUM_ACCESS_PIN) {
+        res.writeHead(401, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(renderConcordiumAccess('Senha incorreta.'));
+        return;
+      }
+      setConcordiumAccessCookie(res, user.id);
+      redirect(res, '/concordium-exploracao');
       return;
     }
     if (req.method === 'POST' && url.pathname === '/cronicas-do-levante/delete') {

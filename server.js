@@ -709,7 +709,7 @@ ${body}
 }
 function renderConcordiumAccess(error = '') {
   return pageShell('Concordium', `
-<main class="auth-wrap"><section class="auth-card"><h1>Concordium</h1><p>Uma jornada estilo Pokemon com criaturas, vila e imaginario luterano.</p>${error ? `<div class="form-error">${escapeHtml(error)}</div>` : ''}<form method="POST" action="/concordium-exploracao/unlock" class="auth-form"><label>Senha de acesso<input name="pin" inputmode="numeric" pattern="[0-9]*" maxlength="12" autocomplete="off" required autofocus></label><button type="submit">Entrar</button></form><a class="auth-link" href="/">Voltar ao hub</a></section></main>`);
+<main class="auth-wrap"><section class="auth-card"><h1>Concordium</h1><p>Uma jornada estilo Pokemon percorrendo a historia da igreja apostolica.</p>${error ? `<div class="form-error">${escapeHtml(error)}</div>` : ''}<form method="POST" action="/concordium-exploracao/unlock" class="auth-form"><label>Senha de acesso<input name="pin" inputmode="numeric" pattern="[0-9]*" maxlength="12" autocomplete="off" required autofocus></label><button type="submit">Entrar</button></form><a class="auth-link" href="/">Voltar ao hub</a></section></main>`);
 }
 
 function churchCountForState(stateData) { return stateData?.denomData?.IELB?.churches?.length || 0; }
@@ -1076,7 +1076,7 @@ async function handleApi(req, res, url, user) {
         {
           id: CONCORDIUM_EXPLORACAO_GAME_ID,
           title: 'Concordium',
-          description: 'Uma jornada estilo Pokemon com criaturas, vila e imaginario luterano.',
+          description: 'Uma jornada estilo Pokemon percorrendo a historia da igreja apostolica.',
           status: 'private',
           playUrl: '/concordium-exploracao',
           rankingUrl: null
@@ -1421,7 +1421,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     <article class="ol-game-card cronicas-cover"><div><h4>Crônicas do Levante</h4><p>Uma narrativa bíblica interativa nos dias do rei Davi, com escolhas, descobertas, relações e consequências pelo caminho.</p></div><a href="/cronicas-do-levante">${cronicasSave ? 'Continuar' : 'Jogar'}</a></article>
     <article class="ol-game-card match3-cover"><div><h4>Luther Metch</h4><p>Junte 3 ou mais peças iguais para cumprir objetivos e avançar de fase.</p></div><a href="/luther-metch">Jogar</a></article>
     <article class="ol-game-card quiz-cover"><div><h4>Quiz Ortodoxia</h4><p>Dispute perguntas de Bíblia, Reforma e luteranismo em modo solo, duelo online, convite ou competição geral.</p></div><a href="/quiz-ortodoxia">Jogar</a></article>
-    <article class="ol-game-card concordium-exploracao-cover"><div><h4>Concordium</h4><p>Uma jornada estilo Pokemon com criaturas, vila e imaginario luterano.</p></div><a href="/concordium-exploracao">Jogar</a></article>
+    <article class="ol-game-card concordium-exploracao-cover"><div><h4>Concordium</h4><p>Uma jornada estilo Pokemon percorrendo a historia da igreja apostolica.</p></div><a href="/concordium-exploracao">Jogar</a></article>
   </section>`;
   const rankCard = `<aside class="ol-panel ol-rank"><p>Seu rank geral</p><img class="rank-badge" src="${rank.current.file}?v=${GAME_VERSION}" alt="${escapeHtml(rank.current.title)}"><div class="rank-xp"><strong>${xp} XP</strong><span>${rank.next ? `${Math.max(0, rank.next.xp - rank.currentXp)} XP para ${escapeHtml(rank.next.title)}` : 'Rank maximo alcancado'}</span><div class="rank-bar"><span style="width:${Math.round(rank.progress)}%"></span></div></div><a href="/?section=ranking">Ver ranking geral</a></aside>`;
   const sections = {

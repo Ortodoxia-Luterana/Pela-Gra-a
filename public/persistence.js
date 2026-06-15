@@ -126,7 +126,7 @@
   function patchGameSource(source) {
     source = replaceExact(source,
       'const CHURCH_SUBSIDY_MONTHS=60;',
-      'const CHURCH_SUBSIDY_MONTHS=60;\nconst MEMBER_COST_STEP=50;\nconst MISSION_STEP_UPKEEP=0.10;\nconst CONGREGATION_STEP_UPKEEP=0.16;\nconst DOCTRINE_MEMBER_LOSS=0.25;\nconst DOCTRINE_MAX_WRONG_STREAK=4;\nconst MISSION_FAITH_COST=60;\nconst MISSION_MEMBER_COST=100;'
+      'const CHURCH_SUBSIDY_MONTHS=60;\nconst MEMBER_COST_STEP=50;\nconst MISSION_STEP_UPKEEP=0.10;\nconst CONGREGATION_STEP_UPKEEP=0.16;\nconst DOCTRINE_MEMBER_LOSS=0.25;\nconst DOCTRINE_MAX_WRONG_STREAK=4;'
     );
 
     source = replaceExact(source,
@@ -238,61 +238,6 @@ function churchInternalBalance(stateId,index){
     source = replaceExact(source,
       `addR(body,'Taxa de oferta',Math.round((c.offerRate||0.7)*100)+'%');if(c.struggleMonths>=3)addR(body,'Dificuldade financeira','há '+c.struggleMonths+' meses');`,
       `addR(body,'Taxa de oferta',Math.round((c.offerRate||0.7)*100)+'%');addR(body,'Custo mensal','-'+churchInternalBalance(id,i).cost.toFixed(2));if(c.struggleMonths>=3)addR(body,'Dificuldade financeira','há '+c.struggleMonths+' meses');`
-    );
-
-    source = replaceExact(source,
-      `function sendMission(id){const slot=G.states[id].denomData.IELB;const p=availablePastor();if(!p){setTick('Sem pastores disponíveis. Aguarde as próximas formaturas.');return;}if(G.of<PASTOR_SEND_COST||G.fi<10)return;G.of-=PASTOR_SEND_COST;G.fi-=10;removeAvailablePastor(p.id);p.assignedStateId=id;p.assignedChurchIndex=null;G.states[id].missionary=true;G.states[id].missionProg=0;G.states[id].missionPastorId=p.id;redrawDots();renderLeft();renderRight();updateRes();setTick('Pastor '+p.name+' enviado para '+STATES[id].name+'. A implantação levará tempo.');}`,
-      `function sendMission(id){const slot=G.states[id].denomData.IELB;const p=availablePastor();if(!p){setTick('Sem pastores disponíveis. Aguarde as próximas formaturas.');return;}if(G.fe<MISSION_FAITH_COST||!canSpendIelbChurchMembers(MISSION_MEMBER_COST))return;G.fe-=MISSION_FAITH_COST;spendIelbChurchMembers(MISSION_MEMBER_COST);removeAvailablePastor(p.id);p.assignedStateId=id;p.assignedChurchIndex=null;G.states[id].missionary=true;G.states[id].missionProg=0;G.states[id].missionPastorId=p.id;redrawDots();renderLeft();renderRight();updateRes();setTick('Pastor '+p.name+' enviado para '+STATES[id].name+'. A implantação levou 60 de fé e 100 membros das igrejas.');}`
-    );
-
-    source = replaceExact(source,
-      `if(G.of<cost||G.fi<10||!p)return;`,
-      `if(G.fe<MISSION_FAITH_COST||!canSpendIelbChurchMembers(MISSION_MEMBER_COST)||!p)return;`
-    );
-
-    source = replaceExact(source,
-      `ref.textContent='Pastor dedicado: '+p.name+' | Custo: '+cost+' Ofertas + 10 Membros';`,
-      `ref.textContent='Pastor dedicado: '+p.name+' | Custo: '+MISSION_FAITH_COST+' Fé + '+MISSION_MEMBER_COST+' membros retirados das igrejas';`
-    );
-
-    source = replaceExact(source,
-      `if(!p||G.of<cost||G.fi<10){closeMissionCityModal(wasPaused);return;}\n  G.of-=cost;G.fi-=10;`,
-      `if(!p||G.fe<MISSION_FAITH_COST||!canSpendIelbChurchMembers(MISSION_MEMBER_COST)){closeMissionCityModal(wasPaused);return;}\n  G.fe-=MISSION_FAITH_COST;spendIelbChurchMembers(MISSION_MEMBER_COST);`
-    );
-
-    source = replaceExact(source,
-      `if(G.of<cost||G.fi<10||(!route&&!dedicated))return;`,
-      `if(G.fe<MISSION_FAITH_COST||!canSpendIelbChurchMembers(MISSION_MEMBER_COST)||(!route&&!dedicated))return;`
-    );
-
-    source = replaceExact(source,
-      `ref.textContent='Custo: '+cost+' Ofertas + 10 Membros';`,
-      `ref.textContent='Custo: '+MISSION_FAITH_COST+' Fé + '+MISSION_MEMBER_COST+' membros retirados das igrejas';`
-    );
-
-    source = replaceExact(source,
-      `const cost=PLAYER_EXPANSION_COST;\n  const route=mode==='dedicated'?null:routePastorForNewChurch(id,city);\n  const dedicated=mode==='dedicated'?availablePastor():null;\n  const pastor=dedicated||route;\n  if(!pastor||G.of<cost||G.fi<10){closeMissionCityModal(wasPaused);return;}\n  G.of-=cost;G.fi-=10;`,
-      `const cost=PLAYER_EXPANSION_COST;\n  const route=mode==='dedicated'?null:routePastorForNewChurch(id,city);\n  const dedicated=mode==='dedicated'?availablePastor():null;\n  const pastor=dedicated||route;\n  if(!pastor||G.fe<MISSION_FAITH_COST||!canSpendIelbChurchMembers(MISSION_MEMBER_COST)){closeMissionCityModal(wasPaused);return;}\n  G.fe-=MISSION_FAITH_COST;spendIelbChurchMembers(MISSION_MEMBER_COST);`
-    );
-
-    source = replaceExact(source,
-      `if(!st.missionary&&!ielbC.length) addBtn(body,'Enviar missionário','Custo: 45 Ofertas + 8 Membros'+(ielbSlot.cooldown>0?' | '+ielbSlot.cooldown+' meses':''),'miss',()=>sendMission(id),G.of<45||G.fi<8||ielbSlot.cooldown>0);`,
-      `if(!st.missionary&&!ielbC.length) addBtn(body,'Enviar missionário','Custo: '+MISSION_FAITH_COST+' Fé + '+MISSION_MEMBER_COST+' membros'+(ielbSlot.cooldown>0?' | '+ielbSlot.cooldown+' meses':''),'miss',()=>sendMission(id),G.fe<MISSION_FAITH_COST||!canSpendIelbChurchMembers(MISSION_MEMBER_COST)||ielbSlot.cooldown>0);`
-    );
-
-    source = replaceExact(source,
-      `addBtn(body,'Abrir missão ('+(ielbC.length+1)+'ª)','Custo: '+cn+' Ofertas + 8 Membros'+(ielbSlot.cooldown>0?' | '+ielbSlot.cooldown+' meses':''),'miss',()=>newChurch(id),G.of<cn||G.fi<8||ielbSlot.cooldown>0);`,
-      `addBtn(body,'Abrir missão ('+(ielbC.length+1)+'ª)','Custo: '+MISSION_FAITH_COST+' Fé + '+MISSION_MEMBER_COST+' membros'+(ielbSlot.cooldown>0?' | '+ielbSlot.cooldown+' meses':''),'miss',()=>newChurch(id),G.fe<MISSION_FAITH_COST||!canSpendIelbChurchMembers(MISSION_MEMBER_COST)||ielbSlot.cooldown>0);`
-    );
-
-    source = replaceExact(source,
-      `addBtn(body,'Abrir missão neste estado','Pastor disponível | Custo: '+firstCost+' Ofertas + 10 Membros','miss',()=>newDedicatedChurch(id),G.of<firstCost||G.fi<10||!G.availablePastors.length);`,
-      `addBtn(body,'Abrir missão neste estado','Pastor disponível | Custo: '+MISSION_FAITH_COST+' Fé + '+MISSION_MEMBER_COST+' membros','miss',()=>newDedicatedChurch(id),G.fe<MISSION_FAITH_COST||!canSpendIelbChurchMembers(MISSION_MEMBER_COST)||!G.availablePastors.length);`
-    );
-
-    source = replaceExact(source,
-      `addBtn(body,'Abrir mais um ponto de missão no estado','Custo: '+cost+' Ofertas + 10 Membros','miss',()=>openMission(id),G.of<cost||G.fi<10||!canOpenMission);`,
-      `addBtn(body,'Abrir mais um ponto de missão no estado','Custo: '+MISSION_FAITH_COST+' Fé + '+MISSION_MEMBER_COST+' membros','miss',()=>openMission(id),G.fe<MISSION_FAITH_COST||!canSpendIelbChurchMembers(MISSION_MEMBER_COST)||!canOpenMission);`
     );
 
     source = replaceExact(source,

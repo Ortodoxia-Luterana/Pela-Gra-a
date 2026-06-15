@@ -1,22 +1,59 @@
 (function () {
   const MISSION_OFFER_COST = typeof PLAYER_EXPANSION_COST !== 'undefined' ? PLAYER_EXPANSION_COST : 60;
+  const FIRST_MISSION_OFFER_COST = typeof FIRST_STATE_MISSION_OFFER_COST !== 'undefined' ? FIRST_STATE_MISSION_OFFER_COST : 250;
+  const FIRST_MISSION_MEMBER_COST = typeof FIRST_STATE_MISSION_MEMBER_COST !== 'undefined' ? FIRST_STATE_MISSION_MEMBER_COST : 100;
 
   function ready() {
     return typeof G !== 'undefined' && typeof renderRight === 'function' && typeof ielbChurchRefs === 'function';
   }
 
-  function canPayMission() {
-    return G.of >= MISSION_OFFER_COST;
+  function spendableMembers() {
+    return ielbChurchRefs().reduce(function (sum, ref) {
+      return sum + Math.max(0, (Number(ref.ch.members) || 0) - 1);
+    }, 0);
   }
 
-  function payMissionCost() {
-    if (!canPayMission()) return false;
-    G.of -= MISSION_OFFER_COST;
+  function spendMissionMembers(amount) {
+    let remaining = amount;
+    while (remaining > 0.0001) {
+      const pool = ielbChurchRefs().filter(function (ref) { return (Number(ref.ch.members) || 0) > 1.0001; });
+      if (!pool.length) break;
+      const share = remaining / pool.length;
+      let spent = 0;
+      pool.forEach(function (ref) {
+        const current = Number(ref.ch.members) || 0;
+        const take = Math.min(Math.max(0, current - 1), share);
+        ref.ch.members = current - take;
+        spent += take;
+      });
+      if (spent <= 0) break;
+      remaining -= spent;
+    }
+    G.fi = Math.max(0, (Number(G.fi) || 0) - (amount - remaining));
+    if (typeof ALL_STATES !== 'undefined' && typeof syncDenomMembers === 'function') {
+      ALL_STATES.forEach(function (id) { syncDenomMembers(id, 'IELB'); });
+    }
+    return amount - remaining;
+  }
+
+  function canPayMission(first) {
+    return first ? G.of >= FIRST_MISSION_OFFER_COST && spendableMembers() >= FIRST_MISSION_MEMBER_COST : G.of >= MISSION_OFFER_COST;
+  }
+
+  function payMissionCost(first) {
+    if (!canPayMission(first)) return false;
+    if (first) {
+      G.of -= FIRST_MISSION_OFFER_COST;
+      spendMissionMembers(FIRST_MISSION_MEMBER_COST);
+    } else {
+      G.of -= MISSION_OFFER_COST;
+    }
     return true;
   }
 
-  function missionCostText(extra) {
-    return 'Custo: ' + MISSION_OFFER_COST + ' Ofertas' + (extra || '');
+  function missionCostText(extra, first) {
+    const cost = first ? FIRST_MISSION_OFFER_COST + ' Ofertas + ' + FIRST_MISSION_MEMBER_COST + ' membros' : MISSION_OFFER_COST + ' Ofertas';
+    return 'Custo: ' + cost + (extra || '');
   }
 
   function repaint() {
@@ -43,7 +80,7 @@
   window.sendMission = function (id) {
     const p = availablePastor();
     if (!p) { setTick('Sem pastores disponíveis. Aguarde as próximas formaturas.'); return; }
-    if (!payMissionCost()) return;
+    if (!payMissionCost(true)) return;
     removeAvailablePastor(p.id);
     p.assignedStateId = id;
     p.assignedChurchIndex = null;
@@ -56,7 +93,7 @@
 
   window.showChurchCityModal = function (id) {
     const p = availablePastor();
-    if (!p || !canPayMission()) return;
+    if (!p || !canPayMission(true)) return;
     const wasPaused = G.paused;
     G.paused = true;
     document.getElementById('pausebtn').textContent = '▶ Retomar';
@@ -67,7 +104,7 @@
     document.getElementById('m-txt').textContent = 'Como ainda não há presença da IELB neste estado, um pastor disponível será enviado para iniciar a missão.';
     const ref = document.getElementById('m-ref');
     ref.style.display = 'block';
-    ref.textContent = 'Pastor dedicado: ' + p.name + ' | ' + missionCostText('');
+    ref.textContent = 'Pastor dedicado: ' + p.name + ' | ' + missionCostText('', true);
     const mc = document.getElementById('m-choices');
     mc.innerHTML = '';
     chooseCities(id).forEach(function (city) {
@@ -87,7 +124,7 @@
 
   window.commitDedicatedChurch = function (id, city, wasPaused) {
     const p = availablePastor();
-    if (!p || !payMissionCost()) { closeMissionModal(wasPaused); return; }
+    if (!p || !payMissionCost(true)) { closeMissionModal(wasPaused); return; }
     const slot = G.states[id].denomData.IELB;
     const ch = addChurch(id, 'IELB', 12, 1, G.year, 'missao', city);
     const idx = slot.churches.indexOf(ch);
@@ -99,7 +136,7 @@
   window.showMissionCityModal = function (id) {
     const route = routePastorForNewChurch(id);
     const dedicated = availablePastor();
-    if (!canPayMission() || (!route && !dedicated)) return;
+    if (!canPayMission(false) || (!route && !dedicated)) return;
     const wasPaused = G.paused;
     G.paused = true;
     document.getElementById('pausebtn').textContent = '▶ Retomar';
@@ -110,7 +147,7 @@
     document.getElementById('m-txt').textContent = 'Escolha a cidade onde a missão será aberta.';
     const ref = document.getElementById('m-ref');
     ref.style.display = 'block';
-    ref.textContent = missionCostText('');
+    ref.textContent = missionCostText('', false);
     const mc = document.getElementById('m-choices');
     mc.innerHTML = '';
     chooseCities(id).forEach(function (city) {
@@ -141,7 +178,7 @@
     document.getElementById('m-txt').textContent = 'Escolha se este ponto ficará com um pastor já em atividade no estado ou com um novo pastor disponível.';
     const ref = document.getElementById('m-ref');
     ref.style.display = 'block';
-    ref.textContent = missionCostText('');
+    ref.textContent = missionCostText('', false);
     const mc = document.getElementById('m-choices');
     mc.innerHTML = '';
     if (route) {
@@ -175,7 +212,7 @@
     const route = mode === 'dedicated' ? null : routePastorForNewChurch(id, city);
     const dedicated = mode === 'dedicated' ? availablePastor() : null;
     const pastor = dedicated || route;
-    if (!pastor || !payMissionCost()) { closeMissionModal(wasPaused); return; }
+    if (!pastor || !payMissionCost(false)) { closeMissionModal(wasPaused); return; }
     const ch = addChurch(id, 'IELB', 12, 1, G.year, 'missao', city);
     const idx = slot.churches.indexOf(ch);
     if (dedicated) assignPastorToChurch(dedicated, id, idx);
@@ -189,14 +226,19 @@
     if (lbl === 'Enviar missionário') {
       const id = G.sel;
       const cooldown = G.states[id].denomData.IELB.cooldown;
-      note = missionCostText(cooldown > 0 ? ' | ' + cooldown + ' meses' : '');
-      dis = !canPayMission() || cooldown > 0;
+      note = missionCostText(cooldown > 0 ? ' | ' + cooldown + ' meses' : '', true);
+      dis = !canPayMission(true) || cooldown > 0;
       fn = function () { window.sendMission(id); };
+    } else if (String(lbl).indexOf('Abrir missão neste estado') === 0) {
+      const id = G.sel;
+      note = 'Pastor disponível | ' + missionCostText('', true);
+      dis = !canPayMission(true) || !G.availablePastors.length;
+      fn = function () { window.showChurchCityModal(id); };
     } else if (String(lbl).indexOf('Abrir missão') === 0) {
       const id = G.sel;
       const cooldown = G.states[id].denomData.IELB.cooldown;
-      note = missionCostText(cooldown > 0 ? ' | ' + cooldown + ' meses' : '');
-      dis = !canPayMission() || cooldown > 0;
+      note = missionCostText(cooldown > 0 ? ' | ' + cooldown + ' meses' : '', false);
+      dis = !canPayMission(false) || cooldown > 0;
       fn = function () { window.showMissionCityModal(id); };
     }
     return originalAddBtn(p, lbl, note, cls, fn, dis, bid);

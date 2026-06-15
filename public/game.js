@@ -164,6 +164,8 @@ const STATE_STRUCTURE_UPKEEP=0.25;
 const ADMIN_OVERLOAD_UPKEEP=0.45;
 const PASTOR_SEND_COST=40;
 const PLAYER_EXPANSION_COST=60;
+const FIRST_STATE_MISSION_OFFER_COST=250;
+const FIRST_STATE_MISSION_MEMBER_COST=100;
 const MISSION_PROMOTION_COST=120;
 const CHURCH_DECISION_OFFER_COST=20;
 const SEMINARY_MONTHLY_COST=0.5;
@@ -1093,7 +1095,7 @@ function renderRight(){
   addBtn(body,'✝ Realizar Culto','+4 Fé imediatamente','act',()=>culto(),G.paused);
   addBtn(body,'Catecismo','Custo: 25 Fé → +5 membros disponíveis','act',()=>catecismo(),G.paused||G.fe<25,'btn-cat-r');
   addT(body,'Ações neste Estado');
-  if(!st.missionary&&!ielbC.length) addBtn(body,'Enviar missionário','Custo: '+PASTOR_SEND_COST+' Ofertas'+(ielbSlot.cooldown>0?' | '+ielbSlot.cooldown+' meses':''),'miss',()=>sendMission(id),G.of<PASTOR_SEND_COST||ielbSlot.cooldown>0);
+  if(!st.missionary&&!ielbC.length) addBtn(body,'Enviar missionário','Custo: '+FIRST_STATE_MISSION_OFFER_COST+' Ofertas + '+FIRST_STATE_MISSION_MEMBER_COST+' membros'+(ielbSlot.cooldown>0?' | '+ielbSlot.cooldown+' meses':''),'miss',()=>sendMission(id),!canPayFirstStateMission()||ielbSlot.cooldown>0);
   if(ielbC.length){
     const cn=churchPlantCost(id);
     addBtn(body,'Abrir missão ('+(ielbC.length+1)+'ª)','Custo: '+cn+' Ofertas'+(ielbSlot.cooldown>0?' | '+ielbSlot.cooldown+' meses':''),'miss',()=>newChurch(id),G.of<cn||ielbSlot.cooldown>0);
@@ -1117,13 +1119,13 @@ function addBtn(p,lbl,note,cls,fn,dis,bid){const b=document.createElement('butto
 
 function churchPlantCost(id){return Math.max(35,G.states[id].denomData.IELB.churches.length*35+totalChurches('IELB')*4);}
 function generalActionBlocked(){if(!G.paused)return false;setTick('O jogo está pausado. Retome o tempo para realizar culto e catecismo.');return true;}
-function sendMission(id){const slot=G.states[id].denomData.IELB;const p=availablePastor();if(!p){setTick('Sem pastores disponíveis. Aguarde as próximas formaturas.');return;}if(G.of<PASTOR_SEND_COST)return;G.of-=PASTOR_SEND_COST;removeAvailablePastor(p.id);p.assignedStateId=id;p.assignedChurchIndex=null;G.states[id].missionary=true;G.states[id].missionProg=0;G.states[id].missionPastorId=p.id;redrawDots();renderLeft();renderRight();updateRes();setTick('Pastor '+p.name+' enviado para '+STATES[id].name+'. A implantação levará tempo.');}
+function sendMission(id){const slot=G.states[id].denomData.IELB;const p=availablePastor();if(!p){setTick('Sem pastores disponíveis. Aguarde as próximas formaturas.');return;}if(!payFirstStateMissionCost())return;removeAvailablePastor(p.id);p.assignedStateId=id;p.assignedChurchIndex=null;G.states[id].missionary=true;G.states[id].missionProg=0;G.states[id].missionPastorId=p.id;redrawDots();renderLeft();renderRight();updateRes();setTick('Pastor '+p.name+' enviado para '+STATES[id].name+'. A implantação levará tempo.');}
 function newDedicatedChurch(id){showChurchCityModal(id);}
 function showChurchCityModal(id){
   const slot=G.states[id].denomData.IELB;
-  const cost=PLAYER_EXPANSION_COST;
+  const cost=FIRST_STATE_MISSION_OFFER_COST;
   const p=availablePastor();
-  if(G.of<cost||!p)return;
+  if(!p||!canPayFirstStateMission())return;
   const wasPaused=G.paused;
   G.paused=true;
   document.getElementById('pausebtn').textContent='▶ Retomar';
@@ -1132,7 +1134,7 @@ function showChurchCityModal(id){
   document.getElementById('m-title').textContent='Abrir missão neste estado';
   document.getElementById('m-yr').textContent=STATES[id].name;
   document.getElementById('m-txt').textContent='Como ainda não há presença da IELB neste estado, um pastor disponível será enviado para iniciar a missão.';
-  const ref=document.getElementById('m-ref');ref.style.display='block';ref.textContent='Pastor dedicado: '+p.name+' | Custo: '+cost+' Ofertas';
+  const ref=document.getElementById('m-ref');ref.style.display='block';ref.textContent='Pastor dedicado: '+p.name+' | Custo: '+cost+' Ofertas + '+FIRST_STATE_MISSION_MEMBER_COST+' membros';
   const mc=document.getElementById('m-choices');mc.innerHTML='';
   missionCityOptions(id).forEach(city=>{
     const b=document.createElement('button');b.className='mcbtn';b.textContent=city;
@@ -1144,10 +1146,8 @@ function showChurchCityModal(id){
 }
 function commitDedicatedChurch(id,city,wasPaused){
   const slot=G.states[id].denomData.IELB;
-  const cost=PLAYER_EXPANSION_COST;
   const p=availablePastor();
-  if(!p||G.of<cost){closeMissionCityModal(wasPaused);return;}
-  G.of-=cost;
+  if(!p||!payFirstStateMissionCost()){closeMissionCityModal(wasPaused);return;}
   const ch=addChurch(id,'IELB',12,1,G.year,'missao',city);
   const idx=slot.churches.indexOf(ch);
   assignPastorToChurch(p,id,idx);
@@ -1317,6 +1317,37 @@ function ielbChurchRefs(){
   ALL_STATES.forEach(id=>G.states[id].denomData.IELB.churches.forEach((ch,index)=>refs.push({id,index,ch})));
   return refs;
 }
+function ielbSpendableMembers(){
+  return ielbChurchRefs().reduce((sum,r)=>sum+Math.max(0,(r.ch.members||0)-1),0);
+}
+function canPayFirstStateMission(){
+  return G.of>=FIRST_STATE_MISSION_OFFER_COST&&ielbSpendableMembers()>=FIRST_STATE_MISSION_MEMBER_COST;
+}
+function spendIelbChurchMembers(amount){
+  let remaining=amount;
+  while(remaining>0.0001){
+    const refs=ielbChurchRefs().filter(r=>(r.ch.members||0)>1.0001);
+    if(!refs.length)break;
+    const share=remaining/refs.length;
+    let spent=0;
+    refs.forEach(r=>{
+      const take=Math.min(Math.max(0,(r.ch.members||0)-1),share);
+      r.ch.members-=take;
+      spent+=take;
+    });
+    if(spent<=0)break;
+    remaining-=spent;
+  }
+  G.fi=Math.max(0,G.fi-(amount-remaining));
+  ALL_STATES.forEach(id=>syncDenomMembers(id,'IELB'));
+  return amount-remaining;
+}
+function payFirstStateMissionCost(){
+  if(!canPayFirstStateMission())return false;
+  G.of-=FIRST_STATE_MISSION_OFFER_COST;
+  spendIelbChurchMembers(FIRST_STATE_MISSION_MEMBER_COST);
+  return true;
+}
 function addMembersToIelbChurches(amount,preferStateId=null){
   const refs=ielbChurchRefs();
   if(!refs.length||amount<=0)return null;
@@ -1383,8 +1414,7 @@ function renderRight(){
   const st=G.states[id], ielbC=st.denomData.IELB.churches, ielbSlot=st.denomData.IELB;
   addT(body,'Ações neste Estado');
   if(!st.missionary&&!ielbC.length){
-    const firstCost=PLAYER_EXPANSION_COST;
-    addBtn(body,'Abrir missão neste estado','Pastor disponível | Custo: '+firstCost+' Ofertas','miss',()=>newDedicatedChurch(id),G.of<firstCost||!G.availablePastors.length);
+    addBtn(body,'Abrir missão neste estado','Pastor disponível | Custo: '+FIRST_STATE_MISSION_OFFER_COST+' Ofertas + '+FIRST_STATE_MISSION_MEMBER_COST+' membros','miss',()=>newDedicatedChurch(id),!canPayFirstStateMission()||!G.availablePastors.length);
   }
   if(ielbC.length){
     const missionCost=PLAYER_EXPANSION_COST;

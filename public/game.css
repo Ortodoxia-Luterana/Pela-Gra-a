@@ -36,6 +36,14 @@ body{font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;background:
 #left-body::-webkit-scrollbar{width:3px;}
 #left-body::-webkit-scrollbar-thumb{background:#c8b890;}
 #ticker{padding:5px 13px;border-top:1px solid #c8b890;font-size:10px;color:#7a6a40;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:#ede8df;}
+#notification-feed{position:fixed;right:14px;bottom:14px;z-index:1800;width:min(340px,calc(100vw - 28px));display:grid;gap:8px;pointer-events:none;}
+.campaign-note{border:1px solid rgba(138,106,32,.35);border-left:4px solid #8a6a20;border-radius:8px;background:rgba(250,248,243,.96);box-shadow:0 12px 28px rgba(0,0,0,.18);padding:9px 11px;color:#2a1800;animation:note-in .18s ease both;}
+.campaign-note.good{border-left-color:#2e7d32;}
+.campaign-note.warn{border-left-color:#b07a12;}
+.campaign-note.bad{border-left-color:#b23b30;}
+.campaign-note strong{display:block;font-size:12px;margin-bottom:2px;color:#4a3200;}
+.campaign-note span{display:block;font-size:11px;line-height:1.35;color:#6b5732;}
+@keyframes note-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 #quick-actions{display:none;}
 .quick-btn{touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;}
 

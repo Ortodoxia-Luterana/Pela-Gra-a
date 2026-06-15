@@ -238,7 +238,7 @@ const TICKERS=[
   'A influência agora nasce de igrejas, membros, níveis e história.'
 ];
 
-const G={year:1904,month:0,paused:true,started:false,gameOver:false,monthlyExpense:0,speed:1,fe:20,of:5,fi:12,doc:70,doctrineCorrectCount:0,doctrineWrongCount:0,rateMult:1,rateFe:0.35,rateOf:0.08,rateFi:0.01,sel:'BR',lastEv:new Set(),tickIdx:0,lastRivalTurn:'',states:{},foundedDenoms:new Set(),seminaryOpen:false,seminaryMode:'strong',seminary:[],pastors:[],availablePastors:[],nextPastorId:1,totalPastorsFormed:0,annualDecisions:[],eventQueue:[],usedTheologyQuestions:[],achievements:[],offerBrokeMonths:0,mods:{doctrineGrowth:1,missionGrowth:1,youthRetention:1,persecutionPressure:1,pastoralFormation:1}};
+const G={year:1904,month:0,paused:true,started:false,gameOver:false,monthlyExpense:0,speed:1,fe:20,of:5,fi:12,doc:70,doctrineCorrectCount:0,doctrineWrongCount:0,rateMult:1,rateFe:0.35,rateOf:0.08,rateFi:0.01,sel:'BR',lastEv:new Set(),tickIdx:0,lastRivalTurn:'',states:{},foundedDenoms:new Set(),seminaryOpen:false,seminaryMode:'strong',seminary:[],pastors:[],availablePastors:[],nextPastorId:1,totalPastorsFormed:0,annualDecisions:[],scheduledOfferExpenses:[],eventQueue:[],usedTheologyQuestions:[],achievements:[],offerBrokeMonths:0,mods:{doctrineGrowth:1,missionGrowth:1,youthRetention:1,persecutionPressure:1,pastoralFormation:1}};
 
 const ACHIEVEMENTS=[
   {id:'primeiros-passos',title:'Primeiros Passos',xp:75,points:25,icon:'/assets/achievements/primeiros-passos.png',desc:'Voce iniciou sua primeira campanha em Pela Graca 1904.'},
@@ -645,6 +645,7 @@ function recalc(){
     const activeSub=G.seminary.filter(c=>G.year-c.entryYear<SEMINARY_YEARS).reduce((a,c)=>a+(c.subsidyCount||0),0);
     expense+=activeSub*SEMINARY_SUBSIDY_PER_STUDENT;
   }
+  expense+=scheduledOfferExpenseTotal();
   G.monthlyExpense=expense;
   G.rateFe=fe*G.rateMult*ECONOMY_SCALE;G.rateOf=(of*pastoralFinanceMult())-expense;G.rateFi=fi*G.rateMult;
 }
@@ -717,6 +718,24 @@ function totalChurchOfferIncome(){
   return ALL_STATES.reduce((sum,id)=>sum+G.states[id].denomData.IELB.churches.reduce((s,c,i)=>s+Math.max(0,churchInternalBalance(id,i).net),0),0);
 }
 function totalChurchOfferAfterFormation(){return totalChurchOfferIncome()*pastoralFinanceMult();}
+function scheduledOfferExpenseTotal(){
+  const list=Array.isArray(G.scheduledOfferExpenses)?G.scheduledOfferExpenses:[];
+  return list.reduce((sum,item)=>sum+Math.max(0,Number(item.monthly)||0),0);
+}
+function scheduleOfferExpense(label,total,months=12){
+  const amount=Math.max(0,Number(total)||0);
+  const duration=Math.max(1,Math.floor(Number(months)||12));
+  if(amount<=0)return;
+  if(!Array.isArray(G.scheduledOfferExpenses))G.scheduledOfferExpenses=[];
+  G.scheduledOfferExpenses.push({label:String(label||'Despesa nacional'),monthly:amount/duration,monthsLeft:duration,total:amount,fresh:true});
+}
+function processScheduledOfferExpenses(){
+  if(!Array.isArray(G.scheduledOfferExpenses)||!G.scheduledOfferExpenses.length)return;
+  G.scheduledOfferExpenses=G.scheduledOfferExpenses.map(item=>{
+    if(item.fresh)return {...item,fresh:false};
+    return {...item,monthsLeft:Math.max(0,(Number(item.monthsLeft)||0)-1)};
+  }).filter(item=>item.monthsLeft>0);
+}
 
 function churchInternalBalance(stateId,index){
   const ch=G.states[stateId].denomData.IELB.churches[index];
@@ -1065,6 +1084,8 @@ function renderBrazilRight(){
   if(activeSub>0)addR(body,'Subsídio seminaristas','-'+(activeSub*SEMINARY_SUBSIDY_PER_STUDENT).toFixed(2)+'/mês');
   const churchSubTotal=ALL_STATES.reduce((sum,sid)=>sum+G.states[sid].denomData.IELB.churches.reduce((s,c,i)=>s+(c.subsidized?churchInternalBalance(sid,i).deficit:0),0),0);
   addR(body,'Subsídio igrejas',churchSubTotal>0.01?'-'+churchSubTotal.toFixed(2)+'/mês':'0');
+  const scheduledTotal=scheduledOfferExpenseTotal();
+  if(scheduledTotal>0.01)addR(body,'Ações anuais','-'+scheduledTotal.toFixed(2)+'/mês');
   addR(body,'Formação pastoral',pastoralFinanceMult().toFixed(2)+'x');
   addR(body,'Missão',G.mods.missionGrowth.toFixed(2)+'x');
   addR(body,'Retenção jovem',G.mods.youthRetention.toFixed(2)+'x');
@@ -1389,10 +1410,10 @@ function catecismo(){
   setTick('Catecismo concluído: +5 membros integrados às comunidades.');
   updateRes();renderLeft();renderRight();redrawDots();
 }
-function assignAvailablePastorAction(id,i,second=false){
+function assignAvailablePastorAction(id,i,second=false,chargeNow=true){
   const p=availablePastor();
-  if(!p||G.of<PASTOR_SEND_COST)return;
-  G.of-=PASTOR_SEND_COST;
+  if(!p||(chargeNow&&G.of<PASTOR_SEND_COST))return;
+  if(chargeNow)G.of-=PASTOR_SEND_COST;
   const ch=G.states[id].denomData.IELB.churches[i];
   if(second&&ch.pastorId){
     removeAvailablePastor(p.id);
@@ -1669,14 +1690,14 @@ function showAnnualBatchModal(ev){
 }
 
 function applyAnnualBatchDecisions(decisions){
-  const stats={pastors:0,stewardship:0,evangelism:0,subsidies:0,helped:0,skipped:0};
+  const stats={pastors:0,stewardship:0,evangelism:0,subsidies:0,helped:0,skipped:0,costs:0};
   decisions.forEach(item=>{
     const ch=G.states[item.stateId]?.denomData?.IELB?.churches?.[item.index];
     if(!ch){stats.skipped++;return;}
     if(item.reason==='secondPastor'){
       const currentPastor=pastorForChurch(item.stateId,item.index);
       const needsOwnPastor=ch.type==='missao'&&currentPastor&&pastorRouteIndexes(currentPastor).includes(item.index);
-      if(availablePastor()&&G.of>=PASTOR_SEND_COST){assignAvailablePastorAction(item.stateId,item.index,!needsOwnPastor);ch.lastSecondPastorDecisionYear=G.year;stats.pastors++;stats.helped++;}
+      if(availablePastor()){assignAvailablePastorAction(item.stateId,item.index,!needsOwnPastor,false);scheduleOfferExpense('Pastorado anual',PASTOR_SEND_COST,12);ch.lastSecondPastorDecisionYear=G.year;stats.pastors++;stats.helped++;stats.costs+=PASTOR_SEND_COST;}
       else {ch.lastSecondPastorDecisionYear=G.year;stats.skipped++;}
       return;
     }
@@ -1684,8 +1705,8 @@ function applyAnnualBatchDecisions(decisions){
       if((ch.failedStewardshipAttempts||0)>=2){
         ch.subsidized=true;ch.subsidyMonths=0;ch.solventMonths=0;ch.failedStewardshipAttempts=0;stats.subsidies++;stats.helped++;return;
       }
-      if(G.of>=CHURCH_DECISION_OFFER_COST){
-        G.of-=CHURCH_DECISION_OFFER_COST;stats.stewardship++;
+      {
+        scheduleOfferExpense('Mordomia anual',CHURCH_DECISION_OFFER_COST,12);stats.stewardship++;stats.costs+=CHURCH_DECISION_OFFER_COST;
         if(Math.random()<0.6){
           const gain=0.08+Math.random()*0.1;
           ch.offerRate=Math.max(0.15,Math.min(1,(ch.offerRate||0.7)+gain));
@@ -1696,13 +1717,13 @@ function applyAnnualBatchDecisions(decisions){
           ch.struggleMonths=(ch.struggleMonths||0)+1;
           stats.skipped++;
         }
-      }else stats.skipped++;
+      }
       return;
     }
     if(item.reason==='stagnant'){
       ch.lastStagnationDecisionYear=G.year;
-      if(G.of>=CHURCH_DECISION_OFFER_COST){
-        G.of-=CHURCH_DECISION_OFFER_COST;stats.evangelism++;
+      {
+        scheduleOfferExpense('Evangelismo anual',CHURCH_DECISION_OFFER_COST,12);stats.evangelism++;stats.costs+=CHURCH_DECISION_OFFER_COST;
         if(Math.random()<0.6){
           const n=randInt(8,18);
           const added=addMembersToChurch(ch,n);ch.struggleMonths=0;ch.stagnantMonths=0;ch._stagnationWindowStart=ch.members;ch._stagnationMonths=0;ch.failedEvangelismAttempts=0;
@@ -1713,19 +1734,20 @@ function applyAnnualBatchDecisions(decisions){
           ch.failedEvangelismAttempts=(ch.failedEvangelismAttempts||0)+1;
           stats.skipped++;
         }
-      }else stats.skipped++;
+      }
     }
   });
   recalc();updateRes();renderLeft();renderRight();redrawDots();
-  return 'Relatorio consolidado aplicado: '+stats.pastors+' pastores enviados, '+stats.stewardship+' campanhas de mordomia, '+stats.evangelism+' campanhas de evangelismo, '+stats.subsidies+' subsidios diretos. '+stats.helped+' casos melhoraram e '+stats.skipped+' ficaram para acompanhamento.';
+  return 'Relatorio consolidado aplicado: '+stats.pastors+' pastores enviados, '+stats.stewardship+' campanhas de mordomia, '+stats.evangelism+' campanhas de evangelismo, '+stats.subsidies+' subsidios diretos. '+stats.helped+' casos melhoraram e '+stats.skipped+' ficaram para acompanhamento. '+Math.floor(stats.costs)+' ofertas foram parceladas nos proximos 12 meses.';
 }
 
 function canSpendAutomaticOffers(amount){
   const budget=G._annualAutoBudget;
-  return G.of>=amount&&(!budget||budget.remaining>=amount);
+  return !budget||budget.remaining>=amount;
 }
 function recordAutomaticOfferSpend(amount,type){
   const budget=G._annualAutoBudget;
+  scheduleOfferExpense(type==='pastors'?'Pastorado anual':type==='stewardship'?'Mordomia anual':type==='evangelism'?'Evangelismo anual':'Acompanhamento anual',amount,12);
   if(!budget)return;
   budget.remaining=Math.max(0,budget.remaining-amount);
   budget.spent+=amount;
@@ -1743,8 +1765,8 @@ function summarizeAnnualAutoBudget(){
   if(budget.pastors)parts.push(budget.pastors+' pastorado');
   if(budget.stewardship)parts.push(budget.stewardship+' mordomia');
   if(budget.evangelism)parts.push(budget.evangelism+' evangelismo');
-  const skipped=budget.skipped?' '+budget.skipped+' pendencia(s) ficaram para o proximo relatorio por limite de caixa.':'';
-  addGameNotification('Gastos anuais','-'+Math.floor(budget.spent)+' ofertas em '+(parts.join(', ')||'acompanhamentos')+'. Limite anual: '+Math.floor(budget.limit)+' ofertas.'+skipped,budget.skipped?'warn':'good');
+  const skipped=budget.skipped?' '+budget.skipped+' pendencia(s) ficaram para o proximo relatorio por limite anual.':'';
+  addGameNotification('Custos mensais',Math.floor(budget.spent)+' ofertas/ano parceladas em '+(parts.join(', ')||'acompanhamentos')+'. Isso entra no saldo mensal.'+skipped,budget.skipped?'warn':'good');
 }
 
 function resolveAutomaticChurchDecisions(decisions){
@@ -1757,7 +1779,7 @@ function resolveAutomaticChurchDecisions(decisions){
       const currentPastor=pastorForChurch(item.stateId,item.index);
       const needsOwnPastor=ch.type==='missao'&&currentPastor&&pastorRouteIndexes(currentPastor).includes(item.index);
       if(availablePastor()&&canSpendAutomaticOffers(PASTOR_SEND_COST)){
-        assignAvailablePastorAction(item.stateId,item.index,!needsOwnPastor);
+        assignAvailablePastorAction(item.stateId,item.index,!needsOwnPastor,false);
         recordAutomaticOfferSpend(PASTOR_SEND_COST,'pastors');
         ch.lastSecondPastorDecisionYear=G.year;
         addGameNotification('Pastorado',needsOwnPastor?'Pastor encarregado enviado para '+place+'.':'Segundo pastor enviado para '+place+'.','good');
@@ -1778,7 +1800,6 @@ function resolveAutomaticChurchDecisions(decisions){
         return;
       }
       if(canSpendAutomaticOffers(CHURCH_DECISION_OFFER_COST)){
-        G.of-=CHURCH_DECISION_OFFER_COST;
         recordAutomaticOfferSpend(CHURCH_DECISION_OFFER_COST,'stewardship');
         if(Math.random()<0.6){
           const gain=0.08+Math.random()*0.1;
@@ -1801,7 +1822,6 @@ function resolveAutomaticChurchDecisions(decisions){
     if(item.reason==='stagnant'){
       ch.lastStagnationDecisionYear=G.year;
       if(canSpendAutomaticOffers(CHURCH_DECISION_OFFER_COST)){
-        G.of-=CHURCH_DECISION_OFFER_COST;
         recordAutomaticOfferSpend(CHURCH_DECISION_OFFER_COST,'evangelism');
         if(Math.random()<0.6){
           const n=randInt(8,18);
@@ -2227,7 +2247,7 @@ function loop(now){
       const key=G.year+'-'+(G.month+1), ev=EVENTS.find(e=>e.year===G.year&&e.month===G.month+1);
       if(ev&&!G.lastEv.has(key)){G.lastEv.add(key);showEvent(ev);}
       const rk=G.year+'-'+G.month;if(G.lastRivalTurn!==rk){G.lastRivalTurn=rk;rivalStrategicTurn();}
-      recalc();applyMonthlySustainability();checkCampaignGoal();buildLegend();checkAchievements();rd=true;
+      recalc();processScheduledOfferExpenses();recalc();applyMonthlySustainability();checkCampaignGoal();buildLegend();checkAchievements();rd=true;
     }
     if(rd){redrawDots();renderLeft();renderRight();}
     tickMs+=dt;if(tickMs>=10){tickMs=0;G.tickIdx=(G.tickIdx+1)%TICKERS.length;setTick(TICKERS[G.tickIdx]);}

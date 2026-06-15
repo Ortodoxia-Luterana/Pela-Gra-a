@@ -1,57 +1,22 @@
 (function () {
-  const MISSION_FAITH_COST = 60;
-  const MISSION_MEMBER_COST = 100;
+  const MISSION_OFFER_COST = typeof PLAYER_EXPANSION_COST !== 'undefined' ? PLAYER_EXPANSION_COST : 60;
 
   function ready() {
     return typeof G !== 'undefined' && typeof renderRight === 'function' && typeof ielbChurchRefs === 'function';
   }
 
-  function refs() {
-    return ielbChurchRefs().filter(function (ref) { return ref && ref.ch; });
-  }
-
-  function spendableMembers() {
-    return refs().reduce(function (sum, ref) {
-      return sum + Math.max(0, (Number(ref.ch.members) || 0) - 1);
-    }, 0);
-  }
-
   function canPayMission() {
-    return G.fe >= MISSION_FAITH_COST && spendableMembers() >= MISSION_MEMBER_COST;
-  }
-
-  function spendMissionMembers(amount) {
-    let remaining = amount;
-    while (remaining > 0.0001) {
-      const pool = refs().filter(function (ref) { return (Number(ref.ch.members) || 0) > 1.0001; });
-      if (!pool.length) break;
-      const share = remaining / pool.length;
-      let spent = 0;
-      pool.forEach(function (ref) {
-        const current = Number(ref.ch.members) || 0;
-        const take = Math.min(Math.max(0, current - 1), share);
-        ref.ch.members = current - take;
-        spent += take;
-      });
-      if (spent <= 0) break;
-      remaining -= spent;
-    }
-    G.fi = Math.max(0, (Number(G.fi) || 0) - (amount - remaining));
-    if (typeof ALL_STATES !== 'undefined' && typeof syncDenomMembers === 'function') {
-      ALL_STATES.forEach(function (id) { syncDenomMembers(id, 'IELB'); });
-    }
-    return amount - remaining;
+    return G.of >= MISSION_OFFER_COST;
   }
 
   function payMissionCost() {
     if (!canPayMission()) return false;
-    G.fe -= MISSION_FAITH_COST;
-    spendMissionMembers(MISSION_MEMBER_COST);
+    G.of -= MISSION_OFFER_COST;
     return true;
   }
 
   function missionCostText(extra) {
-    return 'Custo: ' + MISSION_FAITH_COST + ' Fé + ' + MISSION_MEMBER_COST + ' membros' + (extra || '');
+    return 'Custo: ' + MISSION_OFFER_COST + ' Ofertas' + (extra || '');
   }
 
   function repaint() {
@@ -86,7 +51,7 @@
     G.states[id].missionProg = 0;
     G.states[id].missionPastorId = p.id;
     repaint();
-    setTick('Pastor ' + p.name + ' enviado para ' + STATES[id].name + '. A implantação levou 60 de fé e 100 membros das igrejas.');
+    setTick('Pastor ' + p.name + ' enviado para ' + STATES[id].name + '. A implantação foi paga com ofertas.');
   };
 
   window.showChurchCityModal = function (id) {
@@ -102,7 +67,7 @@
     document.getElementById('m-txt').textContent = 'Como ainda não há presença da IELB neste estado, um pastor disponível será enviado para iniciar a missão.';
     const ref = document.getElementById('m-ref');
     ref.style.display = 'block';
-    ref.textContent = 'Pastor dedicado: ' + p.name + ' | ' + missionCostText(' retirados das igrejas');
+    ref.textContent = 'Pastor dedicado: ' + p.name + ' | ' + missionCostText('');
     const mc = document.getElementById('m-choices');
     mc.innerHTML = '';
     chooseCities(id).forEach(function (city) {
@@ -145,7 +110,7 @@
     document.getElementById('m-txt').textContent = 'Escolha a cidade onde a missão será aberta.';
     const ref = document.getElementById('m-ref');
     ref.style.display = 'block';
-    ref.textContent = missionCostText(' retirados das igrejas');
+    ref.textContent = missionCostText('');
     const mc = document.getElementById('m-choices');
     mc.innerHTML = '';
     chooseCities(id).forEach(function (city) {
@@ -176,7 +141,7 @@
     document.getElementById('m-txt').textContent = 'Escolha se este ponto ficará com um pastor já em atividade no estado ou com um novo pastor disponível.';
     const ref = document.getElementById('m-ref');
     ref.style.display = 'block';
-    ref.textContent = missionCostText(' retirados das igrejas');
+    ref.textContent = missionCostText('');
     const mc = document.getElementById('m-choices');
     mc.innerHTML = '';
     if (route) {

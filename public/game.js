@@ -154,12 +154,14 @@ const PLAYER_PLANT_COOLDOWN=6;
 const PLAYER_MISSION_COOLDOWN=4;
 const RIVAL_ORGANIC_SCALE=0.065;
 const EXTRA_CHURCH_DIMINISH=0.72;
-const PLAYER_CHURCH_UPKEEP=0.32;
-const PLAYER_MEMBER_CARE_UPKEEP=0.00045;
-const OFFER_ROOT_GAIN=0.017;
+const PLAYER_CHURCH_UPKEEP=0.42;
+const PLAYER_MEMBER_CARE_UPKEEP=0.0015;
+const PLAYER_PASTOR_UPKEEP=0.22;
+const AVAILABLE_PASTOR_UPKEEP=0.02;
+const OFFER_ROOT_GAIN=0.0085;
 const FAITH_ROOT_GAIN=0.085;
-const BASE_SUPPORT=0.42;
-const EARLY_MISSION_SUPPORT=0.35;
+const BASE_SUPPORT=1.45;
+const EARLY_MISSION_SUPPORT=0.85;
 const STATE_STRUCTURE_UPKEEP=0.25;
 const ADMIN_OVERLOAD_UPKEEP=0.45;
 const PASTOR_SEND_COST=40;
@@ -170,7 +172,7 @@ const MISSION_PROMOTION_COST=120;
 const CHURCH_DECISION_OFFER_COST=20;
 const ANNUAL_AUTO_OFFER_BUDGET_RATIO=0.15;
 const ANNUAL_AUTO_OFFER_BUDGET_CAP=240;
-const SEMINARY_MONTHLY_COST=0.5;
+const SEMINARY_MONTHLY_COST=0.35;
 const SEMINARY_SUBSIDY_PER_STUDENT=0.15;
 const SEMINARY_YEARS=7;
 const CHURCH_SUBSIDY_MONTHS=60;
@@ -186,7 +188,7 @@ const PASTOR_MEMBER_CAPACITY=CHURCH_LEVELS[0].members;
 const CHURCH_MEMBER_CAPACITY=CHURCH_LEVELS[CHURCH_LEVELS.length-1].members;
 const SEMINARY_MEMBERS_PER_GRADUATE=5500;
 const SEMINARY_COMPLETION_RATE=0.65;
-const SEMINARY_FIXED_GRADUATE_TARGET=4;
+const SEMINARY_FIXED_GRADUATE_TARGET=2;
 
 // eventos revisados: decisões sem gabarito visível antes do clique e efeitos ligados a G.mods.
 const EVENTS=[
@@ -622,7 +624,7 @@ function statePopulationPeople(id){return Math.max(1,(STATE_POP[id]||100)*1000);
 function influencePercent(value){if(value>0&&value<0.01)return '<0,01%';if(value<1)return value.toFixed(2).replace('.',',')+'%';if(value<10)return value.toFixed(1).replace('.',',')+'%';return value.toFixed(0)+'%';}
 function denomPopulationMembers(id,d){const slot=G.states[id].denomData[d];if(d!=='CAT')return Math.max(0,slot.members||0);const nonCath=DENOM_KEYS.filter(x=>x!=='CAT').reduce((sum,x)=>sum+Math.max(0,G.states[id].denomData[x].members||0),0);return Math.max(0,statePopulationPeople(id)-nonCath);}
 
-function pastoralFinanceMult(){return Math.max(0.85,Math.min(1.75,G.mods.pastoralFormation));}
+function pastoralFinanceMult(){return Math.max(0.9,Math.min(1.18,0.96+(G.mods.pastoralFormation-1)*0.22));}
 
 function churchOrganicMemberRate(stateId,index){
   const ch=G.states[stateId].denomData.IELB.churches[index];
@@ -698,6 +700,7 @@ function recalc(){
     const activeSub=G.seminary.filter(c=>G.year-c.entryYear<SEMINARY_YEARS).reduce((a,c)=>a+(c.subsidyCount||0),0);
     expense+=activeSub*SEMINARY_SUBSIDY_PER_STUDENT;
   }
+  expense+=playerNationalStructureExpense();
   expense+=scheduledOfferExpenseTotal();
   G.monthlyExpense=expense;
   G.rateFe=fe*G.rateMult*ECONOMY_SCALE;G.rateOf=(of*pastoralFinanceMult())-expense;G.rateFi=fi*G.rateMult;
@@ -789,6 +792,16 @@ function processScheduledOfferExpenses(){
     return {...item,monthsLeft:Math.max(0,(Number(item.monthsLeft)||0)-1)};
   }).filter(item=>item.monthsLeft>0);
 }
+function playerNationalStructureExpense(){
+  const churches=totalChurches('IELB');
+  const states=statePresenceCount('IELB');
+  const members=totalMembers('IELB');
+  const extraStates=Math.max(0,states-1)*STATE_STRUCTURE_UPKEEP;
+  const admin=Math.max(0,churches-8)*ADMIN_OVERLOAD_UPKEEP;
+  const availablePastors=Math.max(0,(G.availablePastors||[]).length-6)*AVAILABLE_PASTOR_UPKEEP;
+  const memberAdmin=Math.max(0,members-5000)*0.0024;
+  return extraStates+admin+availablePastors+memberAdmin;
+}
 
 function churchInternalBalance(stateId,index){
   const ch=G.states[stateId].denomData.IELB.churches[index];
@@ -797,8 +810,13 @@ function churchInternalBalance(stateId,index){
   const scale=index===0?1:1/(1+index*0.08);
   const memberIncome=Math.max(0,ch.members)*OFFER_ROOT_GAIN;
   const grossIncome=memberIncome*mul.of*scale*pastoral.offerMult*G.rateMult*ECONOMY_SCALE;
-  const income=grossIncome*(ch.offerRate||0.7);
-  const cost=PLAYER_CHURCH_UPKEEP+(ch.type==='missao'?0.08:0.18)+ch.members*PLAYER_MEMBER_CARE_UPKEEP;
+  const age=Math.max(0,G.year-(ch.foundedYear||G.year));
+  const foundingSupport=ch.foundingChurch?(G.year<1918?BASE_SUPPORT:G.year<1930?BASE_SUPPORT*0.45:0):0;
+  const support=foundingSupport+(ch.type==='missao'?Math.max(0,EARLY_MISSION_SUPPORT*(1-age/8)):0);
+  const income=grossIncome*(ch.offerRate||0.7)+support;
+  const pastorCost=Math.max(1,churchPastorCount(ch))*PLAYER_PASTOR_UPKEEP;
+  const levelCost=Math.max(0,(ch.level||1)-1)*0.18;
+  const cost=PLAYER_CHURCH_UPKEEP+(ch.type==='missao'?0.12:0.28)+levelCost+pastorCost+ch.members*PLAYER_MEMBER_CARE_UPKEEP;
   const net=income-cost;
   return {income,cost,net,deficit:Math.max(0,-net),pastoral};
 }

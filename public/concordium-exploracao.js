@@ -7,6 +7,8 @@
   const PLAYER_COLORS = ["#d94f3d", "#3d7bd9", "#45a857", "#d8a629", "#8a5bd9", "#d95f9f"];
   const EWRAM_START = 0x02000000;
   const EWRAM_SIZE = 0x40000;
+  const GBA_STATE_SIZE = 0x61000;
+  const GBA_STATE_EWRAM_OFFSET = 0x21000;
   const SAVE_BLOCK_1_SIZE = 0x3d88;
   const SAVE_BLOCK_2_SIZE = 0xf2c;
   const SAVE_BLOCK_1_PARTY_COUNT = 0x234;
@@ -196,7 +198,7 @@
 
   function gbaOffset(address) {
     if (address < EWRAM_START || address >= EWRAM_START + EWRAM_SIZE) return -1;
-    return address - EWRAM_START;
+    return GBA_STATE_EWRAM_OFFSET + (address - EWRAM_START);
   }
 
   function countNonZero(bytes, offset, length) {
@@ -296,7 +298,7 @@
 
   function extractEmeraldDetails(stateLike) {
     const memory = getStateMemory(stateLike);
-    if (!memory || memory.length < EWRAM_SIZE) return {};
+    if (!memory || memory.length < GBA_STATE_SIZE) return {};
     const blocks = findEmeraldSaveBlocks(memory);
     if (!blocks || blocks.score < 4) return {};
     if (countNonZero(memory, blocks.save1Offset, 0x500) <= 10 || countNonZero(memory, blocks.save2Offset, 0x120) <= 10) return {};

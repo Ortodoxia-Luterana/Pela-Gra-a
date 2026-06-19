@@ -121,6 +121,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS luther_match_rankings (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, level INTEGER NOT NULL, best_level INTEGER NOT NULL, completed_levels INTEGER NOT NULL, score INTEGER NOT NULL, max_combo INTEGER NOT NULL DEFAULT 0, luther_pair_used INTEGER NOT NULL DEFAULT 0, solas_pair_used INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS cronicas_saves (user_id TEXT PRIMARY KEY, state_json TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS concordium_profiles (user_id TEXT PRIMARY KEY, profile_json TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
+  CREATE TABLE IF NOT EXISTS concordium_gba_saves (user_id TEXT PRIMARY KEY, save_json TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS platform_presence (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, avatar_data TEXT, location TEXT NOT NULL, game_id TEXT NOT NULL, last_seen TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS hub_chat_messages (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, user_name TEXT NOT NULL, message TEXT NOT NULL, created_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS quiz_presence (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, last_seen TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
@@ -204,6 +205,7 @@ const deleteAchievementsForUser = db.prepare('DELETE FROM user_achievements WHER
 const deleteLutherRankingForUser = db.prepare('DELETE FROM luther_match_rankings WHERE user_id = ?');
 const deleteCronicasForUser = db.prepare('DELETE FROM cronicas_saves WHERE user_id = ?');
 const deleteConcordiumForUser = db.prepare('DELETE FROM concordium_profiles WHERE user_id = ?');
+const deleteConcordiumGbaSaveForUser = db.prepare('DELETE FROM concordium_gba_saves WHERE user_id = ?');
 const deletePlatformPresenceForUser = db.prepare('DELETE FROM platform_presence WHERE user_id = ?');
 const deleteHubChatForUser = db.prepare('DELETE FROM hub_chat_messages WHERE user_id = ?');
 const deleteUserById = db.prepare('DELETE FROM users WHERE id = ?');
@@ -223,6 +225,12 @@ const upsertConcordiumProfile = db.prepare(`
   INSERT INTO concordium_profiles (user_id, profile_json, created_at, updated_at)
   VALUES (?, ?, ?, ?)
   ON CONFLICT(user_id) DO UPDATE SET profile_json = excluded.profile_json, updated_at = excluded.updated_at
+`);
+const getConcordiumGbaSave = db.prepare('SELECT * FROM concordium_gba_saves WHERE user_id = ?');
+const upsertConcordiumGbaSave = db.prepare(`
+  INSERT INTO concordium_gba_saves (user_id, save_json, created_at, updated_at)
+  VALUES (?, ?, ?, ?)
+  ON CONFLICT(user_id) DO UPDATE SET save_json = excluded.save_json, updated_at = excluded.updated_at
 `);
 const upsertPlatformPresence = db.prepare(`
   INSERT INTO platform_presence (user_id, user_name, avatar_data, location, game_id, last_seen)
@@ -538,6 +546,7 @@ function cleanupNonPlayerAccounts() {
       deleteLutherRankingForUser.run(user.id);
       deleteCronicasForUser.run(user.id);
       deleteConcordiumForUser.run(user.id);
+      deleteConcordiumGbaSaveForUser.run(user.id);
       deletePlatformPresenceForUser.run(user.id);
       deleteHubChatForUser.run(user.id);
       deleteQuizPresenceForUser.run(user.id);
@@ -661,6 +670,24 @@ function sanitizeConcordiumProfile(input) {
       music: clampInt(options.music ?? defaults.options.music, 0, 100),
       effects: clampInt(options.effects ?? defaults.options.effects, 0, 100)
     }
+  };
+}
+function sanitizeConcordiumGbaSave(input) {
+  const source = input && typeof input === 'object' ? input : {};
+  const metadata = source.metadata && typeof source.metadata === 'object' ? source.metadata : {};
+  const cleanList = (items, max) => Array.isArray(items)
+    ? items.slice(0, max).map(item => String(item || '').replace(/[<>]/g, '').trim().slice(0, 24)).filter(Boolean)
+    : [];
+  return {
+    metadata: {
+      mapName: String(metadata.mapName || 'Mapa atual ainda nao lido da ROM').replace(/[<>]/g, '').trim().slice(0, 64),
+      team: cleanList(metadata.team, 6),
+      badges: cleanList(metadata.badges, 12),
+      playTime: String(metadata.playTime || '').replace(/[<>]/g, '').trim().slice(0, 32)
+    },
+    save: typeof source.save === 'string' ? source.save.slice(0, 1_500_000) : '',
+    hash: String(source.hash || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80),
+    format: String(source.format || '').replace(/[<>]/g, '').trim().slice(0, 24)
   };
 }
 function isSafeAvatarData(value) {
@@ -1222,6 +1249,26 @@ async function handleApi(req, res, url, user) {
       const now = new Date().toISOString();
       upsertConcordiumProfile.run(user.id, JSON.stringify(nextProfile), row?.created_at || now, now);
       json(res, 200, { ok: true, profile: nextProfile, updatedAt: now });
+      return;
+    }
+  }
+  if (url.pathname === '/api/concordium/gba-save') {
+    const row = getConcordiumGbaSave.get(user.id);
+    const save = sanitizeConcordiumGbaSave(safeJsonParse(row?.save_json, null));
+    if (req.method === 'GET') {
+      json(res, 200, {
+        user: { id: user.id, name: user.name },
+        save,
+        updatedAt: row?.updated_at || null
+      });
+      return;
+    }
+    if (req.method === 'POST' || req.method === 'PUT') {
+      const payload = safeJsonParse(await readBody(req) || '{}', {});
+      const nextSave = sanitizeConcordiumGbaSave(payload);
+      const now = new Date().toISOString();
+      upsertConcordiumGbaSave.run(user.id, JSON.stringify(nextSave), row?.created_at || now, now);
+      json(res, 200, { ok: true, save: nextSave, updatedAt: now });
       return;
     }
   }
@@ -1886,6 +1933,7 @@ function initConcordiumMultiplayer(httpServer) {
       y: player.y,
       dir: player.dir,
       color: player.color,
+      details: player.details,
       updatedAt: player.updatedAt
     };
   }
@@ -1910,6 +1958,8 @@ function initConcordiumMultiplayer(httpServer) {
     socket.on('concordium-gba:join', payload => {
       const user = currentUser(socket.request);
       const fallbackName = user?.name || `Jogador ${socket.id.slice(0, 4)}`;
+      const saveRow = user ? getConcordiumGbaSave.get(user.id) : null;
+      const saved = sanitizeConcordiumGbaSave(safeJsonParse(saveRow?.save_json, null));
       const player = {
         id: socket.id,
         userId: user?.id || null,
@@ -1918,6 +1968,7 @@ function initConcordiumMultiplayer(httpServer) {
         y: clamp(payload?.y ?? 72, 12, 96),
         dir: safeText(payload?.dir, 'down') || 'down',
         color: safeText(payload?.color, '#d94f3d') || '#d94f3d',
+        details: saved.metadata,
         updatedAt: Date.now()
       };
       gbaPlayers.set(socket.id, player);

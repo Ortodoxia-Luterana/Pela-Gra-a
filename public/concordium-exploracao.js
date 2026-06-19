@@ -2,86 +2,79 @@
   const ROM_URL = "/concordium-exploracao/rom";
   const EMULATOR_DATA_URL = "https://cdn.emulatorjs.org/stable/data/";
   const LOADER_URL = `${EMULATOR_DATA_URL}loader.js`;
-  const MOVE_SPEED = 22;
-  const SEND_EVERY_MS = 80;
   const PLAYER_COLORS = ["#d94f3d", "#3d7bd9", "#45a857", "#d8a629", "#8a5bd9", "#d95f9f"];
 
-  const shell = document.querySelector(".gba-shell");
-  const overlay = document.getElementById("gba-overlay");
-  const startButton = document.getElementById("gba-start");
-  const statusEl = document.getElementById("gba-status");
-  const multiplayerLayer = document.getElementById("gba-multiplayer");
-  const onlineCount = document.getElementById("gba-online-count");
-  const onlineStatus = document.getElementById("gba-online-status");
-  const panel = document.getElementById("gba-panel");
-  const panelToggle = document.getElementById("gba-panel-toggle");
-  const panelClose = document.getElementById("gba-panel-close");
-  const dpad = document.querySelector(".gba-dpad");
+  const loading = document.getElementById("gba-loading");
+  const saveStatus = document.getElementById("gba-save-status");
+  const playerList = document.getElementById("gba-player-list");
+  const playerDialog = document.getElementById("gba-player-dialog");
+  const playerNameEl = document.getElementById("gba-player-name");
+  const playerMapEl = document.getElementById("gba-player-map");
+  const playerTeamEl = document.getElementById("gba-player-team");
+  const playerBadgesEl = document.getElementById("gba-player-badges");
 
-  let emulatorLoaded = false;
   let socket = null;
   let myId = "";
   let playerName = "Jogador";
-  let lastFrameAt = 0;
-  let lastSentAt = 0;
-  let moving = false;
-
-  const pressed = { up: false, down: false, left: false, right: false };
-  const playerNodes = new Map();
+  let myDetails = defaultDetails();
   const players = new Map();
-  const me = { id: "", name: "Voce", x: 50, y: 72, dir: "down", color: PLAYER_COLORS[0] };
 
-  panelToggle.addEventListener("click", () => panel.classList.add("open"));
-  panelClose.addEventListener("click", () => panel.classList.remove("open"));
-
-  function setStatus(text) {
-    statusEl.textContent = text;
+  function defaultDetails() {
+    return {
+      mapName: "Mapa atual ainda nao lido da ROM",
+      team: [],
+      badges: [],
+      playTime: ""
+    };
   }
 
-  function setOnlineStatus(text) {
-    onlineStatus.textContent = text;
-  }
-
-  function updateOnlineCount() {
-    const count = Math.max(players.size, myId ? players.size : 0);
-    onlineCount.textContent = `Online: ${count}`;
-  }
-
-  function clamp(value, min, max) {
-    return Math.max(min, Math.min(max, Number(value) || min));
+  function setSaveStatus(text) {
+    saveStatus.textContent = text;
   }
 
   function safeName(value) {
     return String(value || "Jogador").replace(/[<>]/g, "").trim().slice(0, 24) || "Jogador";
   }
 
-  async function romStatus() {
-    const response = await fetch("/api/concordium/rom-status", { cache: "no-store", credentials: "same-origin" });
-    if (!response.ok) throw new Error("Nao foi possivel verificar a ROM.");
-    return response.json();
+  function cleanDetails(details) {
+    const value = details && typeof details === "object" ? details : {};
+    return {
+      mapName: String(value.mapName || "Mapa atual ainda nao lido da ROM").replace(/[<>]/g, "").slice(0, 64),
+      team: Array.isArray(value.team) ? value.team.slice(0, 6).map(item => String(item || "").replace(/[<>]/g, "").slice(0, 24)).filter(Boolean) : [],
+      badges: Array.isArray(value.badges) ? value.badges.slice(0, 12).map(item => String(item || "").replace(/[<>]/g, "").slice(0, 24)).filter(Boolean) : [],
+      playTime: String(value.playTime || "").replace(/[<>]/g, "").slice(0, 32)
+    };
   }
 
-  async function loadAccountName() {
+  function hashCode(value) {
+    return String(value).split("").reduce((hash, char) => ((hash << 5) - hash) + char.charCodeAt(0), 0);
+  }
+
+  async function loadAccount() {
     try {
       const response = await fetch("/api/me", { cache: "no-store", credentials: "same-origin" });
       if (!response.ok) return;
       const payload = await response.json();
       playerName = safeName(payload?.user?.name || "Jogador");
-      me.name = playerName;
     } catch {}
   }
 
-  function configureEmulator() {
-    window.EJS_player = "#game";
-    window.EJS_core = "mgba";
-    window.EJS_gameUrl = ROM_URL;
-    window.EJS_gameName = "Concordium";
-    window.EJS_color = "#f1c75d";
-    window.EJS_backgroundColor = "#05080b";
-    window.EJS_startOnLoaded = false;
-    window.EJS_fullscreenOnLoaded = false;
-    window.EJS_pathtodata = EMULATOR_DATA_URL;
-    window.EJS_biosUrl = "";
+  async function loadServerSave() {
+    try {
+      const response = await fetch("/api/concordium/gba-save", { cache: "no-store", credentials: "same-origin" });
+      if (!response.ok) return;
+      const payload = await response.json();
+      myDetails = cleanDetails(payload?.save?.metadata);
+      setSaveStatus(payload.updatedAt ? "Save automatico ativo" : "Save automatico pronto");
+    } catch {
+      setSaveStatus("Save automatico indisponivel");
+    }
+  }
+
+  async function romStatus() {
+    const response = await fetch("/api/concordium/rom-status", { cache: "no-store", credentials: "same-origin" });
+    if (!response.ok) throw new Error("Nao foi possivel verificar a ROM.");
+    return response.json();
   }
 
   function loadScript(src) {
@@ -95,215 +88,190 @@
     });
   }
 
-  async function startEmulator() {
-    if (emulatorLoaded) {
-      overlay.classList.add("hidden");
-      return;
+  function toBase64(value) {
+    if (!value) return "";
+    if (typeof value === "string") return value.slice(0, 1_500_000);
+    const source = value instanceof ArrayBuffer
+      ? new Uint8Array(value)
+      : ArrayBuffer.isView(value)
+        ? new Uint8Array(value.buffer, value.byteOffset, value.byteLength)
+        : null;
+    if (!source) return "";
+    let binary = "";
+    const chunkSize = 0x8000;
+    for (let i = 0; i < source.length; i += chunkSize) {
+      binary += String.fromCharCode.apply(null, source.subarray(i, i + chunkSize));
     }
-    startButton.disabled = true;
-    setStatus("Verificando ROM nativa...");
+    return btoa(binary).slice(0, 1_500_000);
+  }
+
+  async function persistSave(eventData) {
+    const payload = Array.isArray(eventData) ? eventData[0] || eventData[1] : eventData;
+    const save = payload && typeof payload === "object" ? payload.save || payload.state || payload.data || payload : payload;
+    const body = {
+      metadata: myDetails,
+      save: toBase64(save),
+      hash: payload?.hash || "",
+      format: payload?.format || "emulatorjs"
+    };
     try {
-      const status = await romStatus();
-      if (!status.available) {
-        setStatus("ROM nativa nao encontrada neste servidor.");
-        startButton.disabled = false;
-        return;
+      const response = await fetch("/api/concordium/gba-save", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      setSaveStatus(response.ok ? "Save automatico salvo" : "Falha no save automatico");
+    } catch {
+      setSaveStatus("Falha no save automatico");
+    }
+  }
+
+  function configureEmulator() {
+    window.EJS_player = "#game";
+    window.EJS_core = "mgba";
+    window.EJS_gameUrl = ROM_URL;
+    window.EJS_gameName = "Concordium";
+    window.EJS_color = "#f1c75d";
+    window.EJS_backgroundColor = "#000";
+    window.EJS_startOnLoaded = true;
+    window.EJS_fullscreenOnLoaded = false;
+    window.EJS_pathtodata = EMULATOR_DATA_URL;
+    window.EJS_biosUrl = "";
+    window.EJS_fixedSaveInterval = 8000;
+    window.EJS_Buttons = {
+      playPause: false,
+      play: false,
+      pause: false,
+      restart: false,
+      mute: false,
+      unmute: false,
+      settings: false,
+      fullscreen: false,
+      enterFullscreen: false,
+      exitFullscreen: false,
+      saveState: false,
+      loadState: false,
+      screenRecord: false,
+      gamepad: false,
+      cheat: false,
+      volume: false,
+      saveSavFiles: false,
+      loadSavFiles: false,
+      quickSave: false,
+      quickLoad: false,
+      screenshot: false,
+      cacheManager: false,
+      exitEmulation: false
+    };
+    window.EJS_onGameStart = () => {
+      loading.classList.add("hidden");
+      setSaveStatus("Save automatico ativo");
+    };
+    window.EJS_ready = () => {
+      loading.classList.add("hidden");
+      hideEmulatorChrome();
+    };
+    window.EJS_onSaveUpdate = persistSave;
+    window.EJS_onSaveState = persistSave;
+  }
+
+  function hideEmulatorChrome() {
+    const root = document.getElementById("game");
+    if (!root) return;
+    const forbidden = ["cheat", "pause", "save", "load", "restart", "upload", "file", "menu"];
+    root.querySelectorAll("button, [role='button'], input, label, a, div").forEach(node => {
+      const text = `${node.textContent || ""} ${node.title || ""} ${node.getAttribute("aria-label") || ""} ${node.className || ""}`.toLowerCase();
+      if (forbidden.some(key => text.includes(key))) {
+        node.style.display = "none";
+        node.style.pointerEvents = "none";
       }
-      setStatus(`ROM encontrada (${Math.round(status.size / 1024 / 1024)} MB). Carregando core GBA...`);
-      await loadAccountName();
-      configureEmulator();
-      await loadScript(LOADER_URL);
-      emulatorLoaded = true;
-      shell.classList.add("is-playing");
-      overlay.classList.add("hidden");
-      await startMultiplayer();
-      requestAnimationFrame(tick);
-    } catch (error) {
-      setStatus(error.message || "Falha ao iniciar o emulador.");
-      startButton.disabled = false;
-    }
-  }
-
-  function loadSocketIo() {
-    if (window.io) return Promise.resolve();
-    return loadScript("/socket.io/socket.io.js");
-  }
-
-  function renderPlayer(id, player, isSelf = false) {
-    let node = playerNodes.get(id);
-    if (!node) {
-      node = document.createElement("div");
-      node.className = `gba-player${isSelf ? " self" : ""}`;
-      node.dataset.playerId = id;
-      multiplayerLayer.appendChild(node);
-      playerNodes.set(id, node);
-    }
-    node.classList.toggle("self", isSelf);
-    node.dataset.name = isSelf ? "voce" : safeName(player.name);
-    node.dataset.dir = player.dir || "down";
-    node.style.left = `${clamp(player.x, 4, 96)}%`;
-    node.style.top = `${clamp(player.y, 12, 96)}%`;
-    node.style.setProperty("--player-shirt", player.color || PLAYER_COLORS[1]);
+    });
   }
 
   function upsertPlayer(player, isSelf = false) {
     if (!player?.id) return;
-    const normalized = {
+    players.set(player.id, {
       id: player.id,
       name: safeName(player.name),
-      x: clamp(player.x, 4, 96),
-      y: clamp(player.y, 12, 96),
-      dir: player.dir || "down",
-      color: player.color || PLAYER_COLORS[1]
-    };
-    players.set(player.id, normalized);
-    renderPlayer(player.id, normalized, isSelf);
-    updateOnlineCount();
+      color: player.color || PLAYER_COLORS[1],
+      details: cleanDetails(player.details),
+      self: isSelf
+    });
+    renderRoster();
   }
 
   function removePlayer(id) {
     players.delete(id);
-    playerNodes.get(id)?.remove();
-    playerNodes.delete(id);
-    updateOnlineCount();
+    renderRoster();
+  }
+
+  function renderRoster() {
+    if (!players.size) {
+      playerList.innerHTML = '<span class="gba-roster-empty">Conectando jogadores...</span>';
+      return;
+    }
+    playerList.innerHTML = "";
+    [...players.values()].sort((a, b) => Number(b.self) - Number(a.self) || a.name.localeCompare(b.name)).forEach(player => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = `gba-player-pill${player.self ? " self" : ""}`;
+      button.style.setProperty("--player-color", player.color);
+      button.innerHTML = `<i></i><span>${player.self ? "voce" : player.name}</span>`;
+      button.addEventListener("click", () => openPlayer(player));
+      playerList.appendChild(button);
+    });
+  }
+
+  function openPlayer(player) {
+    const details = cleanDetails(player.details);
+    playerNameEl.textContent = player.self ? `${player.name} (voce)` : player.name;
+    playerMapEl.textContent = details.mapName;
+    playerTeamEl.textContent = details.team.length ? details.team.join(", ") : "Equipe ainda nao lida do save";
+    playerBadgesEl.textContent = details.badges.length ? details.badges.join(", ") : "Insignias ainda nao lidas do save";
+    if (typeof playerDialog.showModal === "function") playerDialog.showModal();
+    else playerDialog.setAttribute("open", "open");
   }
 
   async function startMultiplayer() {
-    if (socket) return;
-    setOnlineStatus("Conectando online...");
-    await loadSocketIo();
+    await loadScript("/socket.io/socket.io.js");
     socket = window.io({ transports: ["websocket", "polling"] });
-
     socket.on("connect", () => {
       const color = PLAYER_COLORS[Math.abs(hashCode(playerName)) % PLAYER_COLORS.length];
-      socket.emit("concordium-gba:join", { name: playerName, x: me.x, y: me.y, dir: me.dir, color });
-      setOnlineStatus("Online conectado");
+      socket.emit("concordium-gba:join", { name: playerName, x: 50, y: 72, dir: "down", color });
     });
-
     socket.on("disconnect", () => {
-      setOnlineStatus("Reconectando online...");
       players.clear();
-      playerNodes.forEach(node => node.remove());
-      playerNodes.clear();
-      myId = "";
-      updateOnlineCount();
+      renderRoster();
     });
-
-    socket.on("connect_error", () => setOnlineStatus("Online indisponivel"));
-
     socket.on("concordium-gba:init", payload => {
       myId = payload.id;
-      me.id = myId;
-      const own = (payload.players || []).find(player => player.id === myId);
-      if (own) {
-        me.name = safeName(own.name);
-        me.color = own.color || me.color;
-      }
       (payload.players || []).forEach(player => upsertPlayer(player, player.id === myId));
-      sendMyPosition(true);
     });
-
     socket.on("concordium-gba:player-joined", player => upsertPlayer(player));
-    socket.on("concordium-gba:player-update", player => upsertPlayer(player));
+    socket.on("concordium-gba:player-update", player => upsertPlayer(player, player.id === myId));
     socket.on("concordium-gba:player-left", removePlayer);
   }
 
-  function hashCode(value) {
-    return String(value).split("").reduce((hash, char) => ((hash << 5) - hash) + char.charCodeAt(0), 0);
-  }
-
-  function setDirection(dir, active) {
-    if (!Object.hasOwn(pressed, dir)) return;
-    pressed[dir] = active;
-  }
-
-  function keyDirection(key) {
-    const normalized = key.toLowerCase();
-    if (normalized === "arrowup" || normalized === "w") return "up";
-    if (normalized === "arrowdown" || normalized === "s") return "down";
-    if (normalized === "arrowleft" || normalized === "a") return "left";
-    if (normalized === "arrowright" || normalized === "d") return "right";
-    return "";
-  }
-
-  function sendMyPosition(force = false) {
-    if (!socket?.connected || !myId) return;
-    const now = performance.now();
-    if (!force && now - lastSentAt < SEND_EVERY_MS) return;
-    lastSentAt = now;
-    socket.emit("concordium-gba:move", { x: me.x, y: me.y, dir: me.dir });
-  }
-
-  function tick(now) {
-    if (!emulatorLoaded) return;
-    const dt = Math.min(.05, (now - (lastFrameAt || now)) / 1000);
-    lastFrameAt = now;
-
-    let dx = 0;
-    let dy = 0;
-    if (pressed.left) dx -= 1;
-    if (pressed.right) dx += 1;
-    if (pressed.up) dy -= 1;
-    if (pressed.down) dy += 1;
-
-    moving = Boolean(dx || dy);
-    if (moving) {
-      if (dx && dy) {
-        dx *= Math.SQRT1_2;
-        dy *= Math.SQRT1_2;
+  async function boot() {
+    try {
+      renderRoster();
+      const status = await romStatus();
+      if (!status.available) {
+        loading.textContent = "ROM nativa nao encontrada.";
+        return;
       }
-      me.x = clamp(me.x + dx * MOVE_SPEED * dt, 4, 96);
-      me.y = clamp(me.y + dy * MOVE_SPEED * dt, 12, 96);
-      me.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up");
-      upsertPlayer(me, true);
-      sendMyPosition();
+      await loadAccount();
+      await loadServerSave();
+      await startMultiplayer();
+      configureEmulator();
+      await loadScript(LOADER_URL);
+      setTimeout(hideEmulatorChrome, 1200);
+      setInterval(hideEmulatorChrome, 3000);
+    } catch (error) {
+      loading.textContent = error.message || "Falha ao iniciar Concordium.";
     }
-
-    requestAnimationFrame(tick);
   }
 
-  window.addEventListener("keydown", event => {
-    const dir = keyDirection(event.key);
-    if (dir) setDirection(dir, true);
-  }, true);
-
-  window.addEventListener("keyup", event => {
-    const dir = keyDirection(event.key);
-    if (dir) setDirection(dir, false);
-  }, true);
-
-  window.addEventListener("blur", () => {
-    Object.keys(pressed).forEach(dir => { pressed[dir] = false; });
-    if (moving) sendMyPosition(true);
-  });
-
-  dpad.addEventListener("pointerdown", event => {
-    const button = event.target.closest("button[data-dir]");
-    if (!button) return;
-    event.preventDefault();
-    button.setPointerCapture?.(event.pointerId);
-    setDirection(button.dataset.dir, true);
-  });
-
-  dpad.addEventListener("pointerup", event => {
-    const button = event.target.closest("button[data-dir]");
-    if (!button) return;
-    event.preventDefault();
-    setDirection(button.dataset.dir, false);
-    sendMyPosition(true);
-  });
-
-  dpad.addEventListener("pointercancel", event => {
-    const button = event.target.closest("button[data-dir]");
-    if (button) setDirection(button.dataset.dir, false);
-    sendMyPosition(true);
-  });
-
-  startButton.addEventListener("click", startEmulator);
-
-  romStatus()
-    .then(status => {
-      setStatus(status.available ? "ROM nativa pronta. Toque para carregar." : "ROM nativa nao encontrada neste servidor.");
-    })
-    .catch(() => setStatus("Nao foi possivel verificar a ROM nativa."));
+  boot();
 })();

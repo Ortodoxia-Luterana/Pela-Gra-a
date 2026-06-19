@@ -6,53 +6,39 @@
   <meta name="theme-color" content="#080d12">
   <title>Concordium GBA</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="/assets/concordium-exploracao.css?v=20260618c">
+  <link rel="stylesheet" href="/assets/concordium-exploracao.css?v=20260618d">
 </head>
 <body>
-  <main class="gba-shell">
+  <main class="gba-shell is-playing">
     <header class="gba-topbar">
       <a href="/" class="gba-icon" aria-label="Voltar ao hub">&lt;</a>
-      <div>
-        <strong>Concordium</strong>
-        <span>ROM nativa do site</span>
-      </div>
-      <button id="gba-panel-toggle" class="gba-icon" type="button" aria-label="Opcoes">?</button>
+      <section class="gba-roster" aria-label="Jogadores online">
+        <div class="gba-roster-title">
+          <strong>Jogadores online</strong>
+          <span id="gba-save-status">Save automatico preparando</span>
+        </div>
+        <div id="gba-player-list" class="gba-player-list"></div>
+      </section>
     </header>
 
     <section class="gba-stage" aria-label="Emulador Game Boy Advance">
       <div id="game"></div>
-      <div id="gba-overlay" class="gba-overlay">
-        <h1>Concordium</h1>
-        <p>Uma jornada estilo Pokemon percorrendo a historia da igreja apostolica.</p>
-        <button id="gba-start" type="button">Carregar GBA</button>
-        <small id="gba-status">ROM nativa pronta.</small>
-      </div>
-      <div id="gba-multiplayer" class="gba-multiplayer" aria-label="Jogadores online"></div>
-      <div class="gba-online-hud" aria-live="polite">
-        <strong id="gba-online-count">Online: 0</strong>
-        <span id="gba-online-status">Aguardando emulador</span>
-      </div>
-      <div class="gba-dpad" aria-label="Mover jogador online">
-        <button type="button" data-dir="up" aria-label="Mover para cima">▲</button>
-        <button type="button" data-dir="left" aria-label="Mover para esquerda">◀</button>
-        <button type="button" data-dir="down" aria-label="Mover para baixo">▼</button>
-        <button type="button" data-dir="right" aria-label="Mover para direita">▶</button>
-      </div>
+      <div id="gba-loading" class="gba-loading">Carregando Concordium...</div>
     </section>
 
-    <aside id="gba-panel" class="gba-panel" aria-hidden="true">
-      <button id="gba-panel-close" class="gba-icon" type="button" aria-label="Fechar">x</button>
-      <h2>Base real do jogo</h2>
-      <p>Esta pagina roda a sua ROM GBA inteira, embutida no site. A camada online sincroniza jogadores em tempo real por cima do emulador; a integracao interna com o mapa da ROM fica para a etapa de hack da ROM.</p>
+    <dialog id="gba-player-dialog" class="gba-player-dialog">
+      <form method="dialog">
+        <button class="gba-dialog-close" value="close" aria-label="Fechar">x</button>
+      </form>
+      <h2 id="gba-player-name">Jogador</h2>
       <dl>
-        <div><dt>Sistema</dt><dd>Game Boy Advance</dd></div>
-        <div><dt>Core atual</dt><dd>mgba</dd></div>
-        <div><dt>Multiplayer</dt><dd>Sala online em tempo real</dd></div>
-        <div><dt>Senha</dt><dd>5892</dd></div>
+        <div><dt>Mapa</dt><dd id="gba-player-map">-</dd></div>
+        <div><dt>Equipe Pokemon</dt><dd id="gba-player-team">-</dd></div>
+        <div><dt>Insignias</dt><dd id="gba-player-badges">-</dd></div>
       </dl>
-    </aside>
+    </dialog>
   </main>
 
-  <script src="/assets/concordium-exploracao.js?v=20260618c"></script>
+  <script src="/assets/concordium-exploracao.js?v=20260618d"></script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 :root {
-  --gba-bg: #070d11;
-  --gba-panel: rgba(10, 16, 20, .9);
+  --gba-bg: #05080b;
+  --gba-panel: rgba(7, 12, 15, .92);
   --gba-gold: #f1c75d;
   --gba-text: #f8efd6;
   --gba-muted: #cfd7cb;
@@ -35,42 +35,21 @@ a {
   gap: 8px;
   padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
   background:
-    linear-gradient(180deg, rgba(4, 8, 12, .16), rgba(4, 8, 12, .9)),
+    linear-gradient(180deg, rgba(4, 8, 12, .12), rgba(4, 8, 12, .88)),
     url("/assets/concordium-exploracao-card.png?v=cards-20260614") center / cover;
 }
 
 .gba-topbar {
-  min-height: 48px;
+  min-height: 56px;
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  grid-template-columns: 44px minmax(0, 1fr);
   align-items: center;
   gap: 8px;
   padding: 6px;
   border: 1px solid var(--gba-line);
   border-radius: 8px;
-  background: rgba(5, 10, 13, .9);
+  background: rgba(5, 10, 13, .92);
   box-shadow: 0 12px 34px rgba(0, 0, 0, .36);
-}
-
-.gba-topbar div {
-  min-width: 0;
-  display: grid;
-  gap: 1px;
-}
-
-.gba-topbar strong {
-  color: var(--gba-gold);
-  font-size: .9rem;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-}
-
-.gba-topbar span {
-  color: var(--gba-muted);
-  font-size: .78rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .gba-icon {
@@ -85,6 +64,86 @@ a {
   background: rgba(255, 255, 255, .08);
   text-decoration: none;
   font-weight: 900;
+}
+
+.gba-roster {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(150px, 230px) minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.gba-roster-title {
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.gba-roster-title strong {
+  color: var(--gba-gold);
+  font-size: .86rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.gba-roster-title span {
+  color: var(--gba-muted);
+  font-size: .76rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gba-player-list {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.gba-roster-empty {
+  color: var(--gba-muted);
+  font-size: .78rem;
+}
+
+.gba-player-pill {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  max-width: 160px;
+  padding: 5px 9px;
+  border: 1px solid rgba(255, 239, 181, .32);
+  border-radius: 8px;
+  color: #fff7d4;
+  background: rgba(255, 255, 255, .08);
+  font-size: .78rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.gba-player-pill.self {
+  color: #10130e;
+  background: linear-gradient(180deg, #f8d66d, #d99c2d);
+}
+
+.gba-player-pill i {
+  width: 10px;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: var(--player-color, #f1c75d);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, .28);
+}
+
+.gba-player-pill span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .gba-stage {
@@ -108,268 +167,104 @@ a {
   max-width: 100%;
 }
 
-.gba-overlay {
+.gba-loading {
   position: absolute;
   inset: 0;
-  z-index: 5;
+  z-index: 4;
   display: grid;
   place-items: center;
-  align-content: center;
-  gap: 10px;
-  padding: 18px;
-  text-align: center;
-  background: linear-gradient(180deg, rgba(8, 14, 18, .38), rgba(4, 7, 9, .92));
-}
-
-.gba-overlay.hidden {
-  display: none;
-}
-
-.gba-overlay h1 {
-  margin: 0;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(2.2rem, 12vw, 5rem);
   color: #fff7d4;
-  text-shadow: 0 5px 0 rgba(0, 0, 0, .34);
-}
-
-.gba-overlay p {
-  max-width: 620px;
-  margin: 0;
-  color: #dce8ce;
-  line-height: 1.5;
-}
-
-.gba-overlay small {
-  color: #c8d0c5;
-}
-
-.gba-overlay button {
-  min-width: 170px;
-  min-height: 46px;
-  border: 1px solid rgba(255, 239, 181, .5);
-  border-radius: 8px;
-  color: #1e211a;
-  background: linear-gradient(180deg, #f8d66d, #d99c2d);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .32), 0 10px 24px rgba(0, 0, 0, .32);
-  font-weight: 950;
-  text-transform: uppercase;
-}
-
-.gba-panel {
-  position: fixed;
-  top: max(10px, env(safe-area-inset-top));
-  right: max(10px, env(safe-area-inset-right));
-  z-index: 30;
-  width: min(340px, calc(100vw - 20px));
-  padding: 14px;
-  border: 1px solid var(--gba-line);
-  border-radius: 8px;
-  background: var(--gba-panel);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, .55);
-  transform: translateX(calc(100% + 24px));
-  transition: transform .18s ease;
-}
-
-.gba-multiplayer {
-  position: absolute;
-  inset: 0;
-  z-index: 12;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.gba-online-hud {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 14;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  max-width: min(360px, calc(100% - 20px));
-  padding: 7px 10px;
-  border: 1px solid rgba(255, 239, 181, .34);
-  border-radius: 8px;
-  color: #fff7d4;
-  background: rgba(0, 0, 0, .62);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, .35);
-  font-size: .78rem;
-  pointer-events: none;
-}
-
-.gba-shell:not(.is-playing) .gba-online-hud,
-.gba-shell:not(.is-playing) .gba-dpad {
-  display: none;
-}
-
-.gba-online-hud strong {
-  color: var(--gba-gold);
-  white-space: nowrap;
-}
-
-.gba-online-hud span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.gba-player {
-  position: absolute;
-  width: 24px;
-  height: 32px;
-  transform: translate(-50%, -100%);
-  transition: left .08s linear, top .08s linear;
-  filter: drop-shadow(0 4px 3px rgba(0, 0, 0, .55));
-}
-
-.gba-player.self {
-  z-index: 2;
-}
-
-.gba-player::before {
-  content: "";
-  position: absolute;
-  left: 7px;
-  top: 0;
-  width: 9px;
-  height: 8px;
-  background: #f3c28f;
-  box-shadow: 0 8px 0 var(--player-shirt, #3d7bd9), 0 16px 0 #1c2f52;
-}
-
-.gba-player::after {
-  content: attr(data-name);
-  position: absolute;
-  left: 50%;
-  bottom: 34px;
-  max-width: 84px;
-  padding: 2px 5px;
-  border: 1px solid rgba(255, 239, 181, .36);
-  border-radius: 5px;
-  color: #fff7d4;
-  background: rgba(0, 0, 0, .72);
-  font-size: 10px;
-  font-weight: 800;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  transform: translateX(-50%);
-}
-
-.gba-player.self::after {
-  border-color: rgba(248, 214, 109, .74);
-  color: #10130e;
-  background: #f8d66d;
-}
-
-.gba-dpad {
-  position: absolute;
-  left: 14px;
-  bottom: 14px;
-  z-index: 16;
-  width: 126px;
-  height: 126px;
-  display: grid;
-  grid-template-columns: repeat(3, 42px);
-  grid-template-rows: repeat(3, 42px);
-  pointer-events: auto;
-  touch-action: none;
-}
-
-.gba-dpad button {
-  border: 1px solid rgba(255, 239, 181, .42);
-  border-radius: 8px;
-  color: #fff4cc;
-  background: rgba(4, 8, 10, .62);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 8px 18px rgba(0, 0, 0, .3);
-  font-size: 1rem;
+  background: #000;
   font-weight: 900;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .gba-dpad {
-    opacity: .34;
-  }
-
-  .gba-dpad:hover {
-    opacity: 1;
-  }
+.gba-loading.hidden {
+  display: none;
 }
 
-.gba-dpad button[data-dir="up"] {
-  grid-column: 2;
-  grid-row: 1;
+.gba-player-dialog {
+  width: min(420px, calc(100vw - 28px));
+  border: 1px solid var(--gba-line);
+  border-radius: 8px;
+  color: var(--gba-text);
+  background: rgba(7, 12, 15, .96);
+  box-shadow: 0 26px 80px rgba(0, 0, 0, .62);
 }
 
-.gba-dpad button[data-dir="left"] {
-  grid-column: 1;
-  grid-row: 2;
+.gba-player-dialog::backdrop {
+  background: rgba(0, 0, 0, .58);
 }
 
-.gba-dpad button[data-dir="down"] {
-  grid-column: 2;
-  grid-row: 3;
-}
-
-.gba-dpad button[data-dir="right"] {
-  grid-column: 3;
-  grid-row: 2;
-}
-
-.gba-panel.open {
-  transform: translateX(0);
-}
-
-.gba-panel h2 {
-  margin: 4px 0;
+.gba-player-dialog h2 {
+  margin: 4px 0 12px;
   color: #fff4cc;
   font-family: Georgia, "Times New Roman", serif;
 }
 
-.gba-panel p {
-  margin: 0 0 12px;
-  color: var(--gba-muted);
-  line-height: 1.45;
+.gba-dialog-close {
+  float: right;
+  width: 32px;
+  aspect-ratio: 1;
+  border: 1px solid rgba(255, 230, 160, .32);
+  border-radius: 7px;
+  color: #fff4cc;
+  background: rgba(255, 255, 255, .08);
+  font-weight: 900;
 }
 
-.gba-panel dl {
+.gba-player-dialog dl {
   display: grid;
-  gap: 8px;
+  gap: 10px;
   margin: 0;
 }
 
-.gba-panel div {
+.gba-player-dialog div {
   display: grid;
-  gap: 2px;
-  padding-top: 8px;
+  gap: 3px;
+  padding-top: 9px;
   border-top: 1px solid rgba(255, 255, 255, .1);
 }
 
-.gba-panel dt {
+.gba-player-dialog dt {
   color: var(--gba-gold);
   font-size: .72rem;
   letter-spacing: .08em;
   text-transform: uppercase;
 }
 
-.gba-panel dd {
+.gba-player-dialog dd {
   margin: 0;
   color: #fff4d2;
-  font-weight: 800;
+  line-height: 1.4;
 }
 
-#gba-panel-close {
-  float: right;
+/* Multiplayer page policy: hide EmulatorJS administrative controls. */
+#game .ejs_menu_bar,
+#game .ejs_context_menu,
+#game [class*="cheat" i],
+#game [class*="pause" i],
+#game [class*="save" i],
+#game [class*="load" i],
+#game [class*="restart" i],
+#game [class*="upload" i],
+#game [class*="file" i] {
+  display: none !important;
+  pointer-events: none !important;
 }
 
-@media (orientation: landscape) and (max-height: 560px) {
-  .gba-shell {
+@media (max-width: 720px) {
+  .gba-roster {
+    grid-template-columns: minmax(0, 1fr);
     gap: 4px;
-    padding: 6px;
+  }
+
+  .gba-roster-title {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: baseline;
+    gap: 8px;
   }
 
   .gba-topbar {
-    min-height: 42px;
+    min-height: 68px;
   }
 }

@@ -14,6 +14,7 @@
   const playerMapEl = document.getElementById("gba-player-map");
   const playerTeamEl = document.getElementById("gba-player-team");
   const playerBadgesEl = document.getElementById("gba-player-badges");
+  const fullscreenButton = document.getElementById("gba-fullscreen");
 
   let socket = null;
   let myId = "";
@@ -39,6 +40,22 @@
 
   function setSaveStatus(text) {
     saveStatus.textContent = text;
+  }
+
+  async function enterFullscreen() {
+    const target = document.querySelector(".gba-shell") || document.documentElement;
+    try {
+      if (!document.fullscreenElement) {
+        await target.requestFullscreen?.();
+        await screen.orientation?.lock?.("landscape").catch(() => {});
+        fullscreenButton.textContent = "Sair";
+      } else {
+        await document.exitFullscreen?.();
+        fullscreenButton.textContent = "Tela cheia";
+      }
+    } catch {
+      setSaveStatus("Tela cheia bloqueada pelo navegador");
+    }
   }
 
   function safeName(value) {
@@ -365,6 +382,12 @@
     setTeam: team => updateBridgeDetails({ team }),
     setBadges: badges => updateBridgeDetails({ badges })
   };
+
+  fullscreenButton.addEventListener("click", enterFullscreen);
+  document.addEventListener("fullscreenchange", () => {
+    fullscreenButton.textContent = document.fullscreenElement ? "Sair" : "Tela cheia";
+    setTimeout(hideEmulatorChrome, 250);
+  });
 
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") captureStateNow().then(saved => {

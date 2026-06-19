@@ -42,7 +42,7 @@ a {
 .gba-topbar {
   min-height: 56px;
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
+  grid-template-columns: 44px minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
   padding: 6px;
@@ -146,6 +146,19 @@ a {
   white-space: nowrap;
 }
 
+.gba-fullscreen {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 230, 160, .38);
+  border-radius: 7px;
+  color: #10130e;
+  background: linear-gradient(180deg, #f8d66d, #d99c2d);
+  font-size: .78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
 .gba-stage {
   position: relative;
   min-height: 0;
@@ -161,10 +174,24 @@ a {
   height: 100%;
   min-height: 0;
   background: #000;
+  overflow: hidden;
 }
 
 #game > * {
   max-width: 100%;
+}
+
+#game canvas,
+#game video {
+  max-width: none !important;
+}
+
+#game .ejs_canvas,
+#game .ejs_game,
+#game .ejs_screen,
+#game [class*="screen" i],
+#game [class*="canvas" i] {
+  max-width: none !important;
 }
 
 .gba-loading {
@@ -267,4 +294,109 @@ a {
   .gba-topbar {
     min-height: 68px;
   }
+}
+
+@media (orientation: landscape) and (max-height: 560px) {
+  .gba-shell {
+    grid-template-rows: minmax(0, 1fr);
+    gap: 0;
+    padding: max(3px, env(safe-area-inset-top)) max(3px, env(safe-area-inset-right)) max(3px, env(safe-area-inset-bottom)) max(3px, env(safe-area-inset-left));
+  }
+
+  .gba-topbar {
+    position: fixed;
+    top: max(4px, env(safe-area-inset-top));
+    left: max(4px, env(safe-area-inset-left));
+    right: max(4px, env(safe-area-inset-right));
+    z-index: 20;
+    min-height: 42px;
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    gap: 6px;
+    padding: 4px;
+    background: rgba(5, 10, 13, .68);
+    backdrop-filter: blur(6px);
+  }
+
+  .gba-icon {
+    width: 32px;
+  }
+
+  .gba-roster {
+    grid-template-columns: minmax(126px, 170px) minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .gba-roster-title strong {
+    font-size: .72rem;
+  }
+
+  .gba-roster-title span {
+    font-size: .66rem;
+  }
+
+  .gba-player-pill {
+    min-height: 30px;
+    max-width: 128px;
+    padding: 4px 8px;
+    font-size: .72rem;
+  }
+
+  .gba-fullscreen {
+    min-height: 32px;
+    padding: 0 9px;
+    font-size: .68rem;
+  }
+
+  .gba-stage {
+    height: calc(100dvh - max(6px, env(safe-area-inset-bottom)));
+    border-width: 1px;
+    border-radius: 6px;
+  }
+
+  #game,
+  #game > div,
+  #game iframe {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  #game canvas,
+  #game video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+  }
+
+  #game [class*="gamepad" i],
+  #game [class*="controls" i],
+  #game [class*="button" i],
+  #game [class*="joystick" i],
+  #game [class*="dpad" i] {
+    position: absolute !important;
+    z-index: 8 !important;
+  }
+
+  #game [class*="dpad" i],
+  #game [class*="joystick" i] {
+    left: max(10px, env(safe-area-inset-left)) !important;
+    bottom: max(10px, env(safe-area-inset-bottom)) !important;
+    opacity: .58 !important;
+  }
+
+  #game [class*="button" i] {
+    opacity: .62 !important;
+  }
+}
+
+:fullscreen .gba-shell,
+.gba-shell:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  padding: max(2px, env(safe-area-inset-top)) max(2px, env(safe-area-inset-right)) max(2px, env(safe-area-inset-bottom)) max(2px, env(safe-area-inset-left));
+}
+
+:fullscreen .gba-stage,
+.gba-shell:fullscreen .gba-stage {
+  height: 100%;
+  border-radius: 6px;
 }

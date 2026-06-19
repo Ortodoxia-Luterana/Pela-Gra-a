@@ -313,6 +313,100 @@ a {
   line-height: 1.4;
 }
 
+.gba-dialog-actions {
+  display: grid;
+  gap: 7px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, .1);
+}
+
+.gba-dialog-actions button,
+.gba-battle-actions button {
+  min-height: 40px;
+  border: 1px solid rgba(255, 230, 160, .38);
+  border-radius: 8px;
+  color: #1b1203;
+  background: linear-gradient(180deg, #ffd96a, #dca832);
+  font-weight: 900;
+}
+
+.gba-dialog-actions button:disabled {
+  color: rgba(255, 244, 210, .52);
+  background: rgba(255, 255, 255, .08);
+}
+
+.gba-dialog-actions small {
+  min-height: 16px;
+  color: rgba(255, 244, 210, .78);
+  line-height: 1.35;
+}
+
+.gba-battle-panel {
+  position: absolute;
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  z-index: 14;
+  width: min(340px, calc(100vw - 24px));
+  padding: 14px;
+  border: 1px solid var(--gba-line);
+  border-radius: 8px;
+  color: var(--gba-text);
+  background: rgba(7, 12, 15, .94);
+  box-shadow: 0 20px 58px rgba(0, 0, 0, .52);
+}
+
+.gba-battle-head,
+.gba-battle-row,
+.gba-battle-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gba-battle-head {
+  justify-content: space-between;
+  margin-bottom: 10px;
+  color: #fff4cc;
+}
+
+.gba-battle-head button {
+  width: 30px;
+  aspect-ratio: 1;
+  border: 1px solid rgba(255, 230, 160, .3);
+  border-radius: 7px;
+  color: #fff4cc;
+  background: rgba(255, 255, 255, .08);
+  font-weight: 900;
+}
+
+.gba-battle-row {
+  justify-content: space-between;
+  margin-top: 8px;
+  font-weight: 800;
+}
+
+.gba-battle-row meter {
+  width: 54%;
+  height: 16px;
+}
+
+.gba-battle-panel p {
+  min-height: 34px;
+  margin: 12px 0;
+  color: rgba(255, 244, 210, .86);
+  line-height: 1.35;
+}
+
+.gba-battle-actions button {
+  flex: 1;
+}
+
+.gba-battle-actions button:last-child {
+  color: #fff4cc;
+  background: rgba(255, 255, 255, .08);
+}
+
 /* Multiplayer page policy: keep native fullscreen, hide admin controls. */
 #game .ejs_context_menu,
 #game [class*="cheat" i],

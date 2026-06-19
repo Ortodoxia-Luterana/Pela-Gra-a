@@ -1925,6 +1925,8 @@ function initConcordiumMultiplayer(httpServer) {
   const io = new SocketIOServer(httpServer, { cors: { origin: false } });
   const players = new Map();
   const gbaPlayers = new Map();
+  const gbaBattleInvites = new Map();
+  const gbaBattles = new Map();
   const mapBounds = { minX: 70, minY: 80, maxX: 1430, maxY: 920 };
   const dummy = { id: 'training-dummy', x: 760, y: 520, hp: 80, maxHp: 80 };
   const weaponPower = {
@@ -2005,6 +2007,36 @@ function initConcordiumMultiplayer(httpServer) {
       updatedAt: player.updatedAt
     };
   }
+  function publicGbaBattle(battle, message = '') {
+    return {
+      battleId: battle.id,
+      message,
+      ended: Boolean(battle.ended),
+      players: battle.players.map(player => ({
+        id: player.id,
+        name: player.name,
+        hp: player.hp,
+        maxHp: player.maxHp,
+        team: player.team
+      }))
+    };
+  }
+  function emitGbaBattle(battle, event, message = '') {
+    const payload = publicGbaBattle(battle, message);
+    battle.players.forEach(player => io.to(player.id).emit(event, payload));
+  }
+  function gbaBattlePlayer(socketId, player) {
+    const details = player?.details || {};
+    const team = Array.isArray(details.team) ? details.team.slice(0, 6) : [];
+    return {
+      id: socketId,
+      name: player.name,
+      hp: 100,
+      maxHp: 100,
+      team,
+      lastActionAt: 0
+    };
+  }
   function nextLevelXp(level) {
     return 60 + Math.max(0, Number(level || 1) - 1) * 35;
   }
@@ -2069,6 +2101,75 @@ function initConcordiumMultiplayer(httpServer) {
       }
       player.updatedAt = Date.now();
       io.to('concordium-gba').emit('concordium-gba:player-update', publicGbaPlayer(player));
+    });
+
+    socket.on('concordium-gba:battle-invite', payload => {
+      const challenger = gbaPlayers.get(socket.id);
+      const target = gbaPlayers.get(String(payload?.targetId || ''));
+      if (!challenger || !target || target.id === socket.id) return;
+      const challengerTeam = Array.isArray(challenger.details?.team) ? challenger.details.team : [];
+      const targetTeam = Array.isArray(target.details?.team) ? target.details.team : [];
+      if (!challengerTeam.length || !targetTeam.length) {
+        socket.emit('concordium-gba:battle-error', 'Os dois jogadores precisam ter Pokemon lidos no save.');
+        return;
+      }
+      if (challenger.details?.mapId && target.details?.mapId && challenger.details.mapId !== target.details.mapId) {
+        socket.emit('concordium-gba:battle-error', 'O outro jogador precisa estar no mesmo mapa.');
+        return;
+      }
+      const battleId = crypto.randomUUID();
+      const invite = { battleId, fromId: socket.id, toId: target.id, createdAt: Date.now() };
+      gbaBattleInvites.set(battleId, invite);
+      io.to(target.id).emit('concordium-gba:battle-invite', { battleId, from: publicGbaPlayer(challenger) });
+    });
+
+    socket.on('concordium-gba:battle-response', payload => {
+      const battleId = String(payload?.battleId || '');
+      const invite = gbaBattleInvites.get(battleId);
+      if (!invite || invite.toId !== socket.id) return;
+      gbaBattleInvites.delete(battleId);
+      const challenger = gbaPlayers.get(invite.fromId);
+      const target = gbaPlayers.get(invite.toId);
+      if (!payload?.accept) {
+        io.to(invite.fromId).emit('concordium-gba:battle-error', 'Convite recusado.');
+        return;
+      }
+      if (!challenger || !target) return;
+      const battle = {
+        id: battleId,
+        players: [gbaBattlePlayer(invite.fromId, challenger), gbaBattlePlayer(invite.toId, target)],
+        createdAt: Date.now(),
+        ended: false
+      };
+      gbaBattles.set(battleId, battle);
+      emitGbaBattle(battle, 'concordium-gba:battle-start', 'Batalha iniciada. Ambos podem agir.');
+    });
+
+    socket.on('concordium-gba:battle-action', payload => {
+      const battle = gbaBattles.get(String(payload?.battleId || ''));
+      if (!battle || battle.ended) return;
+      const actor = battle.players.find(player => player.id === socket.id);
+      const target = battle.players.find(player => player.id !== socket.id);
+      if (!actor || !target) return;
+      const now = Date.now();
+      if (now - actor.lastActionAt < 900) return;
+      actor.lastActionAt = now;
+      if (payload?.action === 'flee') {
+        battle.ended = true;
+        emitGbaBattle(battle, 'concordium-gba:battle-end', `${actor.name} saiu da batalha.`);
+        gbaBattles.delete(battle.id);
+        return;
+      }
+      const damage = 8 + Math.floor(Math.random() * 9);
+      target.hp = Math.max(0, target.hp - damage);
+      const message = `${actor.name} atacou e causou ${damage} de dano.`;
+      if (target.hp <= 0) {
+        battle.ended = true;
+        emitGbaBattle(battle, 'concordium-gba:battle-update', `${message} ${actor.name} venceu.`);
+        gbaBattles.delete(battle.id);
+        return;
+      }
+      emitGbaBattle(battle, 'concordium-gba:battle-update', message);
     });
 
     socket.on('concordium:join', payload => {
@@ -2189,6 +2290,15 @@ function initConcordiumMultiplayer(httpServer) {
     socket.on('disconnect', () => {
       if (gbaPlayers.has(socket.id)) {
         gbaPlayers.delete(socket.id);
+        [...gbaBattleInvites.entries()].forEach(([id, invite]) => {
+          if (invite.fromId === socket.id || invite.toId === socket.id) gbaBattleInvites.delete(id);
+        });
+        [...gbaBattles.entries()].forEach(([id, battle]) => {
+          if (!battle.players.some(player => player.id === socket.id)) return;
+          battle.ended = true;
+          emitGbaBattle(battle, 'concordium-gba:battle-end', 'Batalha encerrada: jogador desconectou.');
+          gbaBattles.delete(id);
+        });
         socket.to('concordium-gba').emit('concordium-gba:player-left', socket.id);
       }
       if (!players.has(socket.id)) return;

@@ -17,6 +17,9 @@
   const POKEMON_SIZE = 100;
   const BADGE_FLAG_START = 0x867;
   const BADGE_NAMES = ["Pedra", "Punho", "Dinamica", "Calor", "Equilibrio", "Pena", "Mente", "Chuva"];
+  const CONCORDIUM_MAP_OVERRIDES = {
+    "0.0": "Vila Inicial"
+  };
   const EMERALD_MAP_NAMES = {
     "0.0": "Cidade de Petalburg", "0.1": "Cidade de Slateport", "0.2": "Cidade de Mauville", "0.3": "Cidade de Rustboro",
     "0.4": "Cidade de Fortree", "0.5": "Cidade de Lilycove", "0.6": "Cidade de Mossdeep", "0.7": "Cidade de Sootopolis",
@@ -103,6 +106,18 @@
   const playerTeamEl = document.getElementById("gba-player-team");
   const playerBadgesEl = document.getElementById("gba-player-badges");
   const playerSyncEl = document.getElementById("gba-player-sync");
+  const battleInviteBtn = document.getElementById("gba-battle-invite");
+  const battleHint = document.getElementById("gba-battle-hint");
+  const battlePanel = document.getElementById("gba-battle-panel");
+  const battleTitle = document.getElementById("gba-battle-title");
+  const battleMe = document.getElementById("gba-battle-me");
+  const battleMeHp = document.getElementById("gba-battle-me-hp");
+  const battleRival = document.getElementById("gba-battle-rival");
+  const battleRivalHp = document.getElementById("gba-battle-rival-hp");
+  const battleLog = document.getElementById("gba-battle-log");
+  const battleAttack = document.getElementById("gba-battle-attack");
+  const battleFlee = document.getElementById("gba-battle-flee");
+  const battleClose = document.getElementById("gba-battle-close");
   const onlineLayer = document.getElementById("gba-online-layer");
 
   let socket = null;
@@ -113,6 +128,8 @@
   let lastSaveBody = null;
   let saveTimer = 0;
   let lastSaveAt = 0;
+  let selectedPlayer = null;
+  let activeBattleId = "";
   const players = new Map();
 
   function defaultDetails() {
@@ -326,6 +343,8 @@
   }
 
   function describeMap(mapId, x, y) {
+    const customName = CONCORDIUM_MAP_OVERRIDES[mapId];
+    if (customName) return `${customName} - X ${x}, Y ${y}`;
     const directName = EMERALD_MAP_NAMES[mapId];
     if (directName) return `${directName} - X ${x}, Y ${y}`;
     const [group] = mapId.split(".").map(Number);
@@ -692,6 +711,7 @@
   }
 
   function openPlayer(player) {
+    selectedPlayer = player;
     const details = cleanDetails(player.details);
     playerNameEl.textContent = player.self ? `${player.name} (voce)` : player.name;
     playerMapEl.textContent = usableMapName(details.mapName);
@@ -702,8 +722,67 @@
       details.playTime ? `tempo ${details.playTime}` : "",
       details.saveUpdatedAt ? `atualizado ${new Date(details.saveUpdatedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}` : ""
     ].filter(Boolean).join(" | ");
+    updateBattleInviteUi(player, details);
     if (typeof playerDialog.showModal === "function") playerDialog.showModal();
     else playerDialog.setAttribute("open", "open");
+  }
+
+  function canInviteToBattle(player, details = cleanDetails(player?.details)) {
+    if (!socket?.connected || !player || player.self || !player.id) return false;
+    return myDetails.team.length > 0 && details.team.length > 0;
+  }
+
+  function updateBattleInviteUi(player, details = cleanDetails(player?.details)) {
+    if (!battleInviteBtn || !battleHint) return;
+    const enabled = canInviteToBattle(player, details);
+    battleInviteBtn.hidden = Boolean(player?.self);
+    battleInviteBtn.disabled = !enabled;
+    if (player?.self) {
+      battleHint.textContent = "Esse painel mostra seus dados salvos.";
+    } else if (!myDetails.team.length) {
+      battleHint.textContent = "Sua equipe ainda nao foi lida do save.";
+    } else if (!details.team.length) {
+      battleHint.textContent = "O outro jogador ainda nao tem equipe lida.";
+    } else {
+      battleHint.textContent = "Convide para uma batalha online.";
+    }
+  }
+
+  function sendBattleInvite() {
+    if (!selectedPlayer || !canInviteToBattle(selectedPlayer)) return;
+    socket.emit("concordium-gba:battle-invite", { targetId: selectedPlayer.id });
+    if (battleHint) battleHint.textContent = "Convite enviado. Aguardando aceite.";
+  }
+
+  function askBattleInvite(invite) {
+    const fromName = safeName(invite?.from?.name || "Jogador");
+    const ok = window.confirm(`${fromName} quer batalhar com voce. Aceitar?`);
+    socket.emit("concordium-gba:battle-response", { battleId: invite?.battleId, accept: ok });
+  }
+
+  function renderBattle(state) {
+    if (!state?.battleId) return;
+    activeBattleId = state.battleId;
+    const mine = state.players?.find(player => player.id === myId);
+    const rival = state.players?.find(player => player.id !== myId);
+    if (!mine || !rival) return;
+    battlePanel.hidden = false;
+    battleTitle.textContent = `Batalha contra ${rival.name}`;
+    battleMe.textContent = mine.name === playerName ? "Voce" : mine.name;
+    battleRival.textContent = rival.name;
+    battleMeHp.value = Math.max(0, Math.min(100, mine.hp));
+    battleRivalHp.value = Math.max(0, Math.min(100, rival.hp));
+    battleLog.textContent = state.message || "Batalha em andamento.";
+    const ended = Boolean(state.ended);
+    battleAttack.disabled = ended;
+    battleFlee.disabled = ended;
+  }
+
+  function endBattle(message = "Batalha encerrada.") {
+    activeBattleId = "";
+    if (battleLog) battleLog.textContent = message;
+    if (battleAttack) battleAttack.disabled = true;
+    if (battleFlee) battleFlee.disabled = true;
   }
 
   async function startMultiplayer() {
@@ -727,6 +806,13 @@
     socket.on("concordium-gba:player-joined", player => upsertPlayer(player));
     socket.on("concordium-gba:player-update", player => upsertPlayer(player, player.id === myId));
     socket.on("concordium-gba:player-left", removePlayer);
+    socket.on("concordium-gba:battle-invite", askBattleInvite);
+    socket.on("concordium-gba:battle-error", message => {
+      if (battleHint) battleHint.textContent = String(message || "Nao foi possivel iniciar a batalha.");
+    });
+    socket.on("concordium-gba:battle-start", renderBattle);
+    socket.on("concordium-gba:battle-update", renderBattle);
+    socket.on("concordium-gba:battle-end", payload => endBattle(payload?.message));
   }
 
   function updateBridgeDetails(nextDetails) {
@@ -748,6 +834,17 @@
       return extractEmeraldDetails(await manager.getState());
     }
   };
+
+  battleInviteBtn?.addEventListener("click", sendBattleInvite);
+  battleAttack?.addEventListener("click", () => {
+    if (activeBattleId && socket?.connected) socket.emit("concordium-gba:battle-action", { battleId: activeBattleId, action: "attack" });
+  });
+  battleFlee?.addEventListener("click", () => {
+    if (activeBattleId && socket?.connected) socket.emit("concordium-gba:battle-action", { battleId: activeBattleId, action: "flee" });
+  });
+  battleClose?.addEventListener("click", () => {
+    battlePanel.hidden = true;
+  });
 
   document.addEventListener("fullscreenchange", () => {
     setTimeout(hideEmulatorChrome, 250);

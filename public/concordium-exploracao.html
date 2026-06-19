@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#080d12">
   <title>Concordium GBA</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="/assets/concordium-exploracao.css?v=20260619g">
+  <link rel="stylesheet" href="/assets/concordium-exploracao.css?v=20260619h">
 </head>
 <body>
   <main class="gba-shell is-playing">
@@ -38,9 +38,33 @@
         <div><dt>Insignias</dt><dd id="gba-player-badges">-</dd></div>
         <div><dt>Sincronizacao</dt><dd id="gba-player-sync">-</dd></div>
       </dl>
+      <div class="gba-dialog-actions">
+        <button id="gba-battle-invite" type="button">Convidar para batalha</button>
+        <small id="gba-battle-hint"></small>
+      </div>
     </dialog>
+
+    <section id="gba-battle-panel" class="gba-battle-panel" hidden>
+      <div class="gba-battle-head">
+        <strong id="gba-battle-title">Batalha</strong>
+        <button id="gba-battle-close" type="button" aria-label="Fechar batalha">x</button>
+      </div>
+      <div class="gba-battle-row">
+        <span id="gba-battle-me">Voce</span>
+        <meter id="gba-battle-me-hp" min="0" max="100" value="100"></meter>
+      </div>
+      <div class="gba-battle-row">
+        <span id="gba-battle-rival">Rival</span>
+        <meter id="gba-battle-rival-hp" min="0" max="100" value="100"></meter>
+      </div>
+      <p id="gba-battle-log">Aguardando batalha.</p>
+      <div class="gba-battle-actions">
+        <button id="gba-battle-attack" type="button">Atacar</button>
+        <button id="gba-battle-flee" type="button">Sair</button>
+      </div>
+    </section>
   </main>
 
-  <script src="/assets/concordium-exploracao.js?v=20260619g"></script>
+  <script src="/assets/concordium-exploracao.js?v=20260619h"></script>
 </body>
 </html>

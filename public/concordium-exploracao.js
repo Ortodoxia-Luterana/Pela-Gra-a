@@ -27,7 +27,7 @@
 
   function defaultDetails() {
     return {
-      mapName: "Mapa atual ainda nao lido da ROM",
+      mapName: "Jogo em execucao",
       mapId: "",
       x: 0,
       y: 0,
@@ -48,7 +48,7 @@
   function cleanDetails(details) {
     const value = details && typeof details === "object" ? details : {};
     return {
-      mapName: String(value.mapName || "Mapa atual ainda nao lido da ROM").replace(/[<>]/g, "").slice(0, 64),
+      mapName: String(value.mapName || "Jogo em execucao").replace(/[<>]/g, "").slice(0, 64),
       mapId: String(value.mapId || "").replace(/[<>]/g, "").slice(0, 32),
       x: Math.max(0, Math.min(9999, Number(value.x) || 0)),
       y: Math.max(0, Math.min(9999, Number(value.y) || 0)),
@@ -352,8 +352,8 @@
     const details = cleanDetails(player.details);
     playerNameEl.textContent = player.self ? `${player.name} (voce)` : player.name;
     playerMapEl.textContent = details.mapName;
-    playerTeamEl.textContent = details.team.length ? details.team.join(", ") : "Equipe ainda nao lida do save";
-    playerBadgesEl.textContent = details.badges.length ? details.badges.join(", ") : "Insignias ainda nao lidas do save";
+    playerTeamEl.textContent = details.team.length ? details.team.join(", ") : "Equipe sera exibida quando a ROM enviar esses dados";
+    playerBadgesEl.textContent = details.badges.length ? details.badges.join(", ") : "Insignias serao exibidas quando a ROM enviar esses dados";
     if (typeof playerDialog.showModal === "function") playerDialog.showModal();
     else playerDialog.setAttribute("open", "open");
   }

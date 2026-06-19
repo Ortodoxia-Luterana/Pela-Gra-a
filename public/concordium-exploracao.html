@@ -3,61 +3,45 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#15251d">
-  <title>Concordium</title>
+  <meta name="theme-color" content="#080d12">
+  <title>Concordium GBA</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="/assets/concordium-exploracao.css?v=20260614f">
+  <link rel="stylesheet" href="/assets/concordium-exploracao.css?v=20260618a">
 </head>
 <body>
-  <main class="cx-shell">
-    <header class="cx-topbar">
-      <a href="/" class="cx-back" aria-label="Voltar ao hub">‹</a>
+  <main class="gba-shell">
+    <header class="gba-topbar">
+      <a href="/" class="gba-icon" aria-label="Voltar ao hub">&lt;</a>
       <div>
         <strong>Concordium</strong>
-        <span id="cx-place">Vila Prisma</span>
+        <span>Emulador GBA privado</span>
       </div>
-      <button id="cx-menu" type="button" aria-label="Menu">☰</button>
+      <button id="gba-panel-toggle" class="gba-icon" type="button" aria-label="Opcoes">?</button>
     </header>
 
-    <section class="cx-stage" aria-label="Concordium">
-      <div id="game-canvas" class="cx-canvas"></div>
-      <div id="cx-title" class="cx-title">
+    <section class="gba-stage" aria-label="Emulador Game Boy Advance">
+      <div id="game"></div>
+      <div id="gba-overlay" class="gba-overlay">
         <h1>Concordium</h1>
-        <p>pokemon luterano</p>
-        <button id="cx-start" type="button">Iniciar</button>
+        <p>Uma jornada estilo Pokemon percorrendo a historia da igreja apostolica.</p>
+        <button id="gba-start" type="button">Carregar GBA</button>
+        <small id="gba-status">Aguardando ROM privada.</small>
       </div>
-      <div id="cx-toast" class="cx-toast hidden"></div>
     </section>
 
-    <section class="cx-touch" aria-label="Controles de toque">
-      <div class="cx-dpad">
-        <button data-move="up" aria-label="Cima">▲</button>
-        <button data-move="left" aria-label="Esquerda">◀</button>
-        <button data-move="down" aria-label="Baixo">▼</button>
-        <button data-move="right" aria-label="Direita">▶</button>
-      </div>
-      <button class="cx-action" data-action="confirm" aria-label="Interagir">A</button>
-    </section>
-
-    <dialog id="dialog" class="cx-dialog">
-      <strong id="dialog-name"></strong>
-      <p id="dialog-text"></p>
-      <button id="dialog-next" type="button">Continuar</button>
-    </dialog>
-
-    <aside id="cx-panel" class="cx-panel" aria-hidden="true">
-      <button id="cx-panel-close" type="button" aria-label="Fechar">×</button>
-      <h2>Concordium</h2>
-      <p>pokemon luterano</p>
+    <aside id="gba-panel" class="gba-panel" aria-hidden="true">
+      <button id="gba-panel-close" class="gba-icon" type="button" aria-label="Fechar">x</button>
+      <h2>Base real do jogo</h2>
+      <p>Esta pagina roda a sua ROM GBA inteira. As proximas edicoes devem acontecer na ROM, e depois o emulador carrega o arquivo atualizado.</p>
       <dl>
-        <div><dt>Estado</dt><dd>alpha local</dd></div>
-        <div><dt>Salvar</dt><dd>automatico</dd></div>
-        <div><dt>Controles</dt><dd>segure para andar</dd></div>
+        <div><dt>Sistema</dt><dd>Game Boy Advance</dd></div>
+        <div><dt>Core atual</dt><dd>mgba</dd></div>
+        <div><dt>Multiplayer futuro</dt><dd>mgbadual/netplay</dd></div>
+        <div><dt>Senha</dt><dd>5892</dd></div>
       </dl>
     </aside>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js"></script>
-  <script src="/assets/concordium-exploracao.js?v=20260614f"></script>
+  <script src="/assets/concordium-exploracao.js?v=20260618a"></script>
 </body>
 </html>

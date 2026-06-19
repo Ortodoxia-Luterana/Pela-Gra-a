@@ -6,6 +6,7 @@ node_modules/
 
 *.log
 logs/
+private-roms/
 
 dist/
 build/

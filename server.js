@@ -677,27 +677,33 @@ function sanitizeConcordiumGbaSave(input) {
   const metadata = source.metadata && typeof source.metadata === 'object' ? source.metadata : {};
   const rawMapName = String(metadata.mapName || '').replace(/[<>]/g, '').trim();
   const hasInvalidMapCoordinates = /(?:^|[,\s])(?:x|y)\s*-/.test(rawMapName.toLowerCase());
-  const mapName = !rawMapName || rawMapName === 'Mapa atual ainda nao lido da ROM' || hasInvalidMapCoordinates ? 'Concordium GBA em execucao' : rawMapName;
+  let mapName = !rawMapName || rawMapName === 'Mapa atual ainda nao lido da ROM' || hasInvalidMapCoordinates ? 'Concordium GBA em execucao' : rawMapName;
   const rawPlayTime = String(metadata.playTime || '').replace(/[<>]/g, '').trim().slice(0, 32);
   const playParts = rawPlayTime.split(':').map(part => Number(part));
-  const playTime = playParts.length === 3
+  const hasImpossiblePlayTime = playParts.length === 3
     && playParts.every(Number.isFinite)
-    && (playParts[0] > 999 || playParts[1] > 59 || playParts[2] > 59)
-      ? ''
-      : rawPlayTime;
+    && (playParts[0] > 999 || playParts[1] > 59 || playParts[2] > 59);
+  const playTime = hasImpossiblePlayTime ? '' : rawPlayTime;
+  const rawSource = String(metadata.source || 'emulator').replace(/[<>]/g, '').trim().slice(0, 24);
+  const rawMapId = String(metadata.mapId || '').replace(/[<>]/g, '').trim().slice(0, 32);
+  const isTrustedRomRead = rawSource === 'emerald-state'
+    && rawMapId
+    && mapName !== 'Concordium GBA em execucao'
+    && !hasImpossiblePlayTime;
+  if (!isTrustedRomRead) mapName = 'Concordium GBA em execucao';
   const cleanList = (items, max) => Array.isArray(items)
     ? items.slice(0, max).map(item => String(item || '').replace(/[<>]/g, '').trim().slice(0, 24)).filter(Boolean)
     : [];
   return {
     metadata: {
       mapName: mapName.slice(0, 64),
-      mapId: String(metadata.mapId || '').replace(/[<>]/g, '').trim().slice(0, 32),
-      x: clampInt(metadata.x, 0, 9999),
-      y: clampInt(metadata.y, 0, 9999),
-      team: cleanList(metadata.team, 6),
-      badges: cleanList(metadata.badges, 12),
+      mapId: isTrustedRomRead ? rawMapId : '',
+      x: isTrustedRomRead ? clampInt(metadata.x, 0, 9999) : 0,
+      y: isTrustedRomRead ? clampInt(metadata.y, 0, 9999) : 0,
+      team: isTrustedRomRead ? cleanList(metadata.team, 6) : [],
+      badges: isTrustedRomRead ? cleanList(metadata.badges, 12) : [],
       playTime,
-      source: String(metadata.source || 'emulator').replace(/[<>]/g, '').trim().slice(0, 24),
+      source: isTrustedRomRead ? rawSource : 'emulatorjs',
       saveKind: String(metadata.saveKind || source.saveKind || '').replace(/[<>]/g, '').trim().slice(0, 24),
       saveUpdatedAt: String(metadata.saveUpdatedAt || '').replace(/[<>]/g, '').trim().slice(0, 40),
       frame: clampInt(metadata.frame, 0, 999999999)
@@ -2068,12 +2074,13 @@ function initConcordiumMultiplayer(httpServer) {
       const fallbackName = user?.name || `Jogador ${socket.id.slice(0, 4)}`;
       const saveRow = user ? getConcordiumGbaSave.get(user.id) : null;
       const saved = sanitizeConcordiumGbaSave(safeJsonParse(saveRow?.save_json, null));
+      const hasTrustedSavedPosition = saved.metadata?.source === 'emerald-state' && saved.metadata?.mapId;
       const player = {
         id: socket.id,
         userId: user?.id || null,
         name: safeText(payload?.name, fallbackName) || fallbackName,
-        x: clamp(saved.metadata?.x || payload?.x || 50, 4, 96),
-        y: clamp(saved.metadata?.y || payload?.y || 72, 12, 96),
+        x: clamp(hasTrustedSavedPosition ? saved.metadata?.x : payload?.x || 50, 4, 96),
+        y: clamp(hasTrustedSavedPosition ? saved.metadata?.y : payload?.y || 72, 12, 96),
         dir: safeText(payload?.dir, 'down') || 'down',
         color: safeText(payload?.color, '#d94f3d') || '#d94f3d',
         details: saved.metadata,

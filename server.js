@@ -676,7 +676,8 @@ function sanitizeConcordiumGbaSave(input) {
   const source = input && typeof input === 'object' ? input : {};
   const metadata = source.metadata && typeof source.metadata === 'object' ? source.metadata : {};
   const rawMapName = String(metadata.mapName || '').replace(/[<>]/g, '').trim();
-  const mapName = !rawMapName || rawMapName === 'Mapa atual ainda nao lido da ROM' ? 'Concordium GBA em execucao' : rawMapName;
+  const hasInvalidMapCoordinates = /(?:^|[,\s])(?:x|y)\s*-/.test(rawMapName.toLowerCase());
+  const mapName = !rawMapName || rawMapName === 'Mapa atual ainda nao lido da ROM' || hasInvalidMapCoordinates ? 'Concordium GBA em execucao' : rawMapName;
   const cleanList = (items, max) => Array.isArray(items)
     ? items.slice(0, max).map(item => String(item || '').replace(/[<>]/g, '').trim().slice(0, 24)).filter(Boolean)
     : [];

@@ -154,10 +154,15 @@
     return String(value || "Jogador").replace(/[<>]/g, "").trim().slice(0, 24) || "Jogador";
   }
 
+  function hasInvalidMapCoordinates(value) {
+    return /(?:^|[,\s])(?:x|y)\s*-/.test(String(value || "").toLowerCase());
+  }
+
   function cleanDetails(details) {
     const value = details && typeof details === "object" ? details : {};
+    const mapName = String(value.mapName || "Jogo em execucao").replace(/[<>]/g, "").slice(0, 64);
     return {
-      mapName: String(value.mapName || "Jogo em execucao").replace(/[<>]/g, "").slice(0, 64),
+      mapName: hasInvalidMapCoordinates(mapName) ? "Concordium GBA em execucao" : mapName,
       mapId: String(value.mapId || "").replace(/[<>]/g, "").slice(0, 32),
       x: Math.max(0, Math.min(9999, Number(value.x) || 0)),
       y: Math.max(0, Math.min(9999, Number(value.y) || 0)),
@@ -173,7 +178,7 @@
 
   function usableMapName(value) {
     const text = String(value || "").trim();
-    if (!text || text === "Mapa atual ainda nao lido da ROM") return "Concordium GBA em execucao";
+    if (!text || text === "Mapa atual ainda nao lido da ROM" || hasInvalidMapCoordinates(text)) return "Concordium GBA em execucao";
     return text;
   }
 
@@ -264,32 +269,83 @@
     return count;
   }
 
+  function isKnownMapId(group, map) {
+    return Boolean(EMERALD_MAP_NAMES[`${group}.${map}`]);
+  }
+
+  function scoreSaveBlock1(memory, offset) {
+    if (offset < 0 || offset + SAVE_BLOCK_1_SIZE > memory.length) return -999;
+    const x = readS16(memory, offset);
+    const y = readS16(memory, offset + 2);
+    const group = memory[offset + 4];
+    const map = memory[offset + 5];
+    const warpId = memory[offset + 6];
+    const layoutId = readU16(memory, offset + 0x32);
+    const partyCount = memory[offset + SAVE_BLOCK_1_PARTY_COUNT];
+    const filledBytes = countNonZero(memory, offset, 0x500);
+    if (partyCount > 6 || group > 64 || map > 160 || warpId > 127 || layoutId > 0x3ff) return -999;
+    if (x < 0 || y < 0 || x > 255 || y > 255) return -999;
+    let score = 0;
+    score += filledBytes > 10 ? 8 : 0;
+    score += filledBytes > 80 ? 4 : 0;
+    score += isKnownMapId(group, map) ? 18 : 0;
+    score += group === 0 && map <= 56 ? 6 : 0;
+    score += group > 0 && group <= 24 ? 4 : 0;
+    score += layoutId > 0 ? 4 : 0;
+    score += partyCount > 0 ? 4 : 0;
+    score += x > 0 && y > 0 ? 6 : 2;
+    return score;
+  }
+
+  function scoreSaveBlock2(memory, offset) {
+    if (offset < 0 || offset + SAVE_BLOCK_2_SIZE > memory.length) return -999;
+    const filledBytes = countNonZero(memory, offset, 0x120);
+    const hours = readU16(memory, offset + 0x0e);
+    const minutes = memory[offset + 0x10] || 0;
+    const seconds = memory[offset + 0x11] || 0;
+    if (hours > 9999 || minutes > 59 || seconds > 59) return -999;
+    let score = 0;
+    score += filledBytes > 10 ? 6 : 0;
+    score += filledBytes > 80 ? 3 : 0;
+    score += countNonZero(memory, offset, 8) > 0 ? 4 : 0;
+    score += hours || minutes || seconds ? 4 : 0;
+    return score;
+  }
+
   function findEmeraldSaveBlocks(memory) {
     const candidates = [];
     for (let offset = 0; offset + 12 <= memory.length; offset += 4) {
-      const save1 = readU32(memory, offset);
-      const save2 = readU32(memory, offset + 4);
-      const storage = readU32(memory, offset + 8);
-      const save1Offset = gbaOffset(save1);
-      const save2Offset = gbaOffset(save2);
-      const storageOffset = gbaOffset(storage);
-      if (save1Offset < 0 || save2Offset < 0 || storageOffset < 0) continue;
-      if (save1Offset + SAVE_BLOCK_1_SIZE > memory.length || save2Offset + SAVE_BLOCK_2_SIZE > memory.length) continue;
-      const partyCount = memory[save1Offset + SAVE_BLOCK_1_PARTY_COUNT];
-      const x = readS16(memory, save1Offset);
-      const y = readS16(memory, save1Offset + 2);
-      const group = memory[save1Offset + 4];
-      const map = memory[save1Offset + 5];
-      if (partyCount > 6) continue;
-      if (Math.abs(x) > 999 || Math.abs(y) > 999 || group > 120 || map > 120) continue;
-      let score = 0;
-      score += countNonZero(memory, save1Offset, 0x500) > 10 ? 4 : 0;
-      score += countNonZero(memory, save2Offset, 0x120) > 10 ? 3 : 0;
-      score += partyCount > 0 ? 5 : 0;
-      score += x > 0 && y > 0 ? 3 : 0;
-      score += group || map ? 2 : 0;
-      score += offset >= 0x10000 ? 1 : 0;
-      candidates.push({ save1, save2, storage, save1Offset, save2Offset, score });
+      const pointers = [readU32(memory, offset), readU32(memory, offset + 4), readU32(memory, offset + 8)];
+      if (!pointers.every((pointer) => pointer >= EWRAM_START && pointer < EWRAM_START + EWRAM_SIZE)) continue;
+      const offsets = pointers.map(gbaOffset);
+      if (new Set(offsets).size !== 3) continue;
+      for (let save1Index = 0; save1Index < 3; save1Index += 1) {
+        for (let save2Index = 0; save2Index < 3; save2Index += 1) {
+          if (save2Index === save1Index) continue;
+          const storageIndex = 3 - save1Index - save2Index;
+          const save1Offset = offsets[save1Index];
+          const save2Offset = offsets[save2Index];
+          const save1Score = scoreSaveBlock1(memory, save1Offset);
+          const save2Score = scoreSaveBlock2(memory, save2Offset);
+          if (save1Score < 18 || save2Score < 6) continue;
+          const x = readS16(memory, save1Offset);
+          const y = readS16(memory, save1Offset + 2);
+          const group = memory[save1Offset + 4];
+          const map = memory[save1Offset + 5];
+          const score = (save1Score * 2) + save2Score + (offset >= GBA_STATE_EWRAM_OFFSET ? 2 : 0);
+          candidates.push({
+            save1: pointers[save1Index],
+            save2: pointers[save2Index],
+            storage: pointers[storageIndex],
+            save1Offset,
+            save2Offset,
+            score,
+            mapId: `${group}.${map}`,
+            x,
+            y
+          });
+        }
+      }
     }
     candidates.sort((a, b) => b.score - a.score);
     return candidates[0] || null;
@@ -352,6 +408,7 @@
 
   function findCurrentMapHeader(memory, save1Offset) {
     const saveLayoutId = readU16(memory, save1Offset + 0x32);
+    if (!saveLayoutId || saveLayoutId > 0x3ff) return null;
     const candidates = [];
     const start = GBA_STATE_EWRAM_OFFSET;
     const end = Math.min(memory.length - 0x1c, GBA_STATE_EWRAM_OFFSET + EWRAM_SIZE);
@@ -370,8 +427,9 @@
       const battleType = memory[offset + 0x1b];
       const sectionName = REGION_MAP_SECTION_NAMES[sectionId] || "";
       if (!sectionName || music > 0x3ff || layoutId > 0x3ff || weather > 40 || mapType > 12 || battleType > 12) continue;
+      if (layoutId !== saveLayoutId || mapLayout < 0x08000000) continue;
       let score = 0;
-      score += layoutId === saveLayoutId ? 12 : 0;
+      score += 16;
       score += mapLayout >= 0x08000000 ? 4 : 0;
       score += events >= 0x08000000 ? 2 : 0;
       score += scripts >= 0x08000000 ? 2 : 0;
@@ -380,7 +438,7 @@
       candidates.push({ offset, layoutId, sectionId, sectionName, score });
     }
     candidates.sort((a, b) => b.score - a.score);
-    return candidates[0] || null;
+    return candidates[0]?.score >= 20 ? candidates[0] : null;
   }
 
   function describeMap(mapId, x, y, sectionName = "") {
@@ -402,6 +460,7 @@
     const y = readS16(memory, blocks.save1Offset + 2);
     const mapGroup = memory[blocks.save1Offset + 4] || 0;
     const mapNum = memory[blocks.save1Offset + 5] || 0;
+    if (x < 0 || y < 0 || x > 255 || y > 255) return {};
     const warpId = memory[blocks.save1Offset + 6] || 0;
     const mapHeader = findCurrentMapHeader(memory, blocks.save1Offset);
     const mapId = mapHeader ? `mapsec:${mapHeader.sectionId}` : `${mapGroup}.${mapNum}`;

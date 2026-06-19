@@ -156,30 +156,6 @@ a {
   text-transform: uppercase;
 }
 
-.gba-upload {
-  min-width: 170px;
-  min-height: 42px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(255, 239, 181, .32);
-  border-radius: 8px;
-  color: #fff4cc;
-  background: rgba(255, 255, 255, .08);
-  font-size: .86rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-
-.gba-upload input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
-}
-
 .gba-panel {
   position: fixed;
   top: max(10px, env(safe-area-inset-top));
@@ -193,6 +169,53 @@ a {
   box-shadow: 0 24px 70px rgba(0, 0, 0, .55);
   transform: translateX(calc(100% + 24px));
   transition: transform .18s ease;
+}
+
+.gba-multiplayer {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.gba-player {
+  position: absolute;
+  width: 22px;
+  height: 30px;
+  transform: translate(-50%, -100%);
+  transition: left .12s linear, top .12s linear;
+  filter: drop-shadow(0 4px 3px rgba(0, 0, 0, .55));
+}
+
+.gba-player::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 0;
+  width: 9px;
+  height: 8px;
+  background: #f3c28f;
+  box-shadow: 0 8px 0 var(--player-shirt, #3d7bd9), 0 16px 0 #1c2f52;
+}
+
+.gba-player::after {
+  content: attr(data-name);
+  position: absolute;
+  left: 50%;
+  bottom: 34px;
+  max-width: 84px;
+  padding: 2px 5px;
+  border: 1px solid rgba(255, 239, 181, .36);
+  border-radius: 5px;
+  color: #fff7d4;
+  background: rgba(0, 0, 0, .72);
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transform: translateX(-50%);
 }
 
 .gba-panel.open {

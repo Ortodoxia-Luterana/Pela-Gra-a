@@ -675,18 +675,24 @@ function sanitizeConcordiumProfile(input) {
 function sanitizeConcordiumGbaSave(input) {
   const source = input && typeof input === 'object' ? input : {};
   const metadata = source.metadata && typeof source.metadata === 'object' ? source.metadata : {};
+  const rawMapName = String(metadata.mapName || '').replace(/[<>]/g, '').trim();
+  const mapName = !rawMapName || rawMapName === 'Mapa atual ainda nao lido da ROM' ? 'Concordium GBA em execucao' : rawMapName;
   const cleanList = (items, max) => Array.isArray(items)
     ? items.slice(0, max).map(item => String(item || '').replace(/[<>]/g, '').trim().slice(0, 24)).filter(Boolean)
     : [];
   return {
     metadata: {
-      mapName: String(metadata.mapName || 'Mapa atual ainda nao lido da ROM').replace(/[<>]/g, '').trim().slice(0, 64),
+      mapName: mapName.slice(0, 64),
       mapId: String(metadata.mapId || '').replace(/[<>]/g, '').trim().slice(0, 32),
       x: clampInt(metadata.x, 0, 9999),
       y: clampInt(metadata.y, 0, 9999),
       team: cleanList(metadata.team, 6),
       badges: cleanList(metadata.badges, 12),
-      playTime: String(metadata.playTime || '').replace(/[<>]/g, '').trim().slice(0, 32)
+      playTime: String(metadata.playTime || '').replace(/[<>]/g, '').trim().slice(0, 32),
+      source: String(metadata.source || 'emulator').replace(/[<>]/g, '').trim().slice(0, 24),
+      saveKind: String(metadata.saveKind || source.saveKind || '').replace(/[<>]/g, '').trim().slice(0, 24),
+      saveUpdatedAt: String(metadata.saveUpdatedAt || '').replace(/[<>]/g, '').trim().slice(0, 40),
+      frame: clampInt(metadata.frame, 0, 999999999)
     },
     save: typeof source.save === 'string' ? source.save.slice(0, 8_000_000) : '',
     saveKind: ['state', 'savefile', 'metadata'].includes(String(source.saveKind)) ? String(source.saveKind) : '',
@@ -2026,8 +2032,8 @@ function initConcordiumMultiplayer(httpServer) {
         id: socket.id,
         userId: user?.id || null,
         name: safeText(payload?.name, fallbackName) || fallbackName,
-        x: clamp(payload?.x ?? 50, 4, 96),
-        y: clamp(payload?.y ?? 72, 12, 96),
+        x: clamp(saved.metadata?.x || payload?.x || 50, 4, 96),
+        y: clamp(saved.metadata?.y || payload?.y || 72, 12, 96),
         dir: safeText(payload?.dir, 'down') || 'down',
         color: safeText(payload?.color, '#d94f3d') || '#d94f3d',
         details: saved.metadata,
@@ -2057,6 +2063,10 @@ function initConcordiumMultiplayer(httpServer) {
       if (!player) return;
       const details = sanitizeConcordiumGbaSave({ metadata: payload?.metadata || payload }).metadata;
       player.details = details;
+      if (details.x || details.y) {
+        player.x = clamp(details.x || player.x, 4, 96);
+        player.y = clamp(details.y || player.y, 12, 96);
+      }
       player.updatedAt = Date.now();
       io.to('concordium-gba').emit('concordium-gba:player-update', publicGbaPlayer(player));
     });

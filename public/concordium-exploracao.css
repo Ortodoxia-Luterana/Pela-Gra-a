@@ -164,6 +164,67 @@ a {
   overflow: hidden;
 }
 
+.gba-online-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  pointer-events: none;
+}
+
+.gba-online-avatar {
+  position: absolute;
+  width: 24px;
+  height: 31px;
+  transform: translate(-50%, -100%);
+  filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .55));
+}
+
+.gba-online-avatar::before,
+.gba-online-avatar::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.gba-online-avatar::before {
+  top: 2px;
+  width: 12px;
+  height: 10px;
+  border-radius: 5px 5px 3px 3px;
+  background: #f2c29a;
+  box-shadow: 0 -3px 0 var(--player-color, #f1c75d);
+}
+
+.gba-online-avatar::after {
+  top: 13px;
+  width: 14px;
+  height: 15px;
+  border-radius: 3px 3px 5px 5px;
+  background:
+    linear-gradient(90deg, transparent 0 3px, #19243a 3px 6px, transparent 6px 8px, #19243a 8px 11px, transparent 11px),
+    var(--player-color, #f1c75d);
+}
+
+.gba-online-name {
+  position: absolute;
+  left: 50%;
+  bottom: 32px;
+  transform: translateX(-50%);
+  max-width: 110px;
+  padding: 3px 7px;
+  border: 1px solid rgba(0, 0, 0, .5);
+  border-radius: 999px;
+  color: #10130e;
+  background: #ffe18a;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 #game > * {
   max-width: 100%;
 }
@@ -334,6 +395,17 @@ a {
     max-width: 128px;
     padding: 4px 8px;
     font-size: .72rem;
+  }
+
+  .gba-online-avatar {
+    width: 21px;
+    height: 28px;
+  }
+
+  .gba-online-name {
+    bottom: 29px;
+    max-width: 88px;
+    font-size: 9px;
   }
 
   .gba-stage {

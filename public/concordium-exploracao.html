@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#080d12">
   <title>Concordium GBA</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="/assets/concordium-exploracao.css?v=20260619b">
+  <link rel="stylesheet" href="/assets/concordium-exploracao.css?v=20260619c">
 </head>
 <body>
   <main class="gba-shell is-playing">
@@ -23,6 +23,7 @@
 
     <section class="gba-stage" aria-label="Emulador Game Boy Advance">
       <div id="game"></div>
+      <div id="gba-online-layer" class="gba-online-layer" aria-hidden="true"></div>
       <div id="gba-loading" class="gba-loading">Carregando Concordium...</div>
     </section>
 
@@ -35,10 +36,11 @@
         <div><dt>Mapa</dt><dd id="gba-player-map">-</dd></div>
         <div><dt>Equipe Pokemon</dt><dd id="gba-player-team">-</dd></div>
         <div><dt>Insignias</dt><dd id="gba-player-badges">-</dd></div>
+        <div><dt>Sincronizacao</dt><dd id="gba-player-sync">-</dd></div>
       </dl>
     </dialog>
   </main>
 
-  <script src="/assets/concordium-exploracao.js?v=20260619b"></script>
+  <script src="/assets/concordium-exploracao.js?v=20260619c"></script>
 </body>
 </html>

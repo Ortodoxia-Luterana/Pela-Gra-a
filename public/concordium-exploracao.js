@@ -14,6 +14,8 @@
   const playerMapEl = document.getElementById("gba-player-map");
   const playerTeamEl = document.getElementById("gba-player-team");
   const playerBadgesEl = document.getElementById("gba-player-badges");
+  const playerSyncEl = document.getElementById("gba-player-sync");
+  const onlineLayer = document.getElementById("gba-online-layer");
 
   let socket = null;
   let myId = "";
@@ -33,7 +35,11 @@
       y: 0,
       team: [],
       badges: [],
-      playTime: ""
+      playTime: "",
+      source: "emulator",
+      saveKind: "",
+      saveUpdatedAt: "",
+      frame: 0
     };
   }
 
@@ -54,7 +60,41 @@
       y: Math.max(0, Math.min(9999, Number(value.y) || 0)),
       team: Array.isArray(value.team) ? value.team.slice(0, 6).map(item => String(item || "").replace(/[<>]/g, "").slice(0, 24)).filter(Boolean) : [],
       badges: Array.isArray(value.badges) ? value.badges.slice(0, 12).map(item => String(item || "").replace(/[<>]/g, "").slice(0, 24)).filter(Boolean) : [],
-      playTime: String(value.playTime || "").replace(/[<>]/g, "").slice(0, 32)
+      playTime: String(value.playTime || "").replace(/[<>]/g, "").slice(0, 32),
+      source: String(value.source || "emulator").replace(/[<>]/g, "").slice(0, 24),
+      saveKind: String(value.saveKind || "").replace(/[<>]/g, "").slice(0, 24),
+      saveUpdatedAt: String(value.saveUpdatedAt || "").replace(/[<>]/g, "").slice(0, 40),
+      frame: Math.max(0, Math.min(999999999, Number(value.frame) || 0))
+    };
+  }
+
+  function usableMapName(value) {
+    const text = String(value || "").trim();
+    if (!text || text === "Mapa atual ainda nao lido da ROM") return "Concordium GBA em execucao";
+    return text;
+  }
+
+  function formatFrameTime(frame) {
+    const seconds = Math.floor((Number(frame) || 0) / 60);
+    if (!seconds) return "";
+    const minutes = Math.floor(seconds / 60);
+    const rest = seconds % 60;
+    return `${minutes}:${String(rest).padStart(2, "0")}`;
+  }
+
+  function emulatorFacts(saveKind = lastSaveBody?.saveKind || "") {
+    const manager = window.EJS_emulator?.gameManager;
+    let frame = 0;
+    try {
+      frame = typeof manager?.getFrameNum === "function" ? Number(manager.getFrameNum()) || 0 : 0;
+    } catch {}
+    return {
+      mapName: usableMapName(myDetails.mapName),
+      source: "emulatorjs",
+      saveKind,
+      saveUpdatedAt: new Date().toISOString(),
+      frame,
+      playTime: myDetails.playTime || formatFrameTime(frame)
     };
   }
 
@@ -178,6 +218,8 @@
   }
 
   function persistSave(eventData, saveKind = "state") {
+    myDetails = cleanDetails({ ...myDetails, ...emulatorFacts(saveKind) });
+    publishDetails();
     scheduleSave(saveBodyFromEvent(eventData, saveKind), true);
   }
 
@@ -189,6 +231,17 @@
       hash: lastSaveBody?.hash || "",
       format: lastSaveBody?.format || "metadata"
     }, immediate);
+  }
+
+  function publishDetails() {
+    if (socket?.connected) socket.emit("concordium-gba:details", { metadata: myDetails });
+    const self = players.get(myId);
+    if (self) {
+      self.details = myDetails;
+      self.updatedAt = Date.now();
+      players.set(myId, self);
+      renderRoster();
+    }
   }
 
   function configureEmulator() {
@@ -252,6 +305,8 @@
       const state = await manager.getState();
       const encoded = toBase64(state);
       if (!encoded) return false;
+      myDetails = cleanDetails({ ...myDetails, ...emulatorFacts("state") });
+      publishDetails();
       scheduleSave({
         metadata: myDetails,
         save: encoded,
@@ -274,6 +329,8 @@
       const saveFile = typeof manager.getSaveFile === "function" ? manager.getSaveFile(false) : null;
       const encoded = toBase64(saveFile);
       if (!encoded) return false;
+      myDetails = cleanDetails({ ...myDetails, ...emulatorFacts("savefile") });
+      publishDetails();
       scheduleSave({
         metadata: myDetails,
         save: encoded,
@@ -346,14 +403,42 @@
       button.addEventListener("click", () => openPlayer(player));
       playerList.appendChild(button);
     });
+    renderOnlineLayer();
+  }
+
+  function renderOnlineLayer() {
+    if (!onlineLayer) return;
+    const others = [...players.values()].filter(player => !player.self);
+    onlineLayer.innerHTML = "";
+    others.forEach((player, index) => {
+      const details = cleanDetails(player.details);
+      const hasCoords = details.x > 0 || details.y > 0;
+      const x = hasCoords ? Math.max(6, Math.min(94, details.x)) : 12 + (index % 5) * 12;
+      const y = hasCoords ? Math.max(18, Math.min(92, details.y)) : 88 - Math.floor(index / 5) * 12;
+      const avatar = document.createElement("div");
+      avatar.className = "gba-online-avatar";
+      avatar.style.left = `${x}%`;
+      avatar.style.top = `${y}%`;
+      avatar.style.setProperty("--player-color", player.color || "#f1c75d");
+      const label = document.createElement("span");
+      label.className = "gba-online-name";
+      label.textContent = player.name;
+      avatar.appendChild(label);
+      onlineLayer.appendChild(avatar);
+    });
   }
 
   function openPlayer(player) {
     const details = cleanDetails(player.details);
     playerNameEl.textContent = player.self ? `${player.name} (voce)` : player.name;
-    playerMapEl.textContent = details.mapName;
+    playerMapEl.textContent = usableMapName(details.mapName);
     playerTeamEl.textContent = details.team.length ? details.team.join(", ") : "Equipe sera exibida quando a ROM enviar esses dados";
     playerBadgesEl.textContent = details.badges.length ? details.badges.join(", ") : "Insignias serao exibidas quando a ROM enviar esses dados";
+    playerSyncEl.textContent = [
+      details.saveKind ? `save ${details.saveKind}` : "save aguardando",
+      details.playTime ? `tempo ${details.playTime}` : "",
+      details.saveUpdatedAt ? `atualizado ${new Date(details.saveUpdatedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}` : ""
+    ].filter(Boolean).join(" · ");
     if (typeof playerDialog.showModal === "function") playerDialog.showModal();
     else playerDialog.setAttribute("open", "open");
   }
@@ -363,7 +448,9 @@
     socket = window.io({ transports: ["websocket", "polling"] });
     socket.on("connect", () => {
       const color = PLAYER_COLORS[Math.abs(hashCode(playerName)) % PLAYER_COLORS.length];
-      socket.emit("concordium-gba:join", { name: playerName, x: 50, y: 72, dir: "down", color });
+      const x = myDetails.x || 50;
+      const y = myDetails.y || 72;
+      socket.emit("concordium-gba:join", { name: playerName, x, y, dir: "down", color });
       socket.emit("concordium-gba:details", { metadata: myDetails });
     });
     socket.on("disconnect", () => {
@@ -381,14 +468,8 @@
 
   function updateBridgeDetails(nextDetails) {
     myDetails = cleanDetails({ ...myDetails, ...(nextDetails || {}) });
-    if (socket?.connected) socket.emit("concordium-gba:details", { metadata: myDetails });
+    publishDetails();
     persistMetadata(true);
-    const self = players.get(myId);
-    if (self) {
-      self.details = myDetails;
-      players.set(myId, self);
-      renderRoster();
-    }
   }
 
   window.ConcordiumBridge = {

@@ -17,6 +17,35 @@
   const POKEMON_SIZE = 100;
   const BADGE_FLAG_START = 0x867;
   const BADGE_NAMES = ["Pedra", "Punho", "Dinamica", "Calor", "Equilibrio", "Pena", "Mente", "Chuva"];
+  const EMERALD_MAP_NAMES = {
+    "0.0": "Cidade de Petalburg", "0.1": "Cidade de Slateport", "0.2": "Cidade de Mauville", "0.3": "Cidade de Rustboro",
+    "0.4": "Cidade de Fortree", "0.5": "Cidade de Lilycove", "0.6": "Cidade de Mossdeep", "0.7": "Cidade de Sootopolis",
+    "0.8": "Cidade de Ever Grande", "0.9": "Vila Raiz", "0.10": "Vila Oldale", "0.11": "Vila Dewford",
+    "0.12": "Vila Lavaridge", "0.13": "Vila Fallarbor", "0.14": "Vila Verdanturf", "0.15": "Vila Pacifidlog",
+    "0.16": "Rota 101", "0.17": "Rota 102", "0.18": "Rota 103", "0.19": "Rota 104", "0.20": "Rota 105",
+    "0.21": "Rota 106", "0.22": "Rota 107", "0.23": "Rota 108", "0.24": "Rota 109", "0.25": "Rota 110",
+    "0.26": "Rota 111", "0.27": "Rota 112", "0.28": "Rota 113", "0.29": "Rota 114", "0.30": "Rota 115",
+    "0.31": "Rota 116", "0.32": "Rota 117", "0.33": "Rota 118", "0.34": "Rota 119", "0.35": "Rota 120",
+    "0.36": "Rota 121", "0.37": "Rota 122", "0.38": "Rota 123", "0.39": "Rota 124", "0.40": "Rota 125",
+    "0.41": "Rota 126", "0.42": "Rota 127", "0.43": "Rota 128", "0.44": "Rota 129", "0.45": "Rota 130",
+    "0.46": "Rota 131", "0.47": "Rota 132", "0.48": "Rota 133", "0.49": "Rota 134", "0.50": "Submerso - Rota 124",
+    "0.51": "Submerso - Rota 126", "0.52": "Submerso - Rota 127", "0.53": "Submerso - Rota 128",
+    "0.54": "Submerso - Rota 129", "0.55": "Submerso - Rota 105", "0.56": "Submerso - Rota 125",
+    "1.0": "Vila Raiz - Casa do Brendan 1F", "1.1": "Vila Raiz - Casa do Brendan 2F",
+    "1.2": "Vila Raiz - Casa da May 1F", "1.3": "Vila Raiz - Casa da May 2F", "1.4": "Vila Raiz - Laboratorio do Prof. Birch",
+    "2.0": "Vila Oldale - Casa 1", "2.1": "Vila Oldale - Casa 2", "2.2": "Vila Oldale - Centro Pokemon 1F",
+    "2.3": "Vila Oldale - Centro Pokemon 2F", "2.4": "Vila Oldale - Mercado",
+    "8.0": "Cidade de Petalburg - Casa do Wally", "8.1": "Cidade de Petalburg - Ginasio", "8.2": "Cidade de Petalburg - Casa 1",
+    "8.3": "Cidade de Petalburg - Casa 2", "8.4": "Cidade de Petalburg - Centro Pokemon 1F",
+    "8.5": "Cidade de Petalburg - Centro Pokemon 2F", "8.6": "Cidade de Petalburg - Mercado"
+  };
+  const EMERALD_GROUP_AREAS = {
+    1: "Vila Raiz", 2: "Vila Oldale", 3: "Vila Dewford", 4: "Vila Lavaridge", 5: "Vila Fallarbor", 6: "Vila Verdanturf",
+    7: "Vila Pacifidlog", 8: "Cidade de Petalburg", 9: "Cidade de Slateport", 10: "Cidade de Mauville", 11: "Cidade de Rustboro",
+    12: "Cidade de Fortree", 13: "Cidade de Lilycove", 14: "Cidade de Mossdeep", 15: "Cidade de Sootopolis",
+    16: "Cidade de Ever Grande", 17: "Rota 104", 18: "Rota 111", 19: "Rota 112", 20: "Rota 114", 21: "Rota 116",
+    22: "Rota 117", 23: "Rota 121", 24: "Cavernas e areas especiais"
+  };
   const SPECIES_NAMES = [
     "", "Bulbasaur", "Ivysaur", "Venusaur", "Charmander", "Charmeleon", "Charizard", "Squirtle", "Wartortle", "Blastoise",
     "Caterpie", "Metapod", "Butterfree", "Weedle", "Kakuna", "Beedrill", "Pidgey", "Pidgeotto", "Pidgeot", "Rattata",
@@ -296,6 +325,14 @@
     return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
   }
 
+  function describeMap(mapId, x, y) {
+    const directName = EMERALD_MAP_NAMES[mapId];
+    if (directName) return `${directName} - X ${x}, Y ${y}`;
+    const [group] = mapId.split(".").map(Number);
+    const area = EMERALD_GROUP_AREAS[group] || "Hoenn";
+    return `${area} - Mapa ${mapId} - X ${x}, Y ${y}`;
+  }
+
   function extractEmeraldDetails(stateLike) {
     const memory = getStateMemory(stateLike);
     if (!memory || memory.length < GBA_STATE_SIZE) return {};
@@ -309,7 +346,7 @@
     const warpId = memory[blocks.save1Offset + 6] || 0;
     const mapId = `${mapGroup}.${mapNum}`;
     const details = {
-      mapName: `Mapa ${mapId} - X ${x}, Y ${y}`,
+      mapName: describeMap(mapId, x, y),
       mapId,
       x: Math.max(6, Math.min(94, 10 + ((Math.abs(x) % 36) * 2.2))),
       y: Math.max(18, Math.min(92, 20 + ((Math.abs(y) % 28) * 2.4))),

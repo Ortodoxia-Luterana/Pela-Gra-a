@@ -1,7 +1,9 @@
 (function () {
   const ROM_URL = "/concordium-exploracao/rom";
+  const SAVE_STATE_URL = "/api/concordium/gba-save/state";
   const EMULATOR_DATA_URL = "https://cdn.emulatorjs.org/stable/data/";
   const LOADER_URL = `${EMULATOR_DATA_URL}loader.js`;
+  const STATE_CAPTURE_MS = 1500;
   const PLAYER_COLORS = ["#d94f3d", "#3d7bd9", "#45a857", "#d8a629", "#8a5bd9", "#d95f9f"];
 
   const loading = document.getElementById("gba-loading");
@@ -17,11 +19,18 @@
   let myId = "";
   let playerName = "Jogador";
   let myDetails = defaultDetails();
+  let hasServerState = false;
+  let lastSaveBody = null;
+  let saveTimer = 0;
+  let lastSaveAt = 0;
   const players = new Map();
 
   function defaultDetails() {
     return {
       mapName: "Mapa atual ainda nao lido da ROM",
+      mapId: "",
+      x: 0,
+      y: 0,
       team: [],
       badges: [],
       playTime: ""
@@ -40,6 +49,9 @@
     const value = details && typeof details === "object" ? details : {};
     return {
       mapName: String(value.mapName || "Mapa atual ainda nao lido da ROM").replace(/[<>]/g, "").slice(0, 64),
+      mapId: String(value.mapId || "").replace(/[<>]/g, "").slice(0, 32),
+      x: Math.max(0, Math.min(9999, Number(value.x) || 0)),
+      y: Math.max(0, Math.min(9999, Number(value.y) || 0)),
       team: Array.isArray(value.team) ? value.team.slice(0, 6).map(item => String(item || "").replace(/[<>]/g, "").slice(0, 24)).filter(Boolean) : [],
       badges: Array.isArray(value.badges) ? value.badges.slice(0, 12).map(item => String(item || "").replace(/[<>]/g, "").slice(0, 24)).filter(Boolean) : [],
       playTime: String(value.playTime || "").replace(/[<>]/g, "").slice(0, 32)
@@ -65,6 +77,14 @@
       if (!response.ok) return;
       const payload = await response.json();
       myDetails = cleanDetails(payload?.save?.metadata);
+      hasServerState = Boolean(payload?.save?.save && payload?.save?.saveKind === "state");
+      lastSaveBody = {
+        metadata: myDetails,
+        save: payload?.save?.save || "",
+        saveKind: payload?.save?.saveKind || "",
+        hash: payload?.save?.hash || "",
+        format: payload?.save?.format || "server"
+      };
       setSaveStatus(payload.updatedAt ? "Save automatico ativo" : "Save automatico pronto");
     } catch {
       setSaveStatus("Save automatico indisponivel");
@@ -90,7 +110,7 @@
 
   function toBase64(value) {
     if (!value) return "";
-    if (typeof value === "string") return value.slice(0, 1_500_000);
+    if (typeof value === "string") return value.slice(0, 8_000_000);
     const source = value instanceof ArrayBuffer
       ? new Uint8Array(value)
       : ArrayBuffer.isView(value)
@@ -102,18 +122,47 @@
     for (let i = 0; i < source.length; i += chunkSize) {
       binary += String.fromCharCode.apply(null, source.subarray(i, i + chunkSize));
     }
-    return btoa(binary).slice(0, 1_500_000);
+    return btoa(binary).slice(0, 8_000_000);
   }
 
-  async function persistSave(eventData) {
+  function saveBodyFromEvent(eventData, saveKind = "state") {
     const payload = Array.isArray(eventData) ? eventData[0] || eventData[1] : eventData;
     const save = payload && typeof payload === "object" ? payload.save || payload.state || payload.data || payload : payload;
-    const body = {
+    const encoded = toBase64(save);
+    if (saveKind !== "state" && lastSaveBody?.saveKind === "state") {
+      return {
+        ...lastSaveBody,
+        metadata: myDetails,
+        hash: payload?.hash || lastSaveBody.hash || "",
+        format: payload?.format || lastSaveBody.format || "emulatorjs-state"
+      };
+    }
+    return {
       metadata: myDetails,
-      save: toBase64(save),
+      save: encoded,
+      saveKind,
       hash: payload?.hash || "",
       format: payload?.format || "emulatorjs"
     };
+  }
+
+  function scheduleSave(body, immediate = false) {
+    lastSaveBody = {
+      metadata: cleanDetails(body?.metadata || myDetails),
+      save: typeof body?.save === "string" ? body.save : "",
+      saveKind: String(body?.saveKind || ""),
+      hash: String(body?.hash || ""),
+      format: String(body?.format || "emulatorjs")
+    };
+    if (saveTimer) clearTimeout(saveTimer);
+    const delay = immediate ? 0 : 250;
+    saveTimer = setTimeout(() => persistSaveNow(), delay);
+  }
+
+  async function persistSaveNow() {
+    if (!lastSaveBody) return;
+    const body = lastSaveBody;
+    saveTimer = 0;
     try {
       const response = await fetch("/api/concordium/gba-save", {
         method: "POST",
@@ -121,10 +170,25 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body)
       });
-      setSaveStatus(response.ok ? "Save automatico salvo" : "Falha no save automatico");
+      lastSaveAt = Date.now();
+      setSaveStatus(response.ok ? "Save automatico salvo agora" : "Falha no save automatico");
     } catch {
       setSaveStatus("Falha no save automatico");
     }
+  }
+
+  function persistSave(eventData, saveKind = "state") {
+    scheduleSave(saveBodyFromEvent(eventData, saveKind), true);
+  }
+
+  function persistMetadata(immediate = false) {
+    scheduleSave({
+      metadata: myDetails,
+      save: lastSaveBody?.save || "",
+      saveKind: lastSaveBody?.saveKind || "metadata",
+      hash: lastSaveBody?.hash || "",
+      format: lastSaveBody?.format || "metadata"
+    }, immediate);
   }
 
   function configureEmulator() {
@@ -138,7 +202,10 @@
     window.EJS_fullscreenOnLoaded = false;
     window.EJS_pathtodata = EMULATOR_DATA_URL;
     window.EJS_biosUrl = "";
-    window.EJS_fixedSaveInterval = 8000;
+    window.EJS_fixedSaveInterval = 1000;
+    if (hasServerState) {
+      window.EJS_loadStateURL = `${SAVE_STATE_URL}?t=${Date.now()}`;
+    }
     window.EJS_Buttons = {
       playPause: false,
       play: false,
@@ -166,14 +233,38 @@
     };
     window.EJS_onGameStart = () => {
       loading.classList.add("hidden");
-      setSaveStatus("Save automatico ativo");
+      setSaveStatus(hasServerState ? "Save restaurado da conta" : "Save automatico ativo");
     };
     window.EJS_ready = () => {
       loading.classList.add("hidden");
       hideEmulatorChrome();
     };
-    window.EJS_onSaveUpdate = persistSave;
-    window.EJS_onSaveState = persistSave;
+    window.EJS_onSaveUpdate = data => persistSave(data, "savefile");
+    window.EJS_onSaveState = data => persistSave(data, "state");
+  }
+
+  async function captureStateNow() {
+    const manager = window.EJS_emulator?.gameManager;
+    if (!manager || typeof manager.getState !== "function") return false;
+    try {
+      const state = await manager.getState();
+      const encoded = toBase64(state);
+      if (!encoded) return false;
+      scheduleSave({
+        metadata: myDetails,
+        save: encoded,
+        saveKind: "state",
+        hash: `state-${Date.now()}`,
+        format: "emulatorjs-state"
+      }, true);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function startInstantStateCapture() {
+    setInterval(() => captureStateNow(), STATE_CAPTURE_MS);
   }
 
   function hideEmulatorChrome() {
@@ -239,6 +330,7 @@
     socket.on("connect", () => {
       const color = PLAYER_COLORS[Math.abs(hashCode(playerName)) % PLAYER_COLORS.length];
       socket.emit("concordium-gba:join", { name: playerName, x: 50, y: 72, dir: "down", color });
+      socket.emit("concordium-gba:details", { metadata: myDetails });
     });
     socket.on("disconnect", () => {
       players.clear();
@@ -252,6 +344,42 @@
     socket.on("concordium-gba:player-update", player => upsertPlayer(player, player.id === myId));
     socket.on("concordium-gba:player-left", removePlayer);
   }
+
+  function updateBridgeDetails(nextDetails) {
+    myDetails = cleanDetails({ ...myDetails, ...(nextDetails || {}) });
+    if (socket?.connected) socket.emit("concordium-gba:details", { metadata: myDetails });
+    persistMetadata(true);
+    const self = players.get(myId);
+    if (self) {
+      self.details = myDetails;
+      players.set(myId, self);
+      renderRoster();
+    }
+  }
+
+  window.ConcordiumBridge = {
+    update: updateBridgeDetails,
+    getDetails: () => ({ ...myDetails }),
+    saveNow: () => persistMetadata(true),
+    markMap: (mapName, x = 0, y = 0) => updateBridgeDetails({ mapName, x, y }),
+    setTeam: team => updateBridgeDetails({ team }),
+    setBadges: badges => updateBridgeDetails({ badges })
+  };
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") captureStateNow().then(saved => {
+      if (!saved) persistMetadata(true);
+    });
+  });
+
+  window.addEventListener("pagehide", () => {
+    captureStateNow();
+    persistMetadata(true);
+    if (lastSaveBody) {
+      const blob = new Blob([JSON.stringify(lastSaveBody)], { type: "application/json" });
+      navigator.sendBeacon?.("/api/concordium/gba-save", blob);
+    }
+  });
 
   async function boot() {
     try {
@@ -268,6 +396,7 @@
       await loadScript(LOADER_URL);
       setTimeout(hideEmulatorChrome, 1200);
       setInterval(hideEmulatorChrome, 3000);
+      startInstantStateCapture();
     } catch (error) {
       loading.textContent = error.message || "Falha ao iniciar Concordium.";
     }

@@ -621,7 +621,7 @@ function readBody(req) {
     let data = '';
     req.on('data', chunk => {
       data += chunk;
-      if (data.length > 5_000_000) { req.destroy(); reject(new Error('Payload grande demais')); }
+      if (data.length > 12_000_000) { req.destroy(); reject(new Error('Payload grande demais')); }
     });
     req.on('end', () => resolve(data));
     req.on('error', reject);
@@ -681,11 +681,15 @@ function sanitizeConcordiumGbaSave(input) {
   return {
     metadata: {
       mapName: String(metadata.mapName || 'Mapa atual ainda nao lido da ROM').replace(/[<>]/g, '').trim().slice(0, 64),
+      mapId: String(metadata.mapId || '').replace(/[<>]/g, '').trim().slice(0, 32),
+      x: clampInt(metadata.x, 0, 9999),
+      y: clampInt(metadata.y, 0, 9999),
       team: cleanList(metadata.team, 6),
       badges: cleanList(metadata.badges, 12),
       playTime: String(metadata.playTime || '').replace(/[<>]/g, '').trim().slice(0, 32)
     },
-    save: typeof source.save === 'string' ? source.save.slice(0, 1_500_000) : '',
+    save: typeof source.save === 'string' ? source.save.slice(0, 8_000_000) : '',
+    saveKind: ['state', 'savefile', 'metadata'].includes(String(source.saveKind)) ? String(source.saveKind) : '',
     hash: String(source.hash || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80),
     format: String(source.format || '').replace(/[<>]/g, '').trim().slice(0, 24)
   };
@@ -1269,6 +1273,30 @@ async function handleApi(req, res, url, user) {
       const now = new Date().toISOString();
       upsertConcordiumGbaSave.run(user.id, JSON.stringify(nextSave), row?.created_at || now, now);
       json(res, 200, { ok: true, save: nextSave, updatedAt: now });
+      return;
+    }
+  }
+  if (req.method === 'GET' && url.pathname === '/api/concordium/gba-save/state') {
+    const row = getConcordiumGbaSave.get(user.id);
+    const save = sanitizeConcordiumGbaSave(safeJsonParse(row?.save_json, null));
+    if (!save.save || save.saveKind !== 'state') {
+      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' });
+      res.end('Sem save automatico.');
+      return;
+    }
+    try {
+      const bytes = Buffer.from(save.save, 'base64');
+      res.writeHead(200, {
+        'Content-Type': 'application/octet-stream',
+        'Content-Length': bytes.length,
+        'Cache-Control': 'private, no-store, max-age=0',
+        'Content-Disposition': 'inline; filename="concordium.state"'
+      });
+      res.end(bytes);
+      return;
+    } catch {
+      res.writeHead(422, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' });
+      res.end('Save automatico invalido.');
       return;
     }
   }
@@ -1988,6 +2016,15 @@ function initConcordiumMultiplayer(httpServer) {
       player.dir = safeText(payload?.dir, player.dir || 'down') || 'down';
       player.updatedAt = Date.now();
       socket.to('concordium-gba').emit('concordium-gba:player-update', publicGbaPlayer(player));
+    });
+
+    socket.on('concordium-gba:details', payload => {
+      const player = gbaPlayers.get(socket.id);
+      if (!player) return;
+      const details = sanitizeConcordiumGbaSave({ metadata: payload?.metadata || payload }).metadata;
+      player.details = details;
+      player.updatedAt = Date.now();
+      io.to('concordium-gba').emit('concordium-gba:player-update', publicGbaPlayer(player));
     });
 
     socket.on('concordium:join', payload => {

@@ -156,6 +156,30 @@ a {
   text-transform: uppercase;
 }
 
+.gba-upload {
+  min-width: 170px;
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 239, 181, .32);
+  border-radius: 8px;
+  color: #fff4cc;
+  background: rgba(255, 255, 255, .08);
+  font-size: .86rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.gba-upload input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .gba-panel {
   position: fixed;
   top: max(10px, env(safe-area-inset-top));

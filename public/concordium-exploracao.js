@@ -4,6 +4,7 @@
   const LOADER_URL = `${EMULATOR_DATA_URL}loader.js`;
   const overlay = document.getElementById("gba-overlay");
   const startButton = document.getElementById("gba-start");
+  const romFile = document.getElementById("gba-rom-file");
   const statusEl = document.getElementById("gba-status");
   const panel = document.getElementById("gba-panel");
   const panelToggle = document.getElementById("gba-panel-toggle");
@@ -15,8 +16,9 @@
   panelClose.addEventListener("click", () => panel.classList.remove("open"));
 
   async function romStatus() {
-    const response = await fetch("/api/concordium/rom-status", { cache: "no-store" });
-    if (!response.ok) throw new Error("Acesso a ROM nao liberado.");
+    const response = await fetch("/api/concordium/rom-status", { cache: "no-store", credentials: "same-origin" });
+    if (response.status === 403) throw new Error("Acesso a ROM nao liberado. Volte e digite a senha 5892 de novo.");
+    if (!response.ok) throw new Error("Nao foi possivel verificar a ROM.");
     return response.json();
   }
 
@@ -74,6 +76,32 @@
   }
 
   startButton.addEventListener("click", startEmulator);
+  romFile.addEventListener("change", async () => {
+    const file = romFile.files && romFile.files[0];
+    if (!file) return;
+    if (!/\.(gba|bak)$/i.test(file.name)) {
+      setStatus("Escolha um arquivo .gba ou .bak.");
+      return;
+    }
+    startButton.disabled = true;
+    setStatus(`Enviando ${file.name}...`);
+    try {
+      const response = await fetch("/concordium-exploracao/rom-upload", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/octet-stream" },
+        body: file
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.ok) throw new Error(payload.error || "Falha ao enviar ROM.");
+      setStatus(`ROM enviada (${Math.round(payload.size / 1024 / 1024)} MB). Toque em Carregar GBA.`);
+    } catch (error) {
+      setStatus(error.message || "Falha ao enviar ROM.");
+    } finally {
+      startButton.disabled = false;
+      romFile.value = "";
+    }
+  });
 
   romStatus()
     .then((status) => {

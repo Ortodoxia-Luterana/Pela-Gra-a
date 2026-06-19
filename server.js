@@ -618,6 +618,23 @@ function readBody(req) {
     req.on('error', reject);
   });
 }
+function readBinaryBody(req, maxBytes = 34_000_000) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let length = 0;
+    req.on('data', chunk => {
+      length += chunk.length;
+      if (length > maxBytes) {
+        req.destroy();
+        reject(new Error('ROM grande demais'));
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on('end', () => resolve(Buffer.concat(chunks)));
+    req.on('error', reject);
+  });
+}
 async function readForm(req) { return new URLSearchParams(await readBody(req)); }
 function escapeHtml(value) {
   return String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
@@ -1770,6 +1787,26 @@ const server = http.createServer(async (req, res) => {
       }
       fs.createReadStream(CONCORDIUM_ROM_PATH).pipe(res);
       return;
+    }
+    if (req.method === 'POST' && url.pathname === '/concordium-exploracao/rom-upload') {
+      if (!hasConcordiumAccess(req, user.id)) {
+        json(res, 403, { ok: false, error: 'locked' });
+        return;
+      }
+      try {
+        const rom = await readBinaryBody(req);
+        if (rom.length < 1_000_000 || rom.length > 34_000_000) {
+          json(res, 400, { ok: false, error: 'Arquivo GBA invalido ou tamanho fora do esperado.' });
+          return;
+        }
+        fs.mkdirSync(path.dirname(CONCORDIUM_ROM_PATH), { recursive: true });
+        fs.writeFileSync(CONCORDIUM_ROM_PATH, rom);
+        json(res, 200, { ok: true, size: rom.length });
+        return;
+      } catch (error) {
+        json(res, 400, { ok: false, error: error.message || 'Falha ao enviar ROM.' });
+        return;
+      }
     }
     if (req.method === 'POST' && url.pathname === '/concordium-exploracao/unlock') {
       const form = await readForm(req);

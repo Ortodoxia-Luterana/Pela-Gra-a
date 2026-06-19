@@ -1809,6 +1809,7 @@ const server = http.createServer(async (req, res) => {
 function initConcordiumMultiplayer(httpServer) {
   const io = new SocketIOServer(httpServer, { cors: { origin: false } });
   const players = new Map();
+  const gbaPlayers = new Map();
   const mapBounds = { minX: 70, minY: 80, maxX: 1430, maxY: 920 };
   const dummy = { id: 'training-dummy', x: 760, y: 520, hp: 80, maxHp: 80 };
   const weaponPower = {
@@ -1876,6 +1877,18 @@ function initConcordiumMultiplayer(httpServer) {
       lastMessage: player.lastMessage || ''
     };
   }
+  function publicGbaPlayer(player) {
+    return {
+      id: player.id,
+      userId: player.userId,
+      name: player.name,
+      x: player.x,
+      y: player.y,
+      dir: player.dir,
+      color: player.color,
+      updatedAt: player.updatedAt
+    };
+  }
   function nextLevelXp(level) {
     return 60 + Math.max(0, Number(level || 1) - 1) * 35;
   }
@@ -1894,6 +1907,38 @@ function initConcordiumMultiplayer(httpServer) {
   }
 
   io.on('connection', socket => {
+    socket.on('concordium-gba:join', payload => {
+      const user = currentUser(socket.request);
+      const fallbackName = user?.name || `Jogador ${socket.id.slice(0, 4)}`;
+      const player = {
+        id: socket.id,
+        userId: user?.id || null,
+        name: safeText(payload?.name, fallbackName) || fallbackName,
+        x: clamp(payload?.x ?? 50, 4, 96),
+        y: clamp(payload?.y ?? 72, 12, 96),
+        dir: safeText(payload?.dir, 'down') || 'down',
+        color: safeText(payload?.color, '#d94f3d') || '#d94f3d',
+        updatedAt: Date.now()
+      };
+      gbaPlayers.set(socket.id, player);
+      socket.join('concordium-gba');
+      socket.emit('concordium-gba:init', {
+        id: socket.id,
+        players: [...gbaPlayers.values()].map(publicGbaPlayer)
+      });
+      socket.to('concordium-gba').emit('concordium-gba:player-joined', publicGbaPlayer(player));
+    });
+
+    socket.on('concordium-gba:move', payload => {
+      const player = gbaPlayers.get(socket.id);
+      if (!player) return;
+      player.x = clamp(payload?.x, 4, 96);
+      player.y = clamp(payload?.y, 12, 96);
+      player.dir = safeText(payload?.dir, player.dir || 'down') || 'down';
+      player.updatedAt = Date.now();
+      socket.to('concordium-gba').emit('concordium-gba:player-update', publicGbaPlayer(player));
+    });
+
     socket.on('concordium:join', payload => {
       const attrs = payload?.attrs && typeof payload.attrs === 'object' ? payload.attrs : {};
       const baseRes = clamp(attrs.resistencia || 3, 1, 20);
@@ -2010,6 +2055,10 @@ function initConcordiumMultiplayer(httpServer) {
     });
 
     socket.on('disconnect', () => {
+      if (gbaPlayers.has(socket.id)) {
+        gbaPlayers.delete(socket.id);
+        socket.to('concordium-gba').emit('concordium-gba:player-left', socket.id);
+      }
       if (!players.has(socket.id)) return;
       players.delete(socket.id);
       io.emit('concordium:player-left', socket.id);

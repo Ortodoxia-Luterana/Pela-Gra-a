@@ -179,13 +179,52 @@ a {
   overflow: hidden;
 }
 
+.gba-online-hud {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 14;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(360px, calc(100% - 20px));
+  padding: 7px 10px;
+  border: 1px solid rgba(255, 239, 181, .34);
+  border-radius: 8px;
+  color: #fff7d4;
+  background: rgba(0, 0, 0, .62);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, .35);
+  font-size: .78rem;
+  pointer-events: none;
+}
+
+.gba-shell:not(.is-playing) .gba-online-hud,
+.gba-shell:not(.is-playing) .gba-dpad {
+  display: none;
+}
+
+.gba-online-hud strong {
+  color: var(--gba-gold);
+  white-space: nowrap;
+}
+
+.gba-online-hud span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .gba-player {
   position: absolute;
-  width: 22px;
-  height: 30px;
+  width: 24px;
+  height: 32px;
   transform: translate(-50%, -100%);
-  transition: left .12s linear, top .12s linear;
+  transition: left .08s linear, top .08s linear;
   filter: drop-shadow(0 4px 3px rgba(0, 0, 0, .55));
+}
+
+.gba-player.self {
+  z-index: 2;
 }
 
 .gba-player::before {
@@ -216,6 +255,66 @@ a {
   overflow: hidden;
   text-overflow: ellipsis;
   transform: translateX(-50%);
+}
+
+.gba-player.self::after {
+  border-color: rgba(248, 214, 109, .74);
+  color: #10130e;
+  background: #f8d66d;
+}
+
+.gba-dpad {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  z-index: 16;
+  width: 126px;
+  height: 126px;
+  display: grid;
+  grid-template-columns: repeat(3, 42px);
+  grid-template-rows: repeat(3, 42px);
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.gba-dpad button {
+  border: 1px solid rgba(255, 239, 181, .42);
+  border-radius: 8px;
+  color: #fff4cc;
+  background: rgba(4, 8, 10, .62);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 8px 18px rgba(0, 0, 0, .3);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .gba-dpad {
+    opacity: .34;
+  }
+
+  .gba-dpad:hover {
+    opacity: 1;
+  }
+}
+
+.gba-dpad button[data-dir="up"] {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.gba-dpad button[data-dir="left"] {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.gba-dpad button[data-dir="down"] {
+  grid-column: 2;
+  grid-row: 3;
+}
+
+.gba-dpad button[data-dir="right"] {
+  grid-column: 3;
+  grid-row: 2;
 }
 
 .gba-panel.open {

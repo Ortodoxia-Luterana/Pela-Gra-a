@@ -678,6 +678,13 @@ function sanitizeConcordiumGbaSave(input) {
   const rawMapName = String(metadata.mapName || '').replace(/[<>]/g, '').trim();
   const hasInvalidMapCoordinates = /(?:^|[,\s])(?:x|y)\s*-/.test(rawMapName.toLowerCase());
   const mapName = !rawMapName || rawMapName === 'Mapa atual ainda nao lido da ROM' || hasInvalidMapCoordinates ? 'Concordium GBA em execucao' : rawMapName;
+  const rawPlayTime = String(metadata.playTime || '').replace(/[<>]/g, '').trim().slice(0, 32);
+  const playParts = rawPlayTime.split(':').map(part => Number(part));
+  const playTime = playParts.length === 3
+    && playParts.every(Number.isFinite)
+    && (playParts[0] > 999 || playParts[1] > 59 || playParts[2] > 59)
+      ? ''
+      : rawPlayTime;
   const cleanList = (items, max) => Array.isArray(items)
     ? items.slice(0, max).map(item => String(item || '').replace(/[<>]/g, '').trim().slice(0, 24)).filter(Boolean)
     : [];
@@ -689,7 +696,7 @@ function sanitizeConcordiumGbaSave(input) {
       y: clampInt(metadata.y, 0, 9999),
       team: cleanList(metadata.team, 6),
       badges: cleanList(metadata.badges, 12),
-      playTime: String(metadata.playTime || '').replace(/[<>]/g, '').trim().slice(0, 32),
+      playTime,
       source: String(metadata.source || 'emulator').replace(/[<>]/g, '').trim().slice(0, 24),
       saveKind: String(metadata.saveKind || source.saveKind || '').replace(/[<>]/g, '').trim().slice(0, 24),
       saveUpdatedAt: String(metadata.saveUpdatedAt || '').replace(/[<>]/g, '').trim().slice(0, 40),

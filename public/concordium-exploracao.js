@@ -165,6 +165,16 @@
     return /(?:^|[,\s])(?:x|y)\s*-/.test(String(value || "").toLowerCase());
   }
 
+  function cleanPlayTime(value) {
+    const text = String(value || "").replace(/[<>]/g, "").trim().slice(0, 32);
+    const parts = text.split(":").map(part => Number(part));
+    if (parts.length === 3 && parts.every(Number.isFinite)) {
+      const [hours, minutes, seconds] = parts;
+      if (hours > 999 || minutes > 59 || seconds > 59) return "";
+    }
+    return text;
+  }
+
   function cleanDetails(details) {
     const value = details && typeof details === "object" ? details : {};
     const mapName = String(value.mapName || "Jogo em execucao").replace(/[<>]/g, "").slice(0, 64);
@@ -175,7 +185,7 @@
       y: Math.max(0, Math.min(9999, Number(value.y) || 0)),
       team: Array.isArray(value.team) ? value.team.slice(0, 6).map(item => String(item || "").replace(/[<>]/g, "").slice(0, 24)).filter(Boolean) : [],
       badges: Array.isArray(value.badges) ? value.badges.slice(0, 12).map(item => String(item || "").replace(/[<>]/g, "").slice(0, 24)).filter(Boolean) : [],
-      playTime: String(value.playTime || "").replace(/[<>]/g, "").slice(0, 32),
+      playTime: cleanPlayTime(value.playTime),
       source: String(value.source || "emulator").replace(/[<>]/g, "").slice(0, 24),
       saveKind: String(value.saveKind || "").replace(/[<>]/g, "").slice(0, 24),
       saveUpdatedAt: String(value.saveUpdatedAt || "").replace(/[<>]/g, "").slice(0, 40),
@@ -204,12 +214,12 @@
       frame = typeof manager?.getFrameNum === "function" ? Number(manager.getFrameNum()) || 0 : 0;
     } catch {}
     return {
-      mapName: myDetails.source === "emerald-state" ? usableMapName(myDetails.mapName) : "Concordium GBA em execucao",
+      mapName: "Concordium GBA em execucao",
       source: "emulatorjs",
       saveKind,
       saveUpdatedAt: new Date().toISOString(),
       frame,
-      playTime: myDetails.playTime || formatFrameTime(frame)
+      playTime: formatFrameTime(frame)
     };
   }
 
@@ -542,7 +552,14 @@
       const response = await fetch("/api/concordium/gba-save", { cache: "no-store", credentials: "same-origin" });
       if (!response.ok) return;
       const payload = await response.json();
-      myDetails = cleanDetails(payload?.save?.metadata);
+      const savedMetadata = cleanDetails(payload?.save?.metadata);
+      myDetails = cleanDetails({
+        ...defaultDetails(),
+        mapName: "Concordium GBA em execucao",
+        source: "emulatorjs",
+        saveKind: savedMetadata.saveKind || payload?.save?.saveKind || "",
+        frame: savedMetadata.frame || 0
+      });
       hasServerState = Boolean(payload?.save?.save && payload?.save?.saveKind === "state");
       lastSaveBody = {
         metadata: myDetails,
@@ -645,7 +662,7 @@
 
   function persistSave(eventData, saveKind = "state") {
     const extracted = saveKind === "state" ? extractEmeraldDetails(rawSaveFromEvent(eventData)) : {};
-    myDetails = cleanDetails({ ...myDetails, ...emulatorFacts(saveKind), ...extracted });
+    myDetails = cleanDetails({ ...defaultDetails(), ...emulatorFacts(saveKind), ...extracted });
     publishDetails();
     scheduleSave(saveBodyFromEvent(eventData, saveKind), true);
   }
@@ -732,7 +749,7 @@
       const state = await manager.getState();
       const encoded = toBase64(state);
       if (!encoded) return false;
-      myDetails = cleanDetails({ ...myDetails, ...emulatorFacts("state"), ...extractEmeraldDetails(state) });
+      myDetails = cleanDetails({ ...defaultDetails(), ...emulatorFacts("state"), ...extractEmeraldDetails(state) });
       publishDetails();
       scheduleSave({
         metadata: myDetails,
@@ -756,7 +773,7 @@
       const saveFile = typeof manager.getSaveFile === "function" ? manager.getSaveFile(false) : null;
       const encoded = toBase64(saveFile);
       if (!encoded) return false;
-      myDetails = cleanDetails({ ...myDetails, ...emulatorFacts("savefile") });
+      myDetails = cleanDetails({ ...defaultDetails(), ...emulatorFacts("savefile") });
       publishDetails();
       scheduleSave({
         metadata: myDetails,

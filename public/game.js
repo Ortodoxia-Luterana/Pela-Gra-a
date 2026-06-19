@@ -186,6 +186,7 @@ const PASTOR_MEMBER_CAPACITY=CHURCH_LEVELS[0].members;
 const CHURCH_MEMBER_CAPACITY=CHURCH_LEVELS[CHURCH_LEVELS.length-1].members;
 const SEMINARY_MEMBERS_PER_GRADUATE=5500;
 const SEMINARY_COMPLETION_RATE=0.65;
+const SEMINARY_FIXED_GRADUATE_TARGET=4;
 
 // eventos revisados: decisões sem gabarito visível antes do clique e efeitos ligados a G.mods.
 const EVENTS=[
@@ -920,10 +921,7 @@ function compactAnnualNotifications(){
 
 function randRange(min,max){return min+Math.random()*(max-min);}
 function fixedSeminaryGraduateTarget(y){
-  if(y<1930)return 4;
-  if(y<1950)return 8;
-  if(y<1970)return 15;
-  return 24;
+  return SEMINARY_FIXED_GRADUATE_TARGET;
 }
 function seminaryGraduateTargetForYear(y){
   const fixed=fixedSeminaryGraduateTarget(y);

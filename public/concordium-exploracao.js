@@ -7,13 +7,20 @@
   const PLAYER_COLORS = ["#d94f3d", "#3d7bd9", "#45a857", "#d8a629", "#8a5bd9", "#d95f9f"];
   const EWRAM_START = 0x02000000;
   const EWRAM_SIZE = 0x40000;
+  const IWRAM_START = 0x03000000;
+  const IWRAM_SIZE = 0x8000;
   const GBA_STATE_SIZE = 0x61000;
+  const GBA_STATE_IWRAM_OFFSET = 0x19000;
   const GBA_STATE_EWRAM_OFFSET = 0x21000;
   const SAVE_BLOCK_1_SIZE = 0x3d88;
   const SAVE_BLOCK_2_SIZE = 0xf2c;
   const SAVE_BLOCK_1_PARTY_COUNT = 0x234;
   const SAVE_BLOCK_1_PARTY = 0x238;
+  const SAVE_BLOCK_1_OBJECT_EVENTS = 0xa30;
   const SAVE_BLOCK_1_FLAGS = 0x1270;
+  const OBJECT_EVENT_COUNT = 16;
+  const OBJECT_EVENT_SIZE = 0x24;
+  const MAP_OFFSET = 7;
   const POKEMON_SIZE = 100;
   const BADGE_FLAG_START = 0x867;
   const BADGE_NAMES = ["Pedra", "Punho", "Dinamica", "Calor", "Equilibrio", "Pena", "Mente", "Chuva"];
@@ -246,8 +253,13 @@
   }
 
   function gbaOffset(address) {
-    if (address < EWRAM_START || address >= EWRAM_START + EWRAM_SIZE) return -1;
-    return GBA_STATE_EWRAM_OFFSET + (address - EWRAM_START);
+    if (address >= EWRAM_START && address < EWRAM_START + EWRAM_SIZE) {
+      return GBA_STATE_EWRAM_OFFSET + (address - EWRAM_START);
+    }
+    if (address >= IWRAM_START && address < IWRAM_START + IWRAM_SIZE) {
+      return GBA_STATE_IWRAM_OFFSET + (address - IWRAM_START);
+    }
+    return -1;
   }
 
   function isGbaPointer(value) {
@@ -273,6 +285,32 @@
     return Boolean(EMERALD_MAP_NAMES[`${group}.${map}`]);
   }
 
+  function findPlayerObjectEvent(memory, save1Offset, group, map) {
+    const start = save1Offset + SAVE_BLOCK_1_OBJECT_EVENTS;
+    const matches = [];
+    for (let index = 0; index < OBJECT_EVENT_COUNT; index += 1) {
+      const offset = start + (index * OBJECT_EVENT_SIZE);
+      if (offset + OBJECT_EVENT_SIZE > memory.length) continue;
+      const active = Boolean(memory[offset] & 1);
+      const isPlayer = Boolean(memory[offset + 2] & 1);
+      const eventMapNum = memory[offset + 9];
+      const eventMapGroup = memory[offset + 10];
+      const currentX = readS16(memory, offset + 0x10);
+      const currentY = readS16(memory, offset + 0x12);
+      if (!active || !isPlayer) continue;
+      if (eventMapGroup !== group || eventMapNum !== map) continue;
+      if (currentX < -MAP_OFFSET || currentY < -MAP_OFFSET || currentX > 255 || currentY > 255) continue;
+      matches.push({
+        index,
+        x: currentX - MAP_OFFSET,
+        y: currentY - MAP_OFFSET,
+        rawX: currentX,
+        rawY: currentY
+      });
+    }
+    return matches[0] || null;
+  }
+
   function scoreSaveBlock1(memory, offset) {
     if (offset < 0 || offset + SAVE_BLOCK_1_SIZE > memory.length) return -999;
     const x = readS16(memory, offset);
@@ -284,7 +322,8 @@
     const partyCount = memory[offset + SAVE_BLOCK_1_PARTY_COUNT];
     const filledBytes = countNonZero(memory, offset, 0x500);
     if (partyCount > 6 || group > 64 || map > 160 || warpId > 127 || layoutId > 0x3ff) return -999;
-    if (x < 0 || y < 0 || x > 255 || y > 255) return -999;
+    if (x < -MAP_OFFSET || y < -MAP_OFFSET || x > 255 || y > 255) return -999;
+    const playerEvent = findPlayerObjectEvent(memory, offset, group, map);
     let score = 0;
     score += filledBytes > 10 ? 8 : 0;
     score += filledBytes > 80 ? 4 : 0;
@@ -293,7 +332,8 @@
     score += group > 0 && group <= 24 ? 4 : 0;
     score += layoutId > 0 ? 4 : 0;
     score += partyCount > 0 ? 4 : 0;
-    score += x > 0 && y > 0 ? 6 : 2;
+    score += playerEvent ? 40 : -18;
+    score += x >= 0 && y >= 0 ? 6 : 0;
     return score;
   }
 
@@ -314,7 +354,11 @@
 
   function findEmeraldSaveBlocks(memory) {
     const candidates = [];
-    for (let offset = 0; offset + 12 <= memory.length; offset += 4) {
+    const scanRanges = [
+      [GBA_STATE_IWRAM_OFFSET, GBA_STATE_IWRAM_OFFSET + IWRAM_SIZE],
+      [GBA_STATE_EWRAM_OFFSET, GBA_STATE_EWRAM_OFFSET + EWRAM_SIZE]
+    ];
+    for (const [scanStart, scanEnd] of scanRanges) for (let offset = scanStart; offset + 12 <= Math.min(scanEnd, memory.length); offset += 4) {
       const pointers = [readU32(memory, offset), readU32(memory, offset + 4), readU32(memory, offset + 8)];
       if (!pointers.every((pointer) => pointer >= EWRAM_START && pointer < EWRAM_START + EWRAM_SIZE)) continue;
       const offsets = pointers.map(gbaOffset);
@@ -332,7 +376,8 @@
           const y = readS16(memory, save1Offset + 2);
           const group = memory[save1Offset + 4];
           const map = memory[save1Offset + 5];
-          const score = (save1Score * 2) + save2Score + (offset >= GBA_STATE_EWRAM_OFFSET ? 2 : 0);
+          const playerEvent = findPlayerObjectEvent(memory, save1Offset, group, map);
+          const score = (save1Score * 2) + save2Score + (offset >= GBA_STATE_IWRAM_OFFSET && offset < GBA_STATE_IWRAM_OFFSET + IWRAM_SIZE ? 12 : 0);
           candidates.push({
             save1: pointers[save1Index],
             save2: pointers[save2Index],
@@ -341,8 +386,9 @@
             save2Offset,
             score,
             mapId: `${group}.${map}`,
-            x,
-            y
+            x: playerEvent ? playerEvent.x : x,
+            y: playerEvent ? playerEvent.y : y,
+            playerEvent
           });
         }
       }
@@ -454,21 +500,20 @@
     const memory = getStateMemory(stateLike);
     if (!memory || memory.length < GBA_STATE_SIZE) return {};
     const blocks = findEmeraldSaveBlocks(memory);
-    if (!blocks || blocks.score < 4) return {};
+    if (!blocks || blocks.score < 40) return {};
     if (countNonZero(memory, blocks.save1Offset, 0x500) <= 10 || countNonZero(memory, blocks.save2Offset, 0x120) <= 10) return {};
-    const x = readS16(memory, blocks.save1Offset);
-    const y = readS16(memory, blocks.save1Offset + 2);
+    const x = Number.isFinite(blocks.x) ? blocks.x : readS16(memory, blocks.save1Offset);
+    const y = Number.isFinite(blocks.y) ? blocks.y : readS16(memory, blocks.save1Offset + 2);
     const mapGroup = memory[blocks.save1Offset + 4] || 0;
     const mapNum = memory[blocks.save1Offset + 5] || 0;
-    if (x < 0 || y < 0 || x > 255 || y > 255) return {};
+    if (x < -MAP_OFFSET || y < -MAP_OFFSET || x > 255 || y > 255) return {};
     const warpId = memory[blocks.save1Offset + 6] || 0;
-    const mapHeader = findCurrentMapHeader(memory, blocks.save1Offset);
-    const mapId = mapHeader ? `mapsec:${mapHeader.sectionId}` : `${mapGroup}.${mapNum}`;
+    const mapId = `${mapGroup}.${mapNum}`;
     const details = {
-      mapName: describeMap(`${mapGroup}.${mapNum}`, x, y, mapHeader?.sectionName || ""),
+      mapName: describeMap(mapId, x, y, ""),
       mapId,
-      x: Math.max(6, Math.min(94, 10 + ((Math.abs(x) % 36) * 2.2))),
-      y: Math.max(18, Math.min(92, 20 + ((Math.abs(y) % 28) * 2.4))),
+      x: Math.max(6, Math.min(94, 10 + ((Math.max(0, x) % 36) * 2.2))),
+      y: Math.max(18, Math.min(92, 20 + ((Math.max(0, y) % 28) * 2.4))),
       source: "emerald-state",
       team: extractTeam(memory, blocks.save1Offset),
       badges: extractBadges(memory, blocks.save1Offset),

@@ -17,9 +17,7 @@
   const POKEMON_SIZE = 100;
   const BADGE_FLAG_START = 0x867;
   const BADGE_NAMES = ["Pedra", "Punho", "Dinamica", "Calor", "Equilibrio", "Pena", "Mente", "Chuva"];
-  const CONCORDIUM_MAP_OVERRIDES = {
-    "0.0": "Vila Inicial"
-  };
+  const CONCORDIUM_START_MAP_IDS = new Set(["0.0", "0.9"]);
   const EMERALD_MAP_NAMES = {
     "0.0": "Cidade de Petalburg", "0.1": "Cidade de Slateport", "0.2": "Cidade de Mauville", "0.3": "Cidade de Rustboro",
     "0.4": "Cidade de Fortree", "0.5": "Cidade de Lilycove", "0.6": "Cidade de Mossdeep", "0.7": "Cidade de Sootopolis",
@@ -343,8 +341,10 @@
   }
 
   function describeMap(mapId, x, y) {
-    const customName = CONCORDIUM_MAP_OVERRIDES[mapId];
-    if (customName) return `${customName} - X ${x}, Y ${y}`;
+    if (CONCORDIUM_START_MAP_IDS.has(mapId)) {
+      const startArea = y <= 4 ? "Rota 101" : "Vila Raiz";
+      return `${startArea} - X ${x}, Y ${y}`;
+    }
     const directName = EMERALD_MAP_NAMES[mapId];
     if (directName) return `${directName} - X ${x}, Y ${y}`;
     const [group] = mapId.split(".").map(Number);

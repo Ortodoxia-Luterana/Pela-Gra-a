@@ -155,15 +155,16 @@ const PLAYER_MISSION_COOLDOWN=4;
 const RIVAL_ORGANIC_SCALE=0.065;
 const EXTRA_CHURCH_DIMINISH=0.72;
 const PLAYER_CHURCH_UPKEEP=0.42;
-const PLAYER_MEMBER_CARE_UPKEEP=0.0015;
+const PLAYER_MEMBER_CARE_UPKEEP=0.0012;
 const PLAYER_PASTOR_UPKEEP=0.22;
 const AVAILABLE_PASTOR_UPKEEP=0.02;
-const OFFER_ROOT_GAIN=0.0085;
+const OFFER_ROOT_GAIN=0.0145;
 const FAITH_ROOT_GAIN=0.085;
 const BASE_SUPPORT=1.45;
 const EARLY_MISSION_SUPPORT=0.85;
 const STATE_STRUCTURE_UPKEEP=0.25;
-const ADMIN_OVERLOAD_UPKEEP=0.45;
+const ADMIN_OVERLOAD_UPKEEP=0.30;
+const NATIONAL_STEWARDSHIP_MIN_COST=120;
 const PASTOR_SEND_COST=40;
 const PLAYER_EXPANSION_COST=60;
 const FIRST_STATE_MISSION_OFFER_COST=250;
@@ -250,7 +251,7 @@ const TICKERS=[
   'A influência agora nasce de igrejas, membros, níveis e história.'
 ];
 
-const G={year:1904,month:0,paused:true,started:false,gameOver:false,monthlyExpense:0,speed:1,fe:20,of:5,fi:12,doc:70,doctrineCorrectCount:0,doctrineWrongCount:0,rateMult:1,rateFe:0.35,rateOf:0.08,rateFi:0.01,sel:'BR',lastEv:new Set(),tickIdx:0,lastRivalTurn:'',states:{},foundedDenoms:new Set(),seminaryOpen:false,seminaryMode:'strong',seminary:[],pastors:[],availablePastors:[],nextPastorId:1,totalPastorsFormed:0,annualDecisions:[],scheduledOfferExpenses:[],eventQueue:[],usedTheologyQuestions:[],achievements:[],offerBrokeMonths:0,mods:{doctrineGrowth:1,missionGrowth:1,youthRetention:1,persecutionPressure:1,pastoralFormation:1}};
+const G={year:1904,month:0,paused:true,started:false,gameOver:false,monthlyExpense:0,speed:1,fe:20,of:5,fi:12,doc:70,doctrineCorrectCount:0,doctrineWrongCount:0,rateMult:1,rateFe:0.35,rateOf:0.08,rateFi:0.01,sel:'BR',lastEv:new Set(),tickIdx:0,lastRivalTurn:'',states:{},foundedDenoms:new Set(),seminaryOpen:false,seminaryMode:'strong',seminary:[],pastors:[],availablePastors:[],nextPastorId:1,totalPastorsFormed:0,annualDecisions:[],scheduledOfferExpenses:[],eventQueue:[],usedTheologyQuestions:[],achievements:[],offerBrokeMonths:0,nationalStewardshipCooldown:0,mods:{doctrineGrowth:1,missionGrowth:1,youthRetention:1,persecutionPressure:1,pastoralFormation:1}};
 
 const ACHIEVEMENTS=[
   {id:'primeiros-passos',title:'Primeiros Passos',xp:75,points:25,icon:'/assets/achievements/primeiros-passos.png',desc:'Voce iniciou sua primeira campanha em Pela Graca 1904.'},
@@ -799,8 +800,29 @@ function playerNationalStructureExpense(){
   const extraStates=Math.max(0,states-1)*STATE_STRUCTURE_UPKEEP;
   const admin=Math.max(0,churches-8)*ADMIN_OVERLOAD_UPKEEP;
   const availablePastors=Math.max(0,(G.availablePastors||[]).length-6)*AVAILABLE_PASTOR_UPKEEP;
-  const memberAdmin=Math.max(0,members-5000)*0.0024;
+  const memberAdmin=Math.max(0,members-5000)*0.00055;
   return extraStates+admin+availablePastors+memberAdmin;
+}
+
+function nationalStewardshipCost(){
+  return Math.max(NATIONAL_STEWARDSHIP_MIN_COST,Math.round(totalChurches('IELB')*1.5+totalMembers('IELB')/900));
+}
+function nationalStewardshipCampaign(){
+  const cost=nationalStewardshipCost();
+  if(G.fe<cost||G.nationalStewardshipCooldown>0)return;
+  G.fe-=cost;
+  G.nationalStewardshipCooldown=6;
+  let touched=0;
+  ielbChurchRefs().forEach(({ch})=>{
+    const struggling=(ch.struggleMonths||0)>=3||ch.subsidized||G.rateOf<0;
+    const gain=(struggling?0.16:0.055)+Math.random()*0.04;
+    ch.offerRate=Math.max(0.15,Math.min(1,(ch.offerRate||0.7)+gain));
+    ch.failedStewardshipAttempts=0;
+    if(struggling)ch.struggleMonths=Math.max(0,(ch.struggleMonths||0)-3);
+    touched++;
+  });
+  recalc();renderLeft();renderRight();updateRes();
+  addGameNotification('Mordomia nacional','Campanha nacional de mordomia: '+touched+' igrejas visitadas. Taxa de oferta melhorou sem gastar ofertas.','good');
 }
 
 function churchInternalBalance(stateId,index){
@@ -1150,6 +1172,9 @@ function renderBrazilRight(){
   addBtn(body,'✝ Realizar Culto','+4 Fé imediatamente','act quick-hit',()=>culto(),G.paused);
   addBtn(body,'Catecismo','Custo: 25 Fé → +5 membros disponíveis','act quick-hit',()=>catecismo(),G.paused||G.fe<25,'btn-cat-r');
   addT(body,'Direção Nacional');
+  const stewardshipCost=nationalStewardshipCost();
+  addBtn(body,'Mordomia nacional','Custo: '+stewardshipCost+' Fe | melhora ofertas das igrejas'+(G.nationalStewardshipCooldown>0?' | '+G.nationalStewardshipCooldown+' meses':''),
+    'act quick-hit',()=>nationalStewardshipCampaign(),G.paused||G.fe<stewardshipCost||G.nationalStewardshipCooldown>0);
   addR(body,'Doutrina',Math.floor(G.doc)+'%');
   addR(body,'Pastores ativos',activePastors().length);
   addR(body,'Pastores disponíveis',G.availablePastors.length);
@@ -2342,6 +2367,7 @@ function loop(now){
     if(monthMs>=MONTH_SECS){
       monthMs=0;G.month=(G.month+1)%12;if(G.month===0){G.year++;processAnnualYear();}
       ALL_STATES.forEach(id=>DENOM_KEYS.forEach(d=>{const slot=G.states[id].denomData[d];if(slot.cooldown>0)slot.cooldown--;}));
+      if(G.nationalStewardshipCooldown>0)G.nationalStewardshipCooldown--;
       ensureScheduledFoundations();
       processPlayerMonthlyChurches();
       monthlyRivalOrganicGrowth();

@@ -42,7 +42,7 @@ a {
 .gba-topbar {
   min-height: 56px;
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) auto;
+  grid-template-columns: 44px minmax(0, 1fr);
   align-items: center;
   gap: 8px;
   padding: 6px;
@@ -143,19 +143,6 @@ a {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.gba-fullscreen {
-  min-height: 38px;
-  padding: 0 12px;
-  border: 1px solid rgba(255, 230, 160, .38);
-  border-radius: 7px;
-  color: #10130e;
-  background: linear-gradient(180deg, #f8d66d, #d99c2d);
-  font-size: .78rem;
-  font-weight: 900;
-  text-transform: uppercase;
   white-space: nowrap;
 }
 
@@ -265,8 +252,7 @@ a {
   line-height: 1.4;
 }
 
-/* Multiplayer page policy: hide EmulatorJS administrative controls. */
-#game .ejs_menu_bar,
+/* Multiplayer page policy: keep native fullscreen, hide admin controls. */
 #game .ejs_context_menu,
 #game [class*="cheat" i],
 #game [class*="pause" i],
@@ -277,6 +263,15 @@ a {
 #game [class*="file" i] {
   display: none !important;
   pointer-events: none !important;
+}
+
+#game .ejs_menu_bar {
+  opacity: .78;
+  background: rgba(0, 0, 0, .26) !important;
+}
+
+#game .ejs_menu_bar:hover {
+  opacity: 1;
 }
 
 @media (max-width: 720px) {
@@ -310,7 +305,7 @@ a {
     right: max(4px, env(safe-area-inset-right));
     z-index: 20;
     min-height: 42px;
-    grid-template-columns: 34px minmax(0, 1fr) auto;
+    grid-template-columns: 34px minmax(0, 1fr);
     gap: 6px;
     padding: 4px;
     background: rgba(5, 10, 13, .68);
@@ -339,12 +334,6 @@ a {
     max-width: 128px;
     padding: 4px 8px;
     font-size: .72rem;
-  }
-
-  .gba-fullscreen {
-    min-height: 32px;
-    padding: 0 9px;
-    font-size: .68rem;
   }
 
   .gba-stage {
@@ -385,6 +374,16 @@ a {
 
   #game [class*="button" i] {
     opacity: .62 !important;
+  }
+
+  #game .ejs_menu_bar {
+    position: absolute !important;
+    right: max(8px, env(safe-area-inset-right)) !important;
+    bottom: max(8px, env(safe-area-inset-bottom)) !important;
+    left: auto !important;
+    width: auto !important;
+    z-index: 14 !important;
+    border-radius: 8px !important;
   }
 }
 

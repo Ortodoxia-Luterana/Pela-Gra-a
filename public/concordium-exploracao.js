@@ -14,7 +14,6 @@
   const playerMapEl = document.getElementById("gba-player-map");
   const playerTeamEl = document.getElementById("gba-player-team");
   const playerBadgesEl = document.getElementById("gba-player-badges");
-  const fullscreenButton = document.getElementById("gba-fullscreen");
 
   let socket = null;
   let myId = "";
@@ -40,22 +39,6 @@
 
   function setSaveStatus(text) {
     saveStatus.textContent = text;
-  }
-
-  async function enterFullscreen() {
-    const target = document.querySelector(".gba-shell") || document.documentElement;
-    try {
-      if (!document.fullscreenElement) {
-        await target.requestFullscreen?.();
-        await screen.orientation?.lock?.("landscape").catch(() => {});
-        fullscreenButton.textContent = "Sair";
-      } else {
-        await document.exitFullscreen?.();
-        fullscreenButton.textContent = "Tela cheia";
-      }
-    } catch {
-      setSaveStatus("Tela cheia bloqueada pelo navegador");
-    }
   }
 
   function safeName(value) {
@@ -231,9 +214,9 @@
       mute: false,
       unmute: false,
       settings: false,
-      fullscreen: false,
-      enterFullscreen: false,
-      exitFullscreen: false,
+      fullscreen: true,
+      enterFullscreen: true,
+      exitFullscreen: true,
       saveState: false,
       loadState: false,
       screenRecord: false,
@@ -251,6 +234,7 @@
     window.EJS_onGameStart = () => {
       loading.classList.add("hidden");
       setSaveStatus(hasServerState ? "Save restaurado da conta" : "Save automatico ativo");
+      setTimeout(captureAnySaveNow, 800);
     };
     window.EJS_ready = () => {
       loading.classList.add("hidden");
@@ -258,6 +242,7 @@
     };
     window.EJS_onSaveUpdate = data => persistSave(data, "savefile");
     window.EJS_onSaveState = data => persistSave(data, "state");
+    window.EJS_onSaveSaveFiles = data => persistSave(data, "savefile");
   }
 
   async function captureStateNow() {
@@ -280,20 +265,52 @@
     }
   }
 
+  function captureSaveFileNow() {
+    if (lastSaveBody?.saveKind === "state" && lastSaveBody.save) return false;
+    const manager = window.EJS_emulator?.gameManager;
+    if (!manager) return false;
+    try {
+      if (typeof manager.saveSaveFiles === "function") manager.saveSaveFiles();
+      const saveFile = typeof manager.getSaveFile === "function" ? manager.getSaveFile(false) : null;
+      const encoded = toBase64(saveFile);
+      if (!encoded) return false;
+      scheduleSave({
+        metadata: myDetails,
+        save: encoded,
+        saveKind: "savefile",
+        hash: `savefile-${Date.now()}`,
+        format: "emulatorjs-savefile"
+      }, true);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async function captureAnySaveNow() {
+    const savedState = await captureStateNow();
+    if (savedState) return true;
+    return captureSaveFileNow();
+  }
+
   function startInstantStateCapture() {
-    setInterval(() => captureStateNow(), STATE_CAPTURE_MS);
+    setInterval(() => captureAnySaveNow(), STATE_CAPTURE_MS);
   }
 
   function hideEmulatorChrome() {
     const root = document.getElementById("game");
     if (!root) return;
-    const forbidden = ["cheat", "pause", "save", "load", "restart", "upload", "file", "menu"];
-    root.querySelectorAll("button, [role='button'], input, label, a, div").forEach(node => {
-      const text = `${node.textContent || ""} ${node.title || ""} ${node.getAttribute("aria-label") || ""} ${node.className || ""}`.toLowerCase();
-      if (forbidden.some(key => text.includes(key))) {
-        node.style.display = "none";
-        node.style.pointerEvents = "none";
-      }
+    const forbidden = [
+      "cheat", "pause", "play", "restart", "settings", "gamepad", "cache",
+      "screenshot", "record", "mute", "volume", "upload", "file",
+      "save state", "load state", "quick save", "quick load", "save files", "load files"
+    ];
+    root.querySelectorAll("button, [role='button'], input, label, a").forEach(node => {
+      const text = `${node.textContent || ""} ${node.title || ""} ${node.getAttribute("aria-label") || ""}`.toLowerCase();
+      if (text.includes("fullscreen")) return;
+      if (!forbidden.some(key => text.includes(key))) return;
+      node.style.display = "none";
+      node.style.pointerEvents = "none";
     });
   }
 
@@ -383,20 +400,18 @@
     setBadges: badges => updateBridgeDetails({ badges })
   };
 
-  fullscreenButton.addEventListener("click", enterFullscreen);
   document.addEventListener("fullscreenchange", () => {
-    fullscreenButton.textContent = document.fullscreenElement ? "Sair" : "Tela cheia";
     setTimeout(hideEmulatorChrome, 250);
   });
 
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "hidden") captureStateNow().then(saved => {
+    if (document.visibilityState === "hidden") captureAnySaveNow().then(saved => {
       if (!saved) persistMetadata(true);
     });
   });
 
   window.addEventListener("pagehide", () => {
-    captureStateNow();
+    captureAnySaveNow();
     persistMetadata(true);
     if (lastSaveBody) {
       const blob = new Blob([JSON.stringify(lastSaveBody)], { type: "application/json" });

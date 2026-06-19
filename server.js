@@ -1276,7 +1276,7 @@ async function handleApi(req, res, url, user) {
       return;
     }
   }
-  if (req.method === 'GET' && url.pathname === '/api/concordium/gba-save/state') {
+  if ((req.method === 'GET' || req.method === 'HEAD') && url.pathname === '/api/concordium/gba-save/state') {
     const row = getConcordiumGbaSave.get(user.id);
     const save = sanitizeConcordiumGbaSave(safeJsonParse(row?.save_json, null));
     if (!save.save || save.saveKind !== 'state') {
@@ -1292,6 +1292,10 @@ async function handleApi(req, res, url, user) {
         'Cache-Control': 'private, no-store, max-age=0',
         'Content-Disposition': 'inline; filename="concordium.state"'
       });
+      if (req.method === 'HEAD') {
+        res.end();
+        return;
+      }
       res.end(bytes);
       return;
     } catch {

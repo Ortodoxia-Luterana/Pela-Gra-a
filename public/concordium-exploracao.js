@@ -17,7 +17,7 @@
   const POKEMON_SIZE = 100;
   const BADGE_FLAG_START = 0x867;
   const BADGE_NAMES = ["Pedra", "Punho", "Dinamica", "Calor", "Equilibrio", "Pena", "Mente", "Chuva"];
-  const CONCORDIUM_START_MAP_IDS = new Set(["0.0", "0.9"]);
+  const REGION_MAP_SECTION_NAMES = ["Vila Raiz", "Vila Oldale", "Vila Dewford", "Vila Lavaridge", "Vila Fallarbor", "Vila Verdanturf", "Vila Pacifidlog", "Cidade de Petalburg", "Cidade de Slateport", "Cidade de Mauville", "Cidade de Rustboro", "Cidade de Fortree", "Cidade de Lilycove", "Cidade de Mossdeep", "Cidade de Sootopolis", "Cidade de Ever Grande", "Rota 101", "Rota 102", "Rota 103", "Rota 104", "Rota 105", "Rota 106", "Rota 107", "Rota 108", "Rota 109", "Rota 110", "Rota 111", "Rota 112", "Rota 113", "Rota 114", "Rota 115", "Rota 116", "Rota 117", "Rota 118", "Rota 119", "Rota 120", "Rota 121", "Rota 122", "Rota 123", "Rota 124", "Rota 125", "Rota 126", "Rota 127", "Rota 128", "Rota 129", "Rota 130", "Rota 131", "Rota 132", "Rota 133", "Rota 134", "Submerso", "Submerso", "Submerso", "Submerso", "Submerso", "Caverna Granite", "Monte Chimney", "Safari Zone", "Battle Frontier", "Bosque Petalburg", "Tunel Rusturf", "Navio Abandonado", "New Mauville", "Meteor Falls", "Meteor Falls", "Monte Pyre", "Esconderijo Aqua", "Caverna Shoal", "Caverna Submarina", "Submerso", "Victory Road", "Ilha Mirage", "Caverna da Origem", "Ilha do Sul", "Fiery Path", "Fiery Path", "Jagged Pass", "Jagged Pass", "Camara Selada", "Submerso", "Scorched Slab", "Island Cave", "Ruinas do Deserto", "Tumba Antiga", "Dentro do Caminhao", "Pilar do Ceu", "Base Secreta"];
   const EMERALD_MAP_NAMES = {
     "0.0": "Cidade de Petalburg", "0.1": "Cidade de Slateport", "0.2": "Cidade de Mauville", "0.3": "Cidade de Rustboro",
     "0.4": "Cidade de Fortree", "0.5": "Cidade de Lilycove", "0.6": "Cidade de Mossdeep", "0.7": "Cidade de Sootopolis",
@@ -245,6 +245,16 @@
     return GBA_STATE_EWRAM_OFFSET + (address - EWRAM_START);
   }
 
+  function isGbaPointer(value) {
+    return (value >= 0x02000000 && value < 0x02040000)
+      || (value >= 0x03000000 && value < 0x03008000)
+      || (value >= 0x08000000 && value < 0x0a000000);
+  }
+
+  function isNullableGbaPointer(value) {
+    return value === 0 || isGbaPointer(value);
+  }
+
   function countNonZero(bytes, offset, length) {
     let count = 0;
     const end = Math.min(bytes.length, offset + length);
@@ -340,11 +350,41 @@
     return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
   }
 
-  function describeMap(mapId, x, y) {
-    if (CONCORDIUM_START_MAP_IDS.has(mapId)) {
-      const startArea = y <= 4 ? "Rota 101" : "Vila Raiz";
-      return `${startArea} - X ${x}, Y ${y}`;
+  function findCurrentMapHeader(memory, save1Offset) {
+    const saveLayoutId = readU16(memory, save1Offset + 0x32);
+    const candidates = [];
+    const start = GBA_STATE_EWRAM_OFFSET;
+    const end = Math.min(memory.length - 0x1c, GBA_STATE_EWRAM_OFFSET + EWRAM_SIZE);
+    for (let offset = start; offset <= end; offset += 4) {
+      const mapLayout = readU32(memory, offset);
+      const events = readU32(memory, offset + 4);
+      const scripts = readU32(memory, offset + 8);
+      const connections = readU32(memory, offset + 12);
+      if (!isGbaPointer(mapLayout) || !isNullableGbaPointer(events) || !isNullableGbaPointer(scripts) || !isNullableGbaPointer(connections)) continue;
+      const music = readU16(memory, offset + 0x10);
+      const layoutId = readU16(memory, offset + 0x12);
+      const sectionId = memory[offset + 0x14];
+      const weather = memory[offset + 0x16];
+      const mapType = memory[offset + 0x17];
+      const flags = memory[offset + 0x1a];
+      const battleType = memory[offset + 0x1b];
+      const sectionName = REGION_MAP_SECTION_NAMES[sectionId] || "";
+      if (!sectionName || music > 0x3ff || layoutId > 0x3ff || weather > 40 || mapType > 12 || battleType > 12) continue;
+      let score = 0;
+      score += layoutId === saveLayoutId ? 12 : 0;
+      score += mapLayout >= 0x08000000 ? 4 : 0;
+      score += events >= 0x08000000 ? 2 : 0;
+      score += scripts >= 0x08000000 ? 2 : 0;
+      score += connections >= 0x08000000 ? 2 : 0;
+      score += flags ? 1 : 0;
+      candidates.push({ offset, layoutId, sectionId, sectionName, score });
     }
+    candidates.sort((a, b) => b.score - a.score);
+    return candidates[0] || null;
+  }
+
+  function describeMap(mapId, x, y, sectionName = "") {
+    if (sectionName) return `${sectionName} - X ${x}, Y ${y}`;
     const directName = EMERALD_MAP_NAMES[mapId];
     if (directName) return `${directName} - X ${x}, Y ${y}`;
     const [group] = mapId.split(".").map(Number);
@@ -363,9 +403,10 @@
     const mapGroup = memory[blocks.save1Offset + 4] || 0;
     const mapNum = memory[blocks.save1Offset + 5] || 0;
     const warpId = memory[blocks.save1Offset + 6] || 0;
-    const mapId = `${mapGroup}.${mapNum}`;
+    const mapHeader = findCurrentMapHeader(memory, blocks.save1Offset);
+    const mapId = mapHeader ? `mapsec:${mapHeader.sectionId}` : `${mapGroup}.${mapNum}`;
     const details = {
-      mapName: describeMap(mapId, x, y),
+      mapName: describeMap(`${mapGroup}.${mapNum}`, x, y, mapHeader?.sectionName || ""),
       mapId,
       x: Math.max(6, Math.min(94, 10 + ((Math.abs(x) % 36) * 2.2))),
       y: Math.max(18, Math.min(92, 20 + ((Math.abs(y) % 28) * 2.4))),

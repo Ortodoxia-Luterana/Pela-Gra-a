@@ -614,7 +614,7 @@ function hasConcordiumAccess(req, userId) {
 }
 function setConcordiumAccessCookie(res, userId) {
   const token = signConcordiumAccess(userId);
-  res.setHeader('Set-Cookie', `${CONCORDIUM_ACCESS_COOKIE}=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${7 * 24 * 60 * 60}`);
+  res.setHeader('Set-Cookie', `${CONCORDIUM_ACCESS_COOKIE}=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${12 * 60 * 60}`);
 }
 function readBody(req) {
   return new Promise((resolve, reject) => {
@@ -1092,6 +1092,14 @@ ${body}
 function serveAsset(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const relative = decodeURIComponent(url.pathname.replace(/^\/assets\//, ''));
+  if (relative === 'concordium.gba') {
+    const user = currentUser(req);
+    if (!user || !hasConcordiumAccess(req, user.id)) {
+      res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' });
+      res.end('Concordium bloqueado');
+      return;
+    }
+  }
   const filePath = path.resolve(PUBLIC_DIR, relative);
   if (!filePath.startsWith(PUBLIC_DIR + path.sep)) { res.writeHead(403); res.end('Forbidden'); return; }
   if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
@@ -1232,11 +1240,19 @@ async function handleApi(req, res, url, user) {
     return;
   }
   if (req.method === 'GET' && url.pathname === '/api/concordium/rom-status') {
+    if (!hasConcordiumAccess(req, user.id)) {
+      json(res, 403, { available: false, error: 'locked' });
+      return;
+    }
     const available = fs.existsSync(CONCORDIUM_ROM_PATH) && fs.statSync(CONCORDIUM_ROM_PATH).isFile();
     json(res, 200, { available, size: available ? fs.statSync(CONCORDIUM_ROM_PATH).size : 0 });
     return;
   }
   if (url.pathname === '/api/concordium/profile') {
+    if (!hasConcordiumAccess(req, user.id)) {
+      json(res, 403, { ok: false, error: 'locked' });
+      return;
+    }
     const row = getConcordiumProfile.get(user.id);
     const profile = sanitizeConcordiumProfile(safeJsonParse(row?.profile_json, null));
     if (req.method === 'GET') {
@@ -1257,6 +1273,10 @@ async function handleApi(req, res, url, user) {
     }
   }
   if (url.pathname === '/api/concordium/gba-save') {
+    if (!hasConcordiumAccess(req, user.id)) {
+      json(res, 403, { ok: false, error: 'locked' });
+      return;
+    }
     const row = getConcordiumGbaSave.get(user.id);
     const save = sanitizeConcordiumGbaSave(safeJsonParse(row?.save_json, null));
     if (req.method === 'GET') {
@@ -1277,6 +1297,11 @@ async function handleApi(req, res, url, user) {
     }
   }
   if ((req.method === 'GET' || req.method === 'HEAD') && url.pathname === '/api/concordium/gba-save/state') {
+    if (!hasConcordiumAccess(req, user.id)) {
+      res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' });
+      res.end('Concordium bloqueado');
+      return;
+    }
     const row = getConcordiumGbaSave.get(user.id);
     const save = sanitizeConcordiumGbaSave(safeJsonParse(row?.save_json, null));
     if (!save.save || save.saveKind !== 'state') {
@@ -1822,6 +1847,11 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if ((req.method === 'GET' || req.method === 'HEAD') && url.pathname === '/concordium-exploracao/rom') {
+      if (!hasConcordiumAccess(req, user.id)) {
+        res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' });
+        res.end('Concordium bloqueado');
+        return;
+      }
       if (!fs.existsSync(CONCORDIUM_ROM_PATH) || !fs.statSync(CONCORDIUM_ROM_PATH).isFile()) {
         res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
         res.end('ROM nativa nao encontrada no servidor.');

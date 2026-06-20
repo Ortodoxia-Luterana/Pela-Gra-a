@@ -12,10 +12,10 @@ const ROOM_DEFS = [
 ];
 
 const ACHIEVEMENTS = [
-  { id: 'santa-primeiro-conselho', title: 'Primeiro Conselho', description: 'Entrou em um mapa de Santa Conquista e escolheu uma nacao.', xp: 30, points: 5, file: '/assets/santa-conquista-card.svg' },
-  { id: 'santa-primeira-obra', title: 'Pedra Fundamental', description: 'Construiu o primeiro edificio em uma provincia.', xp: 45, points: 10, file: '/assets/santa-conquista-card.svg' },
-  { id: 'santa-primeira-campanha', title: 'Primeira Campanha', description: 'Ocupou uma provincia inimiga em guerra.', xp: 80, points: 15, file: '/assets/santa-conquista-card.svg' },
-  { id: 'santa-cidade-santa', title: 'Guardiao de Cidade Santa', description: 'Controlou uma das grandes cidades sagradas do mapa.', xp: 120, points: 25, file: '/assets/santa-conquista-card.svg' }
+  { id: 'santa-primeiro-conselho', title: 'Primeiro Conselho', description: 'Entrou em um mapa de Santa Conquista e escolheu uma nacao.', xp: 30, points: 5, file: '/assets/santa-conquista-card.webp' },
+  { id: 'santa-primeira-obra', title: 'Pedra Fundamental', description: 'Construiu o primeiro edificio em uma provincia.', xp: 45, points: 10, file: '/assets/santa-conquista-card.webp' },
+  { id: 'santa-primeira-campanha', title: 'Primeira Campanha', description: 'Ocupou uma provincia inimiga em guerra.', xp: 80, points: 15, file: '/assets/santa-conquista-card.webp' },
+  { id: 'santa-cidade-santa', title: 'Guardiao de Cidade Santa', description: 'Controlou uma das grandes cidades sagradas do mapa.', xp: 120, points: 25, file: '/assets/santa-conquista-card.webp' }
 ];
 
 function clone(value) {
@@ -211,24 +211,9 @@ function setupSantaConquista(options) {
       armies,
       wars: [],
       treaties: [],
-      events: [openingEvent()],
+      events: [],
       chat: [],
       log: [`${def.name} iniciou a campanha em ${SANTA_DATA.startYear}.`]
-    };
-  }
-
-  function openingEvent() {
-    return {
-      id: `event-${crypto.randomUUID()}`,
-      type: 'historical',
-      title: 'O chamado por uma nova Cruzada',
-      body: 'Pregadores, enviados e principes discutem se a cristandade deve enviar forcas ao Oriente. A decisao moldara prestigio, piedade e desconfianca diplomatica.',
-      choices: [
-        { id: 'full', label: 'Entrar com forca total', gold: -30, manpower: -120, prestige: 18, piety: 20, stability: -4 },
-        { id: 'limited', label: 'Enviar apoio limitado', gold: -12, manpower: -40, prestige: 8, piety: 8, stability: 0 },
-        { id: 'ignore', label: 'Ignorar o chamado', gold: 8, manpower: 0, prestige: -8, piety: -12, stability: 4 }
-      ],
-      createdAt: isoNow()
     };
   }
 
@@ -244,7 +229,7 @@ function setupSantaConquista(options) {
     const def = roomDef(roomId);
     const row = getRoom.get(def.id);
     const now = isoNow();
-    let state = row ? safeJson(row.state_json, null) : null;
+    let state = row ? normalizeState(safeJson(row.state_json, null)) : null;
     const stale = row && new Date(row.last_access_at || row.updated_at || row.created_at).getTime() <= Date.now() - RESET_AFTER_MS;
     if (!state || (options.resetStale && stale)) {
       state = defaultState(def.id, row ? Number(row.generation || 1) + 1 : 1);
@@ -257,6 +242,12 @@ function setupSantaConquista(options) {
 
   function safeJson(raw, fallback) {
     try { return raw ? JSON.parse(raw) : fallback; } catch { return fallback; }
+  }
+
+  function normalizeState(state) {
+    if (!state) return state;
+    state.events = (state.events || []).filter(event => event.type !== 'historical' || event.title !== 'O chamado por uma nova Cruzada');
+    return state;
   }
 
   function listRooms() {
@@ -286,7 +277,7 @@ function setupSantaConquista(options) {
   function publicState(state, user = null) {
     const rankings = rankingRows();
     return {
-      dataVersion: 1,
+      dataVersion: 2,
       roomId: state.roomId,
       roomName: state.roomName,
       generation: state.generation,
@@ -427,6 +418,7 @@ function setupSantaConquista(options) {
     const target = state.nations[targetId];
     if (!nation) return 'Escolha uma nacao primeiro.';
     if (!target || target.id === nation.id) return 'Alvo invalido.';
+    if (nation.diplomacy?.allies?.includes(target.id)) return 'Rompa a alianca antes de declarar guerra.';
     if (activeWarBetween(state, nation.id, target.id)) return 'Ja existe uma guerra ativa.';
     const id = `war-${crypto.randomUUID()}`;
     state.wars.push({
@@ -471,6 +463,7 @@ function setupSantaConquista(options) {
       const loss = Math.max(25, Math.round(defense * 0.14));
       army.size = Math.max(80, army.size - loss);
       army.morale = Math.max(35, army.morale - 8);
+      army.provinceId = target.id;
       target.occupier = nation.id;
       war.occupiedProvinces = Array.from(new Set([...(war.occupiedProvinces || []), target.id]));
       war.warScore += war.attacker === nation.id ? 18 : -18;
@@ -544,6 +537,59 @@ function setupSantaConquista(options) {
     return null;
   }
 
+  function addAlliance(state, a, b) {
+    const first = state.nations[a];
+    const second = state.nations[b];
+    if (!first || !second) return false;
+    first.diplomacy = first.diplomacy || { allies: [], enemies: [], truces: {}, vassals: [] };
+    second.diplomacy = second.diplomacy || { allies: [], enemies: [], truces: {}, vassals: [] };
+    first.diplomacy.allies = Array.from(new Set([...(first.diplomacy.allies || []), b]));
+    second.diplomacy.allies = Array.from(new Set([...(second.diplomacy.allies || []), a]));
+    first.diplomacy.enemies = (first.diplomacy.enemies || []).filter(id => id !== b);
+    second.diplomacy.enemies = (second.diplomacy.enemies || []).filter(id => id !== a);
+    return true;
+  }
+
+  function proposeAlliance(state, user, payload) {
+    const nation = controlledNation(state, user.id);
+    const targetId = String(payload?.targetNationId || '');
+    const target = state.nations[targetId];
+    if (!nation) return 'Escolha uma nacao primeiro.';
+    if (!target || target.id === nation.id) return 'Alvo invalido.';
+    if (nation.diplomacy?.allies?.includes(target.id)) return 'Essa nacao ja e aliada.';
+    if (activeWarBetween(state, nation.id, target.id)) return 'Nao da para propor alianca durante uma guerra.';
+    const pending = state.treaties.find(item => item.status === 'pending' && item.type === 'alliance_offer' && item.from === nation.id && item.to === target.id);
+    if (pending) return 'Ja existe uma proposta de alianca enviada.';
+    if (!target.playerId) {
+      addAlliance(state, nation.id, target.id);
+      nation.resources.prestige = Math.max(0, nation.resources.prestige - 2);
+      addLog(state, `${nation.shortName} firmou alianca com ${target.shortName}.`);
+      return null;
+    }
+    state.treaties.push({
+      id: `treaty-${crypto.randomUUID()}`,
+      type: 'alliance_offer',
+      from: nation.id,
+      to: target.id,
+      terms: {},
+      status: 'pending',
+      createdAt: isoNow()
+    });
+    addLog(state, `${nation.shortName} ofereceu alianca a ${target.shortName}.`);
+    return null;
+  }
+
+  function acceptAlliance(state, user, payload) {
+    const nation = controlledNation(state, user.id);
+    const treaty = state.treaties.find(item => item.id === String(payload?.treatyId || '') && item.status === 'pending' && item.type === 'alliance_offer');
+    if (!nation || !treaty || treaty.to !== nation.id) return 'Tratado invalido.';
+    if (activeWarBetween(state, treaty.from, treaty.to)) return 'Nao da para aceitar alianca durante uma guerra.';
+    if (!addAlliance(state, treaty.from, treaty.to)) return 'Alianca invalida.';
+    treaty.status = 'accepted';
+    addLog(state, `${nation.shortName} aceitou alianca com ${state.nations[treaty.from]?.shortName || treaty.from}.`);
+    return null;
+  }
+
   function changeReligionPolicy(state, user, payload) {
     const nation = controlledNation(state, user.id);
     const province = state.provinces[String(payload?.provinceId || '')];
@@ -612,7 +658,7 @@ function setupSantaConquista(options) {
       });
     });
     runAi(state);
-    if (state.year >= 1144 && !state.events.some(event => event.type === 'edessa-threat') && Math.random() < 0.12) {
+    if (state.year > SANTA_DATA.startYear && !state.events.some(event => event.type === 'edessa-threat') && Math.random() < 0.04) {
       state.events.push({
         id: `event-${crypto.randomUUID()}`,
         type: 'edessa-threat',
@@ -639,9 +685,9 @@ function setupSantaConquista(options) {
         }
       }
       const army = state.armies[nation.id];
-      if (!army || army.size < 160 || Math.random() > 0.18) return;
+      if (!army || army.size < 160 || Math.random() > 0.08) return;
       const current = state.provinces[army.provinceId];
-      const target = current?.neighbors.map(id => state.provinces[id]).find(province => province && province.owner !== nation.id && province.loyalty < 50);
+      const target = current?.neighbors.map(id => state.provinces[id]).find(province => province && province.owner !== nation.id && province.loyalty < 38 && !nation.diplomacy?.allies?.includes(province.owner));
       if (target && !activeWarBetween(state, nation.id, target.owner)) {
         state.wars.push({
           id: `war-${crypto.randomUUID()}`,
@@ -753,6 +799,8 @@ function setupSantaConquista(options) {
     socket.on('sc:trainArmy', payload => mutateRoom(socket, payload, (state, user) => trainArmy(state, user, payload)));
     socket.on('sc:moveArmy', payload => mutateRoom(socket, payload, (state, user) => moveArmy(state, user, payload)));
     socket.on('sc:declareWar', payload => mutateRoom(socket, payload, (state, user) => declareWar(state, user, payload)));
+    socket.on('sc:proposeAlliance', payload => mutateRoom(socket, payload, (state, user) => proposeAlliance(state, user, payload)));
+    socket.on('sc:acceptAlliance', payload => mutateRoom(socket, payload, (state, user) => acceptAlliance(state, user, payload)));
     socket.on('sc:offerPeace', payload => mutateRoom(socket, payload, (state, user) => offerPeace(state, user, payload)));
     socket.on('sc:acceptPeace', payload => mutateRoom(socket, payload, (state, user) => acceptPeace(state, user, payload)));
     socket.on('sc:changeReligionPolicy', payload => mutateRoom(socket, payload, (state, user) => changeReligionPolicy(state, user, payload)));

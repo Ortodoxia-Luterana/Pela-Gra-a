@@ -14,6 +14,8 @@
       trainArmy(roomId, provinceId, amount) { socket.emit('sc:trainArmy', { roomId, provinceId, amount }); },
       moveArmy(roomId, provinceId) { socket.emit('sc:moveArmy', { roomId, provinceId }); },
       declareWar(roomId, targetNationId, objective) { socket.emit('sc:declareWar', { roomId, targetNationId, objective }); },
+      proposeAlliance(roomId, targetNationId) { socket.emit('sc:proposeAlliance', { roomId, targetNationId }); },
+      acceptAlliance(roomId, treatyId) { socket.emit('sc:acceptAlliance', { roomId, treatyId }); },
       offerPeace(roomId, warId, cedeProvince) { socket.emit('sc:offerPeace', { roomId, warId, cedeProvince }); },
       acceptPeace(roomId, treatyId) { socket.emit('sc:acceptPeace', { roomId, treatyId }); },
       religion(roomId, provinceId, policy) { socket.emit('sc:changeReligionPolicy', { roomId, provinceId, policy }); },

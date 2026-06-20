@@ -32,6 +32,10 @@
     return String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
   }
 
+  function formatNumber(value) {
+    return Math.round(Number(value || 0)).toLocaleString('pt-BR');
+  }
+
   function toast(message) {
     const el = document.createElement('div');
     el.className = 'sc-toast';
@@ -84,7 +88,7 @@
       joined: payload => {
         state = payload.state;
         currentRoomId = payload.room.id;
-        selectedProvinceId = selectedProvinceId || 'jerusalem';
+        selectedProvinceId = state.provinces[selectedProvinceId] ? selectedProvinceId : 'jerusalem';
         lobby.hidden = true;
         game.hidden = false;
         render();
@@ -116,22 +120,35 @@
   }
 
   function resource(label, value) {
-    return `<span>${label}<b>${Math.round(Number(value || 0))}</b></span>`;
+    return `<span>${label}<b>${formatNumber(value)}</b></span>`;
+  }
+
+  function armiesInProvince(provinceId) {
+    return Object.values(state?.armies || {}).filter(army => army.provinceId === provinceId);
+  }
+
+  function garrisonSize(province) {
+    const local = province.localTroops || {};
+    return Math.round((local.infantry || 0) + (local.archers || 0) + (local.cavalry || 0) + province.fortress * 95);
+  }
+
+  function activeWarBetween(a, b) {
+    return state.wars.find(war => war.status === 'active' && ((war.attacker === a && war.defender === b) || (war.defender === a && war.attacker === b)));
   }
 
   function render() {
     if (!state) return;
     const nation = myNation();
-    roomNameEl.textContent = `${state.roomName} · Geracao ${state.generation}`;
-    dateEl.textContent = `${state.year} ${state.monthName} · ${state.paused ? 'Pausado' : `${state.speed}x`}`;
+    roomNameEl.textContent = nation ? nation.name : 'Santa Conquista';
+    dateEl.textContent = `${state.monthName} de ${state.year} d.C. - ${state.roomName} - ${state.paused ? 'Pausado' : `${state.speed}x`}`;
     pause.textContent = state.paused ? 'Retomar' : 'Pausar';
     resourcesEl.innerHTML = nation ? [
       resource('Ouro', nation.resources.gold),
       resource('Homens', nation.resources.manpower),
       resource('Prestigio', nation.resources.prestige),
       resource('Piedade', nation.resources.piety),
-      resource('Estabilidade', nation.resources.stability),
-      resource('Autoridade', nation.resources.authority)
+      resource('Estab.', nation.resources.stability),
+      resource('Autor.', nation.resources.authority)
     ].join('') : '<span>Nacao<b>Escolha</b></span>';
 
     window.SantaConquistaMap.render(mapEl, data, state, {
@@ -158,18 +175,28 @@
     }
     const owner = state.nations[province.owner];
     const occupier = province.occupier ? state.nations[province.occupier] : null;
-    const army = Object.values(state.armies).find(item => item.provinceId === province.id);
+    const armies = armiesInProvince(province.id);
+    const armyText = armies.length
+      ? armies.map(army => `${state.nations[army.nationId]?.shortName || army.nationId}: ${formatNumber(army.size)} homens`).join('<br>')
+      : 'Nenhum exercito em campo.';
     selectionEl.innerHTML = `
-      <div class="sc-info">
-        <h3>${escapeHtml(province.name)}</h3>
-        <p><b>Dono:</b> ${escapeHtml(owner?.name || province.owner)}</p>
+      <div class="sc-info sc-province-card">
+        <div class="sc-province-title">
+          <h3>${escapeHtml(province.name)}</h3>
+          <span class="sc-owner-chip" style="border-color:${escapeHtml(owner?.color || '#d6a64a')}">${escapeHtml(owner?.shortName || province.owner)}</span>
+        </div>
+        <div class="sc-stat-grid">
+          <span class="sc-stat">Guarnicao<b>${formatNumber(garrisonSize(province))}</b></span>
+          <span class="sc-stat">Fortaleza<b>Nivel ${province.fortress}</b></span>
+          <span class="sc-stat">Renda<b>${province.wealth}</b></span>
+          <span class="sc-stat">Lealdade<b>${Math.round(province.loyalty)}%</b></span>
+          <span class="sc-stat">Religiao<b>${escapeHtml(data.religions[province.religion]?.name || province.religion)}</b></span>
+          <span class="sc-stat">Terreno<b>${escapeHtml(province.terrain)}</b></span>
+        </div>
+        <p><b>Exercitos:</b><br>${armyText}</p>
         ${occupier ? `<p><b>Ocupante:</b> ${escapeHtml(occupier.name)}</p>` : ''}
-        <p><b>Religiao:</b> ${escapeHtml(data.religions[province.religion]?.name || province.religion)}</p>
-        <p><b>Cultura:</b> ${escapeHtml(province.culture)} · <b>Terreno:</b> ${escapeHtml(province.terrain)}</p>
-        <p><b>Fortaleza:</b> ${province.fortress} · <b>Riqueza:</b> ${province.wealth} · <b>Lealdade:</b> ${Math.round(province.loyalty)}%</p>
-        <p><b>Heresia:</b> ${province.heresy ? escapeHtml(province.heresy) : `risco ${Math.round(province.heresyRisk)}%`}</p>
+        <p><b>Cultura:</b> ${escapeHtml(province.culture)}. <b>Heresia:</b> ${province.heresy ? escapeHtml(province.heresy) : `risco ${Math.round(province.heresyRisk)}%`}.</p>
         <p><b>Edificios:</b> ${province.buildings.length ? province.buildings.map(id => data.buildings[id]?.name || id).join(', ') : 'nenhum'}</p>
-        ${army ? `<p><b>Exercito presente:</b> ${escapeHtml(state.nations[army.nationId]?.shortName || army.nationId)} · ${Math.round(army.size)} homens</p>` : ''}
       </div>
       <div class="sc-info">
         <h4>${escapeHtml(owner?.name || '')}</h4>
@@ -185,7 +212,7 @@
     const nation = myNation();
     const province = selectedProvince();
     if (!nation) {
-      actionsEl.innerHTML = '<button type="button" id="sc-choose-first">Escolher nacao</button><div class="sc-info"><p>Voce pode observar o mapa antes de assumir um reino. Quando escolher uma nacao, as acoes aparecem aqui.</p></div>';
+      actionsEl.innerHTML = '<button type="button" id="sc-choose-first">Escolher nacao</button><div class="sc-info"><p>Voce pode observar o mapa antes de assumir um reino. Quando escolher uma nacao, comandos militares e administrativos aparecem aqui.</p></div>';
       document.getElementById('sc-choose-first')?.addEventListener('click', openNationDialog);
       return;
     }
@@ -197,32 +224,50 @@
     const current = state.provinces[army?.provinceId];
     const isNeighbor = current?.neighbors?.includes(province.id);
     const owns = province.owner === nation.id;
-    const atWar = state.wars.find(war => war.status === 'active' && ((war.attacker === nation.id && war.defender === province.owner) || (war.defender === nation.id && war.attacker === province.owner)));
+    const war = activeWarBetween(nation.id, province.owner);
+    const allied = nation.diplomacy?.allies?.includes(province.owner);
     const buttons = [];
     if (owns) {
-      buttons.push(`<button data-train="${province.id}" type="button">Treinar 120 homens</button>`);
+      buttons.push(`<button data-train="${province.id}" type="button">Recrutar 120 homens</button>`);
       if (army?.provinceId !== province.id && isNeighbor) buttons.push(`<button data-move="${province.id}" type="button">Mover exercito</button>`);
       Object.entries(data.buildings).forEach(([id, building]) => {
         if (!province.buildings.includes(id)) buttons.push(`<button data-build="${id}" type="button">${escapeHtml(building.name)}</button>`);
       });
-      buttons.push(`<button data-religion="preach" type="button">Enviar pregadores</button>`);
+      buttons.push(`<button data-religion="preach" type="button">Patrocinar igreja</button>`);
       buttons.push(`<button data-religion="tolerate" type="button">Aumentar tolerancia</button>`);
       buttons.push(`<button data-religion="force" type="button">Forcar conversao</button>`);
     } else if (isNeighbor) {
-      if (!atWar) buttons.push(`<button data-war="${province.owner}" type="button">Declarar guerra</button>`);
-      if (atWar) buttons.push(`<button data-move="${province.id}" type="button">Atacar / cercar</button>`);
-      if (province.occupier === nation.id && atWar) buttons.push(`<button data-peace="${atWar.id}" type="button">Exigir provincia em paz</button>`);
+      if (!war) {
+        if (allied) {
+          buttons.push('<button disabled type="button">Aliado diplomatico</button>');
+        } else {
+          buttons.push(`<button data-alliance="${province.owner}" type="button">Propor alianca</button>`);
+          buttons.push(`<button data-war="${province.owner}" type="button">Declarar guerra</button>`);
+        }
+        buttons.push('<button disabled type="button">Atacar exige guerra ativa</button>');
+      } else {
+        buttons.push(`<button data-move="${province.id}" type="button">Atacar / cercar</button>`);
+        if (province.occupier === nation.id) buttons.push(`<button data-peace="${war.id}" type="button">Exigir provincia em paz</button>`);
+      }
+    } else if (war && province.occupier === nation.id) {
+      buttons.push(`<button data-peace="${war.id}" type="button">Exigir provincia em paz</button>`);
+      buttons.push('<button disabled type="button">Provincia ocupada</button>');
     } else {
       buttons.push('<button disabled type="button">Fora do alcance do exercito</button>');
     }
     actionsEl.innerHTML = `
-      <div class="sc-info"><h4>${escapeHtml(nation.name)}</h4><p>Exercito em ${escapeHtml(current?.name || 'campo')}: ${Math.round(army?.size || 0)} homens, moral ${Math.round(army?.morale || 0)}.</p></div>
+      <div class="sc-info">
+        <h4>${escapeHtml(nation.name)}</h4>
+        <p>Exercito em ${escapeHtml(current?.name || 'campo')}: ${formatNumber(army?.size || 0)} homens, moral ${Math.round(army?.morale || 0)}.</p>
+        <p>Alvo selecionado: ${escapeHtml(province.name)}. Guarnicao estimada: ${formatNumber(garrisonSize(province))} homens.</p>
+      </div>
       <div class="sc-action-grid">${buttons.join('')}</div>
     `;
     actionsEl.querySelectorAll('[data-build]').forEach(button => button.addEventListener('click', () => client.build(currentRoomId, province.id, button.dataset.build)));
     actionsEl.querySelectorAll('[data-train]').forEach(button => button.addEventListener('click', () => client.trainArmy(currentRoomId, button.dataset.train, 120)));
     actionsEl.querySelectorAll('[data-move]').forEach(button => button.addEventListener('click', () => client.moveArmy(currentRoomId, button.dataset.move)));
     actionsEl.querySelectorAll('[data-war]').forEach(button => button.addEventListener('click', () => client.declareWar(currentRoomId, button.dataset.war, province.id)));
+    actionsEl.querySelectorAll('[data-alliance]').forEach(button => button.addEventListener('click', () => client.proposeAlliance(currentRoomId, button.dataset.alliance)));
     actionsEl.querySelectorAll('[data-peace]').forEach(button => button.addEventListener('click', () => client.offerPeace(currentRoomId, button.dataset.peace, province.id)));
     actionsEl.querySelectorAll('[data-religion]').forEach(button => button.addEventListener('click', () => client.religion(currentRoomId, province.id, button.dataset.religion)));
   }
@@ -230,24 +275,29 @@
   function renderDiplomacy() {
     const nation = myNation();
     if (!nation) {
-      diplomacyEl.innerHTML = '<div class="sc-info"><p>Escolha uma nacao para ver guerras, tratados e propostas.</p></div>';
+      diplomacyEl.innerHTML = '<p class="sc-empty">Escolha uma nacao para ver guerras, tratados e propostas.</p>';
       return;
     }
     const wars = state.wars.filter(war => war.status === 'active' && (war.attacker === nation.id || war.defender === nation.id));
     const treaties = state.treaties.filter(treaty => treaty.status === 'pending' && treaty.to === nation.id);
+    const allies = (nation.diplomacy?.allies || []).map(id => state.nations[id]).filter(Boolean);
     diplomacyEl.innerHTML = `
+      ${allies.length ? `<div class="sc-info"><h4>Aliancas</h4><p>${allies.map(ally => escapeHtml(ally.shortName)).join(', ')}</p></div>` : ''}
       ${wars.length ? wars.map(war => {
         const enemy = state.nations[war.attacker === nation.id ? war.defender : war.attacker];
-        return `<div class="sc-info"><h4>Guerra contra ${escapeHtml(enemy?.shortName || 'rival')}</h4><p>Placar: ${Math.round(war.warScore)}</p><p>Objetivo: ${escapeHtml(war.objective || 'fronteira')}</p></div>`;
-      }).join('') : '<div class="sc-info"><p>Nenhuma guerra ativa.</p></div>'}
-      ${treaties.map(treaty => `<div class="sc-info"><h4>Proposta de paz</h4><p>${escapeHtml(state.nations[treaty.from]?.shortName || treaty.from)} pede acordo por ${escapeHtml(state.provinces[treaty.terms?.cedeProvince]?.name || 'provincia')}.</p><button data-accept-peace="${escapeHtml(treaty.id)}" type="button">Aceitar paz</button></div>`).join('')}
+        return `<div class="sc-info"><h4>Guerra contra ${escapeHtml(enemy?.shortName || 'rival')}</h4><p>Placar: ${Math.round(war.warScore)}</p><p>Objetivo: ${escapeHtml(state.provinces[war.objective]?.name || war.objective || 'fronteira')}</p></div>`;
+      }).join('') : '<p class="sc-empty">Nenhuma guerra ativa.</p>'}
+      ${treaties.map(treaty => treaty.type === 'alliance_offer'
+        ? `<div class="sc-info"><h4>Proposta de alianca</h4><p>${escapeHtml(state.nations[treaty.from]?.shortName || treaty.from)} quer firmar alianca.</p><button data-accept-alliance="${escapeHtml(treaty.id)}" type="button">Aceitar alianca</button></div>`
+        : `<div class="sc-info"><h4>Proposta de paz</h4><p>${escapeHtml(state.nations[treaty.from]?.shortName || treaty.from)} pede acordo por ${escapeHtml(state.provinces[treaty.terms?.cedeProvince]?.name || 'provincia')}.</p><button data-accept-peace="${escapeHtml(treaty.id)}" type="button">Aceitar paz</button></div>`).join('')}
     `;
     diplomacyEl.querySelectorAll('[data-accept-peace]').forEach(button => button.addEventListener('click', () => client.acceptPeace(currentRoomId, button.dataset.acceptPeace)));
+    diplomacyEl.querySelectorAll('[data-accept-alliance]').forEach(button => button.addEventListener('click', () => client.acceptAlliance(currentRoomId, button.dataset.acceptAlliance)));
   }
 
   function renderEvents() {
     if (!state.events?.length) {
-      eventsEl.innerHTML = '<div class="sc-info"><p>Nenhum evento ativo.</p></div>';
+      eventsEl.innerHTML = '<p class="sc-empty">Sem alerta diplomatico ou acontecimento mundial no momento.</p>';
       return;
     }
     const me = state.me?.id;
@@ -259,9 +309,9 @@
   }
 
   function renderLogChatRanking() {
-    logEl.innerHTML = (state.log || []).slice(0, 20).map(item => `<p>${escapeHtml(item)}</p>`).join('');
-    chatEl.innerHTML = (state.chat || []).slice(-24).map(item => `<p><b>${escapeHtml(item.userName)}:</b> ${escapeHtml(item.message)}</p>`).join('');
-    rankingEl.innerHTML = (state.ranking || []).slice(0, 8).map(row => `<p><b>${row.position}. ${escapeHtml(row.player)}</b> · ${escapeHtml(row.nation)} · ${row.score}</p>`).join('') || '<p>Sem ranking ainda.</p>';
+    logEl.innerHTML = (state.log || []).slice(0, 14).map(item => `<p>${escapeHtml(item)}</p>`).join('');
+    chatEl.innerHTML = (state.chat || []).slice(-16).map(item => `<p><b>${escapeHtml(item.userName)}:</b> ${escapeHtml(item.message)}</p>`).join('');
+    rankingEl.innerHTML = (state.ranking || []).slice(0, 8).map(row => `<p><b>${row.position}. ${escapeHtml(row.player)}</b> - ${escapeHtml(row.nation)} - ${row.score}</p>`).join('') || '<p>Sem ranking ainda.</p>';
   }
 
   function openNationDialog() {
@@ -277,7 +327,7 @@
     nationList.innerHTML = nations.map(nation => {
       const taken = nation.playerId && nation.playerId !== me;
       const provinceCount = nation.provinces?.length || 0;
-      return `<button class="sc-nation-option" style="border-left-color:${escapeHtml(nation.color)}" data-nation="${escapeHtml(nation.id)}" ${taken ? 'disabled' : ''} type="button"><b>${escapeHtml(nation.name)}</b><small>${escapeHtml(nation.ruler)} · ${escapeHtml(data.religions[nation.religion]?.name || nation.religion)}</small><small>${provinceCount} provincias · ouro ${Math.round(nation.resources.gold)} · homens ${Math.round(nation.resources.manpower)}</small>${taken ? '<small>Escolhida por outro jogador</small>' : ''}</button>`;
+      return `<button class="sc-nation-option" style="border-left-color:${escapeHtml(nation.color)}" data-nation="${escapeHtml(nation.id)}" ${taken ? 'disabled' : ''} type="button"><b>${escapeHtml(nation.name)}</b><small>${escapeHtml(nation.ruler)} - ${escapeHtml(data.religions[nation.religion]?.name || nation.religion)}</small><small>${provinceCount} provincias - ouro ${formatNumber(nation.resources.gold)} - homens ${formatNumber(nation.resources.manpower)}</small>${taken ? '<small>Escolhida por outro jogador</small>' : ''}</button>`;
     }).join('');
     nationList.querySelectorAll('[data-nation]').forEach(button => button.addEventListener('click', () => {
       client.chooseNation(currentRoomId, button.dataset.nation);

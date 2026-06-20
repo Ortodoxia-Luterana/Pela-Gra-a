@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Santa Conquista</title>
-  <link rel="stylesheet" href="/assets/santa-conquista.css?v=1">
+  <link rel="stylesheet" href="/assets/santa-conquista.css?v=2">
 </head>
 <body>
   <main class="sc-shell">
@@ -20,12 +20,16 @@
 
     <section id="sc-game" class="sc-game" hidden>
       <header class="sc-topbar">
-        <div>
-          <strong id="sc-room-name">Mapa</strong>
-          <span id="sc-date">1147 Jan</span>
+        <div class="sc-crown">
+          <span class="sc-seal" aria-hidden="true"></span>
+          <div>
+            <strong id="sc-room-name">Santa Conquista</strong>
+            <span id="sc-date">1147 Jan</span>
+          </div>
         </div>
         <div id="sc-resources" class="sc-resources"></div>
         <div class="sc-speed">
+          <button id="sc-open-nations" type="button">Nacoes</button>
           <button id="sc-pause" type="button">Pausar</button>
           <button data-speed="0.5" type="button">0.5x</button>
           <button data-speed="1" type="button">1x</button>
@@ -33,62 +37,57 @@
         </div>
       </header>
 
-      <div class="sc-layout">
-        <aside class="sc-panel sc-left">
-          <div class="sc-section-head">
-            <span>Selecao</span>
-            <button id="sc-open-nations" type="button">Nacoes</button>
-          </div>
-          <div id="sc-selection" class="sc-selection"></div>
-          <div class="sc-section-head">
-            <span>Eventos</span>
-          </div>
-          <div id="sc-events" class="sc-events"></div>
-        </aside>
+      <section class="sc-map-wrap">
+        <div id="sc-map" class="sc-map" role="application" aria-label="Mapa de Santa Conquista"></div>
+        <nav class="sc-map-modes" aria-label="Modos do mapa">
+          <button data-mode="political" class="active" type="button">Politico</button>
+          <button data-mode="province" type="button">Provincias</button>
+          <button data-mode="religion" type="button">Religiao</button>
+          <button data-mode="war" type="button">Guerra</button>
+          <button data-mode="stability" type="button">Estabilidade</button>
+          <button data-mode="heresy" type="button">Heresia</button>
+        </nav>
+        <div class="sc-mini-map" aria-hidden="true"><span></span></div>
+      </section>
 
-        <section class="sc-map-wrap">
-          <nav class="sc-map-modes" aria-label="Modos do mapa">
-            <button data-mode="political" class="active" type="button">Politico</button>
-            <button data-mode="province" type="button">Provincias</button>
-            <button data-mode="religion" type="button">Religiao</button>
-            <button data-mode="war" type="button">Guerra</button>
-            <button data-mode="stability" type="button">Estabilidade</button>
-            <button data-mode="heresy" type="button">Heresia</button>
-          </nav>
-          <div id="sc-map" class="sc-map" role="application" aria-label="Mapa de Santa Conquista"></div>
-        </section>
+      <section class="sc-command-dock">
+        <div class="sc-section-head">
+          <span>Provincia</span>
+          <button id="sc-refresh" type="button">Atualizar</button>
+        </div>
+        <div id="sc-selection" class="sc-selection"></div>
+        <div class="sc-section-head">
+          <span>Acoes disponiveis</span>
+        </div>
+        <div id="sc-actions" class="sc-actions"></div>
+      </section>
 
-        <aside class="sc-panel sc-right">
-          <div class="sc-section-head">
-            <span>Acoes</span>
-            <button id="sc-refresh" type="button">Atualizar</button>
-          </div>
-          <div id="sc-actions" class="sc-actions"></div>
-          <div class="sc-section-head">
-            <span>Guerra e diplomacia</span>
-          </div>
+      <section class="sc-intel">
+        <aside class="sc-panel sc-diplomacy-panel">
+          <div class="sc-section-head"><span>Guerras e tratados</span></div>
           <div id="sc-diplomacy" class="sc-diplomacy"></div>
         </aside>
-      </div>
-
-      <footer class="sc-bottom">
-        <section>
-          <strong>Crônica da campanha</strong>
+        <aside class="sc-panel sc-events-panel">
+          <div class="sc-section-head"><span>Alertas</span></div>
+          <div id="sc-events" class="sc-events"></div>
+        </aside>
+        <aside class="sc-panel sc-log-panel">
+          <div class="sc-section-head"><span>Cronica da campanha</span></div>
           <div id="sc-log" class="sc-log"></div>
-        </section>
-        <section>
-          <strong>Chat do mapa</strong>
+        </aside>
+        <aside class="sc-panel sc-chat-panel">
+          <div class="sc-section-head"><span>Chat do mapa</span></div>
           <div id="sc-chat" class="sc-chat"></div>
           <form id="sc-chat-form" class="sc-chat-form">
             <input id="sc-chat-input" maxlength="180" autocomplete="off" placeholder="Mensagem">
             <button type="submit">Enviar</button>
           </form>
-        </section>
-        <section>
-          <strong>Ranking beta</strong>
+        </aside>
+        <aside class="sc-panel sc-ranking-panel">
+          <div class="sc-section-head"><span>Ranking beta</span></div>
           <div id="sc-ranking" class="sc-ranking"></div>
-        </section>
-      </footer>
+        </aside>
+      </section>
     </section>
   </main>
 
@@ -103,10 +102,10 @@
   </dialog>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/assets/santa-conquista-data.js?v=1"></script>
-  <script src="/assets/santa-conquista-map.js?v=1"></script>
-  <script src="/assets/santa-conquista-ai.js?v=1"></script>
-  <script src="/assets/santa-conquista-multiplayer.js?v=1"></script>
-  <script src="/assets/santa-conquista.js?v=1"></script>
+  <script src="/assets/santa-conquista-data.js?v=2"></script>
+  <script src="/assets/santa-conquista-map.js?v=2"></script>
+  <script src="/assets/santa-conquista-ai.js?v=2"></script>
+  <script src="/assets/santa-conquista-multiplayer.js?v=2"></script>
+  <script src="/assets/santa-conquista.js?v=2"></script>
 </body>
 </html>

@@ -857,7 +857,7 @@ img.feed-avatar {
 }
 
 .ol-game-card.santa-conquista-cover {
-  background: linear-gradient(90deg, rgba(0, 0, 0, .08), rgba(0, 0, 0, .78)), url("/assets/santa-conquista-card.svg") center/cover;
+  background: linear-gradient(90deg, rgba(0, 0, 0, .08), rgba(0, 0, 0, .78)), url("/assets/santa-conquista-card.webp") center/cover;
 }
 
 .ol-game-card.concordium-exploracao-cover {
@@ -1929,7 +1929,7 @@ img.feed-avatar {
 }
 
 .ol-game-card.santa-conquista-cover{
-  background:linear-gradient(90deg, rgba(0,0,0,.08), rgba(0,0,0,.78)), url("/assets/santa-conquista-card.svg?v=cards-20260619") center/cover !important;
+  background:linear-gradient(90deg, rgba(0,0,0,.08), rgba(0,0,0,.78)), url("/assets/santa-conquista-card.webp?v=cards-20260620") center/cover !important;
 }
 
 .ol-game-card.concordium-exploracao-cover{

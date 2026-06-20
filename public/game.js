@@ -251,7 +251,7 @@ const TICKERS=[
   'A influência agora nasce de igrejas, membros, níveis e história.'
 ];
 
-const G={year:1904,month:0,paused:true,started:false,gameOver:false,monthlyExpense:0,speed:1,fe:20,of:5,fi:12,doc:70,doctrineCorrectCount:0,doctrineWrongCount:0,rateMult:1,rateFe:0.35,rateOf:0.08,rateFi:0.01,sel:'BR',lastEv:new Set(),tickIdx:0,lastRivalTurn:'',states:{},foundedDenoms:new Set(),seminaryOpen:false,seminaryMode:'strong',seminary:[],pastors:[],availablePastors:[],nextPastorId:1,totalPastorsFormed:0,annualDecisions:[],scheduledOfferExpenses:[],eventQueue:[],usedTheologyQuestions:[],achievements:[],offerBrokeMonths:0,nationalStewardshipCooldown:0,mods:{doctrineGrowth:1,missionGrowth:1,youthRetention:1,persecutionPressure:1,pastoralFormation:1}};
+const G={year:1904,month:0,paused:true,started:false,gameOver:false,monthlyExpense:0,speed:1,fe:25,of:5,fi:12,doc:70,doctrineCorrectCount:0,doctrineWrongCount:0,rateMult:1,rateFe:0.35,rateOf:0.08,rateFi:0.01,sel:'BR',lastEv:new Set(),tickIdx:0,lastRivalTurn:'',states:{},foundedDenoms:new Set(),seminaryOpen:false,seminaryMode:'strong',seminary:[],pastors:[],availablePastors:[],nextPastorId:1,totalPastorsFormed:0,annualDecisions:[],scheduledOfferExpenses:[],eventQueue:[],usedTheologyQuestions:[],achievements:[],offerBrokeMonths:0,nationalStewardshipCooldown:0,mods:{doctrineGrowth:1,missionGrowth:1,youthRetention:1,persecutionPressure:1,pastoralFormation:1}};
 
 const ACHIEVEMENTS=[
   {id:'primeiros-passos',title:'Primeiros Passos',xp:75,points:25,icon:'/assets/achievements/primeiros-passos.png',desc:'Voce iniciou sua primeira campanha em Pela Graca 1904.'},
@@ -317,17 +317,7 @@ function checkAchievements(){
   }
 }
 function showAchievementToast(def){
-  let wrap=document.getElementById('achievement-toast');
-  if(!wrap){
-    wrap=document.createElement('div');
-    wrap.id='achievement-toast';
-    wrap.setAttribute('role','status');
-    document.body.appendChild(wrap);
-  }
-  wrap.innerHTML='<img src="'+def.icon+'" alt=""><div><strong>Conquista desbloqueada</strong><span>'+def.title+'</span><small>+'+def.xp+' XP · +'+def.points+' pontos</small></div>';
-  wrap.classList.add('show');
-  clearTimeout(showAchievementToast.timer);
-  showAchievementToast.timer=setTimeout(()=>wrap.classList.remove('show'),5200);
+  addGameNotification('Conquista desbloqueada',def.title+' - +'+def.xp+' XP + '+def.points+' pontos','good');
 }
 
 function createDenomSlot(){return {churches:[],members:0,influence:0,cooldown:0,historicalPresence:0};}
@@ -2305,7 +2295,7 @@ function addGameNotification(title,msg,type='warn'){
   body.textContent=msg;
   note.append(heading,body);
   feed.prepend(note);
-  while(feed.children.length>3)feed.removeChild(feed.lastChild);
+  while(feed.children.length>2)feed.removeChild(feed.lastChild);
 }
 
 function modalButtonSkipsConfirmation(btn){

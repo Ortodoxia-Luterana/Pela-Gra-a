@@ -4,6 +4,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { DatabaseSync } = require('node:sqlite');
 const { Server: SocketIOServer } = require('socket.io');
+const { setupSantaConquista, SANTA_CONQUISTA_GAME_ID } = require('./santa-conquista-server');
 
 const ROOT = __dirname;
 const PUBLIC_DIR = path.join(ROOT, 'public');
@@ -325,6 +326,7 @@ function normalizeGamePresence(input) {
   if (value === QUIZ_GAME_ID) return { gameId: QUIZ_GAME_ID, location: 'Quiz Ortodoxia' };
   if (value === CRONICAS_GAME_ID) return { gameId: CRONICAS_GAME_ID, location: 'Cronicas do Levante' };
   if (value === CONCORDIUM_EXPLORACAO_GAME_ID) return { gameId: CONCORDIUM_EXPLORACAO_GAME_ID, location: 'Concordium' };
+  if (value === SANTA_CONQUISTA_GAME_ID) return { gameId: SANTA_CONQUISTA_GAME_ID, location: 'Santa Conquista' };
   if (value === GAME_ID) return { gameId: GAME_ID, location: 'Pela Graca 1904' };
   return { gameId: 'hub', location: 'Hub' };
 }
@@ -333,6 +335,7 @@ function presenceForPath(pathname) {
   if (pathname === '/quiz-ortodoxia' || pathname.startsWith('/api/quiz')) return normalizeGamePresence(QUIZ_GAME_ID);
   if (pathname === '/cronicas-do-levante' || pathname.startsWith('/api/cronicas')) return normalizeGamePresence(CRONICAS_GAME_ID);
   if (pathname === '/concordium-exploracao' || pathname.startsWith('/api/concordium')) return normalizeGamePresence(CONCORDIUM_EXPLORACAO_GAME_ID);
+  if (pathname === '/santa-conquista' || pathname.startsWith('/api/santa-conquista')) return normalizeGamePresence(SANTA_CONQUISTA_GAME_ID);
   if (pathname === '/play' || pathname === '/game' || pathname.startsWith('/api/saves')) return normalizeGamePresence(GAME_ID);
   return normalizeGamePresence('hub');
 }
@@ -806,14 +809,16 @@ function allAchievementDefinitions() {
   return [
     ...ACHIEVEMENTS.map(medal => ({ ...medal, gameId: GAME_ID })),
     ...CRONICAS_ACHIEVEMENTS.map(medal => ({ ...medal, gameId: CRONICAS_GAME_ID })),
-    ...LUTHER_MATCH_ACHIEVEMENTS.map(medal => ({ ...medal, gameId: LUTHER_MATCH_GAME_ID }))
+    ...LUTHER_MATCH_ACHIEVEMENTS.map(medal => ({ ...medal, gameId: LUTHER_MATCH_GAME_ID })),
+    ...santaConquista.achievements.map(medal => ({ ...medal, gameId: SANTA_CONQUISTA_GAME_ID }))
   ];
 }
 function accountAchievementSummary(userId) {
   const definitions = allAchievementDefinitions();
   const rows = [
     ...getUserAchievementRows.all(userId, GAME_ID),
-    ...getUserAchievementRows.all(userId, CRONICAS_GAME_ID)
+    ...getUserAchievementRows.all(userId, CRONICAS_GAME_ID),
+    ...getUserAchievementRows.all(userId, SANTA_CONQUISTA_GAME_ID)
   ];
   const medals = rows.map(row => {
     const def = definitions.find(item => item.gameId === row.game_id && item.id === row.medal_id);
@@ -845,6 +850,19 @@ function renderConcordiumAccess(error = '') {
   return pageShell('Concordium', `
 <main class="auth-wrap"><section class="auth-card"><h1>Concordium</h1><p>Uma jornada estilo Pokemon percorrendo a historia da igreja apostolica.</p>${error ? `<div class="form-error">${escapeHtml(error)}</div>` : ''}<form method="POST" action="/concordium-exploracao/unlock" class="auth-form"><label>Senha de acesso<input name="pin" inputmode="numeric" pattern="[0-9]*" maxlength="12" autocomplete="off" required autofocus></label><button type="submit">Entrar</button></form><a class="auth-link" href="/">Voltar ao hub</a></section></main>`);
 }
+
+const santaConquista = setupSantaConquista({
+  db,
+  secret: LAUNCH_SECRET,
+  accessPin: process.env.SANTA_CONQUISTA_ACCESS_PIN || '5892',
+  currentUser,
+  readForm,
+  json,
+  redirect,
+  parseCookies,
+  pageShell,
+  escapeHtml
+});
 
 function churchCountForState(stateData) { return stateData?.denomData?.IELB?.churches?.length || 0; }
 function memberCountForState(stateData) {
@@ -1190,6 +1208,10 @@ async function handleApi(req, res, url, user) {
     }
   }
   if (!user) { json(res, 401, { error: 'Login necessário' }); return; }
+  if (url.pathname.startsWith('/api/santa-conquista')) {
+    await santaConquista.handleApi(req, res, url, user);
+    return;
+  }
   if (req.method === 'GET' && url.pathname === '/api/ranking') { json(res, 200, rankingPayload()); return; }
   if (req.method === 'GET' && url.pathname === '/api/me') {
     const mainSave = getSaveSlot.get(user.id, 1);
@@ -1197,9 +1219,10 @@ async function handleApi(req, res, url, user) {
     const lutherMatch = getLutherMatchRanking.get(user.id);
     const lutherStats = lutherMatchStats(lutherMatch || {});
     const lutherMedals = achievementsForState({}, lutherStats, user.id, LUTHER_MATCH_GAME_ID, LUTHER_MATCH_ACHIEVEMENTS);
+    const santaMedals = santaConquista.medalsForUser(user.id);
     const lutherChest = lutherMatchChestRewards(lutherStats.completedLevels);
     const quizReward = quizRewards(getQuizRanking.get(user.id));
-    const medals = [...summary.medals, ...lutherMedals];
+    const medals = [...summary.medals, ...lutherMedals, ...santaMedals];
     const xp = achievementXp(medals) + lutherChest.xp + quizReward.xp;
     const rank = titleProgress(xp);
     const points = achievementPoints(medals) + rankPointBonus(rank) + lutherChest.points + quizReward.points;
@@ -1246,6 +1269,14 @@ async function handleApi(req, res, url, user) {
           status: 'prototype',
           playUrl: '/quiz-ortodoxia',
           rankingUrl: '/?section=ranking&game=quiz-ortodoxia'
+        },
+        {
+          id: SANTA_CONQUISTA_GAME_ID,
+          title: 'Santa Conquista',
+          description: 'Comande uma nacao medieval no mapa real da Europa e da Terra Santa.',
+          status: 'beta',
+          playUrl: '/santa-conquista',
+          rankingUrl: '/?section=ranking&game=santa-conquista'
         },
         {
           id: CONCORDIUM_EXPLORACAO_GAME_ID,
@@ -1617,7 +1648,8 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   const cronicasMedals = achievementsForState(cronicasState, {}, user.id, CRONICAS_GAME_ID, CRONICAS_ACHIEVEMENTS);
   const lutherMatchRow = getLutherMatchRanking.get(user.id);
   const lutherMatchMedals = achievementsForState({}, lutherMatchStats(lutherMatchRow || {}), user.id, LUTHER_MATCH_GAME_ID, LUTHER_MATCH_ACHIEVEMENTS);
-  const medals = [...player.medals, ...cronicasMedals, ...lutherMatchMedals];
+  const santaMedals = santaConquista.medalsForUser(user.id);
+  const medals = [...player.medals, ...cronicasMedals, ...lutherMatchMedals, ...santaMedals];
   const lutherChest = lutherMatchChestRewards(lutherMatchStats(lutherMatchRow || {}).completedLevels);
   const quizReward = quizRewards(getQuizRanking.get(user.id));
   const xp = achievementXp(medals) + lutherChest.xp + quizReward.xp;
@@ -1633,10 +1665,11 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     const userSummary = playerStatsFromSave(userSave, rankUser.id);
     const lutherMatch = getLutherMatchRanking.get(rankUser.id);
     const lutherMedals = achievementsForState({}, lutherMatchStats(lutherMatch || {}), rankUser.id, LUTHER_MATCH_GAME_ID, LUTHER_MATCH_ACHIEVEMENTS).filter(medal => medal.unlocked).length;
+    const santaMedalsCount = santaConquista.medalsForUser(rankUser.id).filter(medal => medal.unlocked).length;
     return {
       user: rankUser,
       summary: userSummary,
-      medals: userSummary.medals.filter(medal => medal.unlocked).length + lutherMedals
+      medals: userSummary.medals.filter(medal => medal.unlocked).length + lutherMedals + santaMedalsCount
     };
   }).sort((a, b) => b.medals - a.medals || a.user.name.localeCompare(b.user.name)).map((item, index) => {
     const userRank = item.summary.rank.current;
@@ -1645,13 +1678,15 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   const prestigeItems = ranking.prestige.slice(0, 6);
   const liveRows = prestigeItems.length ? prestigeItems.map(item => `<article><img class="feed-avatar achievement-feed-icon" src="${escapeHtml(item.icon)}?v=${GAME_VERSION}" alt="${escapeHtml(item.medal)}"><span>${escapeHtml(item.player)} conquistou ${escapeHtml(item.medal)}</span><small>+${item.xp} XP · +${item.points} pontos</small></article>`).join('') : '<article><b class="feed-avatar">OL</b><span>Nenhum prestigio conquistado ainda. As novas medalhas vao aparecer aqui.</span></article>';
   const eventPanel = `<section class="ol-panel ol-event"><p>Evento em destaque</p><h3>Desafio da Reforma</h3><span>Espaço reservado para temporadas especiais da comunidade.</span><button disabled>Em breve</button></section>`;
-  const gameRankingList = `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><h3>Rankings por jogo</h3></div><div class="game-rank-list"><a href="/?section=ranking&game=pela-graca-1904"><span>Pela Graça 1904</span><strong>Ver ranking</strong></a><a href="/?section=ranking&game=luther-metch"><span>Luther Metch</span><strong>Ver ranking</strong></a><a href="/?section=ranking&game=quiz-ortodoxia"><span>Quiz Ortodoxia</span><strong>Ver ranking</strong></a></div></section>`;
+  const gameRankingList = `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><h3>Rankings por jogo</h3></div><div class="game-rank-list"><a href="/?section=ranking&game=pela-graca-1904"><span>Pela Graça 1904</span><strong>Ver ranking</strong></a><a href="/?section=ranking&game=luther-metch"><span>Luther Metch</span><strong>Ver ranking</strong></a><a href="/?section=ranking&game=quiz-ortodoxia"><span>Quiz Ortodoxia</span><strong>Ver ranking</strong></a><a href="/?section=ranking&game=santa-conquista"><span>Santa Conquista</span><strong>Ver ranking</strong></a></div></section>`;
   const generalRanking = `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><h3>Ranking geral</h3></div>${generalRankingRows || '<p>Nenhum jogador cadastrado ainda.</p>'}</section>${gameRankingList}`;
   const ielbRanking = `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><div><p>Ranking do jogo</p><h3>Pela Graça 1904</h3></div><a href="/?section=ranking">Voltar</a></div><h4>Mais anos jogados</h4>${rankingRows(ranking.byYear, item => item.year)}<h4>Mais igrejas até 2026</h4>${rankingRows(ranking.byChurches, item => item.totalChurches, ' igrejas')}</section>`;
   const lutherRanking = `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><div><p>Ranking do jogo</p><h3>Luther Metch</h3></div><a href="/?section=ranking">Voltar</a></div><h4>Quem chegou mais longe</h4>${rankingRows(ranking.lutherMatch, item => `Nivel ${item.bestLevel}`)}</section>`;
   const quizRankingRows = ranking.quizOrtodoxia.length ? ranking.quizOrtodoxia.slice(0, 12).map((item, index) => `<div class="hub-rank-row"><b>${index + 1}</b><span>${escapeHtml(item.player)}</span><strong>${item.duelWins} duelo · ${item.generalWins} geral</strong></div>`).join('') : '<p>Nenhuma vitória ranqueada ainda.</p>';
   const quizRanking = `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><div><p>Ranking do jogo</p><h3>Quiz Ortodoxia</h3></div><a href="/?section=ranking">Voltar</a></div><h4>Vitórias online</h4>${quizRankingRows}</section>`;
-  const rankingSection = selectedGame === 'pela-graca-1904' ? ielbRanking : selectedGame === 'luther-metch' ? lutherRanking : selectedGame === 'quiz-ortodoxia' ? quizRanking : generalRanking;
+  const santaRankingRows = santaConquista.rankingRows().length ? santaConquista.rankingRows().slice(0, 12).map(item => `<div class="hub-rank-row"><b>${item.position}</b><span>${escapeHtml(item.player)}</span><strong>${item.score} pts · ${item.provinces} prov.</strong></div>`).join('') : '<p>Nenhum reino ranqueado ainda.</p>';
+  const santaRanking = `<section class="ol-panel ol-ranking-hub"><div class="panel-head"><div><p>Ranking do jogo</p><h3>Santa Conquista</h3></div><a href="/?section=ranking">Voltar</a></div><h4>Supremacia beta</h4>${santaRankingRows}</section>`;
+  const rankingSection = selectedGame === 'pela-graca-1904' ? ielbRanking : selectedGame === 'luther-metch' ? lutherRanking : selectedGame === 'quiz-ortodoxia' ? quizRanking : selectedGame === 'santa-conquista' ? santaRanking : generalRanking;
   const nav = [
     ['inicio', 'Início', '/', 'inicio'],
     ['jogos', 'Jogos', '/?section=jogos', 'jogos'],
@@ -1666,6 +1701,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     <article class="ol-game-card cronicas-cover"><div><h4>Crônicas do Levante</h4><p>Uma narrativa bíblica interativa nos dias do rei Davi, com escolhas, descobertas, relações e consequências pelo caminho.</p></div><a href="/cronicas-do-levante">${cronicasSave ? 'Continuar' : 'Jogar'}</a></article>
     <article class="ol-game-card match3-cover"><div><h4>Luther Metch</h4><p>Junte 3 ou mais peças iguais para cumprir objetivos e avançar de fase.</p></div><a href="/luther-metch">Jogar</a></article>
     <article class="ol-game-card quiz-cover"><div><h4>Quiz Ortodoxia</h4><p>Dispute perguntas de Bíblia, Reforma e luteranismo em modo solo, duelo online, convite ou competição geral.</p></div><a href="/quiz-ortodoxia">Jogar</a></article>
+    <article class="ol-game-card santa-conquista-cover"><div><h4>Santa Conquista</h4><p>Comande uma nacao medieval no mapa da Europa e da Terra Santa. Faca aliancas, conquiste provincias e dispute a era das Cruzadas.</p></div><a href="/santa-conquista">Jogar</a></article>
     <article class="ol-game-card concordium-exploracao-cover"><div><h4>Concordium</h4><p>Uma jornada estilo Pokemon percorrendo a historia da igreja apostolica.</p></div><a href="/concordium-exploracao">Jogar</a></article>
   </section>`;
   const rankCard = `<aside class="ol-panel ol-rank"><p>Seu rank geral</p><img class="rank-badge" src="${rank.current.file}?v=${GAME_VERSION}" alt="${escapeHtml(rank.current.title)}"><div class="rank-xp"><strong>${xp} XP</strong><span>${rank.next ? `${Math.max(0, rank.next.xp - rank.currentXp)} XP para ${escapeHtml(rank.next.title)}` : 'Rank maximo alcancado'}</span><div class="rank-bar"><span style="width:${Math.round(rank.progress)}%"></span></div></div><a href="/?section=ranking">Ver ranking geral</a><div class="hub-online-panel"><div class="panel-head"><h3>Online agora</h3></div><div id="hub-online-list" class="hub-online-list">${renderOnlinePlayers(onlinePlayers)}</div></div></aside>`;
@@ -1854,6 +1890,17 @@ const server = http.createServer(async (req, res) => {
       res.end(body);
       return;
     }
+    if (req.method === 'GET' && url.pathname === '/santa-conquista') {
+      if (!santaConquista.hasAccess(req, user.id)) {
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(santaConquista.renderAccessPage());
+        return;
+      }
+      const body = fs.readFileSync(path.join(PUBLIC_DIR, 'santa-conquista.html'), 'utf8');
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(body);
+      return;
+    }
     if (req.method === 'GET' && url.pathname === '/concordium-exploracao') {
       if (!hasConcordiumAccess(req, user.id)) {
         const body = renderConcordiumAccess();
@@ -1903,6 +1950,10 @@ const server = http.createServer(async (req, res) => {
       redirect(res, '/concordium-exploracao');
       return;
     }
+    if (req.method === 'POST' && url.pathname === '/santa-conquista/unlock') {
+      await santaConquista.unlock(req, res, user);
+      return;
+    }
     if (req.method === 'POST' && url.pathname === '/cronicas-do-levante/delete') {
       deleteCronicasSave.run(user.id);
       redirect(res, '/?section=configuracoes');
@@ -1937,6 +1988,7 @@ const server = http.createServer(async (req, res) => {
 
 function initConcordiumMultiplayer(httpServer) {
   const io = new SocketIOServer(httpServer, { cors: { origin: false } });
+  santaConquista.attachIo(io);
   const players = new Map();
   const gbaPlayers = new Map();
   const gbaBattleInvites = new Map();
@@ -2069,6 +2121,7 @@ function initConcordiumMultiplayer(httpServer) {
   }
 
   io.on('connection', socket => {
+    santaConquista.attachSocket(io, socket);
     socket.on('concordium-gba:join', payload => {
       const user = currentUser(socket.request);
       const fallbackName = user?.name || `Jogador ${socket.id.slice(0, 4)}`;

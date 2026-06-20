@@ -2305,8 +2305,7 @@ function addGameNotification(title,msg,type='warn'){
   body.textContent=msg;
   note.append(heading,body);
   feed.prepend(note);
-  while(feed.children.length>5)feed.removeChild(feed.lastChild);
-  setTimeout(()=>{note.style.opacity='0';note.style.transform='translateY(8px)';setTimeout(()=>note.remove(),250);},12000);
+  while(feed.children.length>3)feed.removeChild(feed.lastChild);
 }
 
 function modalButtonSkipsConfirmation(btn){

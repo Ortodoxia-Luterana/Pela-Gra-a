@@ -4,6 +4,7 @@ const SANTA_DATA = require('./public/santa-conquista-data.js');
 const SANTA_CONQUISTA_GAME_ID = 'santa-conquista';
 const SANTA_CONQUISTA_ACCESS_COOKIE = 'santa_conquista_access';
 const SANTA_CONQUISTA_RESET_DAYS = 7;
+const SANTA_CONQUISTA_MAP_VERSION = 3;
 const RESET_AFTER_MS = SANTA_CONQUISTA_RESET_DAYS * 24 * 60 * 60 * 1000;
 const ROOM_DEFS = [
   { id: 'sc-mapa-1', name: 'Mapa I - Mesa de Acre', flavor: 'Campanha equilibrada no Mediterraneo e Levante.' },
@@ -194,6 +195,7 @@ function setupSantaConquista(options) {
     });
     return {
       gameId: SANTA_CONQUISTA_GAME_ID,
+      mapVersion: SANTA_CONQUISTA_MAP_VERSION,
       roomId,
       roomName: def.name,
       generation,
@@ -231,9 +233,10 @@ function setupSantaConquista(options) {
     const now = isoNow();
     let state = row ? normalizeState(safeJson(row.state_json, null)) : null;
     const stale = row && new Date(row.last_access_at || row.updated_at || row.created_at).getTime() <= Date.now() - RESET_AFTER_MS;
-    if (!state || (options.resetStale && stale)) {
+    const outdatedMap = state && Number(state.mapVersion || 0) !== SANTA_CONQUISTA_MAP_VERSION;
+    if (!state || outdatedMap || (options.resetStale && stale)) {
       state = defaultState(def.id, row ? Number(row.generation || 1) + 1 : 1);
-      state.log.unshift(stale ? 'Mapa reiniciado apos 7 dias sem acesso.' : 'Mapa criado ao primeiro acesso.');
+      state.log.unshift(outdatedMap ? 'Mapa reiniciado para a nova topologia historica.' : stale ? 'Mapa reiniciado apos 7 dias sem acesso.' : 'Mapa criado ao primeiro acesso.');
     }
     if (options.touch) state.lastAccessAt = now;
     saveState(state);

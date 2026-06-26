@@ -748,8 +748,8 @@ button:disabled {
     border: 1px solid rgba(242, 213, 139, .5);
     border-radius: 6px;
     background:
-      linear-gradient(rgba(10, 6, 3, .05), rgba(10, 6, 3, .2)),
-      url("/assets/santa-conquista-map-bg.webp") center / cover;
+      radial-gradient(circle at 35% 38%, rgba(122, 103, 67, .78), rgba(56, 83, 76, .44) 42%, rgba(18, 55, 75, .86) 72%),
+      #173447;
     box-shadow: 0 10px 26px rgba(0, 0, 0, .38);
   }
 
@@ -959,5 +959,290 @@ button:disabled {
     text-align: center;
     font-family: Georgia, "Times New Roman", serif;
     font-size: 1rem;
+  }
+}
+
+.sc-mobile-tabs {
+  display: none;
+}
+
+.sc-land {
+  fill: #786743;
+  stroke: rgba(41, 27, 14, .38);
+  stroke-width: .7;
+  filter: url(#scPaperGrain);
+}
+
+.sc-land-layer {
+  opacity: .92;
+}
+
+.sc-terrain-hatch {
+  pointer-events: none;
+  fill: url(#scTerrainHatch);
+  opacity: .26;
+}
+
+.sc-sea {
+  fill: url(#scSeaGradient);
+}
+
+.sc-province {
+  stroke: rgba(26, 16, 8, .96);
+  stroke-width: 1.15;
+  fill-opacity: .72;
+  vector-effect: non-scaling-stroke;
+}
+
+.sc-province:hover,
+.sc-province.active {
+  fill-opacity: .9;
+  stroke-width: 2.2;
+}
+
+.sc-realm-label {
+  fill: rgba(31, 18, 9, .92);
+  stroke: rgba(246, 221, 156, .68);
+  letter-spacing: 0;
+}
+
+.sc-mini-map {
+  background:
+    radial-gradient(circle at 35% 38%, rgba(122, 103, 67, .78), rgba(56, 83, 76, .44) 42%, rgba(18, 55, 75, .86) 72%),
+    #173447 !important;
+}
+
+@media (max-width: 980px) and (orientation: landscape) {
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .sc-shell,
+  .sc-game {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .sc-game {
+    position: relative;
+    display: block;
+    padding: 0;
+    background: #070909;
+  }
+
+  .sc-topbar {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 20;
+    min-height: 56px;
+    display: grid;
+    grid-template-columns: minmax(190px, .9fr) minmax(0, 1.5fr) auto;
+    align-items: center;
+    gap: .35rem;
+    padding: .35rem .45rem;
+    border-radius: 0;
+    border-width: 0 0 1px;
+  }
+
+  .sc-crown {
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: .42rem;
+  }
+
+  .sc-seal {
+    width: 40px;
+    height: 40px;
+  }
+
+  .sc-topbar strong {
+    font-size: .95rem;
+  }
+
+  .sc-topbar span {
+    font-size: .72rem;
+  }
+
+  .sc-resources {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(64px, 1fr);
+    gap: .25rem;
+    overflow: hidden;
+  }
+
+  .sc-resources span {
+    min-width: 0;
+    padding: .26rem .32rem;
+    font-size: .66rem;
+  }
+
+  .sc-resources b {
+    font-size: .76rem;
+  }
+
+  .sc-speed {
+    display: flex;
+    align-items: center;
+    gap: .25rem;
+    overflow: visible;
+  }
+
+  .sc-speed button {
+    min-width: 38px;
+    min-height: 36px;
+    padding: .26rem .42rem;
+    border-radius: 999px;
+    font-size: .72rem;
+  }
+
+  .sc-speed #sc-open-nations {
+    min-width: 62px;
+  }
+
+  .sc-map-wrap {
+    position: fixed;
+    inset: 56px 0 48px;
+    min-height: 0;
+    height: auto;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .sc-map svg {
+    touch-action: manipulation;
+  }
+
+  .sc-map-modes {
+    left: auto;
+    right: .4rem;
+    top: .42rem;
+    bottom: auto;
+    max-width: min(64vw, 520px);
+    justify-content: end;
+  }
+
+  .sc-map-modes button {
+    min-height: 32px;
+    padding: .3rem .48rem;
+    font-size: .7rem;
+  }
+
+  .sc-command-dock {
+    display: none;
+    position: fixed;
+    z-index: 18;
+    left: .45rem;
+    right: .45rem;
+    bottom: 52px;
+    width: auto;
+    max-height: min(34dvh, 150px);
+    overflow: auto;
+    padding: .5rem;
+    border-radius: 8px 8px 0 0;
+    background: linear-gradient(180deg, rgba(31, 20, 12, .97), rgba(13, 8, 5, .96));
+  }
+
+  .sc-game[data-tab="province"] .sc-command-dock {
+    display: block;
+  }
+
+  .sc-intel {
+    display: block;
+    padding: 0;
+  }
+
+  .sc-intel .sc-panel {
+    display: none;
+    position: fixed;
+    z-index: 18;
+    left: .45rem;
+    right: .45rem;
+    bottom: 52px;
+    max-height: min(34dvh, 150px);
+    overflow: auto;
+    padding: .55rem;
+    border-radius: 8px 8px 0 0;
+  }
+
+  .sc-game[data-tab="diplomacy"] .sc-diplomacy-panel,
+  .sc-game[data-tab="events"] .sc-events-panel,
+  .sc-game[data-tab="log"] .sc-log-panel,
+  .sc-game[data-tab="chat"] .sc-chat-panel,
+  .sc-game[data-tab="ranking"] .sc-ranking-panel {
+    display: block;
+  }
+
+  .sc-action-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .sc-info p {
+    font-size: .78rem;
+  }
+
+  .sc-command-dock .sc-info:nth-of-type(2),
+  .sc-actions > .sc-info {
+    display: none;
+  }
+
+  .sc-stat-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: .28rem;
+  }
+
+  .sc-stat {
+    min-height: 38px;
+  }
+
+  .sc-label {
+    display: none;
+  }
+
+  .sc-label.is-selected,
+  .sc-label.is-capital {
+    display: block;
+  }
+
+  .sc-realm-label {
+    font-size: 19px;
+  }
+
+  .sc-water-label {
+    font-size: 16px;
+  }
+
+  .sc-mobile-tabs {
+    position: fixed;
+    z-index: 22;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 48px;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0;
+    padding: .22rem;
+    border-top: 1px solid rgba(229, 190, 109, .42);
+    background: linear-gradient(180deg, rgba(25, 15, 8, .96), rgba(8, 5, 3, .98));
+  }
+
+  .sc-mobile-tabs button {
+    min-width: 0;
+    min-height: 38px;
+    border-radius: 5px;
+    padding: .2rem .12rem;
+    font-size: clamp(.58rem, 1.6vw, .72rem);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .sc-mobile-tabs button.active {
+    border-color: rgba(255, 225, 147, .9);
+    background: linear-gradient(180deg, rgba(126, 36, 31, .96), rgba(61, 27, 18, .98));
   }
 }

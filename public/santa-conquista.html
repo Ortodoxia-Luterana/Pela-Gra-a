@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Santa Conquista</title>
-  <link rel="stylesheet" href="/assets/santa-conquista.css?v=2">
+  <link rel="stylesheet" href="/assets/santa-conquista.css?v=3">
 </head>
 <body>
   <main class="sc-shell">
@@ -50,7 +50,7 @@
         <div class="sc-mini-map" aria-hidden="true"><span></span></div>
       </section>
 
-      <section class="sc-command-dock">
+      <section class="sc-command-dock" data-panel="province">
         <div class="sc-section-head">
           <span>Provincia</span>
           <button id="sc-refresh" type="button">Atualizar</button>
@@ -63,19 +63,19 @@
       </section>
 
       <section class="sc-intel">
-        <aside class="sc-panel sc-diplomacy-panel">
+        <aside class="sc-panel sc-diplomacy-panel" data-panel="diplomacy">
           <div class="sc-section-head"><span>Guerras e tratados</span></div>
           <div id="sc-diplomacy" class="sc-diplomacy"></div>
         </aside>
-        <aside class="sc-panel sc-events-panel">
+        <aside class="sc-panel sc-events-panel" data-panel="events">
           <div class="sc-section-head"><span>Alertas</span></div>
           <div id="sc-events" class="sc-events"></div>
         </aside>
-        <aside class="sc-panel sc-log-panel">
+        <aside class="sc-panel sc-log-panel" data-panel="log">
           <div class="sc-section-head"><span>Cronica da campanha</span></div>
           <div id="sc-log" class="sc-log"></div>
         </aside>
-        <aside class="sc-panel sc-chat-panel">
+        <aside class="sc-panel sc-chat-panel" data-panel="chat">
           <div class="sc-section-head"><span>Chat do mapa</span></div>
           <div id="sc-chat" class="sc-chat"></div>
           <form id="sc-chat-form" class="sc-chat-form">
@@ -83,11 +83,20 @@
             <button type="submit">Enviar</button>
           </form>
         </aside>
-        <aside class="sc-panel sc-ranking-panel">
+        <aside class="sc-panel sc-ranking-panel" data-panel="ranking">
           <div class="sc-section-head"><span>Ranking beta</span></div>
           <div id="sc-ranking" class="sc-ranking"></div>
         </aside>
       </section>
+
+      <nav class="sc-mobile-tabs" aria-label="Abas do comando">
+        <button class="active" data-tab="province" type="button">Província</button>
+        <button data-tab="diplomacy" type="button">Diplomacia</button>
+        <button data-tab="events" type="button">Eventos</button>
+        <button data-tab="log" type="button">Crônica</button>
+        <button data-tab="chat" type="button">Chat</button>
+        <button data-tab="ranking" type="button">Ranking</button>
+      </nav>
     </section>
   </main>
 
@@ -102,10 +111,11 @@
   </dialog>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/assets/santa-conquista-data.js?v=2"></script>
-  <script src="/assets/santa-conquista-map.js?v=2"></script>
-  <script src="/assets/santa-conquista-ai.js?v=2"></script>
-  <script src="/assets/santa-conquista-multiplayer.js?v=2"></script>
-  <script src="/assets/santa-conquista.js?v=2"></script>
+  <script src="/assets/santa-conquista-data.js?v=3"></script>
+  <script src="/assets/santa-conquista-topology.js?v=3"></script>
+  <script src="/assets/santa-conquista-map.js?v=3"></script>
+  <script src="/assets/santa-conquista-ai.js?v=3"></script>
+  <script src="/assets/santa-conquista-multiplayer.js?v=3"></script>
+  <script src="/assets/santa-conquista.js?v=3"></script>
 </body>
 </html>

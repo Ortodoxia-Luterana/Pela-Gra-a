@@ -21,11 +21,13 @@
   const pause = document.getElementById('sc-pause');
   const chatForm = document.getElementById('sc-chat-form');
   const chatInput = document.getElementById('sc-chat-input');
+  const mobileTabs = [...document.querySelectorAll('.sc-mobile-tabs [data-tab]')];
 
   let client = null;
   let currentRoomId = null;
   let state = null;
   let mapMode = 'political';
+  let activePanel = 'province';
   let selectedProvinceId = 'jerusalem';
 
   function escapeHtml(value) {
@@ -138,6 +140,7 @@
 
   function render() {
     if (!state) return;
+    game.dataset.tab = activePanel;
     const nation = myNation();
     roomNameEl.textContent = nation ? nation.name : 'Santa Conquista';
     dateEl.textContent = `${state.monthName} de ${state.year} d.C. - ${state.roomName} - ${state.paused ? 'Pausado' : `${state.speed}x`}`;
@@ -156,6 +159,7 @@
       selectedId: selectedProvinceId,
       onSelect: id => {
         selectedProvinceId = id;
+        setActivePanel('province');
         render();
       }
     });
@@ -342,6 +346,16 @@
       document.querySelectorAll('.sc-map-modes button').forEach(item => item.classList.toggle('active', item === button));
       render();
     });
+  });
+
+  function setActivePanel(panel) {
+    activePanel = panel || 'province';
+    if (game) game.dataset.tab = activePanel;
+    mobileTabs.forEach(button => button.classList.toggle('active', button.dataset.tab === activePanel));
+  }
+
+  mobileTabs.forEach(button => {
+    button.addEventListener('click', () => setActivePanel(button.dataset.tab));
   });
 
   document.querySelectorAll('[data-speed]').forEach(button => button.addEventListener('click', () => client?.speed(currentRoomId, Number(button.dataset.speed))));

@@ -25,13 +25,13 @@
   const nations = {
     france: {
       id: 'france', name: 'Reino da Franca', shortName: 'Franca', type: 'kingdom', religion: 'catholic',
-      culture: 'franca', capital: 'paris', color: '#2f5fb3', ruler: 'Luis VII',
+      culture: 'franca', capital: 'paris', color: '#2f5fb3', ruler: 'Filipe II Augusto',
       resources: { gold: 130, manpower: 950, prestige: 72, piety: 58, stability: 64, authority: 52 },
       bonuses: { cavalry: 1.1, manpower: 1.12 }, rivals: ['england']
     },
     england: {
       id: 'england', name: 'Reino da Inglaterra', shortName: 'Inglaterra', type: 'kingdom', religion: 'catholic',
-      culture: 'normanda', capital: 'london', color: '#b33a3a', ruler: 'Estevao de Blois',
+      culture: 'normanda', capital: 'london', color: '#b33a3a', ruler: 'Henrique II Plantageneta',
       resources: { gold: 125, manpower: 760, prestige: 68, piety: 55, stability: 58, authority: 62 },
       bonuses: { archers: 1.15, navy: 1.12 }, rivals: ['france']
     },
@@ -43,7 +43,7 @@
     },
     aragon: {
       id: 'aragon', name: 'Reino de Aragao', shortName: 'Aragao', type: 'kingdom', religion: 'catholic',
-      culture: 'aragonesa', capital: 'aragon', color: '#d79a2b', ruler: 'Raimundo Berengario',
+      culture: 'aragonesa', capital: 'aragon', color: '#d79a2b', ruler: 'Afonso II',
       resources: { gold: 90, manpower: 560, prestige: 48, piety: 55, stability: 62, authority: 54 },
       bonuses: { diplomacy: 1.08 }, rivals: ['almoravids']
     },
@@ -61,13 +61,13 @@
     },
     papal_states: {
       id: 'papal_states', name: 'Estados Papais', shortName: 'Papado', type: 'theocracy', religion: 'catholic',
-      culture: 'italica', capital: 'rome', color: '#d8c07a', ruler: 'Eugenio III',
+      culture: 'italica', capital: 'rome', color: '#d8c07a', ruler: 'Lucio III',
       resources: { gold: 95, manpower: 360, prestige: 80, piety: 95, stability: 68, authority: 78 },
       bonuses: { piety: 1.25, diplomacy: 1.18 }, rivals: ['holy_roman_empire']
     },
     sicily: {
       id: 'sicily', name: 'Reino da Sicilia', shortName: 'Sicilia', type: 'kingdom', religion: 'catholic',
-      culture: 'normando-sicula', capital: 'sicily', color: '#8e4e9d', ruler: 'Rogerio II',
+      culture: 'normando-sicula', capital: 'sicily', color: '#8e4e9d', ruler: 'Guilherme II',
       resources: { gold: 105, manpower: 560, prestige: 62, piety: 54, stability: 62, authority: 60 },
       bonuses: { navy: 1.15 }, rivals: ['byzantium']
     },
@@ -85,13 +85,13 @@
     },
     hungary: {
       id: 'hungary', name: 'Reino da Hungria', shortName: 'Hungria', type: 'kingdom', religion: 'catholic',
-      culture: 'magiar', capital: 'hungary', color: '#52a36f', ruler: 'Geza II',
+      culture: 'magiar', capital: 'hungary', color: '#52a36f', ruler: 'Bela III',
       resources: { gold: 102, manpower: 760, prestige: 55, piety: 60, stability: 60, authority: 52 },
       bonuses: { cavalry: 1.08 }, rivals: ['byzantium']
     },
     byzantium: {
       id: 'byzantium', name: 'Imperio Bizantino', shortName: 'Bizancio', type: 'empire', religion: 'orthodox',
-      culture: 'grega', capital: 'constantinople', color: '#7f56c5', ruler: 'Manuel I Comneno',
+      culture: 'grega', capital: 'constantinople', color: '#7f56c5', ruler: 'Andronico I Comneno',
       resources: { gold: 150, manpower: 900, prestige: 86, piety: 72, stability: 54, authority: 64 },
       bonuses: { walls: 1.25, diplomacy: 1.12 }, rivals: ['rum', 'sicily']
     },
@@ -109,7 +109,7 @@
     },
     jerusalem_kingdom: {
       id: 'jerusalem_kingdom', name: 'Reino de Jerusalem', shortName: 'Jerusalem', type: 'kingdom', religion: 'catholic',
-      culture: 'latina-levantina', capital: 'jerusalem', color: '#e0c857', ruler: 'Balduino III',
+      culture: 'latina-levantina', capital: 'jerusalem', color: '#e0c857', ruler: 'Balduino IV',
       resources: { gold: 78, manpower: 390, prestige: 92, piety: 88, stability: 52, authority: 50 },
       bonuses: { holy: 1.2 }, rivals: ['damascus', 'egypt']
     },
@@ -133,15 +133,15 @@
     },
     rum: {
       id: 'rum', name: 'Sultanato de Rum', shortName: 'Rum', type: 'sultanate', religion: 'sunni',
-      culture: 'turca', capital: 'anatolia', color: '#358f5b', ruler: 'Masud I',
+      culture: 'turca', capital: 'anatolia', color: '#358f5b', ruler: 'Kilij Arslan II',
       resources: { gold: 112, manpower: 780, prestige: 60, piety: 66, stability: 58, authority: 55 },
       bonuses: { cavalry: 1.18 }, rivals: ['byzantium', 'armenian_cilicia']
     },
     egypt: {
-      id: 'egypt', name: 'Egito Fatimida', shortName: 'Egito', type: 'caliphate', religion: 'shia',
-      culture: 'egipcia', capital: 'cairo', color: '#2b8d82', ruler: 'Al-Zafir',
-      resources: { gold: 140, manpower: 880, prestige: 68, piety: 70, stability: 50, authority: 54 },
-      bonuses: { wealth: 1.2 }, rivals: ['jerusalem_kingdom']
+      id: 'egypt', name: 'Sultanato Aiubida', shortName: 'Ayyubidas', type: 'sultanate', religion: 'sunni',
+      culture: 'egipcia', capital: 'cairo', color: '#2b8d82', ruler: 'Saladino',
+      resources: { gold: 150, manpower: 980, prestige: 82, piety: 82, stability: 58, authority: 68 },
+      bonuses: { wealth: 1.2, cavalry: 1.1 }, rivals: ['jerusalem_kingdom', 'antioch_principality', 'tripoli_county']
     },
     damascus: {
       id: 'damascus', name: 'Emirado de Damasco', shortName: 'Damasco', type: 'emirate', religion: 'sunni',
@@ -162,8 +162,8 @@
       bonuses: { manpower: 1.08 }, rivals: ['edessa_county']
     },
     almoravids: {
-      id: 'almoravids', name: 'Almoravidas', shortName: 'Almoravidas', type: 'sultanate', religion: 'sunni',
-      culture: 'berbere-andalusi', capital: 'al_andalus', color: '#31795f', ruler: 'Ali ibn Yusuf',
+      id: 'almoravids', name: 'Califado Almohada', shortName: 'Almohadas', type: 'caliphate', religion: 'sunni',
+      culture: 'berbere-andalusi', capital: 'al_andalus', color: '#31795f', ruler: 'Abu Yaqub Yusuf',
       resources: { gold: 110, manpower: 720, prestige: 55, piety: 72, stability: 50, authority: 52 },
       bonuses: { cavalry: 1.1 }, rivals: ['leon_castile', 'aragon', 'portugal']
     }
@@ -230,8 +230,8 @@
     ['aleppo', 'Alepo', 'aleppo', 1168, 624, 62, 54, ['edessa', 'antioch', 'damascus', 'mosul'], 'plains', 'sunni', 'arabe-siria'],
     ['damascus', 'Damasco', 'damascus', 1160, 704, 64, 56, ['tripoli', 'tiberias', 'jerusalem', 'kerak', 'aleppo', 'mosul'], 'plains', 'sunni', 'arabe-siria'],
     ['mosul', 'Mosul', 'mosul', 1190, 548, 66, 58, ['georgia', 'edessa', 'aleppo', 'damascus'], 'plains', 'sunni', 'arabe-mesopotamica'],
-    ['alexandria', 'Alexandria', 'egypt', 904, 720, 82, 52, ['cairo', 'cyrenaica', 'jerusalem'], 'coast', 'shia', 'egipcia'],
-    ['cairo', 'Cairo', 'egypt', 1000, 724, 78, 56, ['alexandria', 'ascalon', 'kerak'], 'river', 'shia', 'egipcia'],
+    ['alexandria', 'Alexandria', 'egypt', 904, 720, 82, 52, ['cairo', 'cyrenaica', 'jerusalem'], 'coast', 'sunni', 'egipcia'],
+    ['cairo', 'Cairo', 'egypt', 1000, 724, 78, 56, ['alexandria', 'ascalon', 'kerak'], 'river', 'sunni', 'egipcia'],
     ['cyrenaica', 'Cirenaica', 'egypt', 800, 724, 92, 54, ['alexandria', 'ifriqiya'], 'desert', 'sunni', 'berbere'],
     ['ifriqiya', 'Ifriqiya', 'almoravids', 690, 716, 96, 56, ['cyrenaica', 'maghreb', 'sicily'], 'coast', 'sunni', 'berbere'],
     ['maghreb', 'Magrebe', 'almoravids', 560, 700, 118, 62, ['ifriqiya', 'al_andalus'], 'coast', 'sunni', 'berbere']
@@ -277,9 +277,9 @@
     gameId: 'santa-conquista',
     title: 'Santa Conquista',
     subtitle: 'Reinos, fe e guerra na era das Cruzadas',
-    startYear: 1147,
-    startMonth: 1,
-    viewBox: '0 0 1260 790',
+    startYear: 1183,
+    startMonth: 5,
+    viewBox: '0 0 1600 950',
     religions,
     buildings,
     holySites,

@@ -1,5 +1,6 @@
 (() => {
   const TILE = 32;
+  const SOURCE_TILE = 16;
   const COLORS = ["#d94f3d", "#3d7bd9", "#45a857", "#d8a629", "#8a5bd9", "#d95f9f"];
   const canvas = document.getElementById("game");
   const ctx = canvas.getContext("2d");
@@ -18,139 +19,12 @@
   const playerBadgesEl = document.getElementById("player-badges");
   const playerSyncEl = document.getElementById("player-sync");
 
-  const maps = {
-    truck: {
-      name: "Caminhao de Mudanca",
-      w: 12, h: 9, bg: "#6b5f52",
-      start: { x: 5, y: 5 },
-      exits: [{ x: 5, y: 8, to: "vila-raiz", tx: 13, ty: 15 }],
-      npcs: [],
-      solid: new Set(["W", "B"]),
-      rows: [
-        "WWWWWWWWWWWW",
-        "WBBBBBBBBBBW",
-        "WB........BW",
-        "WB..BBBB..BW",
-        "W.........BW",
-        "WB........BW",
-        "WB....BB..BW",
-        "W..........W",
-        "WWWWW..WWWWW"
-      ]
-    },
-    "vila-raiz": {
-      name: "Vila Raiz",
-      w: 28, h: 20, bg: "#5dac63",
-      start: { x: 13, y: 15 },
-      exits: [
-        { x: 13, y: 0, to: "rota-101", tx: 10, ty: 25 },
-        { x: 9, y: 10, to: "casa-inicial", tx: 6, ty: 7 }
-      ],
-      npcs: [
-        { id: "mae", name: "Mae", x: 11, y: 14, text: "Bem-vindo, {player}. O professor quer te ver antes de seguir para a Rota 101." },
-        { id: "vizinho", name: "Morador", x: 20, y: 12, text: "Esta e a Vila Raiz. O caminho ao norte leva para a Rota 101." }
-      ],
-      solid: new Set(["T", "W", "H", "R"]),
-      rows: [
-        "TTTTTTTTTTTTT..TTTTTTTTTTTTT",
-        "T..........................T",
-        "T..........................T",
-        "T....HHHHHH........HHHHHH..T",
-        "T....HRRRRH........HRRRRH..T",
-        "T....H....H........H....H..T",
-        "T....H.D..H........H.D..H..T",
-        "T..........................T",
-        "T..........PPPPPPPP........T",
-        "T..........P......P........T",
-        "T....HHHHH.P......P.HHHHH..T",
-        "T....H...H.P......P.H...H..T",
-        "T....H.D.H.P......P.H.D.H..T",
-        "T..........P......P........T",
-        "T..........P......P........T",
-        "T..........PPPPPPPP........T",
-        "T..........................T",
-        "T..FFFF..............FFFF..T",
-        "T..FFFF..............FFFF..T",
-        "TTTTTTTTTTTTTTTTTTTTTTTTTTTT"
-      ]
-    },
-    "rota-101": {
-      name: "Rota 101",
-      w: 22, h: 28, bg: "#559c5c",
-      start: { x: 10, y: 25 },
-      exits: [{ x: 10, y: 27, to: "vila-raiz", tx: 13, ty: 1 }],
-      npcs: [
-        { id: "professor", name: "Professor", x: 12, y: 20, text: "{player}, esta rota ainda esta em teste. Em breve vamos colocar os primeiros companheiros aqui." }
-      ],
-      solid: new Set(["T", "W"]),
-      rows: [
-        "TTTTTTTTTTTTTTTTTTTTTT",
-        "T....................T",
-        "T...GGGG.......GGGG..T",
-        "T...GGGG.......GGGG..T",
-        "T........PP..........T",
-        "TTTTTT...PP...TTTTTTTT",
-        "T........PP..........T",
-        "T..GGG...PP....GGG...T",
-        "T..GGG...PP....GGG...T",
-        "T........PP..........T",
-        "T........PP..........T",
-        "T..TTT...PP...TTT....T",
-        "T........PP..........T",
-        "T........PP.....GGG..T",
-        "T...GGG..PP.....GGG..T",
-        "T...GGG..PP..........T",
-        "T........PP..........T",
-        "T........PP....TTT...T",
-        "T........PP..........T",
-        "T..GGG...PP..........T",
-        "T..GGG...PP..........T",
-        "T........PP....GGG...T",
-        "T........PP....GGG...T",
-        "T........PP..........T",
-        "T........PP..........T",
-        "T........PP..........T",
-        "T........PP..........T",
-        "TTTTTTTTTT..TTTTTTTTTT"
-      ]
-    },
-    "casa-inicial": {
-      name: "Casa da Familia",
-      w: 12, h: 9, bg: "#c99b60",
-      start: { x: 6, y: 7 },
-      exits: [{ x: 6, y: 8, to: "vila-raiz", tx: 9, ty: 11 }],
-      npcs: [{ id: "caixa", name: "Caixa", x: 3, y: 3, text: "Caixas da mudanca. Ainda tem muita coisa para organizar." }],
-      solid: new Set(["W", "B"]),
-      rows: [
-        "WWWWWWWWWWWW",
-        "W..........W",
-        "W.BB...BB..W",
-        "W.BB.......W",
-        "W..........W",
-        "W....BB....W",
-        "W..........W",
-        "W..........W",
-        "WWWWWW..WWWW"
-      ]
-    }
-  };
-
-  const defaultWorld = () => ({
-    map: "truck",
-    x: maps.truck.start.x,
-    y: maps.truck.start.y,
-    dir: "down",
-    party: [],
-    badges: [],
-    flags: { startedInTruck: true },
-    updatedAt: Date.now()
-  });
-
   const state = {
+    data: null,
+    atlas: null,
     user: { name: "Jogador" },
-    world: defaultWorld(),
+    world: null,
     keys: new Set(),
-    moving: false,
     moveCooldown: 0,
     socket: null,
     id: "",
@@ -162,20 +36,55 @@
     return String(value || "Jogador").replace(/[<>]/g, "").trim().slice(0, 24) || "Jogador";
   }
 
+  function maps() {
+    return state.data?.maps || {};
+  }
+
+  function startWorld() {
+    const start = state.data?.start || { map: "b0_m9", x: 10, y: 10, dir: "down" };
+    return {
+      map: start.map,
+      x: start.x,
+      y: start.y,
+      dir: start.dir || "down",
+      party: [],
+      badges: [],
+      flags: { startedInTruck: true },
+      updatedAt: Date.now()
+    };
+  }
+
   function normalizeWorld(value) {
     const world = value && typeof value === "object" ? value : {};
-    const map = maps[world.map] ? world.map : "truck";
+    const base = startWorld();
+    const map = maps()[world.map] ? world.map : base.map;
+    const current = maps()[map] || maps()[base.map];
+    const rawX = Math.max(0, Math.min(current.width - 1, Number.isFinite(Number(world.x)) ? Number(world.x) : base.x));
+    const rawY = Math.max(0, Math.min(current.height - 1, Number.isFinite(Number(world.y)) ? Number(world.y) : base.y));
+    const savedOnBlockedTile = map === base.map && (current.collision?.[rawY]?.[rawX] ?? 0) !== 0;
     return {
-      ...defaultWorld(),
+      ...base,
       map,
-      x: Math.max(0, Math.min(maps[map].w - 1, Number(world.x) || maps[map].start.x)),
-      y: Math.max(0, Math.min(maps[map].h - 1, Number(world.y) || maps[map].start.y)),
-      dir: ["up", "down", "left", "right"].includes(world.dir) ? world.dir : "down",
+      x: savedOnBlockedTile ? base.x : rawX,
+      y: savedOnBlockedTile ? base.y : rawY,
+      dir: ["up", "down", "left", "right"].includes(world.dir) ? world.dir : base.dir,
       party: Array.isArray(world.party) ? world.party.slice(0, 6).map(safeName) : [],
       badges: Array.isArray(world.badges) ? world.badges.slice(0, 12).map(safeName) : [],
-      flags: world.flags && typeof world.flags === "object" ? world.flags : {},
+      flags: world.flags && typeof world.flags === "object" ? world.flags : base.flags,
       updatedAt: Number(world.updatedAt) || Date.now()
     };
+  }
+
+  async function loadRomData() {
+    const dataResponse = await fetch("/assets/concordium-rom-data.json?v=rom-20260626", { cache: "no-store" });
+    if (!dataResponse.ok) throw new Error("dados do ROM indisponiveis");
+    state.data = await dataResponse.json();
+    state.atlas = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = state.data.atlas.src;
+    });
   }
 
   async function loadProfile() {
@@ -184,7 +93,7 @@
     const payload = await response.json();
     state.user = payload.user || state.user;
     state.world = normalizeWorld(payload.profile?.world);
-    if (!payload.profile?.world) saveWorld(true);
+    if (!payload.profile?.world || !maps()[payload.profile?.world?.map]) saveWorld(true);
   }
 
   function saveWorld(immediate = false) {
@@ -205,20 +114,67 @@
       }
     };
     if (immediate) run();
-    else saveWorld.timer = setTimeout(run, 180);
+    else saveWorld.timer = setTimeout(run, 120);
   }
 
   function currentMap() {
-    return maps[state.world.map] || maps.truck;
+    return maps()[state.world?.map] || maps()[state.data.start.map];
   }
 
-  function tileAt(map, x, y) {
-    if (x < 0 || y < 0 || x >= map.w || y >= map.h) return "W";
-    return map.rows[y]?.[x] || ".";
+  function isWarpAt(map, x, y) {
+    return (map.warps || []).find(warp => warp.x === x && warp.y === y && maps()[warp.target]);
+  }
+
+  function fallbackExitAt(x, y) {
+    return (state.data.fallbackExits || []).find(exit => exit.from === state.world.map && exit.x === x && exit.y === y && maps()[exit.to]);
+  }
+
+  function connectionFor(map, x, y) {
+    if (x < 0) return (map.connections || []).find(item => item.direction === "west");
+    if (x >= map.width) return (map.connections || []).find(item => item.direction === "east");
+    if (y < 0) return (map.connections || []).find(item => item.direction === "north");
+    if (y >= map.height) return (map.connections || []).find(item => item.direction === "south");
+    return null;
+  }
+
+  function targetFromWarp(sourceMapId, warp) {
+    const target = maps()[warp.target];
+    if (!target) return null;
+    const returnWarp = (target.warps || []).find(item => item.target === sourceMapId && item.warpId === warp.warpId)
+      || (target.warps || []).find(item => item.target === sourceMapId);
+    if (returnWarp) {
+      return { map: target.id, x: returnWarp.x, y: Math.max(0, returnWarp.y - 1) };
+    }
+    return { map: target.id, x: Math.floor(target.width / 2), y: Math.floor(target.height / 2) };
+  }
+
+  function enterMap(mapId, x, y) {
+    const map = maps()[mapId];
+    if (!map) return;
+    state.world.map = mapId;
+    state.world.x = Math.max(0, Math.min(map.width - 1, x));
+    state.world.y = Math.max(0, Math.min(map.height - 1, y));
+    saveWorld();
+    publish();
   }
 
   function blocked(map, x, y) {
-    return map.solid.has(tileAt(map, x, y));
+    if (x < 0 || y < 0 || x >= map.width || y >= map.height) return true;
+    if (isWarpAt(map, x, y) || fallbackExitAt(x, y)) return false;
+    const collision = map.collision?.[y]?.[x] ?? 0;
+    return collision !== 0;
+  }
+
+  function tryConnection(map, nx, ny) {
+    const connection = connectionFor(map, nx, ny);
+    const target = connection && maps()[connection.target];
+    if (!target) return false;
+    const offset = Number(connection.offset) || 0;
+    if (connection.direction === "north") enterMap(target.id, state.world.x + offset, target.height - 1);
+    if (connection.direction === "south") enterMap(target.id, state.world.x + offset, 0);
+    if (connection.direction === "west") enterMap(target.id, target.width - 1, state.world.y + offset);
+    if (connection.direction === "east") enterMap(target.id, 0, state.world.y + offset);
+    return true;
   }
 
   function tryMove(dir) {
@@ -232,13 +188,16 @@
     const map = currentMap();
     const nx = state.world.x + delta[0];
     const ny = state.world.y + delta[1];
-    const exit = map.exits.find(item => item.x === nx && item.y === ny);
-    if (exit) {
-      state.world.map = exit.to;
-      state.world.x = exit.tx;
-      state.world.y = exit.ty;
-      saveWorld();
-      publish();
+    if (tryConnection(map, nx, ny)) return;
+    const warp = isWarpAt(map, nx, ny);
+    if (warp) {
+      const target = targetFromWarp(state.world.map, warp);
+      if (target) enterMap(target.map, target.x, target.y);
+      return;
+    }
+    const fallback = fallbackExitAt(nx, ny);
+    if (fallback) {
+      enterMap(fallback.to, fallback.tx, fallback.ty);
       return;
     }
     if (!blocked(map, nx, ny)) {
@@ -261,9 +220,11 @@
     }
     const map = currentMap();
     const front = facingTile();
-    const npc = map.npcs.find(item => item.x === front.x && item.y === front.y)
-      || map.npcs.find(item => Math.abs(item.x - state.world.x) + Math.abs(item.y - state.world.y) <= 1);
-    if (npc) openDialog(npc.name, npc.text.replaceAll("{player}", safeName(state.user.name)));
+    const object = (map.objects || []).find(item => item.x === front.x && item.y === front.y)
+      || (map.objects || []).find(item => Math.abs(item.x - state.world.x) + Math.abs(item.y - state.world.y) <= 1);
+    if (object) {
+      openDialog("Evento do ROM", `Objeto ${object.localId} do mapa ${map.name}. Os scripts originais vao ser ligados aqui na proxima etapa.`);
+    }
   }
 
   function openDialog(name, text) {
@@ -271,6 +232,7 @@
     dialogText.textContent = text;
     dialog.classList.remove("hidden");
   }
+
   function closeDialog() {
     dialog.classList.add("hidden");
   }
@@ -280,11 +242,15 @@
     return {
       mapName: `${map.name} - X ${state.world.x}, Y ${state.world.y}`,
       mapId: state.world.map,
-      x: Math.max(6, Math.min(94, (state.world.x / Math.max(1, map.w - 1)) * 88 + 6)),
-      y: Math.max(12, Math.min(92, (state.world.y / Math.max(1, map.h - 1)) * 80 + 12)),
+      bank: map.bank,
+      map: map.map,
+      x: Math.max(6, Math.min(94, (state.world.x / Math.max(1, map.width - 1)) * 88 + 6)),
+      y: Math.max(12, Math.min(92, (state.world.y / Math.max(1, map.height - 1)) * 80 + 12)),
+      tileX: state.world.x,
+      tileY: state.world.y,
       team: state.world.party,
       badges: state.world.badges,
-      source: "native-web",
+      source: "native-rom-map",
       saveKind: "profile",
       saveUpdatedAt: new Date(state.world.updatedAt).toISOString()
     };
@@ -292,53 +258,31 @@
 
   function publish() {
     if (!state.socket?.connected) return;
-    state.socket.emit("concordium-gba:details", { metadata: details() });
-    state.socket.emit("concordium-gba:move", { x: details().x, y: details().y, dir: state.world.dir });
+    const metadata = details();
+    state.socket.emit("concordium-gba:details", { metadata });
+    state.socket.emit("concordium-gba:move", { x: metadata.x, y: metadata.y, dir: state.world.dir });
   }
 
-  function drawTile(ch, sx, sy) {
-    const palettes = {
-      ".": ["#60ad67", "#4f985b"],
-      "P": ["#d6bf83", "#bfa66d"],
-      "T": ["#1f6a3a", "#3e9b54"],
-      "H": ["#e4c079", "#8e5a32"],
-      "R": ["#b84b3f", "#7d2f2a"],
-      "F": ["#66c06d", "#318944"],
-      "G": ["#75ca65", "#358845"],
-      "W": ["#314238", "#223128"],
-      "B": ["#9b7654", "#6f4f37"]
-    };
-    const [base, shade] = palettes[ch] || palettes["."];
-    ctx.fillStyle = base;
-    ctx.fillRect(sx, sy, TILE, TILE);
-    ctx.fillStyle = shade;
-    if (ch === "T") {
-      ctx.fillRect(sx, sy + 20, TILE, 12);
-      ctx.beginPath(); ctx.arc(sx + 16, sy + 13, 15, 0, Math.PI * 2); ctx.fill();
-    } else if (ch === "R") {
-      for (let y = 5; y < TILE; y += 8) ctx.fillRect(sx, sy + y, TILE, 3);
-    } else if (ch === "P") {
-      for (let x = 7; x < TILE; x += 13) ctx.fillRect(sx + x, sy + 7, 5, 5);
-    } else if (ch === "F" || ch === "G") {
-      for (let x = 4; x < TILE; x += 8) ctx.fillRect(sx + x, sy + 7, 3, 21);
-    } else if (ch === "B") {
-      ctx.fillRect(sx + 5, sy + 5, 22, 22);
-    }
+  function drawMetatile(pair, metatile, sx, sy) {
+    const atlas = state.data.atlas;
+    const srcX = (metatile % atlas.columns) * SOURCE_TILE;
+    const srcY = (pair * atlas.rowsPerTilesetPair + Math.floor(metatile / atlas.columns)) * SOURCE_TILE;
+    ctx.drawImage(state.atlas, srcX, srcY, SOURCE_TILE, SOURCE_TILE, sx, sy, TILE, TILE);
   }
 
   function drawSprite(x, y, color, name, dir = "down") {
     const sx = x * TILE;
     const sy = y * TILE;
     ctx.fillStyle = "rgba(0,0,0,.28)";
-    ctx.fillRect(sx + 8, sy + 26, 16, 4);
-    ctx.fillStyle = "#f2c490";
+    ctx.fillRect(sx + 7, sy + 26, 18, 4);
+    ctx.fillStyle = "#f1c08a";
     ctx.fillRect(sx + 11, sy + 6, 10, 9);
     ctx.fillStyle = color;
     ctx.fillRect(sx + 9, sy + 15, 14, 12);
-    ctx.fillStyle = "#233047";
+    ctx.fillStyle = "#1f3155";
     ctx.fillRect(sx + 8, sy + 26, 16, 4);
-    ctx.fillStyle = "#2b1a12";
-    ctx.fillRect(sx + 9, sy + 3, 14, 5);
+    ctx.fillStyle = "#2a160f";
+    ctx.fillRect(sx + 8, sy + 2, 16, 6);
     if (dir === "left") ctx.fillRect(sx + 7, sy + 8, 4, 3);
     if (dir === "right") ctx.fillRect(sx + 21, sy + 8, 4, 3);
     if (name) {
@@ -350,24 +294,38 @@
   }
 
   function render() {
+    if (!state.data || !state.world) {
+      requestAnimationFrame(render);
+      return;
+    }
     const map = currentMap();
-    const camX = Math.max(0, Math.min(map.w * TILE - canvas.width, state.world.x * TILE - canvas.width / 2));
-    const camY = Math.max(0, Math.min(map.h * TILE - canvas.height, state.world.y * TILE - canvas.height / 2));
-    ctx.fillStyle = map.bg;
+    const worldW = map.width * TILE;
+    const worldH = map.height * TILE;
+    const camX = Math.max(0, Math.min(Math.max(0, worldW - canvas.width), state.world.x * TILE - canvas.width / 2));
+    const camY = Math.max(0, Math.min(Math.max(0, worldH - canvas.height), state.world.y * TILE - canvas.height / 2));
+    ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = "#030505";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.save();
-    ctx.translate(-camX, -camY);
-    for (let y = 0; y < map.h; y += 1) {
-      for (let x = 0; x < map.w; x += 1) drawTile(tileAt(map, x, y), x * TILE, y * TILE);
+    ctx.translate(Math.floor((canvas.width - Math.min(canvas.width, worldW)) / 2) - camX, Math.floor((canvas.height - Math.min(canvas.height, worldH)) / 2) - camY);
+    for (let y = 0; y < map.height; y += 1) {
+      for (let x = 0; x < map.width; x += 1) {
+        drawMetatile(map.tilesetPair, map.tiles[y][x], x * TILE, y * TILE);
+      }
     }
-    map.exits.forEach(exit => {
-      ctx.fillStyle = "rgba(255, 230, 110, .65)";
-      ctx.fillRect(exit.x * TILE + 8, exit.y * TILE + 22, 16, 6);
+    (map.warps || []).forEach(warp => {
+      if (!maps()[warp.target] && !fallbackExitAt(warp.x, warp.y)) return;
+      ctx.fillStyle = "rgba(255, 230, 110, .38)";
+      ctx.fillRect(warp.x * TILE + 8, warp.y * TILE + 24, 16, 5);
     });
-    map.npcs.forEach(npc => drawSprite(npc.x, npc.y, "#487ab8", npc.name));
+    (map.objects || []).forEach(object => {
+      if (Math.abs(object.x - state.world.x) + Math.abs(object.y - state.world.y) < 18) {
+        drawSprite(object.x, object.y, "#5874ad", "");
+      }
+    });
     drawSprite(state.world.x, state.world.y, state.color, safeName(state.user.name), state.world.dir);
     ctx.restore();
-    renderOnlineLayer(camX, camY);
+    renderOnlineLayer(camX, camY, worldW, worldH);
     requestAnimationFrame(render);
   }
 
@@ -389,7 +347,8 @@
     state.socket = window.io?.({ transports: ["websocket", "polling"] });
     if (!state.socket) return;
     state.socket.on("connect", () => {
-      state.socket.emit("concordium-gba:join", { name: safeName(state.user.name), color: state.color, x: details().x, y: details().y, dir: state.world.dir });
+      const d = details();
+      state.socket.emit("concordium-gba:join", { name: safeName(state.user.name), color: state.color, x: d.x, y: d.y, dir: state.world.dir });
       publish();
     });
     state.socket.on("concordium-gba:init", payload => {
@@ -404,8 +363,7 @@
 
   function renderRoster() {
     playerList.innerHTML = "";
-    const all = [...state.players.values()];
-    all.forEach(player => {
+    [...state.players.values()].forEach(player => {
       const button = document.createElement("button");
       button.className = "player-pill";
       button.innerHTML = `<i style="--c:${player.color || "#d94f3d"}"></i><span>${safeName(player.name)}${player.id === state.id ? " (voce)" : ""}</span>`;
@@ -414,19 +372,24 @@
     });
   }
 
-  function renderOnlineLayer(camX, camY) {
+  function renderOnlineLayer(camX, camY, worldW, worldH) {
     onlineLayer.innerHTML = "";
+    const map = currentMap();
+    const offsetX = Math.floor((canvas.width - Math.min(canvas.width, worldW)) / 2);
+    const offsetY = Math.floor((canvas.height - Math.min(canvas.height, worldH)) / 2);
     [...state.players.values()].filter(p => p.id !== state.id).forEach(player => {
       const d = player.details || {};
       if (d.mapId !== state.world.map) return;
-      const map = currentMap();
-      const tx = (Number(d.x) - 6) / 88 * Math.max(1, map.w - 1);
-      const ty = (Number(d.y) - 12) / 80 * Math.max(1, map.h - 1);
+      const tx = Number.isFinite(Number(d.tileX)) ? Number(d.tileX) : ((Number(d.x) - 6) / 88 * Math.max(1, map.width - 1));
+      const ty = Number.isFinite(Number(d.tileY)) ? Number(d.tileY) : ((Number(d.y) - 12) / 80 * Math.max(1, map.height - 1));
+      const left = ((tx * TILE - camX + offsetX + 16) / canvas.width) * 100;
+      const top = ((ty * TILE - camY + offsetY) / canvas.height) * 100;
+      if (left < -5 || left > 105 || top < -5 || top > 105) return;
       const el = document.createElement("div");
       el.className = "online-avatar";
       el.textContent = safeName(player.name);
-      el.style.left = `${((tx * TILE - camX + 16) / canvas.width) * 100}%`;
-      el.style.top = `${((ty * TILE - camY) / canvas.height) * 100}%`;
+      el.style.left = `${left}%`;
+      el.style.top = `${top}%`;
       onlineLayer.appendChild(el);
     });
   }
@@ -446,15 +409,25 @@
     window.addEventListener("keydown", event => {
       const key = event.key.toLowerCase();
       state.keys.add(key);
+      const dir = key === "arrowup" || key === "w" ? "up"
+        : key === "arrowdown" || key === "s" ? "down"
+          : key === "arrowleft" || key === "a" ? "left"
+            : key === "arrowright" || key === "d" ? "right" : "";
+      if (dir && !event.repeat) {
+        tryMove(dir);
+        state.moveCooldown = performance.now() + 145;
+      }
       if ([" ", "enter", "e"].includes(key)) interact();
     });
     window.addEventListener("keyup", event => state.keys.delete(event.key.toLowerCase()));
     document.querySelectorAll("[data-dir]").forEach(button => {
       const dir = button.dataset.dir;
-      const down = event => { event.preventDefault(); state.keys.add(dir === "up" ? "arrowup" : dir === "down" ? "arrowdown" : dir === "left" ? "arrowleft" : "arrowright"); };
-      const up = event => { event.preventDefault(); state.keys.clear(); };
+      const key = dir === "up" ? "arrowup" : dir === "down" ? "arrowdown" : dir === "left" ? "arrowleft" : "arrowright";
+      const down = event => { event.preventDefault(); state.keys.add(key); tryMove(dir); state.moveCooldown = performance.now() + 145; };
+      const up = event => { event.preventDefault(); state.keys.delete(key); };
       button.addEventListener("pointerdown", down);
       button.addEventListener("pointerup", up);
+      button.addEventListener("pointerleave", up);
       button.addEventListener("pointercancel", up);
     });
     talkBtn.addEventListener("click", interact);
@@ -464,16 +437,18 @@
 
   async function init() {
     try {
+      await loadRomData();
       await loadProfile();
       saveStatus.textContent = "Save automatico ativo";
-    } catch {
-      saveStatus.textContent = "Perfil indisponivel";
+    } catch (error) {
+      console.error(error);
+      saveStatus.textContent = "Falha ao carregar ROM";
+      state.world = startWorld();
     }
     bindInput();
     connectSocket();
     render();
     requestAnimationFrame(gameLoop);
-    if (state.world.map === "truck") openDialog("Mudanca", `${safeName(state.user.name)}, voce chegou. Saia do caminhao para entrar na Vila Raiz.`);
   }
 
   init();

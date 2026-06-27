@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>Concordium</title>
-  <link rel="stylesheet" href="/assets/concordium-exploracao.css?v=20260626a">
+  <link rel="stylesheet" href="/assets/concordium-exploracao.css?v=20260626b">
 </head>
 <body>
   <main class="native-shell">
@@ -15,17 +15,17 @@
         <span id="save-status">Save automatico pronto</span>
         <div id="player-list" class="player-list"></div>
       </section>
-      <button id="fullscreen" class="icon-btn" type="button" aria-label="Tela cheia">⛶</button>
+      <button id="fullscreen" class="icon-btn" type="button" aria-label="Tela cheia">[ ]</button>
     </header>
 
     <section class="game-wrap">
       <canvas id="game" width="768" height="432" aria-label="Concordium"></canvas>
       <div id="online-layer" class="online-layer"></div>
       <div class="mobile-pad" aria-label="Controles">
-        <button data-dir="up" aria-label="Cima">▲</button>
-        <button data-dir="left" aria-label="Esquerda">◀</button>
-        <button data-dir="right" aria-label="Direita">▶</button>
-        <button data-dir="down" aria-label="Baixo">▼</button>
+        <button data-dir="up" aria-label="Cima">^</button>
+        <button data-dir="left" aria-label="Esquerda">&lt;</button>
+        <button data-dir="right" aria-label="Direita">&gt;</button>
+        <button data-dir="down" aria-label="Baixo">v</button>
       </div>
       <button id="talk" class="talk-btn" type="button">A</button>
     </section>
@@ -37,17 +37,17 @@
   </main>
 
   <dialog id="player-dialog" class="player-dialog">
-    <button id="dialog-close" class="dialog-close" type="button">×</button>
+    <button id="dialog-close" class="dialog-close" type="button">x</button>
     <h2 id="player-name">Jogador</h2>
     <dl>
       <div><dt>Mapa</dt><dd id="player-map">-</dd></div>
       <div><dt>Equipe</dt><dd id="player-team">Sem equipe ainda</dd></div>
-      <div><dt>Insígnias</dt><dd id="player-badges">Nenhuma insignia ainda</dd></div>
+      <div><dt>Insignias</dt><dd id="player-badges">Nenhuma insignia ainda</dd></div>
       <div><dt>Sincronizacao</dt><dd id="player-sync">online</dd></div>
     </dl>
   </dialog>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/assets/concordium-exploracao.js?v=20260626a"></script>
+  <script src="/assets/concordium-exploracao.js?v=20260626b"></script>
 </body>
 </html>

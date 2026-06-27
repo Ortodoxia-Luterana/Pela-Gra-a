@@ -1,567 +1,212 @@
 :root {
-  --gba-bg: #05080b;
-  --gba-panel: rgba(7, 12, 15, .92);
-  --gba-gold: #f1c75d;
-  --gba-text: #f8efd6;
-  --gba-muted: #cfd7cb;
-  --gba-line: rgba(241, 199, 93, .42);
+  --gold: #f1c75d;
+  --ink: #06090b;
+  --panel: rgba(6, 10, 12, .88);
+  --line: rgba(241, 199, 93, .42);
+  --text: #fff3d5;
+  --muted: #c9d0bd;
 }
 
-* {
-  box-sizing: border-box;
-  -webkit-tap-highlight-color: transparent;
-}
-
-html,
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; }
 body {
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  overflow: hidden;
-  background: var(--gba-bg);
-  color: var(--gba-text);
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #07100d;
+  color: var(--text);
+  font-family: "Segoe UI", system-ui, Arial, sans-serif;
+  touch-action: none;
 }
+button { font: inherit; }
+.hidden { display: none !important; }
 
-button,
-a {
-  font: inherit;
-}
-
-.gba-shell {
-  height: 100dvh;
+.native-shell {
+  min-height: 100%;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
   gap: 8px;
-  padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+  padding: 8px;
   background:
-    linear-gradient(180deg, rgba(4, 8, 12, .12), rgba(4, 8, 12, .88)),
+    linear-gradient(180deg, rgba(4, 8, 9, .35), rgba(4, 8, 9, .92)),
     url("/assets/concordium-exploracao-card.png?v=cards-20260614") center / cover;
 }
 
-.gba-topbar {
-  min-height: 56px;
+.native-topbar {
+  min-height: 58px;
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
-  align-items: center;
-  gap: 8px;
-  padding: 6px;
-  border: 1px solid var(--gba-line);
-  border-radius: 8px;
-  background: rgba(5, 10, 13, .92);
-  box-shadow: 0 12px 34px rgba(0, 0, 0, .36);
-}
-
-.gba-icon {
-  width: 40px;
-  aspect-ratio: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(255, 230, 160, .38);
-  border-radius: 7px;
-  color: #fff4cc;
-  background: rgba(255, 255, 255, .08);
-  text-decoration: none;
-  font-weight: 900;
-}
-
-.gba-roster {
-  min-width: 0;
-  display: grid;
-  grid-template-columns: minmax(150px, 230px) minmax(0, 1fr);
+  grid-template-columns: 46px 1fr 46px;
   align-items: center;
   gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  padding: 8px;
 }
-
-.gba-roster-title {
-  min-width: 0;
+.back, .icon-btn {
+  width: 42px;
+  height: 42px;
   display: grid;
-  gap: 1px;
+  place-items: center;
+  border: 1px solid rgba(255, 236, 166, .42);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, .08);
+  color: var(--gold);
+  text-decoration: none;
+  font-weight: 950;
 }
-
-.gba-roster-title strong {
-  color: var(--gba-gold);
-  font-size: .86rem;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-}
-
-.gba-roster-title span {
-  color: var(--gba-muted);
-  font-size: .76rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.gba-player-list {
+.roster {
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
+}
+.roster b {
+  color: var(--gold);
+  letter-spacing: .08em;
+  font-size: 13px;
+}
+.roster span {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.player-list {
+  min-width: 0;
+  display: flex;
+  gap: 8px;
   overflow-x: auto;
-  scrollbar-width: thin;
+  scrollbar-width: none;
 }
-
-.gba-roster-empty {
-  color: var(--gba-muted);
-  font-size: .78rem;
-}
-
-.gba-player-pill {
+.player-pill {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   min-height: 34px;
-  max-width: 160px;
-  padding: 5px 9px;
-  border: 1px solid rgba(255, 239, 181, .32);
-  border-radius: 8px;
-  color: #fff7d4;
+  border: 1px solid rgba(255, 236, 166, .38);
+  border-radius: 6px;
   background: rgba(255, 255, 255, .08);
-  font-size: .78rem;
+  color: var(--text);
+  padding: 0 10px;
   font-weight: 850;
-  cursor: pointer;
 }
-
-.gba-player-pill.self {
-  color: #10130e;
-  background: linear-gradient(180deg, #f8d66d, #d99c2d);
-}
-
-.gba-player-pill i {
+.player-pill i {
   width: 10px;
-  aspect-ratio: 1;
-  border-radius: 999px;
-  background: var(--player-color, #f1c75d);
-  box-shadow: 0 0 0 2px rgba(0, 0, 0, .28);
+  height: 10px;
+  border-radius: 50%;
+  background: var(--c, #d94f3d);
 }
 
-.gba-player-pill span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.gba-stage {
+.game-wrap {
   position: relative;
   min-height: 0;
-  overflow: hidden;
-  border: 2px solid rgba(241, 199, 93, .58);
-  border-radius: 8px;
-  background: #000;
-  box-shadow: 0 18px 70px rgba(0, 0, 0, .52);
-}
-
-#game {
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  background: #000;
-  overflow: hidden;
-}
-
-.gba-online-layer {
-  position: absolute;
-  inset: 0;
-  z-index: 9;
-  pointer-events: none;
-}
-
-.gba-online-avatar {
-  position: absolute;
-  width: 24px;
-  height: 31px;
-  transform: translate(-50%, -100%);
-  filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .55));
-}
-
-.gba-online-avatar::before,
-.gba-online-avatar::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.gba-online-avatar::before {
-  top: 2px;
-  width: 12px;
-  height: 10px;
-  border-radius: 5px 5px 3px 3px;
-  background: #f2c29a;
-  box-shadow: 0 -3px 0 var(--player-color, #f1c75d);
-}
-
-.gba-online-avatar::after {
-  top: 13px;
-  width: 14px;
-  height: 15px;
-  border-radius: 3px 3px 5px 5px;
-  background:
-    linear-gradient(90deg, transparent 0 3px, #19243a 3px 6px, transparent 6px 8px, #19243a 8px 11px, transparent 11px),
-    var(--player-color, #f1c75d);
-}
-
-.gba-online-name {
-  position: absolute;
-  left: 50%;
-  bottom: 32px;
-  transform: translateX(-50%);
-  max-width: 110px;
-  padding: 3px 7px;
-  border: 1px solid rgba(0, 0, 0, .5);
-  border-radius: 999px;
-  color: #10130e;
-  background: #ffe18a;
-  font-size: 10px;
-  font-weight: 900;
-  line-height: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-#game > * {
-  max-width: 100%;
-}
-
-#game canvas,
-#game video {
-  max-width: none !important;
-}
-
-#game .ejs_canvas,
-#game .ejs_game,
-#game .ejs_screen,
-#game [class*="screen" i],
-#game [class*="canvas" i] {
-  max-width: none !important;
-}
-
-.gba-loading {
-  position: absolute;
-  inset: 0;
-  z-index: 4;
   display: grid;
   place-items: center;
-  color: #fff7d4;
-  background: #000;
-  font-weight: 900;
-}
-
-.gba-loading.hidden {
-  display: none;
-}
-
-.gba-player-dialog {
-  width: min(420px, calc(100vw - 28px));
-  border: 1px solid var(--gba-line);
-  border-radius: 8px;
-  color: var(--gba-text);
-  background: rgba(7, 12, 15, .96);
-  box-shadow: 0 26px 80px rgba(0, 0, 0, .62);
-}
-
-.gba-player-dialog::backdrop {
-  background: rgba(0, 0, 0, .58);
-}
-
-.gba-player-dialog h2 {
-  margin: 4px 0 12px;
-  color: #fff4cc;
-  font-family: Georgia, "Times New Roman", serif;
-}
-
-.gba-dialog-close {
-  float: right;
-  width: 32px;
-  aspect-ratio: 1;
-  border: 1px solid rgba(255, 230, 160, .32);
-  border-radius: 7px;
-  color: #fff4cc;
-  background: rgba(255, 255, 255, .08);
-  font-weight: 900;
-}
-
-.gba-player-dialog dl {
-  display: grid;
-  gap: 10px;
-  margin: 0;
-}
-
-.gba-player-dialog div {
-  display: grid;
-  gap: 3px;
-  padding-top: 9px;
-  border-top: 1px solid rgba(255, 255, 255, .1);
-}
-
-.gba-player-dialog dt {
-  color: var(--gba-gold);
-  font-size: .72rem;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-}
-
-.gba-player-dialog dd {
-  margin: 0;
-  color: #fff4d2;
-  line-height: 1.4;
-}
-
-.gba-dialog-actions {
-  display: grid;
-  gap: 7px;
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, .1);
-}
-
-.gba-dialog-actions button,
-.gba-battle-actions button {
-  min-height: 40px;
-  border: 1px solid rgba(255, 230, 160, .38);
-  border-radius: 8px;
-  color: #1b1203;
-  background: linear-gradient(180deg, #ffd96a, #dca832);
-  font-weight: 900;
-}
-
-.gba-dialog-actions button:disabled {
-  color: rgba(255, 244, 210, .52);
-  background: rgba(255, 255, 255, .08);
-}
-
-.gba-dialog-actions small {
-  min-height: 16px;
-  color: rgba(255, 244, 210, .78);
-  line-height: 1.35;
-}
-
-.gba-battle-panel {
-  position: absolute;
-  right: max(12px, env(safe-area-inset-right));
-  bottom: max(12px, env(safe-area-inset-bottom));
-  z-index: 14;
-  width: min(340px, calc(100vw - 24px));
-  padding: 14px;
-  border: 1px solid var(--gba-line);
-  border-radius: 8px;
-  color: var(--gba-text);
-  background: rgba(7, 12, 15, .94);
-  box-shadow: 0 20px 58px rgba(0, 0, 0, .52);
-}
-
-.gba-battle-head,
-.gba-battle-row,
-.gba-battle-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.gba-battle-head {
-  justify-content: space-between;
-  margin-bottom: 10px;
-  color: #fff4cc;
-}
-
-.gba-battle-head button {
-  width: 30px;
-  aspect-ratio: 1;
-  border: 1px solid rgba(255, 230, 160, .3);
-  border-radius: 7px;
-  color: #fff4cc;
-  background: rgba(255, 255, 255, .08);
-  font-weight: 900;
-}
-
-.gba-battle-row {
-  justify-content: space-between;
-  margin-top: 8px;
-  font-weight: 800;
-}
-
-.gba-battle-row meter {
-  width: 54%;
-  height: 16px;
-}
-
-.gba-battle-panel p {
-  min-height: 34px;
-  margin: 12px 0;
-  color: rgba(255, 244, 210, .86);
-  line-height: 1.35;
-}
-
-.gba-battle-actions button {
-  flex: 1;
-}
-
-.gba-battle-actions button:last-child {
-  color: #fff4cc;
-  background: rgba(255, 255, 255, .08);
-}
-
-/* Multiplayer page policy: keep native fullscreen, hide admin controls. */
-#game .ejs_context_menu,
-#game [class*="cheat" i],
-#game [class*="pause" i],
-#game [class*="save" i],
-#game [class*="load" i],
-#game [class*="restart" i],
-#game [class*="upload" i],
-#game [class*="file" i] {
-  display: none !important;
-  pointer-events: none !important;
-}
-
-#game .ejs_menu_bar {
-  opacity: .78;
-  background: rgba(0, 0, 0, .26) !important;
-}
-
-#game .ejs_menu_bar:hover {
-  opacity: 1;
-}
-
-@media (max-width: 720px) {
-  .gba-roster {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 4px;
-  }
-
-  .gba-roster-title {
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: baseline;
-    gap: 8px;
-  }
-
-  .gba-topbar {
-    min-height: 68px;
-  }
-}
-
-@media (orientation: landscape) and (max-height: 560px) {
-  .gba-shell {
-    grid-template-rows: minmax(0, 1fr);
-    gap: 0;
-    padding: max(3px, env(safe-area-inset-top)) max(3px, env(safe-area-inset-right)) max(3px, env(safe-area-inset-bottom)) max(3px, env(safe-area-inset-left));
-  }
-
-  .gba-topbar {
-    position: fixed;
-    top: max(4px, env(safe-area-inset-top));
-    left: max(4px, env(safe-area-inset-left));
-    right: max(4px, env(safe-area-inset-right));
-    z-index: 20;
-    min-height: 42px;
-    grid-template-columns: 34px minmax(0, 1fr);
-    gap: 6px;
-    padding: 4px;
-    background: rgba(5, 10, 13, .68);
-    backdrop-filter: blur(6px);
-  }
-
-  .gba-icon {
-    width: 32px;
-  }
-
-  .gba-roster {
-    grid-template-columns: minmax(126px, 170px) minmax(0, 1fr);
-    gap: 6px;
-  }
-
-  .gba-roster-title strong {
-    font-size: .72rem;
-  }
-
-  .gba-roster-title span {
-    font-size: .66rem;
-  }
-
-  .gba-player-pill {
-    min-height: 30px;
-    max-width: 128px;
-    padding: 4px 8px;
-    font-size: .72rem;
-  }
-
-  .gba-online-avatar {
-    width: 21px;
-    height: 28px;
-  }
-
-  .gba-online-name {
-    bottom: 29px;
-    max-width: 88px;
-    font-size: 9px;
-  }
-
-  .gba-stage {
-    height: calc(100dvh - max(6px, env(safe-area-inset-bottom)));
-    border-width: 1px;
-    border-radius: 6px;
-  }
-
-  #game,
-  #game > div,
-  #game iframe {
-    width: 100% !important;
-    height: 100% !important;
-  }
-
-  #game canvas,
-  #game video {
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: cover !important;
-  }
-
-  #game [class*="gamepad" i],
-  #game [class*="controls" i],
-  #game [class*="button" i],
-  #game [class*="joystick" i],
-  #game [class*="dpad" i] {
-    position: absolute !important;
-    z-index: 8 !important;
-  }
-
-  #game [class*="dpad" i],
-  #game [class*="joystick" i] {
-    left: max(10px, env(safe-area-inset-left)) !important;
-    bottom: max(10px, env(safe-area-inset-bottom)) !important;
-    opacity: .58 !important;
-  }
-
-  #game [class*="button" i] {
-    opacity: .62 !important;
-  }
-
-  #game .ejs_menu_bar {
-    position: absolute !important;
-    right: max(8px, env(safe-area-inset-right)) !important;
-    bottom: max(8px, env(safe-area-inset-bottom)) !important;
-    left: auto !important;
-    width: auto !important;
-    z-index: 14 !important;
-    border-radius: 8px !important;
-  }
-}
-
-:fullscreen .gba-shell,
-.gba-shell:fullscreen {
-  width: 100vw;
-  height: 100vh;
-  padding: max(2px, env(safe-area-inset-top)) max(2px, env(safe-area-inset-right)) max(2px, env(safe-area-inset-bottom)) max(2px, env(safe-area-inset-left));
-}
-
-:fullscreen .gba-stage,
-.gba-shell:fullscreen .gba-stage {
-  height: 100%;
+  overflow: hidden;
+  border: 2px solid var(--line);
   border-radius: 6px;
+  background: #030505;
+}
+canvas {
+  width: min(100%, calc((100vh - 92px) * 16 / 9));
+  height: min(calc(100vh - 92px), calc(100vw * 9 / 16));
+  image-rendering: pixelated;
+  background: #142b22;
+}
+.online-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.online-avatar {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  color: #111;
+  font-size: 11px;
+  font-weight: 950;
+  background: #ffe06e;
+  border: 1px solid rgba(0,0,0,.38);
+  border-radius: 4px;
+  padding: 2px 5px;
+  box-shadow: 0 2px 0 rgba(0,0,0,.4);
+}
+.mobile-pad {
+  position: absolute;
+  left: 18px;
+  bottom: 18px;
+  width: 126px;
+  height: 126px;
+  display: none;
+  grid-template-columns: repeat(3, 42px);
+  grid-template-rows: repeat(3, 42px);
+  opacity: .62;
+}
+.mobile-pad button, .talk-btn {
+  border: 1px solid rgba(255,255,255,.38);
+  background: rgba(0,0,0,.42);
+  color: white;
+  font-weight: 950;
+}
+.mobile-pad [data-dir="up"] { grid-column: 2; grid-row: 1; }
+.mobile-pad [data-dir="left"] { grid-column: 1; grid-row: 2; }
+.mobile-pad [data-dir="right"] { grid-column: 3; grid-row: 2; }
+.mobile-pad [data-dir="down"] { grid-column: 2; grid-row: 3; }
+.talk-btn {
+  position: absolute;
+  right: 28px;
+  bottom: 34px;
+  display: none;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  font-size: 28px;
+  opacity: .7;
+}
+.dialog {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  width: min(760px, calc(100vw - 28px));
+  border: 2px solid #f7e7ad;
+  border-radius: 6px;
+  background: rgba(13, 18, 22, .96);
+  padding: 14px 16px;
+  box-shadow: 0 12px 42px rgba(0,0,0,.48);
+}
+.dialog b { color: var(--gold); }
+.dialog p { margin: 6px 0 0; line-height: 1.45; }
+
+.player-dialog {
+  width: min(440px, calc(100vw - 28px));
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  background: rgba(7, 12, 15, .96);
+}
+.player-dialog::backdrop { background: rgba(0,0,0,.54); }
+.player-dialog h2 { margin: 0 0 10px; font-family: Georgia, serif; }
+.dialog-close {
+  float: right;
+  border: 1px solid rgba(255, 236, 166, .36);
+  border-radius: 5px;
+  background: rgba(255,255,255,.08);
+  color: var(--text);
+}
+.player-dialog dl { margin: 0; display: grid; gap: 10px; }
+.player-dialog div { border-top: 1px solid rgba(255,255,255,.1); padding-top: 8px; }
+.player-dialog dt { color: var(--gold); font-size: 11px; text-transform: uppercase; font-weight: 950; }
+.player-dialog dd { margin: 3px 0 0; }
+
+@media (max-width: 820px), (pointer: coarse) {
+  .native-shell { padding: 4px; gap: 4px; }
+  .native-topbar {
+    min-height: 50px;
+    grid-template-columns: 42px 1fr 42px;
+  }
+  .roster b { font-size: 11px; }
+  .roster span { display: none; }
+  canvas {
+    width: 100%;
+    height: calc(100vh - 64px);
+  }
+  .mobile-pad, .talk-btn { display: grid; place-items: center; }
 }

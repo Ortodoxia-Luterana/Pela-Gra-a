@@ -2,69 +2,52 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#080d12">
-  <title>Concordium GBA</title>
-  <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="/assets/concordium-exploracao.css?v=20260619h">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Concordium</title>
+  <link rel="stylesheet" href="/assets/concordium-exploracao.css?v=20260626a">
 </head>
 <body>
-  <main class="gba-shell is-playing">
-    <header class="gba-topbar">
-      <a href="/" class="gba-icon" aria-label="Voltar ao hub">&lt;</a>
-      <section class="gba-roster" aria-label="Jogadores online">
-        <div class="gba-roster-title">
-          <strong>Jogadores online</strong>
-          <span id="gba-save-status">Save automatico preparando</span>
-        </div>
-        <div id="gba-player-list" class="gba-player-list"></div>
+  <main class="native-shell">
+    <header class="native-topbar">
+      <a class="back" href="/" aria-label="Voltar ao hub">&lt;</a>
+      <section class="roster">
+        <b>JOGADORES ONLINE</b>
+        <span id="save-status">Save automatico pronto</span>
+        <div id="player-list" class="player-list"></div>
       </section>
+      <button id="fullscreen" class="icon-btn" type="button" aria-label="Tela cheia">⛶</button>
     </header>
 
-    <section class="gba-stage" aria-label="Emulador Game Boy Advance">
-      <div id="game"></div>
-      <div id="gba-online-layer" class="gba-online-layer" aria-hidden="true"></div>
-      <div id="gba-loading" class="gba-loading">Carregando Concordium...</div>
+    <section class="game-wrap">
+      <canvas id="game" width="768" height="432" aria-label="Concordium"></canvas>
+      <div id="online-layer" class="online-layer"></div>
+      <div class="mobile-pad" aria-label="Controles">
+        <button data-dir="up" aria-label="Cima">▲</button>
+        <button data-dir="left" aria-label="Esquerda">◀</button>
+        <button data-dir="right" aria-label="Direita">▶</button>
+        <button data-dir="down" aria-label="Baixo">▼</button>
+      </div>
+      <button id="talk" class="talk-btn" type="button">A</button>
     </section>
 
-    <dialog id="gba-player-dialog" class="gba-player-dialog">
-      <form method="dialog">
-        <button class="gba-dialog-close" value="close" aria-label="Fechar">x</button>
-      </form>
-      <h2 id="gba-player-name">Jogador</h2>
-      <dl>
-        <div><dt>Mapa</dt><dd id="gba-player-map">-</dd></div>
-        <div><dt>Equipe Pokemon</dt><dd id="gba-player-team">-</dd></div>
-        <div><dt>Insignias</dt><dd id="gba-player-badges">-</dd></div>
-        <div><dt>Sincronizacao</dt><dd id="gba-player-sync">-</dd></div>
-      </dl>
-      <div class="gba-dialog-actions">
-        <button id="gba-battle-invite" type="button">Convidar para batalha</button>
-        <small id="gba-battle-hint"></small>
-      </div>
-    </dialog>
-
-    <section id="gba-battle-panel" class="gba-battle-panel" hidden>
-      <div class="gba-battle-head">
-        <strong id="gba-battle-title">Batalha</strong>
-        <button id="gba-battle-close" type="button" aria-label="Fechar batalha">x</button>
-      </div>
-      <div class="gba-battle-row">
-        <span id="gba-battle-me">Voce</span>
-        <meter id="gba-battle-me-hp" min="0" max="100" value="100"></meter>
-      </div>
-      <div class="gba-battle-row">
-        <span id="gba-battle-rival">Rival</span>
-        <meter id="gba-battle-rival-hp" min="0" max="100" value="100"></meter>
-      </div>
-      <p id="gba-battle-log">Aguardando batalha.</p>
-      <div class="gba-battle-actions">
-        <button id="gba-battle-attack" type="button">Atacar</button>
-        <button id="gba-battle-flee" type="button">Sair</button>
-      </div>
+    <section id="dialog" class="dialog hidden">
+      <b id="dialog-name">Concordium</b>
+      <p id="dialog-text"></p>
     </section>
   </main>
 
-  <script src="/assets/concordium-exploracao.js?v=20260619m"></script>
+  <dialog id="player-dialog" class="player-dialog">
+    <button id="dialog-close" class="dialog-close" type="button">×</button>
+    <h2 id="player-name">Jogador</h2>
+    <dl>
+      <div><dt>Mapa</dt><dd id="player-map">-</dd></div>
+      <div><dt>Equipe</dt><dd id="player-team">Sem equipe ainda</dd></div>
+      <div><dt>Insígnias</dt><dd id="player-badges">Nenhuma insignia ainda</dd></div>
+      <div><dt>Sincronizacao</dt><dd id="player-sync">online</dd></div>
+    </dl>
+  </dialog>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/assets/concordium-exploracao.js?v=20260626a"></script>
 </body>
 </html>

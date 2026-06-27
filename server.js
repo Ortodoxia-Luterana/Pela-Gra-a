@@ -640,7 +640,17 @@ function defaultConcordiumProfile() {
     owned: ['training-dagger', 'simple-bow', 'sellsword-cloak'],
     skin: 'sellsword-cloak',
     loadout: { rogue: 'training-dagger', archer: 'simple-bow' },
-    options: { sensitivity: 50, music: 70, effects: 80 }
+    options: { sensitivity: 50, music: 70, effects: 80 },
+    world: {
+      map: 'truck',
+      x: 5,
+      y: 5,
+      dir: 'down',
+      party: [],
+      badges: [],
+      flags: { startedInTruck: true },
+      updatedAt: 0
+    }
   };
 }
 function sanitizeConcordiumProfile(input) {
@@ -658,6 +668,12 @@ function sanitizeConcordiumProfile(input) {
   const archerWeapon = owned.includes(String(loadout.archer)) && ['simple-bow', 'war-bow'].includes(String(loadout.archer)) ? String(loadout.archer) : defaults.loadout.archer;
   const skin = owned.includes(String(value.skin)) && ['sellsword-cloak', 'ash-cloak', 'forest-cloak'].includes(String(value.skin)) ? String(value.skin) : defaults.skin;
   const options = value.options && typeof value.options === 'object' ? value.options : {};
+  const world = value.world && typeof value.world === 'object' ? value.world : defaults.world;
+  const allowedWorldMaps = new Set(['truck', 'vila-raiz', 'rota-101', 'casa-inicial']);
+  const worldMap = allowedWorldMaps.has(String(world.map)) ? String(world.map) : defaults.world.map;
+  const cleanWorldList = items => Array.isArray(items)
+    ? items.slice(0, 12).map(item => String(item || '').replace(/[<>]/g, '').trim().slice(0, 24)).filter(Boolean)
+    : [];
   return {
     created: Boolean(value.created),
     classId,
@@ -669,6 +685,16 @@ function sanitizeConcordiumProfile(input) {
       sensitivity: clampInt(options.sensitivity ?? defaults.options.sensitivity, 1, 100),
       music: clampInt(options.music ?? defaults.options.music, 0, 100),
       effects: clampInt(options.effects ?? defaults.options.effects, 0, 100)
+    },
+    world: {
+      map: worldMap,
+      x: clampInt(world.x, 0, 999),
+      y: clampInt(world.y, 0, 999),
+      dir: ['up', 'down', 'left', 'right'].includes(String(world.dir)) ? String(world.dir) : defaults.world.dir,
+      party: cleanWorldList(world.party).slice(0, 6),
+      badges: cleanWorldList(world.badges),
+      flags: world.flags && typeof world.flags === 'object' ? Object.fromEntries(Object.entries(world.flags).slice(0, 50).map(([key, val]) => [String(key).replace(/[<>]/g, '').slice(0, 40), Boolean(val)])) : {},
+      updatedAt: clampInt(world.updatedAt, 0, 9999999999999)
     }
   };
 }
@@ -686,7 +712,7 @@ function sanitizeConcordiumGbaSave(input) {
   const playTime = hasImpossiblePlayTime ? '' : rawPlayTime;
   const rawSource = String(metadata.source || 'emulator').replace(/[<>]/g, '').trim().slice(0, 24);
   const rawMapId = String(metadata.mapId || '').replace(/[<>]/g, '').trim().slice(0, 32);
-  const isTrustedRomRead = rawSource === 'emerald-state'
+  const isTrustedRomRead = (rawSource === 'emerald-state' || rawSource === 'native-web')
     && rawMapId
     && mapName !== 'Concordium GBA em execucao'
     && !hasImpossiblePlayTime;

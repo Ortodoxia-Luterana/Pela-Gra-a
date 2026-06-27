@@ -1,1052 +1,480 @@
-(function () {
-  const ROM_URL = "/concordium-exploracao/rom";
-  const SAVE_STATE_URL = "/api/concordium/gba-save/state";
-  const EMULATOR_DATA_URL = "https://cdn.emulatorjs.org/stable/data/";
-  const LOADER_URL = `${EMULATOR_DATA_URL}loader.js`;
-  const STATE_CAPTURE_MS = 1500;
-  const PLAYER_COLORS = ["#d94f3d", "#3d7bd9", "#45a857", "#d8a629", "#8a5bd9", "#d95f9f"];
-  const EWRAM_START = 0x02000000;
-  const EWRAM_SIZE = 0x40000;
-  const IWRAM_START = 0x03000000;
-  const IWRAM_SIZE = 0x8000;
-  const GBA_STATE_SIZE = 0x61000;
-  const GBA_STATE_IWRAM_OFFSET = 0x19000;
-  const GBA_STATE_EWRAM_OFFSET = 0x21000;
-  const SAVE_BLOCK_1_SIZE = 0x3d88;
-  const SAVE_BLOCK_2_SIZE = 0xf2c;
-  const SAVE_BLOCK_1_PARTY_COUNT = 0x234;
-  const SAVE_BLOCK_1_PARTY = 0x238;
-  const SAVE_BLOCK_1_OBJECT_EVENTS = 0xa30;
-  const SAVE_BLOCK_1_FLAGS = 0x1270;
-  const OBJECT_EVENT_COUNT = 16;
-  const OBJECT_EVENT_SIZE = 0x24;
-  const MAP_OFFSET = 7;
-  const POKEMON_SIZE = 100;
-  const BADGE_FLAG_START = 0x867;
-  const BADGE_NAMES = ["Pedra", "Punho", "Dinamica", "Calor", "Equilibrio", "Pena", "Mente", "Chuva"];
-  const REGION_MAP_SECTION_NAMES = ["Vila Raiz", "Vila Oldale", "Vila Dewford", "Vila Lavaridge", "Vila Fallarbor", "Vila Verdanturf", "Vila Pacifidlog", "Cidade de Petalburg", "Cidade de Slateport", "Cidade de Mauville", "Cidade de Rustboro", "Cidade de Fortree", "Cidade de Lilycove", "Cidade de Mossdeep", "Cidade de Sootopolis", "Cidade de Ever Grande", "Rota 101", "Rota 102", "Rota 103", "Rota 104", "Rota 105", "Rota 106", "Rota 107", "Rota 108", "Rota 109", "Rota 110", "Rota 111", "Rota 112", "Rota 113", "Rota 114", "Rota 115", "Rota 116", "Rota 117", "Rota 118", "Rota 119", "Rota 120", "Rota 121", "Rota 122", "Rota 123", "Rota 124", "Rota 125", "Rota 126", "Rota 127", "Rota 128", "Rota 129", "Rota 130", "Rota 131", "Rota 132", "Rota 133", "Rota 134", "Submerso", "Submerso", "Submerso", "Submerso", "Submerso", "Caverna Granite", "Monte Chimney", "Safari Zone", "Battle Frontier", "Bosque Petalburg", "Tunel Rusturf", "Navio Abandonado", "New Mauville", "Meteor Falls", "Meteor Falls", "Monte Pyre", "Esconderijo Aqua", "Caverna Shoal", "Caverna Submarina", "Submerso", "Victory Road", "Ilha Mirage", "Caverna da Origem", "Ilha do Sul", "Fiery Path", "Fiery Path", "Jagged Pass", "Jagged Pass", "Camara Selada", "Submerso", "Scorched Slab", "Island Cave", "Ruinas do Deserto", "Tumba Antiga", "Dentro do Caminhao", "Pilar do Ceu", "Base Secreta"];
-  const EMERALD_MAP_NAMES = {
-    "0.0": "Cidade de Petalburg", "0.1": "Cidade de Slateport", "0.2": "Cidade de Mauville", "0.3": "Cidade de Rustboro",
-    "0.4": "Cidade de Fortree", "0.5": "Cidade de Lilycove", "0.6": "Cidade de Mossdeep", "0.7": "Cidade de Sootopolis",
-    "0.8": "Cidade de Ever Grande", "0.9": "Vila Raiz", "0.10": "Vila Oldale", "0.11": "Vila Dewford",
-    "0.12": "Vila Lavaridge", "0.13": "Vila Fallarbor", "0.14": "Vila Verdanturf", "0.15": "Vila Pacifidlog",
-    "0.16": "Rota 101", "0.17": "Rota 102", "0.18": "Rota 103", "0.19": "Rota 104", "0.20": "Rota 105",
-    "0.21": "Rota 106", "0.22": "Rota 107", "0.23": "Rota 108", "0.24": "Rota 109", "0.25": "Rota 110",
-    "0.26": "Rota 111", "0.27": "Rota 112", "0.28": "Rota 113", "0.29": "Rota 114", "0.30": "Rota 115",
-    "0.31": "Rota 116", "0.32": "Rota 117", "0.33": "Rota 118", "0.34": "Rota 119", "0.35": "Rota 120",
-    "0.36": "Rota 121", "0.37": "Rota 122", "0.38": "Rota 123", "0.39": "Rota 124", "0.40": "Rota 125",
-    "0.41": "Rota 126", "0.42": "Rota 127", "0.43": "Rota 128", "0.44": "Rota 129", "0.45": "Rota 130",
-    "0.46": "Rota 131", "0.47": "Rota 132", "0.48": "Rota 133", "0.49": "Rota 134", "0.50": "Submerso - Rota 124",
-    "0.51": "Submerso - Rota 126", "0.52": "Submerso - Rota 127", "0.53": "Submerso - Rota 128",
-    "0.54": "Submerso - Rota 129", "0.55": "Submerso - Rota 105", "0.56": "Submerso - Rota 125",
-    "1.0": "Vila Raiz - Casa do Brendan 1F", "1.1": "Vila Raiz - Casa do Brendan 2F",
-    "1.2": "Vila Raiz - Casa da May 1F", "1.3": "Vila Raiz - Casa da May 2F", "1.4": "Vila Raiz - Laboratorio do Prof. Birch",
-    "2.0": "Vila Oldale - Casa 1", "2.1": "Vila Oldale - Casa 2", "2.2": "Vila Oldale - Centro Pokemon 1F",
-    "2.3": "Vila Oldale - Centro Pokemon 2F", "2.4": "Vila Oldale - Mercado",
-    "8.0": "Cidade de Petalburg - Casa do Wally", "8.1": "Cidade de Petalburg - Ginasio", "8.2": "Cidade de Petalburg - Casa 1",
-    "8.3": "Cidade de Petalburg - Casa 2", "8.4": "Cidade de Petalburg - Centro Pokemon 1F",
-    "8.5": "Cidade de Petalburg - Centro Pokemon 2F", "8.6": "Cidade de Petalburg - Mercado"
+(() => {
+  const TILE = 32;
+  const COLORS = ["#d94f3d", "#3d7bd9", "#45a857", "#d8a629", "#8a5bd9", "#d95f9f"];
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+  const saveStatus = document.getElementById("save-status");
+  const playerList = document.getElementById("player-list");
+  const onlineLayer = document.getElementById("online-layer");
+  const dialog = document.getElementById("dialog");
+  const dialogName = document.getElementById("dialog-name");
+  const dialogText = document.getElementById("dialog-text");
+  const fullscreenBtn = document.getElementById("fullscreen");
+  const talkBtn = document.getElementById("talk");
+  const playerDialog = document.getElementById("player-dialog");
+  const playerNameEl = document.getElementById("player-name");
+  const playerMapEl = document.getElementById("player-map");
+  const playerTeamEl = document.getElementById("player-team");
+  const playerBadgesEl = document.getElementById("player-badges");
+  const playerSyncEl = document.getElementById("player-sync");
+
+  const maps = {
+    truck: {
+      name: "Caminhao de Mudanca",
+      w: 12, h: 9, bg: "#6b5f52",
+      start: { x: 5, y: 5 },
+      exits: [{ x: 5, y: 8, to: "vila-raiz", tx: 13, ty: 15 }],
+      npcs: [],
+      solid: new Set(["W", "B"]),
+      rows: [
+        "WWWWWWWWWWWW",
+        "WBBBBBBBBBBW",
+        "WB........BW",
+        "WB..BBBB..BW",
+        "W.........BW",
+        "WB........BW",
+        "WB....BB..BW",
+        "W..........W",
+        "WWWWW..WWWWW"
+      ]
+    },
+    "vila-raiz": {
+      name: "Vila Raiz",
+      w: 28, h: 20, bg: "#5dac63",
+      start: { x: 13, y: 15 },
+      exits: [
+        { x: 13, y: 0, to: "rota-101", tx: 10, ty: 25 },
+        { x: 9, y: 10, to: "casa-inicial", tx: 6, ty: 7 }
+      ],
+      npcs: [
+        { id: "mae", name: "Mae", x: 11, y: 14, text: "Bem-vindo, {player}. O professor quer te ver antes de seguir para a Rota 101." },
+        { id: "vizinho", name: "Morador", x: 20, y: 12, text: "Esta e a Vila Raiz. O caminho ao norte leva para a Rota 101." }
+      ],
+      solid: new Set(["T", "W", "H", "R"]),
+      rows: [
+        "TTTTTTTTTTTTT..TTTTTTTTTTTTT",
+        "T..........................T",
+        "T..........................T",
+        "T....HHHHHH........HHHHHH..T",
+        "T....HRRRRH........HRRRRH..T",
+        "T....H....H........H....H..T",
+        "T....H.D..H........H.D..H..T",
+        "T..........................T",
+        "T..........PPPPPPPP........T",
+        "T..........P......P........T",
+        "T....HHHHH.P......P.HHHHH..T",
+        "T....H...H.P......P.H...H..T",
+        "T....H.D.H.P......P.H.D.H..T",
+        "T..........P......P........T",
+        "T..........P......P........T",
+        "T..........PPPPPPPP........T",
+        "T..........................T",
+        "T..FFFF..............FFFF..T",
+        "T..FFFF..............FFFF..T",
+        "TTTTTTTTTTTTTTTTTTTTTTTTTTTT"
+      ]
+    },
+    "rota-101": {
+      name: "Rota 101",
+      w: 22, h: 28, bg: "#559c5c",
+      start: { x: 10, y: 25 },
+      exits: [{ x: 10, y: 27, to: "vila-raiz", tx: 13, ty: 1 }],
+      npcs: [
+        { id: "professor", name: "Professor", x: 12, y: 20, text: "{player}, esta rota ainda esta em teste. Em breve vamos colocar os primeiros companheiros aqui." }
+      ],
+      solid: new Set(["T", "W"]),
+      rows: [
+        "TTTTTTTTTTTTTTTTTTTTTT",
+        "T....................T",
+        "T...GGGG.......GGGG..T",
+        "T...GGGG.......GGGG..T",
+        "T........PP..........T",
+        "TTTTTT...PP...TTTTTTTT",
+        "T........PP..........T",
+        "T..GGG...PP....GGG...T",
+        "T..GGG...PP....GGG...T",
+        "T........PP..........T",
+        "T........PP..........T",
+        "T..TTT...PP...TTT....T",
+        "T........PP..........T",
+        "T........PP.....GGG..T",
+        "T...GGG..PP.....GGG..T",
+        "T...GGG..PP..........T",
+        "T........PP..........T",
+        "T........PP....TTT...T",
+        "T........PP..........T",
+        "T..GGG...PP..........T",
+        "T..GGG...PP..........T",
+        "T........PP....GGG...T",
+        "T........PP....GGG...T",
+        "T........PP..........T",
+        "T........PP..........T",
+        "T........PP..........T",
+        "T........PP..........T",
+        "TTTTTTTTTT..TTTTTTTTTT"
+      ]
+    },
+    "casa-inicial": {
+      name: "Casa da Familia",
+      w: 12, h: 9, bg: "#c99b60",
+      start: { x: 6, y: 7 },
+      exits: [{ x: 6, y: 8, to: "vila-raiz", tx: 9, ty: 11 }],
+      npcs: [{ id: "caixa", name: "Caixa", x: 3, y: 3, text: "Caixas da mudanca. Ainda tem muita coisa para organizar." }],
+      solid: new Set(["W", "B"]),
+      rows: [
+        "WWWWWWWWWWWW",
+        "W..........W",
+        "W.BB...BB..W",
+        "W.BB.......W",
+        "W..........W",
+        "W....BB....W",
+        "W..........W",
+        "W..........W",
+        "WWWWWW..WWWW"
+      ]
+    }
   };
-  const EMERALD_GROUP_AREAS = {
-    1: "Vila Raiz", 2: "Vila Oldale", 3: "Vila Dewford", 4: "Vila Lavaridge", 5: "Vila Fallarbor", 6: "Vila Verdanturf",
-    7: "Vila Pacifidlog", 8: "Cidade de Petalburg", 9: "Cidade de Slateport", 10: "Cidade de Mauville", 11: "Cidade de Rustboro",
-    12: "Cidade de Fortree", 13: "Cidade de Lilycove", 14: "Cidade de Mossdeep", 15: "Cidade de Sootopolis",
-    16: "Cidade de Ever Grande", 17: "Rota 104", 18: "Rota 111", 19: "Rota 112", 20: "Rota 114", 21: "Rota 116",
-    22: "Rota 117", 23: "Rota 121", 24: "Cavernas e areas especiais"
+
+  const defaultWorld = () => ({
+    map: "truck",
+    x: maps.truck.start.x,
+    y: maps.truck.start.y,
+    dir: "down",
+    party: [],
+    badges: [],
+    flags: { startedInTruck: true },
+    updatedAt: Date.now()
+  });
+
+  const state = {
+    user: { name: "Jogador" },
+    world: defaultWorld(),
+    keys: new Set(),
+    moving: false,
+    moveCooldown: 0,
+    socket: null,
+    id: "",
+    color: COLORS[Math.floor(Math.random() * COLORS.length)],
+    players: new Map()
   };
-  const SPECIES_NAMES = [
-    "", "Bulbasaur", "Ivysaur", "Venusaur", "Charmander", "Charmeleon", "Charizard", "Squirtle", "Wartortle", "Blastoise",
-    "Caterpie", "Metapod", "Butterfree", "Weedle", "Kakuna", "Beedrill", "Pidgey", "Pidgeotto", "Pidgeot", "Rattata",
-    "Raticate", "Spearow", "Fearow", "Ekans", "Arbok", "Pikachu", "Raichu", "Sandshrew", "Sandslash", "Nidoran F",
-    "Nidorina", "Nidoqueen", "Nidoran M", "Nidorino", "Nidoking", "Clefairy", "Clefable", "Vulpix", "Ninetales", "Jigglypuff",
-    "Wigglytuff", "Zubat", "Golbat", "Oddish", "Gloom", "Vileplume", "Paras", "Parasect", "Venonat", "Venomoth",
-    "Diglett", "Dugtrio", "Meowth", "Persian", "Psyduck", "Golduck", "Mankey", "Primeape", "Growlithe", "Arcanine",
-    "Poliwag", "Poliwhirl", "Poliwrath", "Abra", "Kadabra", "Alakazam", "Machop", "Machoke", "Machamp", "Bellsprout",
-    "Weepinbell", "Victreebel", "Tentacool", "Tentacruel", "Geodude", "Graveler", "Golem", "Ponyta", "Rapidash", "Slowpoke",
-    "Slowbro", "Magnemite", "Magneton", "Farfetch'd", "Doduo", "Dodrio", "Seel", "Dewgong", "Grimer", "Muk",
-    "Shellder", "Cloyster", "Gastly", "Haunter", "Gengar", "Onix", "Drowzee", "Hypno", "Krabby", "Kingler",
-    "Voltorb", "Electrode", "Exeggcute", "Exeggutor", "Cubone", "Marowak", "Hitmonlee", "Hitmonchan", "Lickitung", "Koffing",
-    "Weezing", "Rhyhorn", "Rhydon", "Chansey", "Tangela", "Kangaskhan", "Horsea", "Seadra", "Goldeen", "Seaking",
-    "Staryu", "Starmie", "Mr. Mime", "Scyther", "Jynx", "Electabuzz", "Magmar", "Pinsir", "Tauros", "Magikarp",
-    "Gyarados", "Lapras", "Ditto", "Eevee", "Vaporeon", "Jolteon", "Flareon", "Porygon", "Omanyte", "Omastar",
-    "Kabuto", "Kabutops", "Aerodactyl", "Snorlax", "Articuno", "Zapdos", "Moltres", "Dratini", "Dragonair", "Dragonite",
-    "Mewtwo", "Mew", "Chikorita", "Bayleef", "Meganium", "Cyndaquil", "Quilava", "Typhlosion", "Totodile", "Croconaw",
-    "Feraligatr", "Sentret", "Furret", "Hoothoot", "Noctowl", "Ledyba", "Ledian", "Spinarak", "Ariados", "Crobat",
-    "Chinchou", "Lanturn", "Pichu", "Cleffa", "Igglybuff", "Togepi", "Togetic", "Natu", "Xatu", "Mareep",
-    "Flaaffy", "Ampharos", "Bellossom", "Marill", "Azumarill", "Sudowoodo", "Politoed", "Hoppip", "Skiploom", "Jumpluff",
-    "Aipom", "Sunkern", "Sunflora", "Yanma", "Wooper", "Quagsire", "Espeon", "Umbreon", "Murkrow", "Slowking",
-    "Misdreavus", "Unown", "Wobbuffet", "Girafarig", "Pineco", "Forretress", "Dunsparce", "Gligar", "Steelix", "Snubbull",
-    "Granbull", "Qwilfish", "Scizor", "Shuckle", "Heracross", "Sneasel", "Teddiursa", "Ursaring", "Slugma", "Magcargo",
-    "Swinub", "Piloswine", "Corsola", "Remoraid", "Octillery", "Delibird", "Mantine", "Skarmory", "Houndour", "Houndoom",
-    "Kingdra", "Phanpy", "Donphan", "Porygon2", "Stantler", "Smeargle", "Tyrogue", "Hitmontop", "Smoochum", "Elekid",
-    "Magby", "Miltank", "Blissey", "Raikou", "Entei", "Suicune", "Larvitar", "Pupitar", "Tyranitar", "Lugia",
-    "Ho-Oh", "Celebi", "Treecko", "Grovyle", "Sceptile", "Torchic", "Combusken", "Blaziken", "Mudkip", "Marshtomp",
-    "Swampert", "Poochyena", "Mightyena", "Zigzagoon", "Linoone", "Wurmple", "Silcoon", "Beautifly", "Cascoon", "Dustox",
-    "Lotad", "Lombre", "Ludicolo", "Seedot", "Nuzleaf", "Shiftry", "Taillow", "Swellow", "Wingull", "Pelipper",
-    "Ralts", "Kirlia", "Gardevoir", "Surskit", "Masquerain", "Shroomish", "Breloom", "Slakoth", "Vigoroth", "Slaking",
-    "Nincada", "Ninjask", "Shedinja", "Whismur", "Loudred", "Exploud", "Makuhita", "Hariyama", "Azurill", "Nosepass",
-    "Skitty", "Delcatty", "Sableye", "Mawile", "Aron", "Lairon", "Aggron", "Meditite", "Medicham", "Electrike",
-    "Manectric", "Plusle", "Minun", "Volbeat", "Illumise", "Roselia", "Gulpin", "Swalot", "Carvanha", "Sharpedo",
-    "Wailmer", "Wailord", "Numel", "Camerupt", "Torkoal", "Spoink", "Grumpig", "Spinda", "Trapinch", "Vibrava",
-    "Flygon", "Cacnea", "Cacturne", "Swablu", "Altaria", "Zangoose", "Seviper", "Lunatone", "Solrock", "Barboach",
-    "Whiscash", "Corphish", "Crawdaunt", "Baltoy", "Claydol", "Lileep", "Cradily", "Anorith", "Armaldo", "Feebas",
-    "Milotic", "Castform", "Kecleon", "Shuppet", "Banette", "Duskull", "Dusclops", "Tropius", "Chimecho", "Absol",
-    "Wynaut", "Snorunt", "Glalie", "Spheal", "Sealeo", "Walrein", "Clamperl", "Huntail", "Gorebyss", "Relicanth",
-    "Luvdisc", "Bagon", "Shelgon", "Salamence", "Beldum", "Metang", "Metagross", "Regirock", "Regice", "Registeel",
-    "Latias", "Latios", "Kyogre", "Groudon", "Rayquaza", "Jirachi", "Deoxys"
-  ];
-  const POKEMON_SUBSTRUCT_ORDERS = [
-    [0, 1, 2, 3], [0, 1, 3, 2], [0, 2, 1, 3], [0, 3, 1, 2], [0, 2, 3, 1], [0, 3, 2, 1],
-    [1, 0, 2, 3], [1, 0, 3, 2], [2, 0, 1, 3], [3, 0, 1, 2], [2, 0, 3, 1], [3, 0, 2, 1],
-    [1, 2, 0, 3], [1, 3, 0, 2], [2, 1, 0, 3], [3, 1, 0, 2], [2, 3, 0, 1], [3, 2, 0, 1],
-    [1, 2, 3, 0], [1, 3, 2, 0], [2, 1, 3, 0], [3, 1, 2, 0], [2, 3, 1, 0], [3, 2, 1, 0]
-  ];
-
-  const loading = document.getElementById("gba-loading");
-  const saveStatus = document.getElementById("gba-save-status");
-  const playerList = document.getElementById("gba-player-list");
-  const playerDialog = document.getElementById("gba-player-dialog");
-  const playerNameEl = document.getElementById("gba-player-name");
-  const playerMapEl = document.getElementById("gba-player-map");
-  const playerTeamEl = document.getElementById("gba-player-team");
-  const playerBadgesEl = document.getElementById("gba-player-badges");
-  const playerSyncEl = document.getElementById("gba-player-sync");
-  const battleInviteBtn = document.getElementById("gba-battle-invite");
-  const battleHint = document.getElementById("gba-battle-hint");
-  const battlePanel = document.getElementById("gba-battle-panel");
-  const battleTitle = document.getElementById("gba-battle-title");
-  const battleMe = document.getElementById("gba-battle-me");
-  const battleMeHp = document.getElementById("gba-battle-me-hp");
-  const battleRival = document.getElementById("gba-battle-rival");
-  const battleRivalHp = document.getElementById("gba-battle-rival-hp");
-  const battleLog = document.getElementById("gba-battle-log");
-  const battleAttack = document.getElementById("gba-battle-attack");
-  const battleFlee = document.getElementById("gba-battle-flee");
-  const battleClose = document.getElementById("gba-battle-close");
-  const onlineLayer = document.getElementById("gba-online-layer");
-
-  let socket = null;
-  let myId = "";
-  let playerName = "Jogador";
-  let myDetails = defaultDetails();
-  let hasServerState = false;
-  let lastSaveBody = null;
-  let saveTimer = 0;
-  let lastSaveAt = 0;
-  let selectedPlayer = null;
-  let activeBattleId = "";
-  const players = new Map();
-
-  function defaultDetails() {
-    return {
-      mapName: "Jogo em execucao",
-      mapId: "",
-      x: 0,
-      y: 0,
-      team: [],
-      badges: [],
-      playTime: "",
-      source: "emulator",
-      saveKind: "",
-      saveUpdatedAt: "",
-      frame: 0
-    };
-  }
-
-  function setSaveStatus(text) {
-    saveStatus.textContent = text;
-  }
 
   function safeName(value) {
     return String(value || "Jogador").replace(/[<>]/g, "").trim().slice(0, 24) || "Jogador";
   }
 
-  function hasInvalidMapCoordinates(value) {
-    return /(?:^|[,\s])(?:x|y)\s*-/.test(String(value || "").toLowerCase());
-  }
-
-  function cleanPlayTime(value) {
-    const text = String(value || "").replace(/[<>]/g, "").trim().slice(0, 32);
-    const parts = text.split(":").map(part => Number(part));
-    if (parts.length === 3 && parts.every(Number.isFinite)) {
-      const [hours, minutes, seconds] = parts;
-      if (hours > 999 || minutes > 59 || seconds > 59) return "";
-    }
-    return text;
-  }
-
-  function cleanDetails(details) {
-    const value = details && typeof details === "object" ? details : {};
-    const mapName = String(value.mapName || "Jogo em execucao").replace(/[<>]/g, "").slice(0, 64);
+  function normalizeWorld(value) {
+    const world = value && typeof value === "object" ? value : {};
+    const map = maps[world.map] ? world.map : "truck";
     return {
-      mapName: hasInvalidMapCoordinates(mapName) ? "Concordium GBA em execucao" : mapName,
-      mapId: String(value.mapId || "").replace(/[<>]/g, "").slice(0, 32),
-      x: Math.max(0, Math.min(9999, Number(value.x) || 0)),
-      y: Math.max(0, Math.min(9999, Number(value.y) || 0)),
-      team: Array.isArray(value.team) ? value.team.slice(0, 6).map(item => String(item || "").replace(/[<>]/g, "").slice(0, 24)).filter(Boolean) : [],
-      badges: Array.isArray(value.badges) ? value.badges.slice(0, 12).map(item => String(item || "").replace(/[<>]/g, "").slice(0, 24)).filter(Boolean) : [],
-      playTime: cleanPlayTime(value.playTime),
-      source: String(value.source || "emulator").replace(/[<>]/g, "").slice(0, 24),
-      saveKind: String(value.saveKind || "").replace(/[<>]/g, "").slice(0, 24),
-      saveUpdatedAt: String(value.saveUpdatedAt || "").replace(/[<>]/g, "").slice(0, 40),
-      frame: Math.max(0, Math.min(999999999, Number(value.frame) || 0))
+      ...defaultWorld(),
+      map,
+      x: Math.max(0, Math.min(maps[map].w - 1, Number(world.x) || maps[map].start.x)),
+      y: Math.max(0, Math.min(maps[map].h - 1, Number(world.y) || maps[map].start.y)),
+      dir: ["up", "down", "left", "right"].includes(world.dir) ? world.dir : "down",
+      party: Array.isArray(world.party) ? world.party.slice(0, 6).map(safeName) : [],
+      badges: Array.isArray(world.badges) ? world.badges.slice(0, 12).map(safeName) : [],
+      flags: world.flags && typeof world.flags === "object" ? world.flags : {},
+      updatedAt: Number(world.updatedAt) || Date.now()
     };
   }
 
-  function usableMapName(value) {
-    const text = String(value || "").trim();
-    if (!text || text === "Mapa atual ainda nao lido da ROM" || hasInvalidMapCoordinates(text)) return "Concordium GBA em execucao";
-    return text;
+  async function loadProfile() {
+    const response = await fetch("/api/concordium/profile", { cache: "no-store", credentials: "same-origin" });
+    if (!response.ok) throw new Error("perfil indisponivel");
+    const payload = await response.json();
+    state.user = payload.user || state.user;
+    state.world = normalizeWorld(payload.profile?.world);
+    if (!payload.profile?.world) saveWorld(true);
   }
 
-  function formatFrameTime(frame) {
-    const seconds = Math.floor((Number(frame) || 0) / 60);
-    if (!seconds) return "";
-    const minutes = Math.floor(seconds / 60);
-    const rest = seconds % 60;
-    return `${minutes}:${String(rest).padStart(2, "0")}`;
+  function saveWorld(immediate = false) {
+    state.world.updatedAt = Date.now();
+    clearTimeout(saveWorld.timer);
+    const run = async () => {
+      try {
+        const current = await fetch("/api/concordium/profile", { cache: "no-store", credentials: "same-origin" }).then(r => r.json());
+        await fetch("/api/concordium/profile", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ profile: { ...(current.profile || {}), created: true, world: state.world } })
+        });
+        saveStatus.textContent = "Save automatico salvo agora";
+      } catch {
+        saveStatus.textContent = "Falha no save automatico";
+      }
+    };
+    if (immediate) run();
+    else saveWorld.timer = setTimeout(run, 180);
   }
 
-  function emulatorFacts(saveKind = lastSaveBody?.saveKind || "") {
-    const manager = window.EJS_emulator?.gameManager;
-    let frame = 0;
-    try {
-      frame = typeof manager?.getFrameNum === "function" ? Number(manager.getFrameNum()) || 0 : 0;
-    } catch {}
+  function currentMap() {
+    return maps[state.world.map] || maps.truck;
+  }
+
+  function tileAt(map, x, y) {
+    if (x < 0 || y < 0 || x >= map.w || y >= map.h) return "W";
+    return map.rows[y]?.[x] || ".";
+  }
+
+  function blocked(map, x, y) {
+    return map.solid.has(tileAt(map, x, y));
+  }
+
+  function tryMove(dir) {
+    if (!dialog.classList.contains("hidden")) {
+      closeDialog();
+      return;
+    }
+    const delta = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[dir];
+    if (!delta) return;
+    state.world.dir = dir;
+    const map = currentMap();
+    const nx = state.world.x + delta[0];
+    const ny = state.world.y + delta[1];
+    const exit = map.exits.find(item => item.x === nx && item.y === ny);
+    if (exit) {
+      state.world.map = exit.to;
+      state.world.x = exit.tx;
+      state.world.y = exit.ty;
+      saveWorld();
+      publish();
+      return;
+    }
+    if (!blocked(map, nx, ny)) {
+      state.world.x = nx;
+      state.world.y = ny;
+      saveWorld();
+      publish();
+    }
+  }
+
+  function facingTile() {
+    const d = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[state.world.dir];
+    return { x: state.world.x + d[0], y: state.world.y + d[1] };
+  }
+
+  function interact() {
+    if (!dialog.classList.contains("hidden")) {
+      closeDialog();
+      return;
+    }
+    const map = currentMap();
+    const front = facingTile();
+    const npc = map.npcs.find(item => item.x === front.x && item.y === front.y)
+      || map.npcs.find(item => Math.abs(item.x - state.world.x) + Math.abs(item.y - state.world.y) <= 1);
+    if (npc) openDialog(npc.name, npc.text.replaceAll("{player}", safeName(state.user.name)));
+  }
+
+  function openDialog(name, text) {
+    dialogName.textContent = name;
+    dialogText.textContent = text;
+    dialog.classList.remove("hidden");
+  }
+  function closeDialog() {
+    dialog.classList.add("hidden");
+  }
+
+  function details() {
+    const map = currentMap();
     return {
-      mapName: "Concordium GBA em execucao",
-      source: "emulatorjs",
-      saveKind,
-      saveUpdatedAt: new Date().toISOString(),
-      frame,
-      playTime: formatFrameTime(frame)
+      mapName: `${map.name} - X ${state.world.x}, Y ${state.world.y}`,
+      mapId: state.world.map,
+      x: Math.max(6, Math.min(94, (state.world.x / Math.max(1, map.w - 1)) * 88 + 6)),
+      y: Math.max(12, Math.min(92, (state.world.y / Math.max(1, map.h - 1)) * 80 + 12)),
+      team: state.world.party,
+      badges: state.world.badges,
+      source: "native-web",
+      saveKind: "profile",
+      saveUpdatedAt: new Date(state.world.updatedAt).toISOString()
     };
   }
 
-  function bytesView(value) {
-    if (!value) return null;
-    if (value instanceof Uint8Array) return value;
-    if (value instanceof ArrayBuffer) return new Uint8Array(value);
-    if (ArrayBuffer.isView(value)) return new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
-    return null;
+  function publish() {
+    if (!state.socket?.connected) return;
+    state.socket.emit("concordium-gba:details", { metadata: details() });
+    state.socket.emit("concordium-gba:move", { x: details().x, y: details().y, dir: state.world.dir });
   }
 
-  function rawSaveFromEvent(eventData) {
-    const payload = Array.isArray(eventData) ? eventData[0] || eventData[1] : eventData;
-    return payload && typeof payload === "object" ? payload.save || payload.state || payload.data || payload : payload;
-  }
-
-  function readU16(bytes, offset) {
-    return bytes[offset] | (bytes[offset + 1] << 8);
-  }
-
-  function readS16(bytes, offset) {
-    const value = readU16(bytes, offset);
-    return value & 0x8000 ? value - 0x10000 : value;
-  }
-
-  function readU32(bytes, offset) {
-    return (bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16) | (bytes[offset + 3] << 24)) >>> 0;
-  }
-
-  function getStateMemory(bytes) {
-    const state = bytesView(bytes);
-    if (!state || state.length < 32) return null;
-    const signature = String.fromCharCode(...state.subarray(0, 8));
-    if (signature !== "RASTATE\u0001") return state;
-    const chunk = String.fromCharCode(...state.subarray(8, 12));
-    if (chunk !== "MEM ") return state;
-    const size = readU32(state, 12);
-    const start = 24;
-    const end = Math.min(state.length, start + size);
-    return end > start ? state.subarray(start, end) : null;
-  }
-
-  function gbaOffset(address) {
-    if (address >= EWRAM_START && address < EWRAM_START + EWRAM_SIZE) {
-      return GBA_STATE_EWRAM_OFFSET + (address - EWRAM_START);
+  function drawTile(ch, sx, sy) {
+    const palettes = {
+      ".": ["#60ad67", "#4f985b"],
+      "P": ["#d6bf83", "#bfa66d"],
+      "T": ["#1f6a3a", "#3e9b54"],
+      "H": ["#e4c079", "#8e5a32"],
+      "R": ["#b84b3f", "#7d2f2a"],
+      "F": ["#66c06d", "#318944"],
+      "G": ["#75ca65", "#358845"],
+      "W": ["#314238", "#223128"],
+      "B": ["#9b7654", "#6f4f37"]
+    };
+    const [base, shade] = palettes[ch] || palettes["."];
+    ctx.fillStyle = base;
+    ctx.fillRect(sx, sy, TILE, TILE);
+    ctx.fillStyle = shade;
+    if (ch === "T") {
+      ctx.fillRect(sx, sy + 20, TILE, 12);
+      ctx.beginPath(); ctx.arc(sx + 16, sy + 13, 15, 0, Math.PI * 2); ctx.fill();
+    } else if (ch === "R") {
+      for (let y = 5; y < TILE; y += 8) ctx.fillRect(sx, sy + y, TILE, 3);
+    } else if (ch === "P") {
+      for (let x = 7; x < TILE; x += 13) ctx.fillRect(sx + x, sy + 7, 5, 5);
+    } else if (ch === "F" || ch === "G") {
+      for (let x = 4; x < TILE; x += 8) ctx.fillRect(sx + x, sy + 7, 3, 21);
+    } else if (ch === "B") {
+      ctx.fillRect(sx + 5, sy + 5, 22, 22);
     }
-    if (address >= IWRAM_START && address < IWRAM_START + IWRAM_SIZE) {
-      return GBA_STATE_IWRAM_OFFSET + (address - IWRAM_START);
+  }
+
+  function drawSprite(x, y, color, name, dir = "down") {
+    const sx = x * TILE;
+    const sy = y * TILE;
+    ctx.fillStyle = "rgba(0,0,0,.28)";
+    ctx.fillRect(sx + 8, sy + 26, 16, 4);
+    ctx.fillStyle = "#f2c490";
+    ctx.fillRect(sx + 11, sy + 6, 10, 9);
+    ctx.fillStyle = color;
+    ctx.fillRect(sx + 9, sy + 15, 14, 12);
+    ctx.fillStyle = "#233047";
+    ctx.fillRect(sx + 8, sy + 26, 16, 4);
+    ctx.fillStyle = "#2b1a12";
+    ctx.fillRect(sx + 9, sy + 3, 14, 5);
+    if (dir === "left") ctx.fillRect(sx + 7, sy + 8, 4, 3);
+    if (dir === "right") ctx.fillRect(sx + 21, sy + 8, 4, 3);
+    if (name) {
+      ctx.font = "10px Segoe UI";
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#ffe06e";
+      ctx.fillText(name, sx + 16, sy - 2);
     }
-    return -1;
   }
 
-  function isGbaPointer(value) {
-    return (value >= 0x02000000 && value < 0x02040000)
-      || (value >= 0x03000000 && value < 0x03008000)
-      || (value >= 0x08000000 && value < 0x0a000000);
-  }
-
-  function isNullableGbaPointer(value) {
-    return value === 0 || isGbaPointer(value);
-  }
-
-  function countNonZero(bytes, offset, length) {
-    let count = 0;
-    const end = Math.min(bytes.length, offset + length);
-    for (let i = offset; i < end; i += 1) {
-      if (bytes[i]) count += 1;
+  function render() {
+    const map = currentMap();
+    const camX = Math.max(0, Math.min(map.w * TILE - canvas.width, state.world.x * TILE - canvas.width / 2));
+    const camY = Math.max(0, Math.min(map.h * TILE - canvas.height, state.world.y * TILE - canvas.height / 2));
+    ctx.fillStyle = map.bg;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.translate(-camX, -camY);
+    for (let y = 0; y < map.h; y += 1) {
+      for (let x = 0; x < map.w; x += 1) drawTile(tileAt(map, x, y), x * TILE, y * TILE);
     }
-    return count;
+    map.exits.forEach(exit => {
+      ctx.fillStyle = "rgba(255, 230, 110, .65)";
+      ctx.fillRect(exit.x * TILE + 8, exit.y * TILE + 22, 16, 6);
+    });
+    map.npcs.forEach(npc => drawSprite(npc.x, npc.y, "#487ab8", npc.name));
+    drawSprite(state.world.x, state.world.y, state.color, safeName(state.user.name), state.world.dir);
+    ctx.restore();
+    renderOnlineLayer(camX, camY);
+    requestAnimationFrame(render);
   }
 
-  function isKnownMapId(group, map) {
-    return Boolean(EMERALD_MAP_NAMES[`${group}.${map}`]);
-  }
-
-  function findPlayerObjectEvent(memory, save1Offset, group, map) {
-    const start = save1Offset + SAVE_BLOCK_1_OBJECT_EVENTS;
-    const matches = [];
-    for (let index = 0; index < OBJECT_EVENT_COUNT; index += 1) {
-      const offset = start + (index * OBJECT_EVENT_SIZE);
-      if (offset + OBJECT_EVENT_SIZE > memory.length) continue;
-      const active = Boolean(memory[offset] & 1);
-      const isPlayer = Boolean(memory[offset + 2] & 1);
-      const eventMapNum = memory[offset + 9];
-      const eventMapGroup = memory[offset + 10];
-      const currentX = readS16(memory, offset + 0x10);
-      const currentY = readS16(memory, offset + 0x12);
-      if (!active || !isPlayer) continue;
-      if (eventMapGroup !== group || eventMapNum !== map) continue;
-      if (currentX < -MAP_OFFSET || currentY < -MAP_OFFSET || currentX > 255 || currentY > 255) continue;
-      matches.push({
-        index,
-        x: currentX - MAP_OFFSET,
-        y: currentY - MAP_OFFSET,
-        rawX: currentX,
-        rawY: currentY
-      });
-    }
-    return matches[0] || null;
-  }
-
-  function scoreSaveBlock1(memory, offset) {
-    if (offset < 0 || offset + SAVE_BLOCK_1_SIZE > memory.length) return -999;
-    const x = readS16(memory, offset);
-    const y = readS16(memory, offset + 2);
-    const group = memory[offset + 4];
-    const map = memory[offset + 5];
-    const warpId = memory[offset + 6];
-    const layoutId = readU16(memory, offset + 0x32);
-    const partyCount = memory[offset + SAVE_BLOCK_1_PARTY_COUNT];
-    const filledBytes = countNonZero(memory, offset, 0x500);
-    if (partyCount > 6 || group > 64 || map > 160 || warpId > 127 || layoutId > 0x3ff) return -999;
-    if (x < -MAP_OFFSET || y < -MAP_OFFSET || x > 255 || y > 255) return -999;
-    const playerEvent = findPlayerObjectEvent(memory, offset, group, map);
-    let score = 0;
-    score += filledBytes > 10 ? 8 : 0;
-    score += filledBytes > 80 ? 4 : 0;
-    score += isKnownMapId(group, map) ? 18 : 0;
-    score += group === 0 && map <= 56 ? 6 : 0;
-    score += group > 0 && group <= 24 ? 4 : 0;
-    score += layoutId > 0 ? 4 : 0;
-    score += partyCount > 0 ? 4 : 0;
-    score += playerEvent ? 40 : -18;
-    score += x >= 0 && y >= 0 ? 6 : 0;
-    return score;
-  }
-
-  function scoreSaveBlock2(memory, offset) {
-    if (offset < 0 || offset + SAVE_BLOCK_2_SIZE > memory.length) return -999;
-    const filledBytes = countNonZero(memory, offset, 0x120);
-    const hours = readU16(memory, offset + 0x0e);
-    const minutes = memory[offset + 0x10] || 0;
-    const seconds = memory[offset + 0x11] || 0;
-    if (hours > 9999 || minutes > 59 || seconds > 59) return -999;
-    let score = 0;
-    score += filledBytes > 10 ? 6 : 0;
-    score += filledBytes > 80 ? 3 : 0;
-    score += countNonZero(memory, offset, 8) > 0 ? 4 : 0;
-    score += hours || minutes || seconds ? 4 : 0;
-    return score;
-  }
-
-  function findEmeraldSaveBlocks(memory) {
-    const candidates = [];
-    const scanRanges = [
-      [GBA_STATE_IWRAM_OFFSET, GBA_STATE_IWRAM_OFFSET + IWRAM_SIZE],
-      [GBA_STATE_EWRAM_OFFSET, GBA_STATE_EWRAM_OFFSET + EWRAM_SIZE]
-    ];
-    for (const [scanStart, scanEnd] of scanRanges) for (let offset = scanStart; offset + 12 <= Math.min(scanEnd, memory.length); offset += 4) {
-      const pointers = [readU32(memory, offset), readU32(memory, offset + 4), readU32(memory, offset + 8)];
-      if (!pointers.every((pointer) => pointer >= EWRAM_START && pointer < EWRAM_START + EWRAM_SIZE)) continue;
-      const offsets = pointers.map(gbaOffset);
-      if (new Set(offsets).size !== 3) continue;
-      for (let save1Index = 0; save1Index < 3; save1Index += 1) {
-        for (let save2Index = 0; save2Index < 3; save2Index += 1) {
-          if (save2Index === save1Index) continue;
-          const storageIndex = 3 - save1Index - save2Index;
-          const save1Offset = offsets[save1Index];
-          const save2Offset = offsets[save2Index];
-          const save1Score = scoreSaveBlock1(memory, save1Offset);
-          const save2Score = scoreSaveBlock2(memory, save2Offset);
-          if (save1Score < 18 || save2Score < 6) continue;
-          const x = readS16(memory, save1Offset);
-          const y = readS16(memory, save1Offset + 2);
-          const group = memory[save1Offset + 4];
-          const map = memory[save1Offset + 5];
-          const playerEvent = findPlayerObjectEvent(memory, save1Offset, group, map);
-          const score = (save1Score * 2) + save2Score + (offset >= GBA_STATE_IWRAM_OFFSET && offset < GBA_STATE_IWRAM_OFFSET + IWRAM_SIZE ? 12 : 0);
-          candidates.push({
-            save1: pointers[save1Index],
-            save2: pointers[save2Index],
-            storage: pointers[storageIndex],
-            save1Offset,
-            save2Offset,
-            score,
-            mapId: `${group}.${map}`,
-            x: playerEvent ? playerEvent.x : x,
-            y: playerEvent ? playerEvent.y : y,
-            playerEvent
-          });
-        }
+  function gameLoop(time) {
+    if (time >= state.moveCooldown) {
+      const dir = state.keys.has("arrowup") || state.keys.has("w") ? "up"
+        : state.keys.has("arrowdown") || state.keys.has("s") ? "down"
+          : state.keys.has("arrowleft") || state.keys.has("a") ? "left"
+            : state.keys.has("arrowright") || state.keys.has("d") ? "right" : "";
+      if (dir) {
+        tryMove(dir);
+        state.moveCooldown = time + 145;
       }
     }
-    candidates.sort((a, b) => b.score - a.score);
-    return candidates[0] || null;
+    requestAnimationFrame(gameLoop);
   }
 
-  function flagIsSet(memory, flagsOffset, flagId) {
-    const byte = memory[flagsOffset + (flagId >> 3)] || 0;
-    return Boolean(byte & (1 << (flagId & 7)));
-  }
-
-  function extractBadges(memory, save1Offset) {
-    const flagsOffset = save1Offset + SAVE_BLOCK_1_FLAGS;
-    return BADGE_NAMES.filter((_, index) => flagIsSet(memory, flagsOffset, BADGE_FLAG_START + index));
-  }
-
-  function decryptedSubstruct0(monBytes) {
-    const personality = readU32(monBytes, 0);
-    const otId = readU32(monBytes, 4);
-    if (!personality && !otId) return null;
-    const key = personality ^ otId;
-    const raw = new Uint8Array(48);
-    for (let i = 0; i < 48; i += 4) {
-      const value = readU32(monBytes, 0x20 + i) ^ key;
-      raw[i] = value & 0xff;
-      raw[i + 1] = (value >> 8) & 0xff;
-      raw[i + 2] = (value >> 16) & 0xff;
-      raw[i + 3] = (value >> 24) & 0xff;
-    }
-    const order = POKEMON_SUBSTRUCT_ORDERS[personality % 24];
-    const type0Slot = order.indexOf(0);
-    return type0Slot >= 0 ? raw.subarray(type0Slot * 12, type0Slot * 12 + 12) : null;
-  }
-
-  function extractTeam(memory, save1Offset) {
-    const count = Math.max(0, Math.min(6, memory[save1Offset + SAVE_BLOCK_1_PARTY_COUNT] || 0));
-    const team = [];
-    for (let i = 0; i < count; i += 1) {
-      const monOffset = save1Offset + SAVE_BLOCK_1_PARTY + (i * POKEMON_SIZE);
-      const monBytes = memory.subarray(monOffset, monOffset + POKEMON_SIZE);
-      if (countNonZero(monBytes, 0, monBytes.length) < 8) continue;
-      const sub0 = decryptedSubstruct0(monBytes);
-      if (!sub0) continue;
-      const species = readU16(sub0, 0);
-      if (!species || species > 412) continue;
-      const name = SPECIES_NAMES[species] || `Species ${species}`;
-      const level = monBytes[0x54] || 0;
-      team.push(level ? `${name} Nv.${level}` : name);
-    }
-    return team;
-  }
-
-  function extractPlayTime(memory, save2Offset) {
-    const hours = readU16(memory, save2Offset + 0x0e);
-    const minutes = memory[save2Offset + 0x10] || 0;
-    const seconds = memory[save2Offset + 0x11] || 0;
-    if (hours > 9999 || minutes > 59 || seconds > 59) return "";
-    if (!hours && !minutes && !seconds) return "";
-    return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  }
-
-  function findCurrentMapHeader(memory, save1Offset) {
-    const saveLayoutId = readU16(memory, save1Offset + 0x32);
-    if (!saveLayoutId || saveLayoutId > 0x3ff) return null;
-    const candidates = [];
-    const start = GBA_STATE_EWRAM_OFFSET;
-    const end = Math.min(memory.length - 0x1c, GBA_STATE_EWRAM_OFFSET + EWRAM_SIZE);
-    for (let offset = start; offset <= end; offset += 4) {
-      const mapLayout = readU32(memory, offset);
-      const events = readU32(memory, offset + 4);
-      const scripts = readU32(memory, offset + 8);
-      const connections = readU32(memory, offset + 12);
-      if (!isGbaPointer(mapLayout) || !isNullableGbaPointer(events) || !isNullableGbaPointer(scripts) || !isNullableGbaPointer(connections)) continue;
-      const music = readU16(memory, offset + 0x10);
-      const layoutId = readU16(memory, offset + 0x12);
-      const sectionId = memory[offset + 0x14];
-      const weather = memory[offset + 0x16];
-      const mapType = memory[offset + 0x17];
-      const flags = memory[offset + 0x1a];
-      const battleType = memory[offset + 0x1b];
-      const sectionName = REGION_MAP_SECTION_NAMES[sectionId] || "";
-      if (!sectionName || music > 0x3ff || layoutId > 0x3ff || weather > 40 || mapType > 12 || battleType > 12) continue;
-      if (layoutId !== saveLayoutId || mapLayout < 0x08000000) continue;
-      let score = 0;
-      score += 16;
-      score += mapLayout >= 0x08000000 ? 4 : 0;
-      score += events >= 0x08000000 ? 2 : 0;
-      score += scripts >= 0x08000000 ? 2 : 0;
-      score += connections >= 0x08000000 ? 2 : 0;
-      score += flags ? 1 : 0;
-      candidates.push({ offset, layoutId, sectionId, sectionName, score });
-    }
-    candidates.sort((a, b) => b.score - a.score);
-    return candidates[0]?.score >= 20 ? candidates[0] : null;
-  }
-
-  function describeMap(mapId, x, y, sectionName = "") {
-    if (sectionName) return `${sectionName} - X ${x}, Y ${y}`;
-    const directName = EMERALD_MAP_NAMES[mapId];
-    if (directName) return `${directName} - X ${x}, Y ${y}`;
-    const [group] = mapId.split(".").map(Number);
-    const area = EMERALD_GROUP_AREAS[group] || "Hoenn";
-    return `${area} - Mapa ${mapId} - X ${x}, Y ${y}`;
-  }
-
-  function extractEmeraldDetails(stateLike) {
-    const memory = getStateMemory(stateLike);
-    if (!memory || memory.length < GBA_STATE_SIZE) return {};
-    const blocks = findEmeraldSaveBlocks(memory);
-    if (!blocks || blocks.score < 40) return {};
-    if (countNonZero(memory, blocks.save1Offset, 0x500) <= 10 || countNonZero(memory, blocks.save2Offset, 0x120) <= 10) return {};
-    const x = Number.isFinite(blocks.x) ? blocks.x : readS16(memory, blocks.save1Offset);
-    const y = Number.isFinite(blocks.y) ? blocks.y : readS16(memory, blocks.save1Offset + 2);
-    const mapGroup = memory[blocks.save1Offset + 4] || 0;
-    const mapNum = memory[blocks.save1Offset + 5] || 0;
-    if (x < -MAP_OFFSET || y < -MAP_OFFSET || x > 255 || y > 255) return {};
-    const warpId = memory[blocks.save1Offset + 6] || 0;
-    const mapId = `${mapGroup}.${mapNum}`;
-    const details = {
-      mapName: describeMap(mapId, x, y, ""),
-      mapId,
-      x: Math.max(6, Math.min(94, 10 + ((Math.max(0, x) % 36) * 2.2))),
-      y: Math.max(18, Math.min(92, 20 + ((Math.max(0, y) % 28) * 2.4))),
-      source: "emerald-state",
-      team: extractTeam(memory, blocks.save1Offset),
-      badges: extractBadges(memory, blocks.save1Offset),
-      warpId
-    };
-    const playTime = extractPlayTime(memory, blocks.save2Offset);
-    if (playTime) details.playTime = playTime;
-    return details;
-  }
-
-  function hashCode(value) {
-    return String(value).split("").reduce((hash, char) => ((hash << 5) - hash) + char.charCodeAt(0), 0);
-  }
-
-  async function loadAccount() {
-    try {
-      const response = await fetch("/api/me", { cache: "no-store", credentials: "same-origin" });
-      if (!response.ok) return;
-      const payload = await response.json();
-      playerName = safeName(payload?.user?.name || "Jogador");
-    } catch {}
-  }
-
-  async function loadServerSave() {
-    try {
-      const response = await fetch("/api/concordium/gba-save", { cache: "no-store", credentials: "same-origin" });
-      if (!response.ok) return;
-      const payload = await response.json();
-      const savedMetadata = cleanDetails(payload?.save?.metadata);
-      myDetails = cleanDetails({
-        ...defaultDetails(),
-        mapName: "Concordium GBA em execucao",
-        source: "emulatorjs",
-        saveKind: savedMetadata.saveKind || payload?.save?.saveKind || "",
-        frame: savedMetadata.frame || 0
-      });
-      hasServerState = Boolean(payload?.save?.save && payload?.save?.saveKind === "state");
-      lastSaveBody = {
-        metadata: myDetails,
-        save: payload?.save?.save || "",
-        saveKind: payload?.save?.saveKind || "",
-        hash: payload?.save?.hash || "",
-        format: payload?.save?.format || "server"
-      };
-      setSaveStatus(payload.updatedAt ? "Save automatico ativo" : "Save automatico pronto");
-    } catch {
-      setSaveStatus("Save automatico indisponivel");
-    }
-  }
-
-  async function romStatus() {
-    const response = await fetch("/api/concordium/rom-status", { cache: "no-store", credentials: "same-origin" });
-    if (!response.ok) throw new Error("Nao foi possivel verificar a ROM.");
-    return response.json();
-  }
-
-  function loadScript(src) {
-    return new Promise((resolve, reject) => {
-      const script = document.createElement("script");
-      script.src = src;
-      script.async = true;
-      script.onload = resolve;
-      script.onerror = () => reject(new Error("Nao foi possivel carregar o emulador."));
-      document.body.appendChild(script);
+  function connectSocket() {
+    state.socket = window.io?.({ transports: ["websocket", "polling"] });
+    if (!state.socket) return;
+    state.socket.on("connect", () => {
+      state.socket.emit("concordium-gba:join", { name: safeName(state.user.name), color: state.color, x: details().x, y: details().y, dir: state.world.dir });
+      publish();
     });
-  }
-
-  function toBase64(value) {
-    if (!value) return "";
-    if (typeof value === "string") return value.slice(0, 8_000_000);
-    const source = value instanceof ArrayBuffer
-      ? new Uint8Array(value)
-      : ArrayBuffer.isView(value)
-        ? new Uint8Array(value.buffer, value.byteOffset, value.byteLength)
-        : null;
-    if (!source) return "";
-    let binary = "";
-    const chunkSize = 0x8000;
-    for (let i = 0; i < source.length; i += chunkSize) {
-      binary += String.fromCharCode.apply(null, source.subarray(i, i + chunkSize));
-    }
-    return btoa(binary).slice(0, 8_000_000);
-  }
-
-  function saveBodyFromEvent(eventData, saveKind = "state") {
-    const payload = Array.isArray(eventData) ? eventData[0] || eventData[1] : eventData;
-    const save = rawSaveFromEvent(eventData);
-    const encoded = toBase64(save);
-    if (saveKind !== "state" && lastSaveBody?.saveKind === "state") {
-      return {
-        ...lastSaveBody,
-        metadata: myDetails,
-        hash: payload?.hash || lastSaveBody.hash || "",
-        format: payload?.format || lastSaveBody.format || "emulatorjs-state"
-      };
-    }
-    return {
-      metadata: myDetails,
-      save: encoded,
-      saveKind,
-      hash: payload?.hash || "",
-      format: payload?.format || "emulatorjs"
-    };
-  }
-
-  function scheduleSave(body, immediate = false) {
-    lastSaveBody = {
-      metadata: cleanDetails(body?.metadata || myDetails),
-      save: typeof body?.save === "string" ? body.save : "",
-      saveKind: String(body?.saveKind || ""),
-      hash: String(body?.hash || ""),
-      format: String(body?.format || "emulatorjs")
-    };
-    if (saveTimer) clearTimeout(saveTimer);
-    const delay = immediate ? 0 : 250;
-    saveTimer = setTimeout(() => persistSaveNow(), delay);
-  }
-
-  async function persistSaveNow() {
-    if (!lastSaveBody) return;
-    const body = lastSaveBody;
-    saveTimer = 0;
-    try {
-      const response = await fetch("/api/concordium/gba-save", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-      });
-      lastSaveAt = Date.now();
-      setSaveStatus(response.ok ? "Save automatico salvo agora" : "Falha no save automatico");
-    } catch {
-      setSaveStatus("Falha no save automatico");
-    }
-  }
-
-  function persistSave(eventData, saveKind = "state") {
-    const extracted = saveKind === "state" ? extractEmeraldDetails(rawSaveFromEvent(eventData)) : {};
-    myDetails = cleanDetails({ ...defaultDetails(), ...emulatorFacts(saveKind), ...extracted });
-    publishDetails();
-    scheduleSave(saveBodyFromEvent(eventData, saveKind), true);
-  }
-
-  function persistMetadata(immediate = false) {
-    scheduleSave({
-      metadata: myDetails,
-      save: lastSaveBody?.save || "",
-      saveKind: lastSaveBody?.saveKind || "metadata",
-      hash: lastSaveBody?.hash || "",
-      format: lastSaveBody?.format || "metadata"
-    }, immediate);
-  }
-
-  function publishDetails() {
-    if (socket?.connected) socket.emit("concordium-gba:details", { metadata: myDetails });
-    const self = players.get(myId);
-    if (self) {
-      self.details = myDetails;
-      self.updatedAt = Date.now();
-      players.set(myId, self);
+    state.socket.on("concordium-gba:init", payload => {
+      state.id = payload.id;
+      state.players = new Map((payload.players || []).map(player => [player.id, player]));
       renderRoster();
-    }
-  }
-
-  function configureEmulator() {
-    window.EJS_player = "#game";
-    window.EJS_core = "mgba";
-    window.EJS_gameUrl = ROM_URL;
-    window.EJS_gameName = "Concordium";
-    window.EJS_color = "#f1c75d";
-    window.EJS_backgroundColor = "#000";
-    window.EJS_startOnLoaded = true;
-    window.EJS_fullscreenOnLoaded = false;
-    window.EJS_pathtodata = EMULATOR_DATA_URL;
-    window.EJS_biosUrl = "";
-    window.EJS_fixedSaveInterval = 1000;
-    if (hasServerState) {
-      window.EJS_loadStateURL = `${SAVE_STATE_URL}?t=${Date.now()}`;
-    }
-    window.EJS_Buttons = {
-      playPause: false,
-      play: false,
-      pause: false,
-      restart: false,
-      mute: false,
-      unmute: false,
-      settings: false,
-      fullscreen: true,
-      enterFullscreen: true,
-      exitFullscreen: true,
-      saveState: false,
-      loadState: false,
-      screenRecord: false,
-      gamepad: false,
-      cheat: false,
-      volume: false,
-      saveSavFiles: false,
-      loadSavFiles: false,
-      quickSave: false,
-      quickLoad: false,
-      screenshot: false,
-      cacheManager: false,
-      exitEmulation: false
-    };
-    window.EJS_onGameStart = () => {
-      loading.classList.add("hidden");
-      setSaveStatus(hasServerState ? "Save restaurado da conta" : "Save automatico ativo");
-      setTimeout(captureAnySaveNow, 800);
-    };
-    window.EJS_ready = () => {
-      loading.classList.add("hidden");
-      hideEmulatorChrome();
-    };
-    window.EJS_onSaveUpdate = data => persistSave(data, "savefile");
-    window.EJS_onSaveState = data => persistSave(data, "state");
-    window.EJS_onSaveSaveFiles = data => persistSave(data, "savefile");
-  }
-
-  async function captureStateNow() {
-    const manager = window.EJS_emulator?.gameManager;
-    if (!manager || typeof manager.getState !== "function") return false;
-    try {
-      const state = await manager.getState();
-      const encoded = toBase64(state);
-      if (!encoded) return false;
-      myDetails = cleanDetails({ ...defaultDetails(), ...emulatorFacts("state"), ...extractEmeraldDetails(state) });
-      publishDetails();
-      scheduleSave({
-        metadata: myDetails,
-        save: encoded,
-        saveKind: "state",
-        hash: `state-${Date.now()}`,
-        format: "emulatorjs-state"
-      }, true);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  function captureSaveFileNow() {
-    if (lastSaveBody?.saveKind === "state" && lastSaveBody.save) return false;
-    const manager = window.EJS_emulator?.gameManager;
-    if (!manager) return false;
-    try {
-      if (typeof manager.saveSaveFiles === "function") manager.saveSaveFiles();
-      const saveFile = typeof manager.getSaveFile === "function" ? manager.getSaveFile(false) : null;
-      const encoded = toBase64(saveFile);
-      if (!encoded) return false;
-      myDetails = cleanDetails({ ...defaultDetails(), ...emulatorFacts("savefile") });
-      publishDetails();
-      scheduleSave({
-        metadata: myDetails,
-        save: encoded,
-        saveKind: "savefile",
-        hash: `savefile-${Date.now()}`,
-        format: "emulatorjs-savefile"
-      }, true);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  async function captureAnySaveNow() {
-    const savedState = await captureStateNow();
-    if (savedState) return true;
-    return captureSaveFileNow();
-  }
-
-  function startInstantStateCapture() {
-    setInterval(() => captureAnySaveNow(), STATE_CAPTURE_MS);
-  }
-
-  function hideEmulatorChrome() {
-    const root = document.getElementById("game");
-    if (!root) return;
-    const forbidden = [
-      "cheat", "pause", "play", "restart", "settings", "gamepad", "cache",
-      "screenshot", "record", "mute", "volume", "upload", "file",
-      "save state", "load state", "quick save", "quick load", "save files", "load files"
-    ];
-    root.querySelectorAll("button, [role='button'], input, label, a").forEach(node => {
-      const text = `${node.textContent || ""} ${node.title || ""} ${node.getAttribute("aria-label") || ""}`.toLowerCase();
-      if (text.includes("fullscreen")) return;
-      if (!forbidden.some(key => text.includes(key))) return;
-      node.style.display = "none";
-      node.style.pointerEvents = "none";
     });
-  }
-
-  function upsertPlayer(player, isSelf = false) {
-    if (!player?.id) return;
-    players.set(player.id, {
-      id: player.id,
-      name: safeName(player.name),
-      color: player.color || PLAYER_COLORS[1],
-      details: cleanDetails(player.details),
-      self: isSelf
-    });
-    renderRoster();
-  }
-
-  function removePlayer(id) {
-    players.delete(id);
-    renderRoster();
+    state.socket.on("concordium-gba:player-joined", player => { state.players.set(player.id, player); renderRoster(); });
+    state.socket.on("concordium-gba:player-update", player => { state.players.set(player.id, player); renderRoster(); });
+    state.socket.on("concordium-gba:player-left", id => { state.players.delete(id); renderRoster(); });
   }
 
   function renderRoster() {
-    if (!players.size) {
-      playerList.innerHTML = '<span class="gba-roster-empty">Conectando jogadores...</span>';
-      return;
-    }
     playerList.innerHTML = "";
-    [...players.values()].sort((a, b) => Number(b.self) - Number(a.self) || a.name.localeCompare(b.name)).forEach(player => {
+    const all = [...state.players.values()];
+    all.forEach(player => {
       const button = document.createElement("button");
-      button.type = "button";
-      button.className = `gba-player-pill${player.self ? " self" : ""}`;
-      button.style.setProperty("--player-color", player.color);
-      button.innerHTML = `<i></i><span>${player.self ? "voce" : player.name}</span>`;
+      button.className = "player-pill";
+      button.innerHTML = `<i style="--c:${player.color || "#d94f3d"}"></i><span>${safeName(player.name)}${player.id === state.id ? " (voce)" : ""}</span>`;
       button.addEventListener("click", () => openPlayer(player));
       playerList.appendChild(button);
     });
-    renderOnlineLayer();
   }
 
-  function renderOnlineLayer() {
-    if (!onlineLayer) return;
-    const others = [...players.values()].filter(player => !player.self);
+  function renderOnlineLayer(camX, camY) {
     onlineLayer.innerHTML = "";
-    others.forEach((player, index) => {
-      const details = cleanDetails(player.details);
-      const hasCoords = details.x > 0 || details.y > 0;
-      const x = hasCoords ? Math.max(6, Math.min(94, details.x)) : 12 + (index % 5) * 12;
-      const y = hasCoords ? Math.max(18, Math.min(92, details.y)) : 88 - Math.floor(index / 5) * 12;
-      const avatar = document.createElement("div");
-      avatar.className = "gba-online-avatar";
-      avatar.style.left = `${x}%`;
-      avatar.style.top = `${y}%`;
-      avatar.style.setProperty("--player-color", player.color || "#f1c75d");
-      const label = document.createElement("span");
-      label.className = "gba-online-name";
-      label.textContent = player.name;
-      avatar.appendChild(label);
-      onlineLayer.appendChild(avatar);
+    [...state.players.values()].filter(p => p.id !== state.id).forEach(player => {
+      const d = player.details || {};
+      if (d.mapId !== state.world.map) return;
+      const map = currentMap();
+      const tx = (Number(d.x) - 6) / 88 * Math.max(1, map.w - 1);
+      const ty = (Number(d.y) - 12) / 80 * Math.max(1, map.h - 1);
+      const el = document.createElement("div");
+      el.className = "online-avatar";
+      el.textContent = safeName(player.name);
+      el.style.left = `${((tx * TILE - camX + 16) / canvas.width) * 100}%`;
+      el.style.top = `${((ty * TILE - camY) / canvas.height) * 100}%`;
+      onlineLayer.appendChild(el);
     });
   }
 
   function openPlayer(player) {
-    selectedPlayer = player;
-    const details = cleanDetails(player.details);
-    playerNameEl.textContent = player.self ? `${player.name} (voce)` : player.name;
-    playerMapEl.textContent = usableMapName(details.mapName);
-    playerTeamEl.textContent = details.team.length ? details.team.join(", ") : "Sem equipe lida ainda";
-    playerBadgesEl.textContent = details.badges.length ? details.badges.join(", ") : "Nenhuma insignia lida ainda";
-    playerSyncEl.textContent = [
-      details.saveKind ? `save ${details.saveKind}` : "save aguardando",
-      details.playTime ? `tempo ${details.playTime}` : "",
-      details.saveUpdatedAt ? `atualizado ${new Date(details.saveUpdatedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}` : ""
-    ].filter(Boolean).join(" | ");
-    updateBattleInviteUi(player, details);
-    if (typeof playerDialog.showModal === "function") playerDialog.showModal();
+    const d = player.id === state.id ? details() : (player.details || {});
+    playerNameEl.textContent = `${safeName(player.name)}${player.id === state.id ? " (voce)" : ""}`;
+    playerMapEl.textContent = d.mapName || "Concordium";
+    playerTeamEl.textContent = d.team?.length ? d.team.join(", ") : "Sem equipe ainda";
+    playerBadgesEl.textContent = d.badges?.length ? d.badges.join(", ") : "Nenhuma insignia ainda";
+    playerSyncEl.textContent = d.saveUpdatedAt ? `atualizado ${new Date(d.saveUpdatedAt).toLocaleTimeString("pt-BR")}` : "online";
+    if (playerDialog.showModal) playerDialog.showModal();
     else playerDialog.setAttribute("open", "open");
   }
 
-  function canInviteToBattle(player, details = cleanDetails(player?.details)) {
-    if (!socket?.connected || !player || player.self || !player.id) return false;
-    return myDetails.team.length > 0 && details.team.length > 0;
-  }
-
-  function updateBattleInviteUi(player, details = cleanDetails(player?.details)) {
-    if (!battleInviteBtn || !battleHint) return;
-    const enabled = canInviteToBattle(player, details);
-    battleInviteBtn.hidden = Boolean(player?.self);
-    battleInviteBtn.disabled = !enabled;
-    if (player?.self) {
-      battleHint.textContent = "Esse painel mostra seus dados salvos.";
-    } else if (!myDetails.team.length) {
-      battleHint.textContent = "Sua equipe ainda nao foi lida do save.";
-    } else if (!details.team.length) {
-      battleHint.textContent = "O outro jogador ainda nao tem equipe lida.";
-    } else {
-      battleHint.textContent = "Convide para uma batalha online.";
-    }
-  }
-
-  function sendBattleInvite() {
-    if (!selectedPlayer || !canInviteToBattle(selectedPlayer)) return;
-    socket.emit("concordium-gba:battle-invite", { targetId: selectedPlayer.id });
-    if (battleHint) battleHint.textContent = "Convite enviado. Aguardando aceite.";
-  }
-
-  function askBattleInvite(invite) {
-    const fromName = safeName(invite?.from?.name || "Jogador");
-    const ok = window.confirm(`${fromName} quer batalhar com voce. Aceitar?`);
-    socket.emit("concordium-gba:battle-response", { battleId: invite?.battleId, accept: ok });
-  }
-
-  function renderBattle(state) {
-    if (!state?.battleId) return;
-    activeBattleId = state.battleId;
-    const mine = state.players?.find(player => player.id === myId);
-    const rival = state.players?.find(player => player.id !== myId);
-    if (!mine || !rival) return;
-    battlePanel.hidden = false;
-    battleTitle.textContent = `Batalha contra ${rival.name}`;
-    battleMe.textContent = mine.name === playerName ? "Voce" : mine.name;
-    battleRival.textContent = rival.name;
-    battleMeHp.value = Math.max(0, Math.min(100, mine.hp));
-    battleRivalHp.value = Math.max(0, Math.min(100, rival.hp));
-    battleLog.textContent = state.message || "Batalha em andamento.";
-    const ended = Boolean(state.ended);
-    battleAttack.disabled = ended;
-    battleFlee.disabled = ended;
-  }
-
-  function endBattle(message = "Batalha encerrada.") {
-    activeBattleId = "";
-    if (battleLog) battleLog.textContent = message;
-    if (battleAttack) battleAttack.disabled = true;
-    if (battleFlee) battleFlee.disabled = true;
-  }
-
-  async function startMultiplayer() {
-    await loadScript("/socket.io/socket.io.js");
-    socket = window.io({ transports: ["websocket", "polling"] });
-    socket.on("connect", () => {
-      const color = PLAYER_COLORS[Math.abs(hashCode(playerName)) % PLAYER_COLORS.length];
-      const x = myDetails.x || 50;
-      const y = myDetails.y || 72;
-      socket.emit("concordium-gba:join", { name: playerName, x, y, dir: "down", color });
-      socket.emit("concordium-gba:details", { metadata: myDetails });
+  function bindInput() {
+    window.addEventListener("keydown", event => {
+      const key = event.key.toLowerCase();
+      state.keys.add(key);
+      if ([" ", "enter", "e"].includes(key)) interact();
     });
-    socket.on("disconnect", () => {
-      players.clear();
-      renderRoster();
+    window.addEventListener("keyup", event => state.keys.delete(event.key.toLowerCase()));
+    document.querySelectorAll("[data-dir]").forEach(button => {
+      const dir = button.dataset.dir;
+      const down = event => { event.preventDefault(); state.keys.add(dir === "up" ? "arrowup" : dir === "down" ? "arrowdown" : dir === "left" ? "arrowleft" : "arrowright"); };
+      const up = event => { event.preventDefault(); state.keys.clear(); };
+      button.addEventListener("pointerdown", down);
+      button.addEventListener("pointerup", up);
+      button.addEventListener("pointercancel", up);
     });
-    socket.on("concordium-gba:init", payload => {
-      myId = payload.id;
-      (payload.players || []).forEach(player => upsertPlayer(player, player.id === myId));
-    });
-    socket.on("concordium-gba:player-joined", player => upsertPlayer(player));
-    socket.on("concordium-gba:player-update", player => upsertPlayer(player, player.id === myId));
-    socket.on("concordium-gba:player-left", removePlayer);
-    socket.on("concordium-gba:battle-invite", askBattleInvite);
-    socket.on("concordium-gba:battle-error", message => {
-      if (battleHint) battleHint.textContent = String(message || "Nao foi possivel iniciar a batalha.");
-    });
-    socket.on("concordium-gba:battle-start", renderBattle);
-    socket.on("concordium-gba:battle-update", renderBattle);
-    socket.on("concordium-gba:battle-end", payload => endBattle(payload?.message));
+    talkBtn.addEventListener("click", interact);
+    document.getElementById("dialog-close").addEventListener("click", () => playerDialog.close());
+    fullscreenBtn.addEventListener("click", () => document.documentElement.requestFullscreen?.());
   }
 
-  function updateBridgeDetails(nextDetails) {
-    myDetails = cleanDetails({ ...myDetails, ...(nextDetails || {}) });
-    publishDetails();
-    persistMetadata(true);
-  }
-
-  window.ConcordiumBridge = {
-    update: updateBridgeDetails,
-    getDetails: () => ({ ...myDetails }),
-    saveNow: () => persistMetadata(true),
-    markMap: (mapName, x = 0, y = 0) => updateBridgeDetails({ mapName, x, y }),
-    setTeam: team => updateBridgeDetails({ team }),
-    setBadges: badges => updateBridgeDetails({ badges }),
-    debugExtract: async () => {
-      const manager = window.EJS_emulator?.gameManager;
-      if (!manager || typeof manager.getState !== "function") return {};
-      return extractEmeraldDetails(await manager.getState());
-    }
-  };
-
-  battleInviteBtn?.addEventListener("click", sendBattleInvite);
-  battleAttack?.addEventListener("click", () => {
-    if (activeBattleId && socket?.connected) socket.emit("concordium-gba:battle-action", { battleId: activeBattleId, action: "attack" });
-  });
-  battleFlee?.addEventListener("click", () => {
-    if (activeBattleId && socket?.connected) socket.emit("concordium-gba:battle-action", { battleId: activeBattleId, action: "flee" });
-  });
-  battleClose?.addEventListener("click", () => {
-    battlePanel.hidden = true;
-  });
-
-  document.addEventListener("fullscreenchange", () => {
-    setTimeout(hideEmulatorChrome, 250);
-  });
-
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "hidden") captureAnySaveNow().then(saved => {
-      if (!saved) persistMetadata(true);
-    });
-  });
-
-  window.addEventListener("pagehide", () => {
-    captureAnySaveNow();
-    persistMetadata(true);
-    if (lastSaveBody) {
-      const blob = new Blob([JSON.stringify(lastSaveBody)], { type: "application/json" });
-      navigator.sendBeacon?.("/api/concordium/gba-save", blob);
-    }
-  });
-
-  async function boot() {
+  async function init() {
     try {
-      renderRoster();
-      const status = await romStatus();
-      if (!status.available) {
-        loading.textContent = "ROM nativa nao encontrada.";
-        return;
-      }
-      await loadAccount();
-      await loadServerSave();
-      await startMultiplayer();
-      configureEmulator();
-      await loadScript(LOADER_URL);
-      setTimeout(hideEmulatorChrome, 1200);
-      setInterval(hideEmulatorChrome, 3000);
-      startInstantStateCapture();
-    } catch (error) {
-      loading.textContent = error.message || "Falha ao iniciar Concordium.";
+      await loadProfile();
+      saveStatus.textContent = "Save automatico ativo";
+    } catch {
+      saveStatus.textContent = "Perfil indisponivel";
     }
+    bindInput();
+    connectSocket();
+    render();
+    requestAnimationFrame(gameLoop);
+    if (state.world.map === "truck") openDialog("Mudanca", `${safeName(state.user.name)}, voce chegou. Saia do caminhao para entrar na Vila Raiz.`);
   }
 
-  boot();
+  init();
 })();

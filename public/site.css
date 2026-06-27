@@ -856,10 +856,6 @@ img.feed-avatar {
   background: linear-gradient(90deg, rgba(0, 0, 0, .1), rgba(0, 0, 0, .82)), url("/assets/quiz-ortodoxia-card.png") center/cover;
 }
 
-.ol-game-card.santa-conquista-cover {
-  background: linear-gradient(90deg, rgba(0, 0, 0, .08), rgba(0, 0, 0, .78)), url("/assets/santa-conquista-card.webp") center/cover;
-}
-
 .ol-game-card.concordium-exploracao-cover {
   background: linear-gradient(90deg, rgba(0, 0, 0, .08), rgba(0, 0, 0, .78)), url("/assets/concordium-exploracao-card.png") center/cover;
 }
@@ -1926,10 +1922,6 @@ img.feed-avatar {
 
 .ol-game-card.quiz-cover{
   background:linear-gradient(90deg, rgba(0,0,0,.08), rgba(0,0,0,.78)), url("/assets/quiz-ortodoxia-card.png?v=cards-20260611") center/cover !important;
-}
-
-.ol-game-card.santa-conquista-cover{
-  background:linear-gradient(90deg, rgba(0,0,0,.08), rgba(0,0,0,.78)), url("/assets/santa-conquista-card.webp?v=cards-20260620") center/cover !important;
 }
 
 .ol-game-card.concordium-exploracao-cover{

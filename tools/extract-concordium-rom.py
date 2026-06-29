@@ -19,18 +19,13 @@ BANK_COUNTS = [
     56, 4, 6, 2, 3, 2, 16, 6, 4, 2, 2, 1, 1, 1, 2, 1, 1,
     1, 1, 1, 1, 4, 3, 1, 108, 44, 10, 12, 53, 1, 7, 2, 1, 13,
 ]
-SELECTED_MAPS = [
-    (25, 40),  # IM MOBELWAGEN
-    (0, 9),    # WURZELHEIM
-    (0, 16),   # ROUTE 101
-    (0, 17),   # ROUTE 102
-    (1, 0),
-    (1, 1),
-    (1, 2),
-    (1, 3),
-    (1, 4),
-    (0, 10),   # ROSALTSTADT
-]
+SELECTED_MAPS = (
+    [(0, i) for i in range(BANK_COUNTS[0])]
+    + [(1, i) for i in range(BANK_COUNTS[1])]
+    + [(2, i) for i in range(BANK_COUNTS[2])]
+    + [(3, i) for i in range(BANK_COUNTS[3])]
+    + [(25, 40)]  # IM MOBELWAGEN
+)
 
 DISPLAY_NAMES = {
     "IM MÖBELWAGEN": "Caminhao de Mudanca",
@@ -191,6 +186,46 @@ def draw_metatile(rom: bytes, img: Image.Image, dst_x: int, dst_y: int, metatile
             draw_entry(img, dst_x + px, dst_y + py, entry, primary, secondary, overlay=layer > 0)
 
 
+def make_overworld_sprites(out_path: Path) -> None:
+    sheet = Image.new("RGBA", (16 * 3, 24 * 4), (0, 0, 0, 0))
+    dirs = ["down", "left", "right", "up"]
+    palettes = [
+        {"hair": (71, 42, 21, 255), "skin": (239, 180, 124, 255), "shirt": (214, 72, 142, 255), "pants": (47, 80, 139, 255), "shoe": (29, 39, 61, 255)},
+        {"hair": (48, 30, 17, 255), "skin": (234, 171, 116, 255), "shirt": (80, 122, 181, 255), "pants": (48, 69, 116, 255), "shoe": (28, 35, 55, 255)},
+    ]
+
+    def rect(img: Image.Image, x: int, y: int, w: int, h: int, color: tuple[int, int, int, int]) -> None:
+        for yy in range(y, y + h):
+            for xx in range(x, x + w):
+                if 0 <= xx < img.width and 0 <= yy < img.height:
+                    img.putpixel((xx, yy), color)
+
+    for row, direction in enumerate(dirs):
+        for frame in range(3):
+            ox, oy = frame * 16, row * 24
+            p = palettes[0]
+            step = -1 if frame == 0 else (1 if frame == 2 else 0)
+            rect(sheet, ox + 5, oy + 3, 6, 2, p["hair"])
+            rect(sheet, ox + 4, oy + 5, 8, 3, p["hair"])
+            rect(sheet, ox + 5, oy + 7, 6, 5, p["skin"])
+            if direction == "up":
+                rect(sheet, ox + 4, oy + 6, 8, 5, p["hair"])
+            if direction == "left":
+                rect(sheet, ox + 3, oy + 7, 2, 3, p["hair"])
+            if direction == "right":
+                rect(sheet, ox + 11, oy + 7, 2, 3, p["hair"])
+            rect(sheet, ox + 4, oy + 12, 8, 6, p["shirt"])
+            rect(sheet, ox + 3, oy + 13, 2, 5, p["shirt"])
+            rect(sheet, ox + 11, oy + 13, 2, 5, p["shirt"])
+            rect(sheet, ox + 5, oy + 18, 3, 4, p["pants"])
+            rect(sheet, ox + 8, oy + 18, 3, 4, p["pants"])
+            rect(sheet, ox + 4 + min(step, 0), oy + 22, 4, 2, p["shoe"])
+            rect(sheet, ox + 8 + max(step, 0), oy + 22, 4, 2, p["shoe"])
+            for x, y in [(5, 3), (10, 3), (4, 6), (11, 6), (4, 18), (11, 18)]:
+                sheet.putpixel((ox + x, oy + y), (255, 255, 255, 70))
+    sheet.save(out_path)
+
+
 def map_header(rom: bytes, bank: int, map_no: int) -> int:
     bank_table = ptr(rom, POINTER_TO_MAP_BANKS)
     bank_ptr = ptr(rom, bank_table + bank * 4)
@@ -330,9 +365,16 @@ def main() -> None:
         "sourceRom": rom_path.name,
         "tileSize": 16,
         "atlas": {
-            "src": "/assets/concordium-rom-atlas.png?v=rom-20260626",
+            "src": "/assets/concordium-rom-atlas.png?v=rom-20260629",
             "columns": atlas_cols,
             "rowsPerTilesetPair": atlas_rows_per_pair,
+        },
+        "sprites": {
+            "src": "/assets/concordium-overworld-sprites.png?v=rom-20260629",
+            "width": 16,
+            "height": 24,
+            "frames": 3,
+            "directions": ["down", "left", "right", "up"],
         },
         "start": {"map": "b25_m40", "x": 3, "y": 2, "dir": "right"},
         "fallbackExits": [
@@ -344,6 +386,7 @@ def main() -> None:
     }
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     atlas.save(OUT_DIR / "concordium-rom-atlas.png")
+    make_overworld_sprites(OUT_DIR / "concordium-overworld-sprites.png")
     (OUT_DIR / "concordium-rom-data.json").write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print(f"exported {len(maps)} maps and {len(tileset_pairs)} tileset pairs from {rom_path}")
 

@@ -11,17 +11,23 @@
   const dialogName = document.getElementById("dialog-name");
   const dialogText = document.getElementById("dialog-text");
   const fullscreenBtn = document.getElementById("fullscreen");
+  const menuBtn = document.getElementById("menu");
   const talkBtn = document.getElementById("talk");
   const playerDialog = document.getElementById("player-dialog");
+  const gameMenu = document.getElementById("game-menu");
   const playerNameEl = document.getElementById("player-name");
   const playerMapEl = document.getElementById("player-map");
   const playerTeamEl = document.getElementById("player-team");
   const playerBadgesEl = document.getElementById("player-badges");
   const playerSyncEl = document.getElementById("player-sync");
+  const menuMapEl = document.getElementById("menu-map");
+  const menuTeamEl = document.getElementById("menu-team");
+  const menuBadgesEl = document.getElementById("menu-badges");
 
   const state = {
     data: null,
     atlas: null,
+    sprites: null,
     user: { name: "Jogador" },
     world: null,
     keys: new Set(),
@@ -85,6 +91,14 @@
       img.onerror = reject;
       img.src = state.data.atlas.src;
     });
+    if (state.data.sprites?.src) {
+      state.sprites = await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = state.data.sprites.src;
+      });
+    }
   }
 
   async function loadProfile() {
@@ -138,12 +152,16 @@
   }
 
   function targetFromWarp(sourceMapId, warp) {
+    const source = maps()[sourceMapId];
     const target = maps()[warp.target];
     if (!target) return null;
     const returnWarp = (target.warps || []).find(item => item.target === sourceMapId && item.warpId === warp.warpId)
       || (target.warps || []).find(item => item.target === sourceMapId);
     if (returnWarp) {
-      return { map: target.id, x: returnWarp.x, y: Math.max(0, returnWarp.y - 1) };
+      const leavingInterior = source?.mapType === 8 && target.mapType !== 8;
+      const enteringInterior = source?.mapType !== 8 && target.mapType === 8;
+      const y = leavingInterior ? returnWarp.y + 1 : enteringInterior ? returnWarp.y - 1 : returnWarp.y;
+      return { map: target.id, x: returnWarp.x, y };
     }
     return { map: target.id, x: Math.floor(target.width / 2), y: Math.floor(target.height / 2) };
   }
@@ -154,8 +172,26 @@
     state.world.map = mapId;
     state.world.x = Math.max(0, Math.min(map.width - 1, x));
     state.world.y = Math.max(0, Math.min(map.height - 1, y));
+    if (blocked(map, state.world.x, state.world.y)) {
+      const open = findNearestOpenTile(map, state.world.x, state.world.y);
+      state.world.x = open.x;
+      state.world.y = open.y;
+    }
     saveWorld();
     publish();
+  }
+
+  function findNearestOpenTile(map, x, y) {
+    for (let radius = 0; radius <= 3; radius += 1) {
+      for (let yy = y - radius; yy <= y + radius; yy += 1) {
+        for (let xx = x - radius; xx <= x + radius; xx += 1) {
+          if (xx >= 0 && yy >= 0 && xx < map.width && yy < map.height && (map.collision?.[yy]?.[xx] ?? 0) === 0) {
+            return { x: xx, y: yy };
+          }
+        }
+      }
+    }
+    return { x, y };
   }
 
   function blocked(map, x, y) {
@@ -188,6 +224,17 @@
     const map = currentMap();
     const nx = state.world.x + delta[0];
     const ny = state.world.y + delta[1];
+    const currentWarp = isWarpAt(map, state.world.x, state.world.y);
+    const currentFallback = fallbackExitAt(state.world.x, state.world.y);
+    if (currentWarp && ["up", "down", "left", "right"].includes(dir)) {
+      const target = targetFromWarp(state.world.map, currentWarp);
+      if (target) enterMap(target.map, target.x, target.y);
+      return;
+    }
+    if (currentFallback && ["up", "down", "left", "right"].includes(dir)) {
+      enterMap(currentFallback.to, currentFallback.tx, currentFallback.ty);
+      return;
+    }
     if (tryConnection(map, nx, ny)) return;
     const warp = isWarpAt(map, nx, ny);
     if (warp) {
@@ -223,8 +270,17 @@
     const object = (map.objects || []).find(item => item.x === front.x && item.y === front.y)
       || (map.objects || []).find(item => Math.abs(item.x - state.world.x) + Math.abs(item.y - state.world.y) <= 1);
     if (object) {
-      openDialog("Evento do ROM", `Objeto ${object.localId} do mapa ${map.name}. Os scripts originais vao ser ligados aqui na proxima etapa.`);
+      openDialog(object.graphicsId === 215 ? "Placa" : "Morador", dialogFor(map, object));
     }
+  }
+
+  function dialogFor(map, object) {
+    if (object.graphicsId === 215) return `${map.name}.`;
+    if (map.id === "b25_m40") return "As caixas balancam enquanto a mudanca chega ao destino.";
+    if (map.id === "b0_m9") return "Bem-vindo a Vila Raiz. A rota ao norte leva para a Rota 101.";
+    if (map.id === "b0_m16") return "A grama alta guarda encontros. Siga com cuidado.";
+    if (map.mapType === 8) return "Esta casa ainda esta sendo organizada.";
+    return "Que bom te ver por aqui.";
   }
 
   function openDialog(name, text) {
@@ -273,18 +329,16 @@
   function drawSprite(x, y, color, name, dir = "down") {
     const sx = x * TILE;
     const sy = y * TILE;
+    const spriteMeta = state.data.sprites || { width: 16, height: 24, frames: 3, directions: ["down", "left", "right", "up"] };
+    const directionIndex = Math.max(0, spriteMeta.directions.indexOf(dir));
+    const frame = Math.floor(Date.now() / 180) % spriteMeta.frames;
+    const srcX = frame * spriteMeta.width;
+    const srcY = directionIndex * spriteMeta.height;
     ctx.fillStyle = "rgba(0,0,0,.28)";
-    ctx.fillRect(sx + 7, sy + 26, 18, 4);
-    ctx.fillStyle = "#f1c08a";
-    ctx.fillRect(sx + 11, sy + 6, 10, 9);
-    ctx.fillStyle = color;
-    ctx.fillRect(sx + 9, sy + 15, 14, 12);
-    ctx.fillStyle = "#1f3155";
-    ctx.fillRect(sx + 8, sy + 26, 16, 4);
-    ctx.fillStyle = "#2a160f";
-    ctx.fillRect(sx + 8, sy + 2, 16, 6);
-    if (dir === "left") ctx.fillRect(sx + 7, sy + 8, 4, 3);
-    if (dir === "right") ctx.fillRect(sx + 21, sy + 8, 4, 3);
+    ctx.fillRect(sx + 7, sy + 27, 18, 4);
+    if (state.sprites) {
+      ctx.drawImage(state.sprites, srcX, srcY, spriteMeta.width, spriteMeta.height, sx, sy - 16, 32, 48);
+    }
     if (name) {
       ctx.font = "10px Segoe UI";
       ctx.textAlign = "center";
@@ -405,9 +459,22 @@
     else playerDialog.setAttribute("open", "open");
   }
 
+  function openMenu() {
+    const d = details();
+    menuMapEl.textContent = d.mapName;
+    menuTeamEl.textContent = d.team?.length ? d.team.join(", ") : "Sem equipe ainda";
+    menuBadgesEl.textContent = d.badges?.length ? d.badges.join(", ") : "Nenhuma insignia ainda";
+    if (gameMenu.showModal) gameMenu.showModal();
+    else gameMenu.setAttribute("open", "open");
+  }
+
   function bindInput() {
     window.addEventListener("keydown", event => {
       const key = event.key.toLowerCase();
+      if (key === "m") {
+        openMenu();
+        return;
+      }
       state.keys.add(key);
       const dir = key === "arrowup" || key === "w" ? "up"
         : key === "arrowdown" || key === "s" ? "down"
@@ -432,6 +499,8 @@
     });
     talkBtn.addEventListener("click", interact);
     document.getElementById("dialog-close").addEventListener("click", () => playerDialog.close());
+    document.getElementById("menu-close").addEventListener("click", () => gameMenu.close());
+    menuBtn.addEventListener("click", openMenu);
     fullscreenBtn.addEventListener("click", () => document.documentElement.requestFullscreen?.());
   }
 

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>Concordium</title>
-  <link rel="stylesheet" href="/assets/concordium-exploracao.css?v=20260626b">
+  <link rel="stylesheet" href="/assets/concordium-exploracao.css?v=20260629a">
 </head>
 <body>
   <main class="native-shell">
@@ -15,6 +15,7 @@
         <span id="save-status">Save automatico pronto</span>
         <div id="player-list" class="player-list"></div>
       </section>
+      <button id="menu" class="menu-btn" type="button" aria-label="Menu">MENU</button>
       <button id="fullscreen" class="icon-btn" type="button" aria-label="Tela cheia">[ ]</button>
     </header>
 
@@ -47,7 +48,18 @@
     </dl>
   </dialog>
 
+  <dialog id="game-menu" class="player-dialog">
+    <button id="menu-close" class="dialog-close" type="button">x</button>
+    <h2>Menu</h2>
+    <dl>
+      <div><dt>Mapa</dt><dd id="menu-map">-</dd></div>
+      <div><dt>Equipe</dt><dd id="menu-team">Sem equipe ainda</dd></div>
+      <div><dt>Insignias</dt><dd id="menu-badges">Nenhuma insignia ainda</dd></div>
+      <div><dt>Controle</dt><dd>Setas/WASD andam. Espaco, Enter ou A fala. M abre o menu.</dd></div>
+    </dl>
+  </dialog>
+
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/assets/concordium-exploracao.js?v=20260626b"></script>
+  <script src="/assets/concordium-exploracao.js?v=20260629a"></script>
 </body>
 </html>

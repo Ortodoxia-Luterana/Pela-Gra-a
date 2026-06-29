@@ -15,6 +15,9 @@ MAPS_INI = Path(
 )
 
 POINTER_TO_MAP_BANKS = 0x84AA4
+OBJECT_GFX_POINTERS = 0x505620
+OBJECT_PALETTES = 0x50BBC8
+OBJECT_GFX_COUNT = 253
 BANK_COUNTS = [
     56, 4, 6, 2, 3, 2, 16, 6, 4, 2, 2, 1, 1, 1, 2, 1, 1,
     1, 1, 1, 1, 4, 3, 1, 108, 44, 10, 12, 53, 1, 7, 2, 1, 13,
@@ -186,44 +189,75 @@ def draw_metatile(rom: bytes, img: Image.Image, dst_x: int, dst_y: int, metatile
             draw_entry(img, dst_x + px, dst_y + py, entry, primary, secondary, overlay=layer > 0)
 
 
-def make_overworld_sprites(out_path: Path) -> None:
-    sheet = Image.new("RGBA", (16 * 3, 24 * 4), (0, 0, 0, 0))
-    dirs = ["down", "left", "right", "up"]
-    palettes = [
-        {"hair": (71, 42, 21, 255), "skin": (239, 180, 124, 255), "shirt": (214, 72, 142, 255), "pants": (47, 80, 139, 255), "shoe": (29, 39, 61, 255)},
-        {"hair": (48, 30, 17, 255), "skin": (234, 171, 116, 255), "shirt": (80, 122, 181, 255), "pants": (48, 69, 116, 255), "shoe": (28, 35, 55, 255)},
-    ]
+def read_object_palettes(rom: bytes) -> dict[int, list[tuple[int, int, int, int]]]:
+    palettes: dict[int, list[tuple[int, int, int, int]]] = {}
+    for i in range(32):
+        pal_ptr = ptr(rom, OBJECT_PALETTES + i * 8)
+        tag = u16(rom, OBJECT_PALETTES + i * 8 + 4)
+        if 0 <= pal_ptr < len(rom) - 32:
+            palettes[tag] = [gba_color(u16(rom, pal_ptr + j * 2)) for j in range(16)]
+    return palettes
 
-    def rect(img: Image.Image, x: int, y: int, w: int, h: int, color: tuple[int, int, int, int]) -> None:
-        for yy in range(y, y + h):
-            for xx in range(x, x + w):
-                if 0 <= xx < img.width and 0 <= yy < img.height:
-                    img.putpixel((xx, yy), color)
 
-    for row, direction in enumerate(dirs):
-        for frame in range(3):
-            ox, oy = frame * 16, row * 24
-            p = palettes[0]
-            step = -1 if frame == 0 else (1 if frame == 2 else 0)
-            rect(sheet, ox + 5, oy + 3, 6, 2, p["hair"])
-            rect(sheet, ox + 4, oy + 5, 8, 3, p["hair"])
-            rect(sheet, ox + 5, oy + 7, 6, 5, p["skin"])
-            if direction == "up":
-                rect(sheet, ox + 4, oy + 6, 8, 5, p["hair"])
-            if direction == "left":
-                rect(sheet, ox + 3, oy + 7, 2, 3, p["hair"])
-            if direction == "right":
-                rect(sheet, ox + 11, oy + 7, 2, 3, p["hair"])
-            rect(sheet, ox + 4, oy + 12, 8, 6, p["shirt"])
-            rect(sheet, ox + 3, oy + 13, 2, 5, p["shirt"])
-            rect(sheet, ox + 11, oy + 13, 2, 5, p["shirt"])
-            rect(sheet, ox + 5, oy + 18, 3, 4, p["pants"])
-            rect(sheet, ox + 8, oy + 18, 3, 4, p["pants"])
-            rect(sheet, ox + 4 + min(step, 0), oy + 22, 4, 2, p["shoe"])
-            rect(sheet, ox + 8 + max(step, 0), oy + 22, 4, 2, p["shoe"])
-            for x, y in [(5, 3), (10, 3), (4, 6), (11, 6), (4, 18), (11, 18)]:
-                sheet.putpixel((ox + x, oy + y), (255, 255, 255, 70))
-    sheet.save(out_path)
+def draw_4bpp_frame(data: bytes, width: int, height: int, palette: list[tuple[int, int, int, int]]) -> Image.Image:
+    img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    tiles_x = max(1, width // 8)
+    for tile_index in range(min(len(data) // 32, (width // 8) * (height // 8))):
+        tx = (tile_index % tiles_x) * 8
+        ty = (tile_index // tiles_x) * 8
+        for byte_index, byte in enumerate(data[tile_index * 32 : tile_index * 32 + 32]):
+            px = (byte_index * 2) % 8
+            py = (byte_index * 2) // 8
+            for nibble, color_index in enumerate((byte & 0xF, byte >> 4)):
+                if color_index:
+                    img.putpixel((tx + px + nibble, ty + py), palette[color_index])
+    return img
+
+
+def read_object_frame(rom: bytes, palettes: dict[int, list[tuple[int, int, int, int]]], graphics_id: int, frame: int = 0) -> Image.Image | None:
+    info_ptr = ptr(rom, OBJECT_GFX_POINTERS + graphics_id * 4)
+    if not (0 <= info_ptr < len(rom) - 36):
+        return None
+    palette_tag = u16(rom, info_ptr + 2)
+    width = u16(rom, info_ptr + 8)
+    height = u16(rom, info_ptr + 10)
+    images_ptr = ptr(rom, info_ptr + 28)
+    if palette_tag not in palettes or not (0 <= images_ptr < len(rom) - 8):
+        return None
+    frame_ptr = ptr(rom, images_ptr + frame * 8)
+    frame_size = u32(rom, images_ptr + frame * 8 + 4)
+    if not (0 <= frame_ptr < len(rom)) or frame_size <= 0:
+        return None
+    return draw_4bpp_frame(rom[frame_ptr : frame_ptr + frame_size], width, height, palettes[palette_tag])
+
+
+def make_overworld_sprites(rom: bytes, player_path: Path, object_path: Path) -> None:
+    palettes = read_object_palettes(rom)
+    player_graphics_id = 1
+    player_frames: list[Image.Image] = []
+    for frame in range(8):
+        img = read_object_frame(rom, palettes, player_graphics_id, frame)
+        if img:
+            player_frames.append(img)
+    frame_w = max((img.width for img in player_frames), default=32)
+    frame_h = max((img.height for img in player_frames), default=32)
+    player_sheet = Image.new("RGBA", (frame_w * len(player_frames), frame_h), (0, 0, 0, 0))
+    for i, img in enumerate(player_frames):
+        player_sheet.alpha_composite(img, (i * frame_w + (frame_w - img.width) // 2, frame_h - img.height))
+    player_sheet.save(player_path)
+
+    cell = 48
+    columns = 16
+    rows = (OBJECT_GFX_COUNT + columns - 1) // columns
+    object_sheet = Image.new("RGBA", (columns * cell, rows * cell), (0, 0, 0, 0))
+    for graphics_id in range(OBJECT_GFX_COUNT):
+        img = read_object_frame(rom, palettes, graphics_id, 0)
+        if not img:
+            continue
+        x = (graphics_id % columns) * cell + (cell - img.width) // 2
+        y = (graphics_id // columns) * cell + cell - img.height
+        object_sheet.alpha_composite(img, (x, y))
+    object_sheet.save(object_path)
 
 
 def map_header(rom: bytes, bank: int, map_no: int) -> int:
@@ -370,11 +404,22 @@ def main() -> None:
             "rowsPerTilesetPair": atlas_rows_per_pair,
         },
         "sprites": {
-            "src": "/assets/concordium-overworld-sprites.png?v=rom-20260629",
-            "width": 16,
-            "height": 24,
-            "frames": 3,
-            "directions": ["down", "left", "right", "up"],
+            "src": "/assets/concordium-overworld-sprites.png?v=rom-20260629b",
+            "width": 32,
+            "height": 32,
+            "frames": 8,
+            "directionFrames": {
+                "down": [0, 1],
+                "up": [3, 4],
+                "left": [5, 6],
+                "right": [7, 6],
+            },
+        },
+        "objectSprites": {
+            "src": "/assets/concordium-object-sprites.png?v=rom-20260629b",
+            "width": 48,
+            "height": 48,
+            "columns": 16,
         },
         "start": {"map": "b25_m40", "x": 3, "y": 2, "dir": "right"},
         "fallbackExits": [
@@ -386,7 +431,7 @@ def main() -> None:
     }
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     atlas.save(OUT_DIR / "concordium-rom-atlas.png")
-    make_overworld_sprites(OUT_DIR / "concordium-overworld-sprites.png")
+    make_overworld_sprites(rom, OUT_DIR / "concordium-overworld-sprites.png", OUT_DIR / "concordium-object-sprites.png")
     (OUT_DIR / "concordium-rom-data.json").write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print(f"exported {len(maps)} maps and {len(tileset_pairs)} tileset pairs from {rom_path}")
 

@@ -28,6 +28,7 @@
     data: null,
     atlas: null,
     sprites: null,
+    objectSprites: null,
     user: { name: "Jogador" },
     world: null,
     keys: new Set(),
@@ -82,7 +83,7 @@
   }
 
   async function loadRomData() {
-    const dataResponse = await fetch("/assets/concordium-rom-data.json?v=rom-20260626", { cache: "no-store" });
+    const dataResponse = await fetch("/assets/concordium-rom-data.json?v=rom-20260629b", { cache: "no-store" });
     if (!dataResponse.ok) throw new Error("dados do ROM indisponiveis");
     state.data = await dataResponse.json();
     state.atlas = await new Promise((resolve, reject) => {
@@ -97,6 +98,14 @@
         img.onload = () => resolve(img);
         img.onerror = reject;
         img.src = state.data.sprites.src;
+      });
+    }
+    if (state.data.objectSprites?.src) {
+      state.objectSprites = await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = state.data.objectSprites.src;
       });
     }
   }
@@ -326,18 +335,32 @@
     ctx.drawImage(state.atlas, srcX, srcY, SOURCE_TILE, SOURCE_TILE, sx, sy, TILE, TILE);
   }
 
+  function drawObjectSprite(object) {
+    const meta = state.data.objectSprites;
+    if (!state.objectSprites || !meta) {
+      drawSprite(object.x, object.y, "", "");
+      return;
+    }
+    const sx = object.x * TILE;
+    const sy = object.y * TILE;
+    const srcX = (object.graphicsId % meta.columns) * meta.width;
+    const srcY = Math.floor(object.graphicsId / meta.columns) * meta.height;
+    ctx.fillStyle = "rgba(0,0,0,.26)";
+    ctx.fillRect(sx + 7, sy + 27, 18, 4);
+    ctx.drawImage(state.objectSprites, srcX, srcY, meta.width, meta.height, sx - 8, sy - 16, 48, 48);
+  }
+
   function drawSprite(x, y, color, name, dir = "down") {
     const sx = x * TILE;
     const sy = y * TILE;
-    const spriteMeta = state.data.sprites || { width: 16, height: 24, frames: 3, directions: ["down", "left", "right", "up"] };
-    const directionIndex = Math.max(0, spriteMeta.directions.indexOf(dir));
-    const frame = Math.floor(Date.now() / 180) % spriteMeta.frames;
+    const spriteMeta = state.data.sprites || { width: 32, height: 32, frames: 8, directionFrames: { down: [0], left: [5], right: [7], up: [3] } };
+    const frameSet = spriteMeta.directionFrames?.[dir] || spriteMeta.directionFrames?.down || [0];
+    const frame = frameSet[Math.floor(Date.now() / 180) % frameSet.length];
     const srcX = frame * spriteMeta.width;
-    const srcY = directionIndex * spriteMeta.height;
     ctx.fillStyle = "rgba(0,0,0,.28)";
     ctx.fillRect(sx + 7, sy + 27, 18, 4);
     if (state.sprites) {
-      ctx.drawImage(state.sprites, srcX, srcY, spriteMeta.width, spriteMeta.height, sx, sy - 16, 32, 48);
+      ctx.drawImage(state.sprites, srcX, 0, spriteMeta.width, spriteMeta.height, sx, sy, 32, 32);
     }
     if (name) {
       ctx.font = "10px Segoe UI";
@@ -374,7 +397,7 @@
     });
     (map.objects || []).forEach(object => {
       if (Math.abs(object.x - state.world.x) + Math.abs(object.y - state.world.y) < 18) {
-        drawSprite(object.x, object.y, "#5874ad", "");
+        drawObjectSprite(object);
       }
     });
     drawSprite(state.world.x, state.world.y, state.color, safeName(state.user.name), state.world.dir);

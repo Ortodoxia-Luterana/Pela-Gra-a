@@ -59,7 +59,7 @@
     strategist: {
       name: 'Estrategista',
       line: 'Fusoes deixam a defesa resultante mais forte.',
-      effect: '+10% dano apos fusao'
+      effect: '+10% dano após fusão'
     }
   };
 
@@ -514,7 +514,7 @@
       addEffect(mergeTarget.x, mergeTarget.y, '#f7d775', 44, .45);
       save.activeRun = exportBattle();
       syncHud();
-      scheduleSave('fusao salva');
+      scheduleSave('fusão salva');
       return;
     }
     if (!validPlacement(held.type, point.x, point.y)) return;
@@ -544,7 +544,7 @@
       battle.waveActive = false;
       if (battle.waveIndex >= MAX_WAVES) winBattle();
       save.activeRun = exportBattle();
-      scheduleSave('onda concluida');
+      scheduleSave('onda concluída');
     }
     syncHud();
   }

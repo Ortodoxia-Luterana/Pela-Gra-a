@@ -157,6 +157,8 @@
     heldName: document.getElementById('cg-held-name'),
     cancelHeld: document.getElementById('cg-cancel-held'),
     exitBattle: document.getElementById('cg-exit-battle'),
+    fullscreen: document.getElementById('cg-fullscreen'),
+    orientationFullscreen: document.getElementById('cg-orientation-fullscreen'),
     modal: document.getElementById('cg-modal'),
     modalTitle: document.getElementById('cg-modal-title'),
     modalText: document.getElementById('cg-modal-text'),
@@ -1171,6 +1173,20 @@
     context.closePath();
   }
 
+  async function enterFullscreen() {
+    try {
+      const root = document.documentElement;
+      if (!document.fullscreenElement && root.requestFullscreen) {
+        await root.requestFullscreen({ navigationUI: 'hide' });
+      }
+      if (screen.orientation?.lock) {
+        await screen.orientation.lock('landscape').catch(() => {});
+      }
+    } catch {
+      // Mobile browsers may reject fullscreen/orientation lock outside supported gestures.
+    }
+  }
+
   els.tabCollection.addEventListener('click', () => showView('collection'));
   els.tabBattle.addEventListener('click', () => showView('battle'));
   els.play.addEventListener('click', startNewBattle);
@@ -1189,6 +1205,8 @@
     syncHud();
   });
   els.freePack.addEventListener('click', () => openPack('daily'));
+  els.fullscreen?.addEventListener('click', enterFullscreen);
+  els.orientationFullscreen?.addEventListener('click', enterFullscreen);
   document.querySelectorAll('[data-pack]').forEach(button => {
     button.addEventListener('click', () => openPack(button.dataset.pack));
   });

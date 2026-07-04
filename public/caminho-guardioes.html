@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Caminho dos Guardiões</title>
-  <link rel="stylesheet" href="/assets/caminho-guardioes.css?v=20260704-app">
+  <link rel="stylesheet" href="/assets/caminho-guardioes.css?v=20260704-landscape">
   <script>window.__MUSIC_MODE__ = 'game';</script>
 </head>
 <body>
@@ -19,6 +19,7 @@
       <nav class="cg-tabs" aria-label="Telas do jogo">
         <button id="cg-tab-collection" type="button" class="active">Acampamento</button>
         <button id="cg-tab-battle" type="button">Campo</button>
+        <button id="cg-fullscreen" type="button">Tela cheia</button>
       </nav>
     </header>
 
@@ -122,6 +123,15 @@
     </div>
   </main>
 
-  <script src="/assets/caminho-guardioes.js?v=20260704-app"></script>
+  <aside class="cg-orientation-lock" aria-label="Orientação obrigatória">
+    <div>
+      <span>↻</span>
+      <h1>Vire o celular</h1>
+      <p>Caminho dos Guardiões foi feito para jogar deitado. Assim o mapa, as ondas e os comandos ficam em uma única tela.</p>
+      <button id="cg-orientation-fullscreen" class="cg-primary" type="button">Abrir em tela cheia</button>
+    </div>
+  </aside>
+
+  <script src="/assets/caminho-guardioes.js?v=20260704-landscape"></script>
 </body>
 </html>

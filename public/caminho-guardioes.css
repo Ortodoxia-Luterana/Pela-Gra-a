@@ -182,6 +182,11 @@ button:disabled {
   padding: .55rem .78rem;
 }
 
+#cg-fullscreen {
+  border-color: rgba(244, 223, 177, .34);
+  background: rgba(5, 16, 20, .62);
+}
+
 .cg-view {
   display: none;
   margin-top: .75rem;
@@ -604,6 +609,10 @@ button:disabled {
   line-height: 1.45;
 }
 
+.cg-orientation-lock {
+  display: none;
+}
+
 @media (max-width: 1160px) {
   .cg-command-room {
     grid-template-columns: minmax(0, 1fr) minmax(300px, .8fr);
@@ -685,6 +694,78 @@ button:disabled {
   }
 }
 
+@media (orientation: portrait) and (max-width: 900px) {
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .cg-shell {
+    height: 100vh;
+    min-height: 100vh;
+    overflow: hidden;
+    filter: blur(8px) saturate(.75) brightness(.6);
+    pointer-events: none;
+  }
+
+  .cg-orientation-lock {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: grid;
+    place-items: center;
+    padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+    background:
+      linear-gradient(180deg, rgba(2, 8, 10, .72), rgba(2, 8, 10, .94)),
+      url("/assets/caminho-guardioes-card.png") center/cover;
+  }
+
+  .cg-orientation-lock > div {
+    width: min(420px, 100%);
+    display: grid;
+    justify-items: center;
+    gap: .85rem;
+    border: 1px solid var(--cg-line-hot);
+    border-radius: 8px;
+    background: rgba(7, 16, 20, .86);
+    padding: 1.2rem;
+    text-align: center;
+    box-shadow: var(--cg-shadow);
+    backdrop-filter: blur(12px);
+  }
+
+  .cg-orientation-lock span {
+    display: grid;
+    place-items: center;
+    width: 74px;
+    height: 74px;
+    border: 1px solid rgba(255, 210, 102, .5);
+    border-radius: 999px;
+    color: var(--cg-sun);
+    font-size: 3rem;
+    line-height: 1;
+  }
+
+  .cg-orientation-lock h1 {
+    margin: 0;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 2.2rem;
+    color: var(--cg-paper);
+  }
+
+  .cg-orientation-lock p {
+    margin: 0;
+    color: var(--cg-soft);
+    line-height: 1.45;
+  }
+
+  .cg-orientation-lock button {
+    width: min(280px, 100%);
+  }
+}
+
 @media (orientation: landscape) and (max-height: 540px) {
   html,
   body {
@@ -702,7 +783,7 @@ button:disabled {
     right: .3rem;
     z-index: 10;
     min-height: 48px;
-    grid-template-columns: 40px auto minmax(120px, 1fr) auto;
+    grid-template-columns: 40px auto minmax(90px, 1fr) auto;
     gap: .45rem;
     padding: .28rem .42rem;
   }
@@ -729,7 +810,7 @@ button:disabled {
   .cg-tabs button {
     min-height: 34px;
     padding: .36rem .5rem;
-    font-size: .78rem;
+    font-size: .72rem;
   }
 
   .cg-view {

@@ -856,6 +856,10 @@ img.feed-avatar {
   background: linear-gradient(90deg, rgba(0, 0, 0, .1), rgba(0, 0, 0, .82)), url("/assets/quiz-ortodoxia-card.png") center/cover;
 }
 
+.ol-game-card.caminho-guardioes-cover {
+  background: linear-gradient(90deg, rgba(0, 0, 0, .05), rgba(0, 0, 0, .78)), url("/assets/caminho-guardioes-card.png") center/cover;
+}
+
 .ol-game-card.concordium-exploracao-cover {
   background: linear-gradient(90deg, rgba(0, 0, 0, .08), rgba(0, 0, 0, .78)), url("/assets/concordium-exploracao-card.png") center/cover;
 }
@@ -1922,6 +1926,10 @@ img.feed-avatar {
 
 .ol-game-card.quiz-cover{
   background:linear-gradient(90deg, rgba(0,0,0,.08), rgba(0,0,0,.78)), url("/assets/quiz-ortodoxia-card.png?v=cards-20260611") center/cover !important;
+}
+
+.ol-game-card.caminho-guardioes-cover{
+  background:linear-gradient(90deg, rgba(0,0,0,.06), rgba(0,0,0,.80)), url("/assets/caminho-guardioes-card.png?v=cards-20260704") center/cover !important;
 }
 
 .ol-game-card.concordium-exploracao-cover{

@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Caminho dos Guardiões</title>
+  <link rel="stylesheet" href="/assets/caminho-guardioes.css?v=20260704">
+  <script>window.__MUSIC_MODE__ = 'game';</script>
+</head>
+<body>
+  <main class="cg-shell">
+    <header class="cg-topbar">
+      <a class="cg-back" href="/" aria-label="Voltar ao hub">‹</a>
+      <div>
+        <strong>Caminho dos Guardiões</strong>
+        <span id="cg-save-status">Carregando save...</span>
+      </div>
+      <nav class="cg-tabs" aria-label="Telas">
+        <button id="cg-tab-collection" type="button" class="active">Coleção</button>
+        <button id="cg-tab-battle" type="button">Alexandria</button>
+      </nav>
+    </header>
+
+    <section id="cg-collection" class="cg-view active" aria-label="Coleção e build">
+      <div class="cg-hero">
+        <div>
+          <p>Arquivo de Alexandria</p>
+          <h1>Caminho dos Guardiões</h1>
+        </div>
+        <button id="cg-play" type="button">Jogar fase</button>
+      </div>
+
+      <div class="cg-meta-grid">
+        <article class="cg-panel">
+          <div class="cg-panel-head">
+            <h2>Build equipada</h2>
+            <span>4/4</span>
+          </div>
+          <div id="cg-build-list" class="cg-build-list"></div>
+        </article>
+
+        <article class="cg-panel">
+          <div class="cg-panel-head">
+            <h2>Carteira</h2>
+            <span id="cg-wallet">0 denários</span>
+          </div>
+          <div class="cg-pack-row">
+            <button id="cg-free-pack" type="button">Pacote diário</button>
+            <button data-pack="common" type="button">Comum</button>
+            <button data-pack="rare" type="button">Raro</button>
+            <button data-pack="epic" type="button">Épico</button>
+          </div>
+          <div id="cg-pack-result" class="cg-pack-result"></div>
+        </article>
+
+        <article class="cg-panel">
+          <div class="cg-panel-head">
+            <h2>Classe ativa</h2>
+            <span id="cg-class-points">Nível 1</span>
+          </div>
+          <div id="cg-class-list" class="cg-class-list"></div>
+        </article>
+      </div>
+
+      <section class="cg-panel">
+        <div class="cg-panel-head">
+          <h2>Defesas</h2>
+          <span>Fragmentos viram atributos</span>
+        </div>
+        <div id="cg-defense-list" class="cg-defense-list"></div>
+      </section>
+    </section>
+
+    <section id="cg-battle" class="cg-view cg-battle-view" aria-label="Fase Alexandria">
+      <div class="cg-stage-wrap">
+        <canvas id="cg-canvas" width="1600" height="900" aria-label="Mapa de Alexandria"></canvas>
+        <div class="cg-battle-hud">
+          <div class="cg-stat"><span>Arquivo</span><strong id="cg-hp">20/20</strong></div>
+          <div class="cg-stat"><span>Onda</span><strong id="cg-wave">0/5</strong></div>
+          <div class="cg-stat"><span>Fase</span><strong id="cg-battle-money">120</strong></div>
+        </div>
+      </div>
+
+      <footer class="cg-command-bar">
+        <button id="cg-start-wave" type="button">Iniciar onda</button>
+        <button id="cg-buy" type="button">Comprar</button>
+        <div class="cg-held">
+          <span id="cg-buy-cost">45 denários</span>
+          <strong id="cg-held-name">Sem defesa na mão</strong>
+        </div>
+        <button id="cg-cancel-held" type="button">Cancelar</button>
+        <button id="cg-exit-battle" type="button">Coleção</button>
+      </footer>
+    </section>
+
+    <div id="cg-modal" class="cg-modal" hidden>
+      <div class="cg-modal-card">
+        <h2 id="cg-modal-title">Vitória</h2>
+        <p id="cg-modal-text"></p>
+        <button id="cg-modal-ok" type="button">Continuar</button>
+      </div>
+    </div>
+  </main>
+
+  <script src="/assets/caminho-guardioes.js?v=20260704"></script>
+</body>
+</html>

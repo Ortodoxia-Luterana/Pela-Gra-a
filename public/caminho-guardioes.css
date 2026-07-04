@@ -1,0 +1,537 @@
+:root {
+  color-scheme: dark;
+  --cg-bg: #120d08;
+  --cg-ink: #fff2cf;
+  --cg-muted: #d9c18f;
+  --cg-bronze: #b8792d;
+  --cg-gold: #f4c86c;
+  --cg-red: #a93c2b;
+  --cg-panel: rgba(36, 24, 13, .86);
+  --cg-panel-2: rgba(255, 236, 188, .12);
+  --cg-line: rgba(249, 207, 115, .42);
+  --cg-shadow: 0 18px 52px rgba(0, 0, 0, .42);
+  font-family: "Trebuchet MS", "Segoe UI", Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  background: var(--cg-bg);
+  color: var(--cg-ink);
+  overflow-x: hidden;
+}
+
+button,
+a {
+  font: inherit;
+}
+
+button {
+  border: 1px solid rgba(255, 226, 142, .56);
+  border-radius: 8px;
+  background: linear-gradient(#f6d276, #c98828);
+  color: #1f1508;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  min-height: 44px;
+  padding: .72rem 1rem;
+  cursor: pointer;
+  box-shadow: inset 0 1px rgba(255, 255, 255, .45), 0 10px 22px rgba(0, 0, 0, .25);
+}
+
+button:disabled {
+  opacity: .48;
+  cursor: not-allowed;
+  filter: saturate(.6);
+}
+
+.cg-shell {
+  min-height: 100vh;
+  background:
+    linear-gradient(180deg, rgba(10, 7, 4, .68), rgba(10, 7, 4, .94)),
+    url("/assets/caminho-guardioes-card.png") center/cover fixed;
+  padding: .7rem;
+}
+
+.cg-topbar {
+  min-height: 68px;
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .7rem;
+  border: 1px solid var(--cg-line);
+  border-radius: 8px;
+  background: rgba(9, 12, 11, .82);
+  padding: .55rem .75rem;
+  box-shadow: var(--cg-shadow);
+}
+
+.cg-back {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(255, 226, 142, .45);
+  border-radius: 8px;
+  color: var(--cg-gold);
+  text-decoration: none;
+  font-size: 2rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.cg-topbar strong {
+  display: block;
+  color: var(--cg-gold);
+  text-transform: uppercase;
+  font-size: .92rem;
+}
+
+.cg-topbar span {
+  color: #fff7dd;
+  font-size: .82rem;
+}
+
+.cg-tabs {
+  display: flex;
+  gap: .45rem;
+}
+
+.cg-tabs button {
+  min-height: 38px;
+  padding: .55rem .8rem;
+  background: rgba(255, 242, 207, .08);
+  color: var(--cg-ink);
+  box-shadow: none;
+}
+
+.cg-tabs button.active {
+  background: linear-gradient(#f6d276, #c98828);
+  color: #1f1508;
+}
+
+.cg-view {
+  display: none;
+  margin-top: .7rem;
+}
+
+.cg-view.active {
+  display: block;
+}
+
+.cg-hero {
+  min-height: 260px;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid var(--cg-line);
+  border-radius: 8px;
+  padding: 1.25rem;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, .18), rgba(0, 0, 0, .82)),
+    url("/assets/caminho-guardioes-card.png") center/cover;
+  box-shadow: var(--cg-shadow);
+}
+
+.cg-hero p,
+.cg-panel-head span,
+.cg-card small,
+.cg-pack-result,
+.cg-held span,
+.cg-stat span {
+  color: var(--cg-muted);
+  margin: 0;
+}
+
+.cg-hero h1 {
+  margin: .2rem 0 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2.4rem, 8vw, 5rem);
+  line-height: .94;
+  color: #fff3c7;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, .55);
+}
+
+.cg-meta-grid {
+  display: grid;
+  grid-template-columns: 1.15fr .95fr .9fr;
+  gap: .75rem;
+  margin-top: .75rem;
+}
+
+.cg-panel {
+  border: 1px solid var(--cg-line);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 247, 221, .08), rgba(68, 39, 13, .10)),
+    var(--cg-panel);
+  padding: .9rem;
+  box-shadow: var(--cg-shadow);
+}
+
+.cg-panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .8rem;
+  margin-bottom: .75rem;
+}
+
+.cg-panel h2 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.25rem;
+}
+
+.cg-build-list,
+.cg-class-list,
+.cg-defense-list {
+  display: grid;
+  gap: .65rem;
+}
+
+.cg-build-list {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.cg-defense-list {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.cg-card {
+  position: relative;
+  min-height: 112px;
+  border: 1px solid rgba(255, 222, 141, .26);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 78% 18%, rgba(244, 200, 108, .22), transparent 36%),
+    linear-gradient(145deg, rgba(255, 241, 196, .16), rgba(23, 16, 10, .68));
+  padding: .75rem;
+  overflow: hidden;
+}
+
+.cg-card strong {
+  display: block;
+  margin-top: .45rem;
+  font-size: 1rem;
+}
+
+.cg-card .cg-icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 236, 188, .12);
+  border: 1px solid rgba(255, 226, 142, .24);
+}
+
+.cg-rarity {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: .18rem .45rem;
+  border-radius: 999px;
+  font-size: .72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: #201203;
+  background: #e9c06c;
+}
+
+.cg-rarity.rare {
+  background: #71c8ff;
+}
+
+.cg-rarity.epic {
+  background: #cc8dff;
+}
+
+.cg-upgrades {
+  display: grid;
+  gap: .42rem;
+  margin-top: .7rem;
+}
+
+.cg-upgrades button {
+  min-height: 34px;
+  padding: .35rem .5rem;
+  text-transform: none;
+  font-size: .8rem;
+  text-align: left;
+}
+
+.cg-pack-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .55rem;
+}
+
+.cg-pack-row button {
+  min-height: 48px;
+}
+
+.cg-pack-result {
+  min-height: 30px;
+  margin-top: .7rem;
+  font-size: .88rem;
+}
+
+.cg-class-list {
+  grid-template-columns: 1fr;
+}
+
+.cg-class-card {
+  text-align: left;
+  background: rgba(255, 242, 207, .08);
+  color: var(--cg-ink);
+  box-shadow: none;
+  text-transform: none;
+}
+
+.cg-class-card.active {
+  background: linear-gradient(135deg, rgba(247, 210, 118, .98), rgba(190, 114, 31, .98));
+  color: #201203;
+}
+
+.cg-stage-wrap {
+  position: relative;
+  width: min(100%, calc((100vh - 142px) * 16 / 9));
+  margin: 0 auto;
+  aspect-ratio: 16 / 9;
+  border: 1px solid var(--cg-line);
+  border-radius: 8px;
+  background: #050403;
+  overflow: hidden;
+  box-shadow: var(--cg-shadow);
+  touch-action: none;
+}
+
+#cg-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: crosshair;
+}
+
+.cg-battle-hud {
+  position: absolute;
+  top: .75rem;
+  left: .75rem;
+  right: .75rem;
+  display: flex;
+  gap: .5rem;
+  pointer-events: none;
+}
+
+.cg-stat {
+  min-width: 116px;
+  border: 1px solid rgba(255, 226, 142, .38);
+  border-radius: 8px;
+  background: rgba(16, 11, 7, .72);
+  padding: .48rem .6rem;
+}
+
+.cg-stat strong {
+  display: block;
+  font-size: 1rem;
+}
+
+.cg-command-bar {
+  width: min(100%, calc((100vh - 142px) * 16 / 9));
+  min-height: 72px;
+  margin: .55rem auto 0;
+  display: grid;
+  grid-template-columns: 150px 150px minmax(180px, 1fr) 128px 118px;
+  gap: .55rem;
+  align-items: center;
+  border: 1px solid var(--cg-line);
+  border-radius: 8px;
+  background: rgba(11, 8, 5, .88);
+  padding: .55rem;
+  box-shadow: var(--cg-shadow);
+}
+
+.cg-held {
+  min-height: 50px;
+  display: grid;
+  align-content: center;
+  border: 1px solid rgba(255, 226, 142, .24);
+  border-radius: 8px;
+  background: rgba(255, 242, 207, .08);
+  padding: .4rem .65rem;
+}
+
+.cg-held strong {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.cg-modal {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, .62);
+  z-index: 20;
+  padding: 1rem;
+}
+
+.cg-modal[hidden] {
+  display: none;
+}
+
+.cg-modal-card {
+  width: min(460px, 100%);
+  border: 1px solid var(--cg-line);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 245, 213, .16), transparent),
+    #211408;
+  padding: 1.1rem;
+  box-shadow: var(--cg-shadow);
+}
+
+.cg-modal-card h2 {
+  margin: 0 0 .5rem;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 2rem;
+}
+
+.cg-modal-card p {
+  color: #f5e6bd;
+  line-height: 1.45;
+}
+
+@media (max-width: 980px) {
+  .cg-shell {
+    padding: .45rem;
+  }
+
+  .cg-topbar {
+    grid-template-columns: 46px minmax(0, 1fr);
+  }
+
+  .cg-tabs {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .cg-tabs button {
+    flex: 1;
+  }
+
+  .cg-hero {
+    min-height: 210px;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .cg-meta-grid,
+  .cg-defense-list {
+    grid-template-columns: 1fr;
+  }
+
+  .cg-build-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cg-stage-wrap {
+    width: 100%;
+  }
+
+  .cg-command-bar {
+    width: 100%;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .cg-held {
+    grid-column: 1 / -1;
+    order: -1;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  html,
+  body {
+    overflow: hidden;
+  }
+
+  .cg-shell {
+    padding: .35rem;
+  }
+
+  .cg-topbar {
+    min-height: 50px;
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+    padding: .32rem .45rem;
+  }
+
+  .cg-tabs {
+    grid-column: auto;
+  }
+
+  .cg-tabs button,
+  .cg-back {
+    min-height: 36px;
+    height: 36px;
+  }
+
+  .cg-view {
+    margin-top: .35rem;
+  }
+
+  .cg-battle-view.active {
+    height: calc(100vh - 58px);
+    overflow: hidden;
+  }
+
+  .cg-stage-wrap {
+    width: min(100%, calc((100vh - 70px) * 16 / 9));
+  }
+
+  .cg-command-bar {
+    position: fixed;
+    left: 50%;
+    bottom: .35rem;
+    z-index: 8;
+    width: min(96vw, calc((100vh - 70px) * 16 / 9));
+    min-height: 48px;
+    transform: translateX(-50%);
+    grid-template-columns: 104px 104px minmax(128px, 1fr) 88px 78px;
+    padding: .38rem;
+  }
+
+  .cg-command-bar button {
+    min-height: 38px;
+    padding: .45rem .5rem;
+    font-size: .68rem;
+  }
+
+  .cg-held {
+    grid-column: auto;
+    order: 0;
+    min-height: 38px;
+    padding: .25rem .45rem;
+    font-size: .76rem;
+  }
+
+  .cg-battle-hud {
+    top: .45rem;
+    left: .45rem;
+  }
+
+  .cg-stat {
+    min-width: 96px;
+    padding: .32rem .45rem;
+  }
+}

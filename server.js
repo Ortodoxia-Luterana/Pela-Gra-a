@@ -14,11 +14,12 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v3.27.0-quiz-online';
+const GAME_VERSION = 'v3.28.0-caminho-guardioes';
 const GAME_ID = 'pela-graca-1904';
 const CRONICAS_GAME_ID = 'cronicas-do-levante';
 const LUTHER_MATCH_GAME_ID = 'luther-metch';
 const QUIZ_GAME_ID = 'quiz-ortodoxia';
+const CAMINHO_GUARDIOES_GAME_ID = 'caminho-dos-guardioes';
 const CONCORDIUM_GAME_ID = 'concordium-first-age';
 const CONCORDIUM_EXPLORACAO_GAME_ID = 'concordium-exploracao';
 const CONCORDIUM_ACCESS_COOKIE = 'concordium_access';
@@ -120,6 +121,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS game_rankings (user_id TEXT NOT NULL, game_id TEXT NOT NULL, user_name TEXT NOT NULL, save_name TEXT NOT NULL, year INTEGER NOT NULL, month INTEGER NOT NULL, total_churches INTEGER NOT NULL, total_members REAL NOT NULL, doctrine_correct INTEGER NOT NULL, reached_final INTEGER NOT NULL, state_churches_json TEXT NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY (user_id, game_id), FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS luther_match_rankings (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, level INTEGER NOT NULL, best_level INTEGER NOT NULL, completed_levels INTEGER NOT NULL, score INTEGER NOT NULL, max_combo INTEGER NOT NULL DEFAULT 0, luther_pair_used INTEGER NOT NULL DEFAULT 0, solas_pair_used INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS cronicas_saves (user_id TEXT PRIMARY KEY, state_json TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
+  CREATE TABLE IF NOT EXISTS caminho_guardioes_saves (user_id TEXT PRIMARY KEY, state_json TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS concordium_profiles (user_id TEXT PRIMARY KEY, profile_json TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS concordium_gba_saves (user_id TEXT PRIMARY KEY, save_json TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS platform_presence (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, avatar_data TEXT, location TEXT NOT NULL, game_id TEXT NOT NULL, last_seen TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
@@ -204,6 +206,7 @@ const deleteGameRankingsForUser = db.prepare('DELETE FROM game_rankings WHERE us
 const deleteAchievementsForUser = db.prepare('DELETE FROM user_achievements WHERE user_id = ?');
 const deleteLutherRankingForUser = db.prepare('DELETE FROM luther_match_rankings WHERE user_id = ?');
 const deleteCronicasForUser = db.prepare('DELETE FROM cronicas_saves WHERE user_id = ?');
+const deleteCaminhoGuardioesForUser = db.prepare('DELETE FROM caminho_guardioes_saves WHERE user_id = ?');
 const deleteConcordiumForUser = db.prepare('DELETE FROM concordium_profiles WHERE user_id = ?');
 const deleteConcordiumGbaSaveForUser = db.prepare('DELETE FROM concordium_gba_saves WHERE user_id = ?');
 const deletePlatformPresenceForUser = db.prepare('DELETE FROM platform_presence WHERE user_id = ?');
@@ -220,6 +223,13 @@ const upsertCronicasSave = db.prepare(`
   ON CONFLICT(user_id) DO UPDATE SET state_json = excluded.state_json, updated_at = excluded.updated_at
 `);
 const deleteCronicasSave = db.prepare('DELETE FROM cronicas_saves WHERE user_id = ?');
+const getCaminhoGuardioesSave = db.prepare('SELECT * FROM caminho_guardioes_saves WHERE user_id = ?');
+const upsertCaminhoGuardioesSave = db.prepare(`
+  INSERT INTO caminho_guardioes_saves (user_id, state_json, created_at, updated_at)
+  VALUES (?, ?, ?, ?)
+  ON CONFLICT(user_id) DO UPDATE SET state_json = excluded.state_json, updated_at = excluded.updated_at
+`);
+const deleteCaminhoGuardioesSave = db.prepare('DELETE FROM caminho_guardioes_saves WHERE user_id = ?');
 const getConcordiumProfile = db.prepare('SELECT * FROM concordium_profiles WHERE user_id = ?');
 const upsertConcordiumProfile = db.prepare(`
   INSERT INTO concordium_profiles (user_id, profile_json, created_at, updated_at)
@@ -332,6 +342,7 @@ function presenceForPath(pathname) {
   if (pathname === '/luther-metch' || pathname === '/match3-luterano' || pathname.startsWith('/api/luther-metch')) return normalizeGamePresence(LUTHER_MATCH_GAME_ID);
   if (pathname === '/quiz-ortodoxia' || pathname.startsWith('/api/quiz')) return normalizeGamePresence(QUIZ_GAME_ID);
   if (pathname === '/cronicas-do-levante' || pathname.startsWith('/api/cronicas')) return normalizeGamePresence(CRONICAS_GAME_ID);
+  if (pathname === '/caminho-dos-guardioes' || pathname.startsWith('/api/caminho-guardioes')) return normalizeGamePresence(CAMINHO_GUARDIOES_GAME_ID);
   if (pathname === '/concordium-exploracao' || pathname.startsWith('/api/concordium')) return normalizeGamePresence(CONCORDIUM_EXPLORACAO_GAME_ID);
   if (pathname === '/play' || pathname === '/game' || pathname.startsWith('/api/saves')) return normalizeGamePresence(GAME_ID);
   return normalizeGamePresence('hub');
@@ -545,6 +556,7 @@ function cleanupNonPlayerAccounts() {
       deleteAchievementsForUser.run(user.id);
       deleteLutherRankingForUser.run(user.id);
       deleteCronicasForUser.run(user.id);
+      deleteCaminhoGuardioesForUser.run(user.id);
       deleteConcordiumForUser.run(user.id);
       deleteConcordiumGbaSaveForUser.run(user.id);
       deletePlatformPresenceForUser.run(user.id);
@@ -1272,6 +1284,13 @@ async function handleApi(req, res, url, user) {
           status: 'prototype',
           playUrl: '/quiz-ortodoxia',
           rankingUrl: '/?section=ranking&game=quiz-ortodoxia'
+        },
+        {
+          id: CAMINHO_GUARDIOES_GAME_ID,
+          title: 'Caminho dos Guardioes',
+          status: 'prototype',
+          playUrl: '/caminho-dos-guardioes',
+          rankingUrl: null
         }
       ]
     });
@@ -1577,6 +1596,35 @@ async function handleApi(req, res, url, user) {
     json(res, 405, { error: 'Método não permitido' });
     return;
   }
+  if (url.pathname === '/api/caminho-guardioes/save') {
+    const save = getCaminhoGuardioesSave.get(user.id);
+    const savedState = safeJsonParse(save?.state_json, null);
+    if (req.method === 'GET') {
+      json(res, 200, {
+        gameId: CAMINHO_GUARDIOES_GAME_ID,
+        name: 'Caminho dos Guardioes',
+        user: { id: user.id, name: user.name },
+        state: savedState,
+        updatedAt: save?.updated_at || null
+      });
+      return;
+    }
+    if (req.method === 'PUT' || req.method === 'POST') {
+      const payload = safeJsonParse(await readBody(req) || '{}', {});
+      const state = payload?.state || null;
+      const now = new Date().toISOString();
+      upsertCaminhoGuardioesSave.run(user.id, JSON.stringify(state), save?.created_at || now, now);
+      json(res, 200, { ok: true, updatedAt: now });
+      return;
+    }
+    if (req.method === 'DELETE') {
+      deleteCaminhoGuardioesSave.run(user.id);
+      json(res, 200, { ok: true });
+      return;
+    }
+    json(res, 405, { error: 'Metodo nao permitido' });
+    return;
+  }
   const match = url.pathname.match(/^\/api\/saves\/([^/]+)$/);
   if (!match) { json(res, 404, { error: 'API não encontrada' }); return; }
   const id = match[1]; const save = getSave.get(id, user.id);
@@ -1629,6 +1677,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   const saves = new Map(getSavesByUser.all(user.id).map(save => [save.slot, save]));
   const mainSave = saves.get(1);
   const cronicasSave = getCronicasSave.get(user.id);
+  const caminhoGuardioesSave = getCaminhoGuardioesSave.get(user.id);
   const player = playerStatsFromSave(mainSave, user.id);
   const stats = player.stats;
   const cronicasState = safeJsonParse(cronicasSave?.state_json, null);
@@ -1684,6 +1733,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     <article class="ol-game-card cronicas-cover"><div><h4>Crônicas do Levante</h4><p>Uma narrativa bíblica interativa nos dias do rei Davi, com escolhas, descobertas, relações e consequências pelo caminho.</p></div><a href="/cronicas-do-levante">${cronicasSave ? 'Continuar' : 'Jogar'}</a></article>
     <article class="ol-game-card match3-cover"><div><h4>Luther Metch</h4><p>Junte 3 ou mais peças iguais para cumprir objetivos e avançar de fase.</p></div><a href="/luther-metch">Jogar</a></article>
     <article class="ol-game-card quiz-cover"><div><h4>Quiz Ortodoxia</h4><p>Dispute perguntas de Bíblia, Reforma e luteranismo em modo solo, duelo online, convite ou competição geral.</p></div><a href="/quiz-ortodoxia">Jogar</a></article>
+    <article class="ol-game-card caminho-guardioes-cover"><div><h4>Caminho dos Guardiões</h4><p>Defenda o Arquivo de Alexandria em um tower defense com compra aleatória, fusão de defesas e coleção.</p></div><a href="/caminho-dos-guardioes">Jogar</a></article>
   </section>`;
   const rankCard = `<aside class="ol-panel ol-rank"><p>Seu rank geral</p><img class="rank-badge" src="${rank.current.file}?v=${GAME_VERSION}" alt="${escapeHtml(rank.current.title)}"><div class="rank-xp"><strong>${xp} XP</strong><span>${rank.next ? `${Math.max(0, rank.next.xp - rank.currentXp)} XP para ${escapeHtml(rank.next.title)}` : 'Rank maximo alcancado'}</span><div class="rank-bar"><span style="width:${Math.round(rank.progress)}%"></span></div></div><a href="/?section=ranking">Ver ranking geral</a><div class="hub-online-panel"><div class="panel-head"><h3>Online agora</h3></div><div id="hub-online-list" class="hub-online-list">${renderOnlinePlayers(onlinePlayers)}</div></div></aside>`;
   const chatWidget = `<section class="hub-chat" id="hub-chat" aria-label="Chat geral"><div class="hub-chat-head"><strong>Chat geral</strong><button type="button" id="hub-chat-toggle" aria-label="Minimizar chat">-</button></div><div class="hub-chat-messages" id="hub-chat-messages"></div><form id="hub-chat-form" class="hub-chat-form"><input id="hub-chat-input" name="message" maxlength="${CHAT_MAX_LENGTH}" autocomplete="off" placeholder="Mensagem"><button type="submit">Enviar</button></form></section>`;
@@ -1871,6 +1921,12 @@ const server = http.createServer(async (req, res) => {
       res.end(body);
       return;
     }
+    if (req.method === 'GET' && url.pathname === '/caminho-dos-guardioes') {
+      const body = fs.readFileSync(path.join(PUBLIC_DIR, 'caminho-guardioes.html'), 'utf8');
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(body);
+      return;
+    }
     if (req.method === 'GET' && url.pathname === '/concordium-exploracao') {
       if (!hasConcordiumAccess(req, user.id)) {
         const body = renderConcordiumAccess();
@@ -1922,6 +1978,11 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method === 'POST' && url.pathname === '/cronicas-do-levante/delete') {
       deleteCronicasSave.run(user.id);
+      redirect(res, '/?section=configuracoes');
+      return;
+    }
+    if (req.method === 'POST' && url.pathname === '/caminho-dos-guardioes/delete') {
+      deleteCaminhoGuardioesSave.run(user.id);
       redirect(res, '/?section=configuracoes');
       return;
     }

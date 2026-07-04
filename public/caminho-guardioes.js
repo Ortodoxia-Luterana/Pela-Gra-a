@@ -66,8 +66,8 @@
   const PACKS = {
     common: { label: 'Pacote comum', cost: 80, fragments: [3, 5], rarityBoost: 0 },
     rare: { label: 'Pacote raro', cost: 220, fragments: [7, 10], rarityBoost: 1 },
-    epic: { label: 'Pacote epico', cost: 520, fragments: [13, 18], rarityBoost: 2 },
-    daily: { label: 'Pacote diario', cost: 0, fragments: [4, 7], rarityBoost: 0 }
+    epic: { label: 'Pacote épico', cost: 520, fragments: [13, 18], rarityBoost: 2 },
+    daily: { label: 'Pacote diário', cost: 0, fragments: [4, 7], rarityBoost: 0 }
   };
 
   const ENEMIES = {
@@ -232,10 +232,10 @@
       const payload = await res.json();
       userName = payload.user?.name || userName;
       save = normalizeSave(payload.state);
-      els.saveStatus.textContent = payload.updatedAt ? 'Save automatico carregado' : 'Novo save automatico';
+      els.saveStatus.textContent = payload.updatedAt ? 'Save automático carregado' : 'Novo save automático';
     } catch {
       save = defaultSave();
-      els.saveStatus.textContent = 'Save local ate reconectar';
+      els.saveStatus.textContent = 'Save local até reconectar';
     }
     renderCollection();
     if (save.activeRun) {
@@ -262,7 +262,7 @@
         body: JSON.stringify({ state: save })
       });
       if (!res.ok) throw new Error('save failed');
-      els.saveStatus.textContent = 'Save automatico salvo agora';
+      els.saveStatus.textContent = 'Save automático salvo agora';
     } catch {
       els.saveStatus.textContent = 'Falha ao salvar, tentando novamente';
     }
@@ -276,8 +276,8 @@
 
   function renderCollection() {
     const level = playerLevel();
-    els.wallet.textContent = `${save.denarii} denarios`;
-    els.classPoints.textContent = `Nivel ${level}`;
+    els.wallet.textContent = `${save.denarii} denários`;
+    els.classPoints.textContent = `Nível ${level}`;
     els.buildList.innerHTML = save.build.map(type => defenseCard(type, false)).join('');
     els.classList.innerHTML = Object.entries(CLASSES).map(([id, item]) => `
       <button class="cg-class-card ${save.activeClass === id ? 'active' : ''}" type="button" data-class="${id}">
@@ -288,7 +288,7 @@
     els.defenseList.innerHTML = Object.keys(DEFENSES).map(type => defenseCard(type, true)).join('');
     const today = todayKey();
     els.freePack.disabled = save.stats.lastDailyPack === today;
-    els.freePack.textContent = save.stats.lastDailyPack === today ? 'Diario aberto' : 'Pacote diario';
+    els.freePack.textContent = save.stats.lastDailyPack === today ? 'Diário aberto' : 'Pacote diário';
     document.querySelectorAll('[data-class]').forEach(button => {
       button.addEventListener('click', () => {
         save.activeClass = button.dataset.class;
@@ -309,8 +309,8 @@
     const upgradeButtons = withUpgrades ? `
       <div class="cg-upgrades">
         ${upgradeButton(type, 'damage', 'Dano', upgrades.damage || 0)}
-        ${upgradeButton(type, 'range', 'Distancia', upgrades.range || 0)}
-        ${upgradeButton(type, type === 'trap' ? 'effect' : 'speed', type === 'trap' ? 'Lentidao' : 'Tempo', upgrades[type === 'trap' ? 'effect' : 'speed'] || 0)}
+        ${upgradeButton(type, 'range', 'Distância', upgrades.range || 0)}
+        ${upgradeButton(type, type === 'trap' ? 'effect' : 'speed', type === 'trap' ? 'Lentidão' : 'Tempo', upgrades[type === 'trap' ? 'effect' : 'speed'] || 0)}
       </div>
     ` : '';
     return `
@@ -346,7 +346,7 @@
   }
 
   function rarityLabel(rarity) {
-    return rarity === 'rare' ? 'Rara' : rarity === 'epic' ? 'Epica' : 'Comum';
+    return rarity === 'rare' ? 'Rara' : rarity === 'epic' ? 'Épica' : 'Comum';
   }
 
   function openPack(kind) {
@@ -446,7 +446,7 @@
     save.activeRun = exportBattle();
     showView('battle');
     syncHud();
-    scheduleSave('fase iniciada');
+    scheduleSave('campo iniciado');
   }
 
   function startWave() {
@@ -691,8 +691,8 @@
     }
     save.activeRun = null;
     renderCollection();
-    scheduleSave('vitoria salva');
-    showModal('Vitoria em Alexandria', `Arquivo protegido. +${reward} denarios e +${xp} XP.${packText}`);
+    scheduleSave('vitória salva');
+    showModal('Vitória em Alexandria', `Arquivo protegido. +${reward} denários e +${xp} XP.${packText}`);
   }
 
   function loseBattle() {
@@ -1079,12 +1079,12 @@
     els.hp.textContent = `${Math.ceil(battle.archiveHp)}/${battle.maxArchiveHp}`;
     els.wave.textContent = `${battle.waveIndex}/${MAX_WAVES}`;
     els.battleMoney.textContent = `${Math.floor(battle.denarii)}`;
-    els.buyCost.textContent = `${battle.buyCost} denarios`;
-    els.heldName.textContent = battle.held ? `${DEFENSES[battle.held.type].name} na mao` : 'Sem defesa na mao';
+    els.buyCost.textContent = `${battle.buyCost} denários`;
+    els.heldName.textContent = battle.held ? `${DEFENSES[battle.held.type].name} na mão` : 'Sem defesa na mão';
     els.buy.disabled = Boolean(battle.held || battle.result || battle.denarii < battle.buyCost);
     els.cancelHeld.disabled = !battle.held;
     els.startWave.disabled = Boolean(battle.waveActive || battle.result || battle.waveIndex >= MAX_WAVES);
-    els.startWave.textContent = battle.waveIndex >= MAX_WAVES ? 'Ondas completas' : battle.waveActive ? 'Onda em curso' : battle.waveIndex === 0 ? 'Iniciar onda' : 'Proxima onda';
+    els.startWave.textContent = battle.waveIndex >= MAX_WAVES ? 'Ondas completas' : battle.waveActive ? 'Onda em curso' : battle.waveIndex === 0 ? 'Iniciar onda' : 'Próxima onda';
   }
 
   function loop(now) {
@@ -1200,7 +1200,7 @@
   setInterval(() => {
     if (battle && !battle.result && els.battleView.classList.contains('active')) {
       save.activeRun = exportBattle();
-      scheduleSave('save automatico');
+      scheduleSave('save automático');
     }
   }, 5000);
 

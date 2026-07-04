@@ -4,6 +4,7 @@
   const MAX_WAVES = 5;
   const API_URL = '/api/caminho-guardioes/save';
   const MAP_URL = '/assets/caminho-guardioes-map.png?v=20260704';
+  const SPRITE_VERSION = '20260704-sprites';
 
   const DEFENSES = {
     archer: {
@@ -76,6 +77,20 @@
     boss: { name: 'Chefe', hp: 820, speed: 28, reward: 120, damage: 10, color: '#412924' }
   };
 
+  const DEFENSE_RENDER = {
+    archer: { file: 'caminho-guardioes-defense-archer.png', w: 104, h: 128, anchor: .88 },
+    fire: { file: 'caminho-guardioes-defense-fire.png', w: 104, h: 116, anchor: .78 },
+    trap: { file: 'caminho-guardioes-defense-trap.png', w: 104, h: 82, anchor: .52 },
+    ballista: { file: 'caminho-guardioes-defense-ballista.png', w: 126, h: 104, anchor: .66 }
+  };
+
+  const ENEMY_RENDER = {
+    raider: { file: 'caminho-guardioes-enemy-raider.png', w: 70, h: 92, anchor: .78 },
+    shield: { file: 'caminho-guardioes-enemy-shield.png', w: 76, h: 98, anchor: .80 },
+    ram: { file: 'caminho-guardioes-enemy-ram.png', w: 118, h: 88, anchor: .62 },
+    boss: { file: 'caminho-guardioes-enemy-boss.png', w: 112, h: 138, anchor: .80 }
+  };
+
   const WAVES = [
     [{ type: 'raider', count: 8, every: .72 }],
     [{ type: 'raider', count: 8, every: .58 }, { type: 'shield', count: 3, every: 1.25, delay: 2.1 }],
@@ -112,6 +127,12 @@
   const ctx = canvas.getContext('2d');
   const mapImage = new Image();
   mapImage.src = MAP_URL;
+  const spriteImages = {};
+  [...Object.values(DEFENSE_RENDER), ...Object.values(ENEMY_RENDER)].forEach(item => {
+    const img = new Image();
+    img.src = `/assets/${item.file}?v=${SPRITE_VERSION}`;
+    spriteImages[item.file] = img;
+  });
 
   const els = {
     saveStatus: document.getElementById('cg-save-status'),
@@ -320,10 +341,8 @@
   }
 
   function iconFor(type) {
-    if (type === 'archer') return '🏹';
-    if (type === 'fire') return '🔥';
-    if (type === 'trap') return '✦';
-    return '➶';
+    const spec = DEFENSE_RENDER[type];
+    return spec ? `<img src="/assets/${spec.file}?v=${SPRITE_VERSION}" alt="">` : '';
   }
 
   function rarityLabel(rarity) {
@@ -750,11 +769,19 @@
   }
 
   function drawTower(tower) {
-    if (tower.type === 'archer') drawArcher(tower);
-    if (tower.type === 'fire') drawFire(tower);
-    if (tower.type === 'trap') drawTrap(tower);
-    if (tower.type === 'ballista') drawBallista(tower);
-    drawLevel(tower.x, tower.y + 31, tower.level);
+    if (drawDefenseSprite(tower)) {
+      drawLevel(tower.x, tower.y + 31, tower.level);
+    }
+  }
+
+  function drawDefenseSprite(tower) {
+    const spec = DEFENSE_RENDER[tower.type];
+    if (!spec) return false;
+    const img = spriteImages[spec.file];
+    if (!img?.complete || !img.naturalWidth) return false;
+    const scale = 1 + (tower.level - 1) * .12;
+    drawCutout(img, tower.x, tower.y, spec.w * scale, spec.h * scale, spec.anchor);
+    return true;
   }
 
   function drawArcher(t) {
@@ -878,31 +905,26 @@
 
   function drawEnemy(enemy) {
     const cfg = ENEMIES[enemy.type];
-    ctx.save();
-    const x = enemy.x || PATH[0].x;
-    const y = enemy.y || PATH[0].y;
-    shadow(x, y + 18, enemy.type === 'boss' ? 46 : enemy.type === 'ram' ? 42 : 25, 9);
-    ctx.translate(x, y);
-    const scale = enemy.type === 'boss' ? 1.35 : enemy.type === 'ram' ? 1.15 : 1;
-    ctx.scale(scale, scale);
-    if (enemy.type === 'ram') {
-      drawRam();
-    } else {
-      ctx.fillStyle = cfg.color;
-      ctx.fillRect(-12, -12, 24, 34);
-      ctx.fillStyle = '#d29a64';
-      ctx.beginPath();
-      ctx.arc(0, -20, 10, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = enemy.type === 'shield' ? '#b7c4d8' : '#5b2d1c';
-      ctx.fillRect(-18, -5, 10, 25);
-      if (enemy.type === 'boss') {
-        ctx.fillStyle = '#d6a348';
-        ctx.fillRect(-16, -33, 32, 8);
-      }
+    if (drawEnemySprite(enemy)) {
+      drawEnemyBar(enemy);
+      return;
     }
+  }
+
+  function drawEnemySprite(enemy) {
+    const spec = ENEMY_RENDER[enemy.type];
+    if (!spec) return false;
+    const img = spriteImages[spec.file];
+    if (!img?.complete || !img.naturalWidth) return false;
+    const bossScale = enemy.type === 'boss' ? 1.08 : 1;
+    drawCutout(img, enemy.x || PATH[0].x, enemy.y || PATH[0].y, spec.w * bossScale, spec.h * bossScale, spec.anchor);
+    return true;
+  }
+
+  function drawCutout(img, x, y, w, h, anchor) {
+    ctx.save();
+    ctx.drawImage(img, x - w / 2, y - h * anchor, w, h);
     ctx.restore();
-    drawEnemyBar(enemy);
   }
 
   function drawRam() {

@@ -1,51 +1,77 @@
-/* Caminho dos Guardioes - BattleScene: loop central do tower defense */
+/* Caminho dos Guardioes - BattleScene: loop central do tower defense (Arcade Physics + pooling + audio + pausa real) */
 (function (global) {
   'use strict';
   const UI = global.GuardioesUI;
   const D = global.GuardioesData;
   const SAVE = global.GuardioesSave;
+  const AUDIO = global.GuardioesAudio;
 
   const BASE_START_HP = 20;
   const BASE_START_MONEY = 120;
   const BASE_BUY_COST = 40;
   const BUY_COST_INCREMENT = 6;
+  const ARRIVAL_THRESHOLD = 6;
+  const TEXT_POOL_SIZE = 28;
+  const PROJECTILE_POOL_SIZE = 60;
 
   class BattleScene extends Phaser.Scene {
     constructor() { super('Battle'); }
 
-    init(data) { this.loadout = data.loadout || []; }
+    init(data) {
+      this.wantsResume = Boolean(data.resume);
+      this.loadout = data.loadout || [];
+    }
 
     create() {
       const state = this.registry.get('state');
       this.state = state;
       const effects = this.computeClassEffects();
       this.effects = effects;
-
-      this.rngSeed = (state.run && state.run.randomSeed) || SAVE.randomSeed();
-      this.rng = SAVE.mulberry32(this.rngSeed);
-
-      this.archiveHp = BASE_START_HP;
-      this.maxArchiveHp = BASE_START_HP;
-      this.money = BASE_START_MONEY;
-      this.buyCost = Math.round(BASE_BUY_COST * (1 + (effects.buyCostMult || 0)));
-      this.buyCount = 0;
-      this.held = null; // { defenseId, level }
-      this.towers = []; // { defenseId, level, x, y, sprite, lastFire, lastTick }
-      this.enemies = [];
-      this.projectiles = [];
-      this.waveIndex = 0;
-      this.waveActive = false;
-      this.spawnQueue = [];
-      this.spawnTimers = [];
+      this.paused = false;
       this.runEnded = false;
 
+      const run = state.run && state.run.active ? state.run : null;
+      const isResume = Boolean(this.wantsResume && run);
+
+      this.rngSeed = (run && run.randomSeed) || SAVE.randomSeed();
+      this.rng = SAVE.mulberry32(this.rngSeed);
+
+      if (isResume) {
+        this.loadout = run.loadout || this.loadout;
+        this.archiveHp = run.hp;
+        this.maxArchiveHp = run.maxHp || BASE_START_HP;
+        this.money = run.money;
+        this.buyCost = run.buyCost;
+        this.buyCount = run.buyCount || 0;
+        this.waveIndex = run.wave || 0;
+      } else {
+        this.archiveHp = BASE_START_HP;
+        this.maxArchiveHp = BASE_START_HP;
+        this.money = BASE_START_MONEY;
+        this.buyCost = Math.round(BASE_BUY_COST * (1 + (effects.buyCostMult || 0)));
+        this.buyCount = 0;
+        this.waveIndex = 0;
+      }
+
+      this.held = null;
+      this.towers = [];
+      this.enemies = [];
+      this.waveActive = false;
+      this.spawnTimers = [];
+
+      this.buildPhysicsGroups();
+      this.buildTextPool();
       this.buildMap();
       this.buildHud();
       this.buildBuyArea();
       this.input.on('pointerdown', p => this.onMapTap(p));
+      this.physics.add.overlap(this.projectileGroup, this.enemyGroup, (proj, enemySprite) => this.onProjectileHitEnemy(proj, enemySprite));
 
-      this.state.run = { active: true, wave: this.waveIndex, hp: this.archiveHp, money: this.money, randomSeed: this.rngSeed };
-      SAVE.save(this.state);
+      if (isResume && run.towers) {
+        run.towers.forEach(t => this.placeTower(t.defenseId, t.level, t.x, t.y, true));
+      }
+
+      this.persistRunSnapshot();
     }
 
     // ---------- classe / efeitos ----------
@@ -65,25 +91,56 @@
       return eff;
     }
 
+    // ---------- fisica / pooling ----------
+    buildPhysicsGroups() {
+      this.enemyGroup = this.physics.add.group();
+      this.projectileGroup = this.physics.add.group({ maxSize: PROJECTILE_POOL_SIZE });
+    }
+
+    buildTextPool() {
+      this.textPool = [];
+      this.textPoolCursor = 0;
+      for (let i = 0; i < TEXT_POOL_SIZE; i++) {
+        const t = this.add.text(-999, -999, '', { fontFamily: 'Georgia, serif', fontSize: '22px', fontStyle: 'bold' }).setOrigin(0.5).setDepth(500).setVisible(false);
+        this.textPool.push(t);
+      }
+    }
+
+    floatText(x, y, msg, color) {
+      const t = this.textPool[this.textPoolCursor];
+      this.textPoolCursor = (this.textPoolCursor + 1) % this.textPool.length;
+      this.tweens.killTweensOf(t);
+      t.setText(msg).setColor(color || '#ffe9a8').setPosition(x, y).setAlpha(1).setVisible(true);
+      this.tweens.add({ targets: t, y: y - 46, alpha: 0, duration: 700, ease: 'Cubic.Out', onComplete: () => t.setVisible(false) });
+    }
+
     // ---------- mapa ----------
     buildMap() {
       const { width, height } = this.scale;
-      this.add.tileSprite(0, 0, width, height, 'tex-ground').setOrigin(0);
+      const hasMapArt = this.textures.exists('tex-map-bg');
+      if (hasMapArt) {
+        this.add.image(width / 2, height / 2, 'tex-map-bg').setDisplaySize(width, height);
+      } else {
+        this.add.tileSprite(0, 0, width, height, 'tex-ground').setOrigin(0);
+      }
 
+      // O caminho sempre e desenhado por cima: garante que a rota fique visivel e
+      // consistente mesmo se o mapa de fundo (procedural ou arte real) mudar depois.
       const g = this.add.graphics();
       const path = D.MAP.path;
-      g.lineStyle(96, 0x8a6a45, 1);
+      const pathAlpha = hasMapArt ? 0.35 : 1;
+      g.lineStyle(96, 0x8a6a45, pathAlpha);
       g.beginPath();
       g.moveTo(path[0].x, path[0].y);
       for (let i = 1; i < path.length; i++) g.lineTo(path[i].x, path[i].y);
       g.strokePath();
-      g.lineStyle(4, 0x6f5636, 0.6);
-      g.beginPath();
-      g.moveTo(path[0].x, path[0].y);
-      for (let i = 1; i < path.length; i++) g.lineTo(path[i].x, path[i].y);
-      g.strokePath();
-
-      this.placementLayer = this.add.container(0, 0);
+      if (!hasMapArt) {
+        g.lineStyle(4, 0x6f5636, 0.6);
+        g.beginPath();
+        g.moveTo(path[0].x, path[0].y);
+        for (let i = 1; i < path.length; i++) g.lineTo(path[i].x, path[i].y);
+        g.strokePath();
+      }
     }
 
     // ---------- HUD ----------
@@ -95,9 +152,11 @@
       this.waveText = this.add.text(width / 2, 28, '', { fontFamily: 'Georgia, serif', fontSize: '18px', color: '#f2e2b8', fontStyle: 'bold' }).setOrigin(0.5).setDepth(401);
 
       this.menuBtn = this.add.text(width - 24, 28, '☰', { fontSize: '26px', color: '#f2e2b8' }).setOrigin(1, 0.5).setDepth(401).setInteractive({ useHandCursor: true });
-      this.menuBtn.on('pointerdown', () => this.pauseToMenu());
+      this.menuBtn.on('pointerdown', () => this.openPauseMenu());
+      UI.muteButton(this, width - 60, 28).setDepth(401);
 
-      this.waveBtn = UI.makeButton(this, width - 130, 90, 'Iniciar Onda', () => this.startNextWave(), { width: 190, height: 50, fontSize: 15 }).setDepth(401);
+      this.waveBtn = UI.makeButton(this, width - 150, 90, 'Iniciar Onda', () => this.startNextWave(), { width: 190, height: 50, fontSize: 15 }).setDepth(401);
+      if (this.waveIndex > 0) this.waveBtn.list[1].setText(`Iniciar ${D.WAVES[Math.min(this.waveIndex, D.WAVES.length - 1)].label}`);
 
       this.updateHud();
     }
@@ -107,6 +166,44 @@
       this.moneyText.setText(`${this.money} moedas`);
       const total = D.WAVES.length;
       this.waveText.setText(this.waveActive ? `${D.WAVES[this.waveIndex].label}` : (this.waveIndex >= total ? 'Vitória!' : `Pronto para ${D.WAVES[this.waveIndex].label}`));
+    }
+
+    // ---------- pausa ----------
+    openPauseMenu() {
+      if (this.paused || this.runEnded) return;
+      this.paused = true;
+      this.physics.world.pause();
+      this.time.paused = true;
+      this.persistRunSnapshot();
+
+      const { width, height } = this.scale;
+      const overlay = this.add.container(0, 0).setDepth(700);
+      const dim = this.add.rectangle(0, 0, width, height, 0x000000, 0.6).setOrigin(0).setInteractive();
+      const box = UI.makePanel(this, width / 2, height / 2, 440, 300);
+      const title = this.add.text(width / 2, height / 2 - 100, 'Pausado', {
+        fontFamily: 'Georgia, serif', fontSize: '28px', color: '#3a2c1a', fontStyle: 'bold'
+      }).setOrigin(0.5);
+      const note = this.add.text(width / 2, height / 2 - 60, 'Suas torres e progresso estão salvos.\nInimigos da onda atual reiniciam ao continuar depois.', {
+        fontFamily: 'Georgia, serif', fontSize: '13px', color: '#5a4a32', align: 'center'
+      }).setOrigin(0.5);
+      overlay.add([dim, box, title, note]);
+
+      const resumeBtn = UI.makeButton(this, width / 2, height / 2 + 20, 'Continuar', () => this.closePauseMenu(overlay), { width: 260, height: 56, fontSize: 20 });
+      const exitBtn = UI.makeButton(this, width / 2, height / 2 + 90, 'Sair para o Menu', () => this.exitToMenu(overlay), { width: 260, height: 56, fontSize: 18 });
+      overlay.add([resumeBtn, exitBtn]);
+    }
+
+    closePauseMenu(overlay) {
+      this.paused = false;
+      this.physics.world.resume();
+      this.time.paused = false;
+      overlay.destroy();
+    }
+
+    exitToMenu(overlay) {
+      overlay.destroy();
+      this.persistRunSnapshot();
+      this.scene.start('Menu');
     }
 
     // ---------- botao de compra ----------
@@ -124,8 +221,9 @@
     }
 
     buyDefense() {
-      if (this.held) { UI.floatingText(this, 110, this.scale.height - 110, 'Posicione a defesa na mão primeiro', '#e74c3c'); return; }
-      if (this.money < this.buyCost) { UI.floatingText(this, 110, this.scale.height - 110, 'Moedas insuficientes', '#e74c3c'); return; }
+      if (this.paused) return;
+      if (this.held) { this.floatText(110, this.scale.height - 110, 'Posicione a defesa na mão primeiro', '#e74c3c'); return; }
+      if (this.money < this.buyCost) { this.floatText(110, this.scale.height - 110, 'Moedas insuficientes', '#e74c3c'); return; }
       const luckShift = this.effects.luckShift || 0;
       const epicLuckShift = this.effects.epicLuckShift || 0;
       const rarity = D.pickRarity(this.rng, luckShift, epicLuckShift);
@@ -149,7 +247,8 @@
       this.heldIcon.setTexture(`tex-defense-${pick}`).setVisible(true);
       this.heldLabel.setText(D.DEFENSES[pick].name).setVisible(true);
       this.buyBtn.list[1].setText(`Comprar (${this.buyCost})`);
-      UI.floatingText(this, 110, this.scale.height - 110, `${D.DEFENSES[pick].name}!`, this.rarityColorHex(D.DEFENSES[pick].rarity));
+      AUDIO.buy();
+      this.floatText(110, this.scale.height - 110, `${D.DEFENSES[pick].name}!`, this.rarityColorHex(D.DEFENSES[pick].rarity));
       this.updateHud();
       this.persistRunSnapshot();
     }
@@ -194,7 +293,7 @@
     }
 
     updateHeldPreview(pointer) {
-      if (!this.held) { this.previewMarker.setVisible(false); this.rangeRing.setVisible(false); return; }
+      if (!this.held || this.paused) { this.previewMarker.setVisible(false); this.rangeRing.setVisible(false); return; }
       const p = this.toWorldPoint(pointer);
       const def = D.DEFENSES[this.held.defenseId];
       const valid = this.isValidPlacement(p.x, p.y, this.held.defenseId);
@@ -211,6 +310,7 @@
     }
 
     onMapTap(pointer) {
+      if (this.paused) return;
       if (pointer.y < 70) return; // evita HUD
       if (!this.held) return;
       const p = this.toWorldPoint(pointer);
@@ -219,11 +319,13 @@
       if (fuseTarget) { this.fuseTower(fuseTarget); return; }
 
       if (!this.isValidPlacement(p.x, p.y, this.held.defenseId)) {
-        UI.floatingText(this, p.x, p.y - 30, 'Posição inválida', '#e74c3c');
+        this.floatText(p.x, p.y - 30, 'Posição inválida', '#e74c3c');
+        AUDIO.invalid();
         UI.screenShake(this, 0.003, 100);
         return;
       }
       this.placeTower(this.held.defenseId, this.held.level, p.x, p.y);
+      AUDIO.place();
       this.held = null;
       this.heldIcon.setVisible(false);
       this.heldLabel.setVisible(false);
@@ -232,24 +334,25 @@
       this.persistRunSnapshot();
     }
 
-    placeTower(defenseId, level, x, y) {
+    placeTower(defenseId, level, x, y, silent) {
       const sprite = this.add.image(x, y, `tex-defense-${defenseId}`);
-      const tower = { defenseId, level, x, y, sprite, lastFire: 0, lastTick: 0, targetCooldowns: new Map() };
+      const tower = { defenseId, level, x, y, sprite, lastFire: 0, targetCooldowns: new Map() };
       sprite.setScale(1 + (level - 1) * 0.12);
       this.towers.push(tower);
-      this.tweens.add({ targets: sprite, scaleX: sprite.scaleX * 1.15, scaleY: sprite.scaleY * 1.15, duration: 90, yoyo: true });
+      if (!silent) this.tweens.add({ targets: sprite, scaleX: sprite.scaleX * 1.15, scaleY: sprite.scaleY * 1.15, duration: 90, yoyo: true });
     }
 
     fuseTower(tower) {
       const maxLevel = D.MAX_FUSION_LEVEL + (this.effects.maxFusionBonus || 0);
       if (tower.level >= maxLevel) {
-        UI.floatingText(this, tower.x, tower.y - 40, 'Nível máximo', '#e0a52a');
+        this.floatText(tower.x, tower.y - 40, 'Nível máximo', '#e0a52a');
         this.held = null; this.heldIcon.setVisible(false); this.heldLabel.setVisible(false);
         return;
       }
       tower.level += 1;
       tower.sprite.setScale(1 + (tower.level - 1) * 0.12);
       this.spawnFusionFx(tower.x, tower.y);
+      AUDIO.fuse();
       this.held = null;
       this.heldIcon.setVisible(false);
       this.heldLabel.setVisible(false);
@@ -259,7 +362,7 @@
     }
 
     spawnFusionFx(x, y) {
-      UI.floatingText(this, x, y - 50, 'Fusão!', '#2ecc71');
+      this.floatText(x, y - 50, 'Fusão!', '#2ecc71');
       for (let i = 0; i < 10; i++) {
         const spark = this.add.image(x, y, 'tex-spark');
         const angle = (i / 10) * Math.PI * 2;
@@ -273,9 +376,10 @@
 
     // ---------- ondas ----------
     startNextWave() {
-      if (this.waveActive || this.waveIndex >= D.WAVES.length) return;
+      if (this.paused || this.waveActive || this.waveIndex >= D.WAVES.length) return;
       this.waveActive = true;
       this.waveBtn.setAlpha(0.4);
+      AUDIO.waveStart();
       const wave = D.WAVES[this.waveIndex];
       wave.spawns.forEach(spawnDef => {
         for (let i = 0; i < spawnDef.count; i++) {
@@ -289,14 +393,29 @@
     spawnEnemy(enemyId) {
       const def = D.ENEMIES[enemyId];
       const start = D.MAP.path[0];
-      const sprite = this.add.image(start.x, start.y, `tex-enemy-${enemyId}`);
+      const sprite = this.physics.add.sprite(start.x, start.y, `tex-enemy-${enemyId}`);
+      sprite.body.setAllowGravity(false);
+      sprite.body.setCircle(sprite.width / 2.4, sprite.width * 0.08, sprite.height * 0.08);
+      this.enemyGroup.add(sprite);
       if (def.isBoss) sprite.setScale(1.15);
       const hpBar = this.add.rectangle(start.x, start.y - 30, 40, 6, 0x2ecc71).setDepth(60);
       const enemy = {
         id: enemyId, def, hp: def.hp, maxHp: def.hp, sprite, hpBar,
-        pathIndex: 0, progress: 0, slowUntil: 0, slowFactor: 1
+        pathIndex: 1, slowUntil: 0, slowFactor: 1
       };
+      sprite.setData('ref', enemy);
       this.enemies.push(enemy);
+      this.steerEnemy(enemy);
+    }
+
+    steerEnemy(e) {
+      const path = D.MAP.path;
+      const target = path[e.pathIndex];
+      if (!target) return;
+      const speed = e.def.speed * ((this.time.now < e.slowUntil) ? e.slowFactor : 1);
+      const dx = target.x - e.sprite.x, dy = target.y - e.sprite.y;
+      const dist = Math.hypot(dx, dy) || 1;
+      e.sprite.body.setVelocity((dx / dist) * speed, (dy / dist) * speed);
     }
 
     checkWaveComplete() {
@@ -318,37 +437,26 @@
     }
 
     // ---------- update loop ----------
-    update(time, delta) {
-      if (this.runEnded) return;
-      this.updateEnemies(time, delta);
-      this.updateTowers(time, delta);
-      this.updateProjectiles(time, delta);
+    update(time) {
+      if (this.runEnded || this.paused) return;
+      this.updateEnemies(time);
+      this.updateTowers(time);
       this.checkWaveComplete();
     }
 
-    updateEnemies(time, delta) {
+    updateEnemies(time) {
       const path = D.MAP.path;
       for (let i = this.enemies.length - 1; i >= 0; i--) {
         const e = this.enemies[i];
-        let speed = e.def.speed;
-        if (time < e.slowUntil) speed *= e.slowFactor;
-        e.progress += (speed * delta) / 1000;
-
-        let a = path[e.pathIndex], b = path[e.pathIndex + 1];
-        if (!b) { this.enemyReachedEnd(e, i); continue; }
-        let segLen = Math.hypot(b.x - a.x, b.y - a.y);
-        while (e.progress > segLen && path[e.pathIndex + 2]) {
-          e.progress -= segLen;
+        const target = path[e.pathIndex];
+        if (!target) { this.enemyReachedEnd(e, i); continue; }
+        const distToTarget = Math.hypot(target.x - e.sprite.x, target.y - e.sprite.y);
+        if (distToTarget < ARRIVAL_THRESHOLD) {
           e.pathIndex += 1;
-          a = path[e.pathIndex]; b = path[e.pathIndex + 1];
-          segLen = Math.hypot(b.x - a.x, b.y - a.y);
+          if (!path[e.pathIndex]) { this.enemyReachedEnd(e, i); continue; }
         }
-        if (!path[e.pathIndex + 1]) { this.enemyReachedEnd(e, i); continue; }
-        const t = segLen === 0 ? 0 : e.progress / segLen;
-        const x = a.x + (b.x - a.x) * t;
-        const y = a.y + (b.y - a.y) * t;
-        e.sprite.setPosition(x, y);
-        e.hpBar.setPosition(x, y - 30);
+        this.steerEnemy(e);
+        e.hpBar.setPosition(e.sprite.x, e.sprite.y - 30);
         e.hpBar.width = 40 * Math.max(0, e.hp / e.maxHp);
       }
     }
@@ -357,6 +465,7 @@
       this.archiveHp = Math.max(0, this.archiveHp - 1);
       e.sprite.destroy(); e.hpBar.destroy();
       this.enemies.splice(index, 1);
+      AUDIO.baseHit();
       UI.screenShake(this, 0.008, 200);
       this.updateHud();
       if (this.archiveHp <= 0) this.onDefeat();
@@ -377,26 +486,35 @@
     }
 
     updateTrapTower(tower, def, time) {
-      const triggerRadius = D.MAP.trapPathRadius;
-      for (const e of this.enemies) {
-        if (Math.hypot(e.sprite.x - tower.x, e.sprite.y - tower.y) > triggerRadius) continue;
+      const nearby = this.enemiesInRadius(tower.x, tower.y, D.MAP.trapPathRadius);
+      nearby.forEach(e => {
         const cd = tower.targetCooldowns.get(e) || 0;
-        if (time - cd < def.rate) continue;
+        if (time - cd < def.rate) return;
         tower.targetCooldowns.set(e, time);
         this.damageEnemy(e, this.scaledDamage(def, tower.level));
         e.slowUntil = time + def.slowDuration;
         e.slowFactor = 1 - def.slowFactor;
-      }
+      });
+    }
+
+    // usa a query espacial da propria fisica do Phaser (overlapCirc) em vez de varrer tudo na mao
+    enemiesInRadius(x, y, radius) {
+      const bodies = this.physics.world.overlapCirc(x, y, radius, true, false);
+      const found = [];
+      bodies.forEach(body => {
+        const ref = body.gameObject && body.gameObject.getData && body.gameObject.getData('ref');
+        if (ref) found.push(ref);
+      });
+      return found;
     }
 
     findTarget(x, y, range) {
+      const candidates = this.enemiesInRadius(x, y, range);
       let best = null, bestProgress = -1;
-      for (const e of this.enemies) {
-        const d = Math.hypot(e.sprite.x - x, e.sprite.y - y);
-        if (d > range) continue;
-        const progressScore = e.pathIndex * 10000 + e.progress;
-        if (progressScore > bestProgress) { bestProgress = progressScore; best = e; }
-      }
+      candidates.forEach(e => {
+        const score = e.pathIndex * 100000 - Math.hypot(e.sprite.x - x, e.sprite.y - y);
+        if (score > bestProgress) { bestProgress = score; best = e; }
+      });
       return best;
     }
 
@@ -411,50 +529,67 @@
       if (tower.defenseId === 'fire') texKey = 'tex-fireball';
       if (tower.defenseId === 'ballista') texKey = 'tex-bolt';
       if (tower.defenseId === 'relic') texKey = 'tex-relic-orb';
-      const sprite = this.add.image(tower.x, tower.y - 20, texKey);
-      this.projectiles.push({
-        sprite, target, tower, def, speed: def.projectileSpeed || 900,
-        pierceLeft: def.pierce || 0, hitSet: new Set()
+
+      const spr = this.projectileGroup.get(tower.x, tower.y - 20, texKey);
+      if (!spr) return;
+      spr.setActive(true).setVisible(true).setTexture(texKey);
+      if (!spr.body) this.physics.world.enable(spr);
+      spr.body.setAllowGravity(false);
+      spr.body.reset(tower.x, tower.y - 20);
+      spr.setData('def', def);
+      spr.setData('level', tower.level);
+      spr.setData('pierceLeft', def.pierce || 0);
+      spr.setData('hitSet', new Set());
+      const fireToken = (spr.getData('fireToken') || 0) + 1;
+      spr.setData('fireToken', fireToken);
+
+      const dx = target.sprite.x - spr.x, dy = target.sprite.y - spr.y;
+      const dist = Math.hypot(dx, dy) || 1;
+      const speed = def.projectileSpeed || 900;
+      spr.body.setVelocity((dx / dist) * speed, (dy / dist) * speed);
+      spr.rotation = Math.atan2(dy, dx) + Math.PI / 2;
+
+      if (def.rate >= 900) AUDIO.fire(tower.defenseId);
+
+      const lifespan = (dist / speed) * 1000 + 600;
+      this.time.delayedCall(lifespan, () => {
+        if (spr.getData('fireToken') === fireToken) this.retireProjectile(spr);
       });
     }
 
-    updateProjectiles(time, delta) {
-      for (let i = this.projectiles.length - 1; i >= 0; i--) {
-        const p = this.projectiles[i];
-        if (!p.target || !this.enemies.includes(p.target)) {
-          if (p.def.aoeRadius) { this.explodeProjectile(p); }
-          p.sprite.destroy(); this.projectiles.splice(i, 1); continue;
-        }
-        const tx = p.target.sprite.x, ty = p.target.sprite.y;
-        const dx = tx - p.sprite.x, dy = ty - p.sprite.y;
-        const dist = Math.hypot(dx, dy);
-        const step = (p.speed * delta) / 1000;
-        if (dist <= step) {
-          this.resolveProjectileHit(p);
-          p.sprite.destroy(); this.projectiles.splice(i, 1); continue;
-        }
-        p.sprite.setPosition(p.sprite.x + (dx / dist) * step, p.sprite.y + (dy / dist) * step);
-        p.sprite.rotation = Math.atan2(dy, dx) + Math.PI / 2;
+    retireProjectile(spr) {
+      if (!spr.active) return;
+      this.projectileGroup.killAndHide(spr);
+      if (spr.body) spr.body.stop();
+    }
+
+    onProjectileHitEnemy(proj, enemySprite) {
+      if (!proj.active) return;
+      const ref = enemySprite.getData('ref');
+      if (!ref || !this.enemies.includes(ref)) return;
+      const hitSet = proj.getData('hitSet');
+      if (hitSet.has(ref)) return;
+      hitSet.add(ref);
+
+      const def = proj.getData('def');
+      const level = proj.getData('level');
+      const dmg = this.scaledDamage(def, level);
+      this.damageEnemy(ref, dmg);
+      if (def.aoeRadius) this.explodeAt(proj.x, proj.y, def, level, ref);
+
+      let pierceLeft = proj.getData('pierceLeft');
+      if (pierceLeft > 0) {
+        proj.setData('pierceLeft', pierceLeft - 1);
+      } else {
+        this.retireProjectile(proj);
       }
     }
 
-    resolveProjectileHit(p) {
-      const dmg = this.scaledDamage(p.def, p.tower.level);
-      this.damageEnemy(p.target, dmg);
-      p.hitSet.add(p.target);
-      if (p.def.aoeRadius) this.explodeProjectile(p);
-      if (p.pierceLeft > 0) {
-        const next = this.findTarget(p.sprite.x, p.sprite.y, p.def.range || 300);
-        if (next && !p.hitSet.has(next)) { p.target = next; p.pierceLeft -= 1; return; }
-      }
-    }
-
-    explodeProjectile(p) {
-      const radius = p.def.aoeRadius;
-      const x = p.sprite.x, y = p.sprite.y;
-      this.enemies.forEach(e => {
-        if (e === p.target) return;
-        if (Math.hypot(e.sprite.x - x, e.sprite.y - y) <= radius) this.damageEnemy(e, this.scaledDamage(p.def, p.tower.level) * 0.6);
+    explodeAt(x, y, def, level, exclude) {
+      const radius = def.aoeRadius;
+      this.enemiesInRadius(x, y, radius).forEach(e => {
+        if (e === exclude) return;
+        this.damageEnemy(e, this.scaledDamage(def, level) * 0.6);
       });
       const ring = this.add.circle(x, y, radius, 0xffb35a, 0.25).setDepth(45);
       this.tweens.add({ targets: ring, alpha: 0, scale: 1.3, duration: 260, onComplete: () => ring.destroy() });
@@ -464,7 +599,7 @@
       const armor = e.def.armor || 0;
       const dmg = Math.max(1, amount - armor);
       e.hp -= dmg;
-      UI.floatingText(this, e.sprite.x, e.sprite.y - 40, `-${Math.round(dmg)}`, '#ffffff');
+      this.floatText(e.sprite.x, e.sprite.y - 40, `-${Math.round(dmg)}`, '#ffffff');
       this.tweens.add({ targets: e.sprite, tint: 0xff6666, duration: 60, yoyo: true });
       if (e.hp <= 0) this.killEnemy(e);
     }
@@ -474,8 +609,9 @@
       if (idx === -1) return;
       const bounty = Math.round(e.def.bounty * (1 + (this.effects.bountyMult || 0)));
       this.money += bounty;
+      AUDIO.kill(e.def.isBoss);
       if (e.def.isBoss) UI.screenShake(this, 0.012, 260);
-      UI.floatingText(this, e.sprite.x, e.sprite.y - 20, `+${bounty}`, '#e0a52a');
+      this.floatText(e.sprite.x, e.sprite.y - 20, `+${bounty}`, '#e0a52a');
       e.sprite.destroy(); e.hpBar.destroy();
       this.enemies.splice(idx, 1);
       this.updateHud();
@@ -484,6 +620,7 @@
     // ---------- fim de partida ----------
     onVictory() {
       this.runEnded = true;
+      AUDIO.victory();
       const state = this.state;
       const winCoinMult = 1 + (this.effects.winCoinMult || 0);
       const xpMult = 1 + (this.effects.xpMult || 0);
@@ -505,6 +642,7 @@
 
     onDefeat() {
       this.runEnded = true;
+      AUDIO.defeat();
       const state = this.state;
       state.stats.losses = (state.stats.losses || 0) + 1;
       state.run = null;
@@ -535,18 +673,18 @@
       UI.makeButton(this, width / 2, height / 2 + 100, 'Voltar ao Menu', () => this.scene.start('Menu'), { width: 260, height: 60 }).setDepth(502);
     }
 
-    pauseToMenu() {
-      this.persistRunSnapshot();
-      this.scene.start('Menu');
-    }
-
     persistRunSnapshot() {
       this.state.run = {
         active: !this.runEnded,
         wave: this.waveIndex,
         hp: this.archiveHp,
+        maxHp: this.maxArchiveHp,
         money: this.money,
-        randomSeed: this.rngSeed
+        buyCost: this.buyCost,
+        buyCount: this.buyCount,
+        randomSeed: this.rngSeed,
+        loadout: this.loadout,
+        towers: this.towers.map(t => ({ defenseId: t.defenseId, level: t.level, x: t.x, y: t.y }))
       };
       SAVE.save(this.state);
     }

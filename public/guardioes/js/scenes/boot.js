@@ -2,8 +2,25 @@
 (function (global) {
   'use strict';
 
+  // Assets reais (se existirem em /assets/guardioes/assets/) substituem a arte procedural
+  // automaticamente - basta soltar um PNG com o mesmo nome, sem mexer em codigo.
+  const ASSET_BASE = '/assets/guardioes/assets/';
+  const OVERRIDE_MANIFEST = [
+    ['tex-map-bg', 'map.png'],
+    ['tex-ground', 'ground.png'],
+    ...global.GuardioesData.DEFENSE_ORDER.map(id => [`tex-defense-${id}`, `defense-${id}.png`]),
+    ...Object.keys(global.GuardioesData.ENEMIES).map(id => [`tex-enemy-${id}`, `enemy-${id}.png`])
+  ];
+
   class BootScene extends Phaser.Scene {
     constructor() { super('Boot'); }
+
+    preload() {
+      this.load.on('loaderror', () => { /* arquivo ainda nao existe: segue com o procedural */ });
+      OVERRIDE_MANIFEST.forEach(([key, file]) => this.load.image(key, ASSET_BASE + file));
+    }
+
+    hasOverride(key) { return this.textures.exists(key); }
 
     create() {
       this.buildPanelTextures();
@@ -76,15 +93,23 @@
 
     // --- chao do mapa: cidade antiga / caminho de terra ---
     buildGroundTextures() {
-      let gfx = this.g();
-      gfx.fillStyle(0xb8a978, 1);
-      gfx.fillRect(0, 0, 128, 128);
-      for (let i = 0; i < 60; i++) {
-        gfx.fillStyle(0xa89968, 0.5);
-        gfx.fillRect(Math.random() * 128, Math.random() * 128, Math.random() * 10 + 2, Math.random() * 10 + 2);
+      let gfx;
+      if (this.hasOverride('tex-ground')) {
+        // asset real ja carregado no preload - nao gerar por cima
+      } else {
+        gfx = this.g();
+        gfx.fillStyle(0xb8a978, 1);
+        gfx.fillRect(0, 0, 128, 128);
+        // sombreado suave em diagonal pra nao ficar chapado
+        gfx.fillStyle(0xcab989, 0.35);
+        gfx.fillTriangle(0, 0, 128, 0, 0, 128);
+        for (let i = 0; i < 60; i++) {
+          gfx.fillStyle(0xa89968, 0.5);
+          gfx.fillRect(Math.random() * 128, Math.random() * 128, Math.random() * 10 + 2, Math.random() * 10 + 2);
+        }
+        gfx.generateTexture('tex-ground', 128, 128);
+        gfx.destroy();
       }
-      gfx.generateTexture('tex-ground', 128, 128);
-      gfx.destroy();
 
       gfx = this.g();
       gfx.fillStyle(0x8a6a45, 1);
@@ -161,24 +186,36 @@
     }
 
     drawTowerBase(id, color, drawTop) {
+      const key = `tex-defense-${id}`;
+      if (this.hasOverride(key)) return;
       const gfx = this.g();
+      gfx.fillStyle(0x000000, 0.3);
+      gfx.fillEllipse(0, 10, 36, 15);
       gfx.fillStyle(0x555555, 1);
       gfx.fillEllipse(0, 8, 34, 14);
       gfx.fillStyle(color, 1);
       gfx.fillRoundedRect(-16, -12, 32, 24, 6);
+      gfx.fillStyle(0xffffff, 0.18);
+      gfx.fillRoundedRect(-16, -12, 14, 24, 6);
       gfx.lineStyle(2, 0x000000, 0.4);
       gfx.strokeRoundedRect(-16, -12, 32, 24, 6);
       drawTop(gfx);
-      gfx.generateTexture(`tex-defense-${id}`, 80, 80, -40, -46);
+      gfx.generateTexture(key, 80, 80, -40, -46);
       gfx.destroy();
     }
 
     drawFlatBase(id, color, drawTop) {
+      const key = `tex-defense-${id}`;
+      if (this.hasOverride(key)) return;
       const gfx = this.g();
+      gfx.fillStyle(0x000000, 0.25);
+      gfx.fillEllipse(2, 4, 58, 24);
       gfx.fillStyle(color, 0.9);
       gfx.fillEllipse(0, 0, 56, 24);
+      gfx.fillStyle(0xffffff, 0.15);
+      gfx.fillEllipse(-10, -6, 26, 10);
       drawTop(gfx);
-      gfx.generateTexture(`tex-defense-${id}`, 80, 60, -40, -30);
+      gfx.generateTexture(key, 80, 60, -40, -30);
       gfx.destroy();
     }
 
@@ -209,16 +246,20 @@
     }
 
     drawEnemy(id, color, radius, drawExtra) {
+      const key = `tex-enemy-${id}`;
+      if (this.hasOverride(key)) return;
       const gfx = this.g();
       gfx.fillStyle(0x000000, 0.25);
       gfx.fillEllipse(0, radius * 0.7, radius * 1.3, radius * 0.5);
       gfx.fillStyle(color, 1);
       gfx.fillCircle(0, 0, radius);
+      gfx.fillStyle(0xffffff, 0.16);
+      gfx.fillEllipse(-radius * 0.3, -radius * 0.35, radius * 0.9, radius * 0.5);
       gfx.lineStyle(2, 0x000000, 0.5);
       gfx.strokeCircle(0, 0, radius);
       drawExtra(gfx);
       const size = radius * 2 + 20;
-      gfx.generateTexture(`tex-enemy-${id}`, size, size, size / 2, size / 2);
+      gfx.generateTexture(key, size, size, size / 2, size / 2);
       gfx.destroy();
     }
 

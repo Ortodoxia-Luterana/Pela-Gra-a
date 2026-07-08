@@ -31,7 +31,10 @@
       const gapY = 78;
 
       const hasRun = Boolean(state.run && state.run.active);
-      UI.makeButton(this, cx, startY, hasRun ? 'Continuar Partida' : 'Jogar', () => this.scene.start('BuildSetup'), { width: 300, height: 74, fontSize: 26 });
+      UI.makeButton(this, cx, startY, hasRun ? 'Continuar Partida' : 'Jogar', () => {
+        if (hasRun) this.scene.start('Battle', { resume: true, loadout: state.run.loadout });
+        else this.scene.start('BuildSetup');
+      }, { width: 300, height: 74, fontSize: 26 });
       UI.makeButton(this, cx - 170, startY + gapY, 'Coleção', () => this.scene.start('Collection'), { width: 200 });
       UI.makeButton(this, cx + 170, startY + gapY, 'Classe', () => this.scene.start('ClassTree'), { width: 200 });
       UI.makeButton(this, cx - 170, startY + gapY * 2, 'Loja', () => this.scene.start('Shop'), { width: 200 });
@@ -40,6 +43,7 @@
       const fsBtn = this.add.text(width - 26, 26, '⛶', { fontFamily: 'Georgia', fontSize: '30px', color: '#f2e2b8' })
         .setOrigin(1, 0).setInteractive({ useHandCursor: true });
       fsBtn.on('pointerdown', () => global.GuardioesOrientation.requestFullscreenAndLock());
+      UI.muteButton(this, width - 66, 32);
     }
 
     drawSkyline(width, height) {

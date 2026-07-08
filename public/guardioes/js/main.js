@@ -17,6 +17,10 @@
         width: global.GuardioesData.MAP.width,
         height: global.GuardioesData.MAP.height
       },
+      physics: {
+        default: 'arcade',
+        arcade: { debug: false }
+      },
       scene: [
         global.GuardioesScenes.BootScene,
         global.GuardioesScenes.MenuScene,

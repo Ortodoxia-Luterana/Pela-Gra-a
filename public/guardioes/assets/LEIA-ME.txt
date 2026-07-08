@@ -1,0 +1,32 @@
+Como trocar a arte procedural por imagens de verdade
+======================================================
+
+O jogo gera as texturas por codigo hoje (formas/cores simples). Para usar arte
+de verdade (gerada no Codex, Canva, IA de imagem, ou desenhada), basta salvar
+o arquivo PNG nesta pasta com o nome exato abaixo. O jogo detecta sozinho e
+usa a imagem no lugar do desenho procedural - nao precisa mexer em nenhum
+codigo.
+
+Mapa (opcional, 1600x900, PNG):
+  map.png        -> imagem completa do mapa de fundo (o caminho continua
+                     sendo desenhado por cima, ficando semi-transparente)
+  ground.png     -> textura de chao 128x128 que repete pela tela (usada so
+                     se map.png nao existir)
+
+Torres / defesas (recomendado 160x160, fundo transparente):
+  defense-archer.png     (Arqueiro, comum)
+  defense-fire.png       (Braseiro, rara)
+  defense-trap.png       (Armadilha, comum - fica achatada no chao)
+  defense-ballista.png   (Balista, epica)
+  defense-relic.png      (Reliquia do Arcanjo, lendaria)
+
+Inimigos (recomendado 160x160, fundo transparente):
+  enemy-raider.png   (Saqueador)
+  enemy-shield.png   (Escudeiro)
+  enemy-ram.png      (Ariete)
+  enemy-boss.png     (Chefe Saqueador)
+
+Dica: comece pelas torres e inimigos, que sao o que mais aparece na tela.
+O mapa (map.png) e o que muda mais a sensacao de "produto proprio" - vale a
+pena caprichar nele com o estilo de fantasia historica (biblioteca, muralhas,
+mosteiro, cidade antiga) que a especificacao original do jogo descreve.

@@ -17,7 +17,10 @@
     container.setInteractive({ useHandCursor: true });
     container.on('pointerover', () => scene.tweens.add({ targets: container, scale: 1.04, duration: 90 }));
     container.on('pointerout', () => scene.tweens.add({ targets: container, scale: 1, duration: 90 }));
-    container.on('pointerdown', () => scene.tweens.add({ targets: container, scale: 0.94, duration: 60, yoyo: true, onComplete: onClick }));
+    container.on('pointerdown', () => {
+      if (global.GuardioesAudio) global.GuardioesAudio.uiClick();
+      scene.tweens.add({ targets: container, scale: 0.94, duration: 60, yoyo: true, onComplete: onClick });
+    });
     return container;
   }
 
@@ -62,5 +65,16 @@
     scene.cameras.main.shake(duration || 160, intensity || 0.006);
   }
 
-  global.GuardioesUI = { makeButton, makePanel, makeStonePanel, makeRaritySeal, topBar, floatingText, screenShake };
+  function muteButton(scene, x, y) {
+    const audio = global.GuardioesAudio;
+    const btn = scene.add.text(x, y, audio.muted ? '🔇' : '🔊', { fontSize: '26px' }).setOrigin(0.5).setDepth(600).setInteractive({ useHandCursor: true });
+    btn.on('pointerdown', () => {
+      const muted = audio.toggleMuted();
+      btn.setText(muted ? '🔇' : '🔊');
+      if (!muted) audio.uiClick();
+    });
+    return btn;
+  }
+
+  global.GuardioesUI = { makeButton, makePanel, makeStonePanel, makeRaritySeal, topBar, floatingText, screenShake, muteButton };
 })(window);

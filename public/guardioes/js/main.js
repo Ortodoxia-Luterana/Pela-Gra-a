@@ -22,6 +22,7 @@
       scene: [
         global.GuardioesScenes.BootScene,
         global.GuardioesScenes.MenuScene,
+        global.GuardioesScenes.LevelSelectScene,
         global.GuardioesScenes.BuildSetupScene,
         global.GuardioesScenes.CollectionScene,
         global.GuardioesScenes.ClassTreeScene,

@@ -9,6 +9,10 @@
   class BuildSetupScene extends Phaser.Scene {
     constructor() { super('BuildSetup'); }
 
+    init(data) {
+      this.levelIndex = typeof data.levelIndex === 'number' ? data.levelIndex : 0;
+    }
+
     create() {
       const { width, height } = this.scale;
       const state = this.registry.get('state');
@@ -16,7 +20,8 @@
       this.selected = new Set(state.loadouts[state.activeLoadout].defenseIds);
 
       this.add.rectangle(0, 0, width, height, 0x181410).setOrigin(0);
-      UI.topBar(this, 'Montar Build', () => this.scene.start('Menu'));
+      const level = D.LEVELS[this.levelIndex];
+      UI.topBar(this, `Build · ${level.name}`, () => this.scene.start('LevelSelect'));
 
       this.add.text(width / 2, 92, 'Escolha até 5 defesas para entrarem no sorteio da partida', {
         fontFamily: 'Georgia, serif', fontSize: '16px', color: '#cbb98a'
@@ -91,7 +96,7 @@
       const state = this.state;
       state.loadouts[state.activeLoadout].defenseIds = Array.from(this.selected);
       global.GuardioesSave.save(state);
-      this.scene.start('Battle', { loadout: Array.from(this.selected) });
+      this.scene.start('Battle', { loadout: Array.from(this.selected), levelIndex: this.levelIndex });
     }
   }
 

@@ -32,8 +32,8 @@
 
       const hasRun = Boolean(state.run && state.run.active);
       UI.makeButton(this, cx, startY, hasRun ? 'Continuar Partida' : 'Jogar', () => {
-        if (hasRun) this.scene.start('Battle', { resume: true, loadout: state.run.loadout });
-        else this.scene.start('BuildSetup');
+        if (hasRun) this.scene.start('Battle', { resume: true, loadout: state.run.loadout, levelIndex: state.run.levelIndex || 0 });
+        else this.scene.start('LevelSelect');
       }, { width: 300, height: 74, fontSize: 26 });
       UI.makeButton(this, cx - 170, startY + gapY, 'Coleção', () => this.scene.start('Collection'), { width: 200 });
       UI.makeButton(this, cx + 170, startY + gapY, 'Classe', () => this.scene.start('ClassTree'), { width: 200 });

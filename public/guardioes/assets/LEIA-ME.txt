@@ -7,11 +7,17 @@ o arquivo PNG nesta pasta com o nome exato abaixo. O jogo detecta sozinho e
 usa a imagem no lugar do desenho procedural - nao precisa mexer em nenhum
 codigo.
 
-Mapa (opcional, 1600x900, PNG):
-  map.png        -> imagem completa do mapa de fundo (o caminho continua
-                     sendo desenhado por cima, ficando semi-transparente)
-  ground.png     -> textura de chao 128x128 que repete pela tela (usada so
-                     se map.png nao existir)
+Mapas (opcional, 720x1280 vertical, PNG):
+  map-portoes.png     -> Nivel 1: Portoes da Cidade
+  map-estrada.png     -> Nivel 2: Estrada do Mosteiro
+  map-biblioteca.png  -> Nivel 3: Biblioteca em Chamas
+  map-muralhas.png    -> Nivel 4: Muralhas Antigas
+  map-arquivo.png     -> Nivel 5: O Grande Arquivo
+  map.png             -> fallback generico usado por qualquer nivel sem
+                          mapa proprio (o caminho continua sendo desenhado
+                          por cima, semi-transparente)
+  ground.png          -> textura de chao 128x128 que repete pela tela
+                          (usada so se nenhum mapa existir)
 
 Torres / defesas (recomendado 160x160, fundo transparente):
   defense-archer.png     (Arqueiro, comum)

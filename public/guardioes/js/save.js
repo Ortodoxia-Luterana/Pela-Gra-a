@@ -46,6 +46,7 @@
       collection,
       loadouts: [{ name: 'Padrão', defenseIds: ['archer', 'trap'] }],
       activeLoadout: 0,
+      progress: { levels: {} },
       stats: { wins: 0, losses: 0, packsOpened: 0, lastDailyPack: '' },
       run: null
     };
@@ -65,6 +66,8 @@
     });
     if (!state.loadouts || !state.loadouts.length) state.loadouts = def.loadouts;
     if (typeof state.activeLoadout !== 'number') state.activeLoadout = 0;
+    if (!state.progress) state.progress = { levels: {} };
+    if (!state.progress.levels) state.progress.levels = {};
     if (!state.stats) state.stats = def.stats;
     if (state.run === undefined) state.run = null;
     return state;

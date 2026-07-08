@@ -25,6 +25,7 @@
     init(data) {
       this.wantsResume = Boolean(data.resume);
       this.loadout = data.loadout || [];
+      this.levelIndex = typeof data.levelIndex === 'number' ? data.levelIndex : 0;
     }
 
     create() {
@@ -47,6 +48,7 @@
       this.rng = SAVE.mulberry32(this.rngSeed);
 
       if (isResume) {
+        this.levelIndex = typeof run.levelIndex === 'number' ? run.levelIndex : this.levelIndex;
         this.loadout = run.loadout || this.loadout;
         this.archiveHp = run.hp;
         this.maxArchiveHp = run.maxHp || BASE_START_HP;
@@ -63,6 +65,7 @@
         this.waveIndex = 0;
       }
 
+      this.level = D.LEVELS[Math.min(this.levelIndex, D.LEVELS.length - 1)];
       this.held = null;
       this.towers = [];
       this.enemies = [];
@@ -184,15 +187,18 @@
     // ---------- mapa ----------
     buildMap() {
       const { width, height } = this.scale;
-      const hasMapArt = this.textures.exists('tex-map-bg');
+      // arte por nivel (map-<id>.png) > arte generica (map.png) > chao procedural
+      const levelKey = `tex-map-${this.level.id}`;
+      const mapKey = this.textures.exists(levelKey) ? levelKey : (this.textures.exists('tex-map-bg') ? 'tex-map-bg' : null);
+      const hasMapArt = Boolean(mapKey);
       if (hasMapArt) {
-        this.add.image(width / 2, height / 2, 'tex-map-bg').setDisplaySize(width, height);
+        this.add.image(width / 2, height / 2, mapKey).setDisplaySize(width, height);
       } else {
         this.add.tileSprite(0, 0, width, height, 'tex-ground').setOrigin(0);
       }
 
       const g = this.add.graphics();
-      const path = D.MAP.path;
+      const path = this.level.path;
       const pathAlpha = hasMapArt ? 0.35 : 1;
       g.lineStyle(96, 0x8a6a45, pathAlpha);
       g.beginPath();
@@ -227,7 +233,7 @@
       this.speedBtn.on('pointerdown', () => { AUDIO.uiClick(); this.toggleGameSpeed(); });
 
       this.waveBtn = UI.makeButton(this, width / 2, 96, 'Iniciar Onda', () => this.startNextWave(), { width: 200, height: 48, fontSize: 15 }).setDepth(401);
-      if (this.waveIndex > 0 && this.waveIndex < D.WAVES.length) this.waveBtn.list[1].setText(`Iniciar ${D.WAVES[this.waveIndex].label}`);
+      if (this.waveIndex > 0 && this.waveIndex < this.level.waves.length) this.waveBtn.list[1].setText(`Iniciar ${this.level.waves[this.waveIndex].label}`);
 
       // Telegraph: mostra a composicao da proxima onda (skill tower-defense: sem preview,
       // inimigos especiais parecem aleatorios e injustos).
@@ -248,13 +254,13 @@
     updateHud() {
       this.hpText.setText(`Arquivo: ${this.archiveHp}/${this.maxArchiveHp}`);
       this.moneyText.setText(`${this.money} moedas`);
-      const total = D.WAVES.length;
-      this.waveText.setText(this.waveActive ? `${D.WAVES[this.waveIndex].label} · ${this.waveIndex + 1}/${total}` : (this.waveIndex >= total ? 'Vitória!' : `Pronto · ${this.waveIndex + 1}/${total}`));
+      const total = this.level.waves.length;
+      this.waveText.setText(this.waveActive ? `${this.level.waves[this.waveIndex].label} · ${this.waveIndex + 1}/${total}` : (this.waveIndex >= total ? 'Vitória!' : `Pronto · ${this.waveIndex + 1}/${total}`));
     }
 
     updateWavePreview() {
-      if (this.waveActive || this.waveIndex >= D.WAVES.length) { this.previewText.setText(''); return; }
-      const wave = D.WAVES[this.waveIndex];
+      if (this.waveActive || this.waveIndex >= this.level.waves.length) { this.previewText.setText(''); return; }
+      const wave = this.level.waves[this.waveIndex];
       const counts = {};
       wave.spawns.forEach(s => { counts[s.enemy] = (counts[s.enemy] || 0) + s.count; });
       const parts = Object.entries(counts).map(([id, n]) => `${n}× ${D.ENEMIES[id].name}`);
@@ -382,7 +388,7 @@
 
     // ---------- posicionamento ----------
     distanceToPath(x, y) {
-      const path = D.MAP.path;
+      const path = this.level.path;
       let min = Infinity;
       for (let i = 0; i < path.length - 1; i++) {
         min = Math.min(min, this.distToSegment(x, y, path[i], path[i + 1]));
@@ -578,11 +584,11 @@
 
     // ---------- ondas ----------
     startNextWave() {
-      if (this.paused || this.runEnded || this.waveActive || this.waveIndex >= D.WAVES.length) return;
+      if (this.paused || this.runEnded || this.waveActive || this.waveIndex >= this.level.waves.length) return;
       this.waveActive = true;
       this.waveBtn.setAlpha(0.4);
       AUDIO.waveStart();
-      const wave = D.WAVES[this.waveIndex];
+      const wave = this.level.waves[this.waveIndex];
       wave.spawns.forEach(spawnDef => {
         for (let i = 0; i < spawnDef.count; i++) {
           const t = this.time.delayedCall((spawnDef.delay || 0) + i * spawnDef.interval, () => this.spawnEnemy(spawnDef.enemy));
@@ -595,14 +601,14 @@
 
     spawnEnemy(enemyId) {
       const def = D.ENEMIES[enemyId];
-      const start = D.MAP.path[0];
+      const start = this.level.path[0];
       const sprite = this.physics.add.sprite(start.x, start.y, `tex-enemy-${enemyId}`);
       sprite.body.setAllowGravity(false);
       sprite.body.setCircle(sprite.width / 2.4, sprite.width * 0.08, sprite.height * 0.08);
       this.enemyGroup.add(sprite);
       if (def.isBoss) sprite.setScale(1.15);
-      // Escala geometrica: cada onda multiplica o HP base (pressao de upgrade constante)
-      const hpMult = Math.pow(D.HP_GROWTH, this.waveIndex);
+      // Escala geometrica por onda x multiplicador do nivel (pressao de upgrade constante)
+      const hpMult = this.level.hpMult * Math.pow(D.HP_GROWTH, this.waveIndex);
       const hp = Math.round(def.hp * hpMult);
       const hpBar = this.add.rectangle(start.x, start.y - 30, 40, 6, 0x2ecc71).setDepth(60);
       const enemy = {
@@ -615,7 +621,7 @@
     }
 
     steerEnemy(e) {
-      const path = D.MAP.path;
+      const path = this.level.path;
       const target = path[e.pathIndex];
       if (!target) return;
       const speed = e.def.speed * ((this.battleTime < e.slowUntil) ? e.slowFactor : 1);
@@ -631,14 +637,14 @@
         this.waveActive = false;
         this.waveIndex += 1;
         this.spawnTimers = [];
-        if (this.waveIndex >= D.WAVES.length) {
+        if (this.waveIndex >= this.level.waves.length) {
           this.onVictory();
         } else {
           const bonus = Math.round(D.WAVE_CLEAR_BONUS * (1 + (this.effects.bountyMult || 0)));
           this.money += bonus;
           this.floatText(this.scale.width / 2, 180, `Onda vencida! +${bonus}`, '#2ecc71');
           this.waveBtn.setAlpha(1);
-          this.waveBtn.list[1].setText(`Iniciar ${D.WAVES[this.waveIndex].label}`);
+          this.waveBtn.list[1].setText(`Iniciar ${this.level.waves[this.waveIndex].label}`);
         }
         this.persistRunSnapshot();
         this.updateHud();
@@ -656,7 +662,7 @@
     }
 
     updateEnemies() {
-      const path = D.MAP.path;
+      const path = this.level.path;
       for (let i = this.enemies.length - 1; i >= 0; i--) {
         const e = this.enemies[i];
         const target = path[e.pathIndex];
@@ -870,15 +876,16 @@
       const winCoinMult = 1 + (this.effects.winCoinMult || 0);
       const xpMult = 1 + (this.effects.xpMult || 0);
       const fragmentMult = 1 + (this.effects.fragmentMult || 0);
-      const coinsReward = Math.round(220 * winCoinMult);
-      const xpReward = Math.round(110 * xpMult);
-      const fragmentsReward = Math.round(6 * fragmentMult);
+      const coinsReward = Math.round(this.level.rewards.coins * winCoinMult);
+      const xpReward = Math.round(this.level.rewards.xp * xpMult);
+      const fragmentsReward = Math.round(this.level.rewards.fragments * fragmentMult);
 
       state.profile.coins += coinsReward;
       state.profile.xp += xpReward;
       this.applyLevelUp(state);
       this.loadout.forEach(id => { state.collection[id].fragments += fragmentsReward; });
       state.stats.wins = (state.stats.wins || 0) + 1;
+      state.progress.levels[this.level.id] = { completed: true, completedAt: new Date().toISOString() };
       state.run = null;
       SAVE.save(state, true);
 
@@ -906,21 +913,37 @@
     showEndOverlay(victory, coins, xp, fragments) {
       const { width, height } = this.scale;
       const dim = this.add.rectangle(0, 0, width, height, 0x000000, 0.65).setOrigin(0).setDepth(500);
-      const box = UI.makePanel(this, width / 2, height / 2, 460, 320).setDepth(501);
-      const title = this.add.text(width / 2, height / 2 - 120, victory ? 'Vitória!' : 'O Arquivo Caiu', {
+      const box = UI.makePanel(this, width / 2, height / 2, 460, 360).setDepth(501);
+      const title = this.add.text(width / 2, height / 2 - 140, victory ? 'Vitória!' : 'O Arquivo Caiu', {
         fontFamily: 'Georgia, serif', fontSize: '30px', color: victory ? '#2ecc71' : '#e74c3c', fontStyle: 'bold'
       }).setOrigin(0.5).setDepth(502);
       let detail = '';
-      if (victory) detail = `+${coins} moedas\n+${xp} XP\n+${fragments} fragmentos por defesa equipada`;
-      const desc = this.add.text(width / 2, height / 2 - 40, detail, {
+      if (victory) detail = `${this.level.name} concluído!\n+${coins} moedas\n+${xp} XP\n+${fragments} fragmentos por defesa equipada`;
+      const desc = this.add.text(width / 2, height / 2 - 60, detail, {
         fontFamily: 'Georgia, serif', fontSize: '16px', color: '#3a2c1a', align: 'center'
       }).setOrigin(0.5).setDepth(502);
-      UI.makeButton(this, width / 2, height / 2 + 100, 'Voltar ao Menu', () => this.scene.start('Menu'), { width: 260, height: 60 }).setDepth(502);
+
+      const hasNext = victory && this.levelIndex + 1 < D.LEVELS.length;
+      if (hasNext) {
+        UI.makeButton(this, width / 2, height / 2 + 60, `Próximo: ${D.LEVELS[this.levelIndex + 1].name}`, () => {
+          this.scene.start('BuildSetup', { levelIndex: this.levelIndex + 1 });
+        }, { width: 340, height: 58, fontSize: 17 }).setDepth(502);
+      }
+      const backLabel = victory ? 'Mapas' : 'Tentar de Novo';
+      UI.makeButton(this, width / 2, height / 2 + (hasNext ? 130 : 80), backLabel, () => {
+        if (victory) this.scene.start('LevelSelect');
+        else this.scene.start('BuildSetup', { levelIndex: this.levelIndex });
+      }, { width: 260, height: 56, fontSize: 18 }).setDepth(502);
+      const menuBtn = this.add.text(width / 2, height / 2 + (hasNext ? 178 : 130), 'Voltar ao Menu', {
+        fontFamily: 'Georgia, serif', fontSize: '14px', color: '#7a5a2e'
+      }).setOrigin(0.5).setDepth(502).setInteractive({ useHandCursor: true });
+      menuBtn.on('pointerdown', () => this.scene.start('Menu'));
     }
 
     persistRunSnapshot() {
       this.state.run = {
         active: !this.runEnded,
+        levelIndex: this.levelIndex,
         wave: this.waveIndex,
         hp: this.archiveHp,
         maxHp: this.maxArchiveHp,

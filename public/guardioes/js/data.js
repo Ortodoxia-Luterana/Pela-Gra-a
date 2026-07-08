@@ -2,25 +2,11 @@
 (function (global) {
   'use strict';
 
-  // Mobile-first: canvas vertical. O caminho serpenteia de cima pra baixo,
-  // com curvas largas o suficiente pra caber torres nos dois lados.
+  // Mobile-first: canvas vertical. Os caminhos de cada nivel vivem em LEVELS;
+  // aqui ficam so as dimensoes e as regras de posicionamento.
   const MAP = {
     width: 720,
     height: 1280,
-    path: [
-      { x: 360, y: -80 },
-      { x: 360, y: 170 },
-      { x: 610, y: 210 },
-      { x: 630, y: 420 },
-      { x: 360, y: 460 },
-      { x: 100, y: 500 },
-      { x: 90, y: 710 },
-      { x: 380, y: 750 },
-      { x: 630, y: 790 },
-      { x: 620, y: 1000 },
-      { x: 340, y: 1040 },
-      { x: 340, y: 1360 }
-    ],
     trapPathRadius: 70,
     towerPathRadius: 66,
     towerMinGap: 58
@@ -99,19 +85,95 @@
   // Bonus de moedas ao limpar cada onda (alem do bounty por abate).
   const WAVE_CLEAR_BONUS = 25;
 
-  // Ondas: cada entrada é {enemy, count, interval(ms), delay(ms antes de comecar)}.
-  // Ritmo: pico -> respiro -> pico (nao monotonico). Batedores puxam picos de tensao.
-  const WAVES = [
-    { label: 'Onda 1', spawns: [{ enemy: 'raider', count: 6, interval: 700 }] },
-    { label: 'Onda 2', spawns: [{ enemy: 'raider', count: 6, interval: 600 }, { enemy: 'shield', count: 3, interval: 900, delay: 1500 }] },
-    { label: 'Onda 3', spawns: [{ enemy: 'runner', count: 6, interval: 350 }, { enemy: 'raider', count: 6, interval: 550, delay: 1200 }] },
-    { label: 'Onda 4', spawns: [{ enemy: 'shield', count: 6, interval: 700 }, { enemy: 'ram', count: 3, interval: 1200, delay: 1500 }] },
-    { label: 'Onda 5 - Chefe', spawns: [{ enemy: 'raider', count: 8, interval: 500 }, { enemy: 'ram', count: 2, interval: 1400, delay: 2000 }, { enemy: 'boss', count: 1, interval: 0, delay: 5000 }] },
-    { label: 'Onda 6', spawns: [{ enemy: 'runner', count: 10, interval: 300 }, { enemy: 'shield', count: 4, interval: 800, delay: 2000 }] },
-    { label: 'Onda 7', spawns: [{ enemy: 'raider', count: 12, interval: 400 }, { enemy: 'ram', count: 4, interval: 1100, delay: 1500 }] },
-    { label: 'Onda 8', spawns: [{ enemy: 'runner', count: 8, interval: 280 }, { enemy: 'shield', count: 8, interval: 600, delay: 1000 }] },
-    { label: 'Onda 9', spawns: [{ enemy: 'ram', count: 6, interval: 900 }, { enemy: 'runner', count: 10, interval: 300, delay: 2500 }] },
-    { label: 'Onda 10 - Chefe Final', spawns: [{ enemy: 'shield', count: 6, interval: 600 }, { enemy: 'ram', count: 3, interval: 1200, delay: 1500 }, { enemy: 'boss', count: 2, interval: 4000, delay: 5000 }] }
+  // Niveis: cada um tem mapa (path proprio no canvas 720x1280), 5 ondas,
+  // multiplicador de HP e recompensas crescentes. Vencer um nivel libera o proximo.
+  // Ondas: {enemy, count, interval(ms), delay(ms)}. Ritmo: pico -> respiro -> pico.
+  const LEVELS = [
+    {
+      id: 'portoes', name: 'Portões da Cidade', desc: 'Saqueadores testam as defesas da entrada. Bom lugar pra aprender.',
+      hpMult: 1.0,
+      rewards: { coins: 120, xp: 60, fragments: 4 },
+      path: [
+        { x: 360, y: -80 }, { x: 360, y: 170 }, { x: 610, y: 210 }, { x: 630, y: 420 },
+        { x: 360, y: 460 }, { x: 100, y: 500 }, { x: 90, y: 710 }, { x: 380, y: 750 },
+        { x: 630, y: 790 }, { x: 620, y: 1000 }, { x: 340, y: 1040 }, { x: 340, y: 1360 }
+      ],
+      waves: [
+        { label: 'Onda 1', spawns: [{ enemy: 'raider', count: 6, interval: 700 }] },
+        { label: 'Onda 2', spawns: [{ enemy: 'raider', count: 8, interval: 550 }] },
+        { label: 'Onda 3', spawns: [{ enemy: 'raider', count: 6, interval: 600 }, { enemy: 'shield', count: 3, interval: 900, delay: 1500 }] },
+        { label: 'Onda 4', spawns: [{ enemy: 'shield', count: 5, interval: 750 }, { enemy: 'raider', count: 6, interval: 500, delay: 1200 }] },
+        { label: 'Onda 5 - Chefe', spawns: [{ enemy: 'raider', count: 8, interval: 500 }, { enemy: 'boss', count: 1, interval: 0, delay: 4000 }] }
+      ]
+    },
+    {
+      id: 'estrada', name: 'Estrada do Mosteiro', desc: 'Batedores velozes cortam a estrada. Lentidão vale ouro aqui.',
+      hpMult: 1.35,
+      rewards: { coins: 170, xp: 85, fragments: 5 },
+      path: [
+        { x: -80, y: 200 }, { x: 360, y: 200 }, { x: 620, y: 240 }, { x: 620, y: 440 },
+        { x: 120, y: 480 }, { x: 100, y: 700 }, { x: 600, y: 740 }, { x: 620, y: 960 },
+        { x: 120, y: 1000 }, { x: 120, y: 1200 }, { x: 360, y: 1240 }, { x: 360, y: 1360 }
+      ],
+      waves: [
+        { label: 'Onda 1', spawns: [{ enemy: 'raider', count: 8, interval: 550 }] },
+        { label: 'Onda 2', spawns: [{ enemy: 'runner', count: 6, interval: 350 }] },
+        { label: 'Onda 3', spawns: [{ enemy: 'runner', count: 6, interval: 320 }, { enemy: 'shield', count: 4, interval: 850, delay: 1500 }] },
+        { label: 'Onda 4', spawns: [{ enemy: 'runner', count: 10, interval: 280 }, { enemy: 'raider', count: 6, interval: 500, delay: 2000 }] },
+        { label: 'Onda 5 - Chefe', spawns: [{ enemy: 'runner', count: 8, interval: 300 }, { enemy: 'boss', count: 1, interval: 0, delay: 4500 }] }
+      ]
+    },
+    {
+      id: 'biblioteca', name: 'Biblioteca em Chamas', desc: 'Corredores longos e retos: arqueiros brilham, mas os aríetes chegam.',
+      hpMult: 1.75,
+      rewards: { coins: 230, xp: 115, fragments: 6 },
+      path: [
+        { x: 360, y: -80 }, { x: 360, y: 150 }, { x: 120, y: 190 }, { x: 110, y: 1020 },
+        { x: 600, y: 1060 }, { x: 620, y: 320 }, { x: 360, y: 360 }, { x: 350, y: 840 },
+        { x: 470, y: 890 }, { x: 480, y: 1360 }
+      ],
+      waves: [
+        { label: 'Onda 1', spawns: [{ enemy: 'shield', count: 6, interval: 700 }] },
+        { label: 'Onda 2', spawns: [{ enemy: 'ram', count: 3, interval: 1200 }, { enemy: 'raider', count: 6, interval: 500, delay: 1500 }] },
+        { label: 'Onda 3', spawns: [{ enemy: 'runner', count: 8, interval: 300 }, { enemy: 'ram', count: 2, interval: 1400, delay: 2200 }] },
+        { label: 'Onda 4', spawns: [{ enemy: 'shield', count: 7, interval: 650 }, { enemy: 'ram', count: 3, interval: 1100, delay: 1800 }] },
+        { label: 'Onda 5 - Chefe', spawns: [{ enemy: 'ram', count: 3, interval: 1300 }, { enemy: 'boss', count: 1, interval: 0, delay: 5000 }] }
+      ]
+    },
+    {
+      id: 'muralhas', name: 'Muralhas Antigas', desc: 'Vaivém de patrulhas em massa. Área e economia decidem.',
+      hpMult: 2.2,
+      rewards: { coins: 300, xp: 150, fragments: 7 },
+      path: [
+        { x: -80, y: 150 }, { x: 600, y: 160 }, { x: 620, y: 400 }, { x: 120, y: 430 },
+        { x: 100, y: 660 }, { x: 600, y: 690 }, { x: 620, y: 930 }, { x: 120, y: 960 },
+        { x: 100, y: 1190 }, { x: 360, y: 1220 }, { x: 360, y: 1360 }
+      ],
+      waves: [
+        { label: 'Onda 1', spawns: [{ enemy: 'raider', count: 12, interval: 400 }] },
+        { label: 'Onda 2', spawns: [{ enemy: 'runner', count: 10, interval: 280 }, { enemy: 'shield', count: 4, interval: 800, delay: 2000 }] },
+        { label: 'Onda 3', spawns: [{ enemy: 'shield', count: 8, interval: 600 }, { enemy: 'ram', count: 3, interval: 1100, delay: 1500 }] },
+        { label: 'Onda 4', spawns: [{ enemy: 'raider', count: 10, interval: 350 }, { enemy: 'runner', count: 8, interval: 300, delay: 2500 }] },
+        { label: 'Onda 5 - Chefe', spawns: [{ enemy: 'shield', count: 6, interval: 600 }, { enemy: 'boss', count: 1, interval: 0, delay: 5000 }] }
+      ]
+    },
+    {
+      id: 'arquivo', name: 'O Grande Arquivo', desc: 'A última defesa. Tudo que o inimigo tem, de uma vez.',
+      hpMult: 2.8,
+      rewards: { coins: 400, xp: 200, fragments: 9 },
+      path: [
+        { x: 360, y: -80 }, { x: 360, y: 130 }, { x: 110, y: 170 }, { x: 100, y: 360 },
+        { x: 610, y: 400 }, { x: 620, y: 590 }, { x: 110, y: 630 }, { x: 100, y: 820 },
+        { x: 610, y: 860 }, { x: 620, y: 1050 }, { x: 360, y: 1090 }, { x: 360, y: 1360 }
+      ],
+      waves: [
+        { label: 'Onda 1', spawns: [{ enemy: 'runner', count: 8, interval: 300 }, { enemy: 'shield', count: 5, interval: 700, delay: 1500 }] },
+        { label: 'Onda 2', spawns: [{ enemy: 'ram', count: 4, interval: 1000 }, { enemy: 'raider', count: 10, interval: 400, delay: 1500 }] },
+        { label: 'Onda 3', spawns: [{ enemy: 'runner', count: 12, interval: 250 }, { enemy: 'ram', count: 3, interval: 1200, delay: 2500 }] },
+        { label: 'Onda 4', spawns: [{ enemy: 'shield', count: 8, interval: 550 }, { enemy: 'ram', count: 4, interval: 1000, delay: 2000 }, { enemy: 'runner', count: 6, interval: 300, delay: 4500 }] },
+        { label: 'Onda 5 - Chefe Final', spawns: [{ enemy: 'shield', count: 6, interval: 600 }, { enemy: 'ram', count: 3, interval: 1200, delay: 1500 }, { enemy: 'boss', count: 2, interval: 4000, delay: 5000 }] }
+      ]
+    }
   ];
 
   // Classes: cada ramo tem ate 4 nos lineares. Efeitos aplicados via applyClassEffects().
@@ -218,7 +280,7 @@
 
   global.GuardioesData = {
     MAP, RARITY, RARITY_ORDER, MAX_FUSION_LEVEL,
-    DEFENSES, DEFENSE_ORDER, ENEMIES, WAVES,
+    DEFENSES, DEFENSE_ORDER, ENEMIES, LEVELS,
     HP_GROWTH, WAVE_CLEAR_BONUS,
     CLASSES, CLASS_ORDER,
     rarityWeights, pickRarity, defensesByRarity

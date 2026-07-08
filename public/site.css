@@ -857,6 +857,10 @@ img.feed-avatar {
 }
 
 
+.ol-game-card.guardioes-cover {
+  background: linear-gradient(90deg, rgba(20, 14, 8, .3), rgba(10, 8, 5, .88)), linear-gradient(135deg, #3a2a1c 0%, #6a4f18 45%, #1c1712 100%);
+}
+
 .ol-game-card.concordium-exploracao-cover {
   background: linear-gradient(90deg, rgba(0, 0, 0, .08), rgba(0, 0, 0, .78)), url("/assets/concordium-exploracao-card.png") center/cover;
 }

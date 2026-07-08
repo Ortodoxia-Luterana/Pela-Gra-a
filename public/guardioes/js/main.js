@@ -1,10 +1,8 @@
-/* Caminho dos Guardioes - bootstrap: carrega save, cria o jogo, liga o gate de orientacao */
+/* Caminho dos Guardioes - bootstrap: carrega save e cria o jogo (vertical, mobile-first) */
 (function (global) {
   'use strict';
 
   async function boot() {
-    global.GuardioesOrientation.initOrientationGate();
-
     const state = await global.GuardioesSave.load();
 
     const config = {

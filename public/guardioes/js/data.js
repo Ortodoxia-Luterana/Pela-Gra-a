@@ -2,27 +2,28 @@
 (function (global) {
   'use strict';
 
+  // Mobile-first: canvas vertical. O caminho serpenteia de cima pra baixo,
+  // com curvas largas o suficiente pra caber torres nos dois lados.
   const MAP = {
-    width: 1600,
-    height: 900,
+    width: 720,
+    height: 1280,
     path: [
-      { x: -80, y: 512 },
-      { x: 135, y: 515 },
-      { x: 286, y: 446 },
-      { x: 318, y: 284 },
-      { x: 520, y: 267 },
-      { x: 612, y: 376 },
-      { x: 598, y: 575 },
-      { x: 774, y: 640 },
-      { x: 940, y: 548 },
-      { x: 1034, y: 426 },
-      { x: 1226, y: 392 },
-      { x: 1425, y: 350 },
-      { x: 1680, y: 348 }
+      { x: 360, y: -80 },
+      { x: 360, y: 170 },
+      { x: 610, y: 210 },
+      { x: 630, y: 420 },
+      { x: 360, y: 460 },
+      { x: 100, y: 500 },
+      { x: 90, y: 710 },
+      { x: 380, y: 750 },
+      { x: 630, y: 790 },
+      { x: 620, y: 1000 },
+      { x: 340, y: 1040 },
+      { x: 340, y: 1360 }
     ],
-    trapPathRadius: 78,
-    towerPathRadius: 72,
-    towerMinGap: 64
+    trapPathRadius: 70,
+    towerPathRadius: 66,
+    towerMinGap: 58
   };
 
   const RARITY = {

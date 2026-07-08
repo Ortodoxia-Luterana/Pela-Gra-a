@@ -30,8 +30,8 @@
     renderGrid() {
       const { width, height } = this.scale;
       const state = this.state;
-      const cols = 5;
       const cardW = 150, cardH = 150, gap = 16;
+      const cols = Math.max(1, Math.floor((width - 30) / (cardW + gap)));
       const totalW = cols * cardW + (cols - 1) * gap;
       const startX = width / 2 - totalW / 2 + cardW / 2;
       const startY = 170;

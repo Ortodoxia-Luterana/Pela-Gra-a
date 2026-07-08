@@ -40,10 +40,10 @@
       UI.makeButton(this, cx - 170, startY + gapY * 2, 'Loja', () => this.scene.start('Shop'), { width: 200 });
       UI.makeButton(this, cx + 170, startY + gapY * 2, 'Build', () => this.scene.start('BuildSetup'), { width: 200 });
 
-      const fsBtn = this.add.text(width - 26, 26, '⛶', { fontFamily: 'Georgia', fontSize: '30px', color: '#f2e2b8' })
+      const fsBtn = this.add.text(width - 26, 26, '⛶', { fontFamily: 'Georgia', fontSize: '26px', color: '#f2e2b8' })
         .setOrigin(1, 0).setInteractive({ useHandCursor: true });
-      fsBtn.on('pointerdown', () => global.GuardioesOrientation.requestFullscreenAndLock());
-      UI.muteButton(this, width - 66, 32);
+      fsBtn.on('pointerdown', () => global.GuardioesOrientation.requestFullscreen());
+      UI.muteButton(this, width - 74, 32);
     }
 
     drawSkyline(width, height) {

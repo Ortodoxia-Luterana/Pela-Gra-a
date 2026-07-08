@@ -26,13 +26,13 @@
       }).setOrigin(1, 0);
       this.refreshCoins();
 
-      const cardW = 220, cardH = 260, gap = 30;
-      const totalW = PACKS.length * cardW + (PACKS.length - 1) * gap;
-      const startX = width / 2 - totalW / 2 + cardW / 2;
+      // Coluna unica: aproveita a altura do canvas vertical em vez de espremer na largura.
+      const cardW = Math.min(420, width - 60), cardH = 190, gap = 24;
+      const startY = 180;
 
       PACKS.forEach((pack, i) => {
-        const x = startX + i * (cardW + gap);
-        const y = height / 2 + 10;
+        const x = width / 2;
+        const y = startY + i * (cardH + gap);
         this.buildPackCard(pack, x, y, cardW, cardH);
       });
     }

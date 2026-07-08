@@ -151,11 +151,11 @@
       this.moneyText = this.add.text(20, 40, '', { fontFamily: 'Georgia, serif', fontSize: '16px', color: '#e0a52a' }).setDepth(401);
       this.waveText = this.add.text(width / 2, 28, '', { fontFamily: 'Georgia, serif', fontSize: '18px', color: '#f2e2b8', fontStyle: 'bold' }).setOrigin(0.5).setDepth(401);
 
-      this.menuBtn = this.add.text(width - 24, 28, '☰', { fontSize: '26px', color: '#f2e2b8' }).setOrigin(1, 0.5).setDepth(401).setInteractive({ useHandCursor: true });
+      this.menuBtn = this.add.text(width - 22, 20, '☰', { fontSize: '24px', color: '#f2e2b8' }).setOrigin(1, 0.5).setDepth(401).setInteractive({ useHandCursor: true });
       this.menuBtn.on('pointerdown', () => this.openPauseMenu());
-      UI.muteButton(this, width - 60, 28).setDepth(401);
+      UI.muteButton(this, width - 30, 50).setDepth(401);
 
-      this.waveBtn = UI.makeButton(this, width - 150, 90, 'Iniciar Onda', () => this.startNextWave(), { width: 190, height: 50, fontSize: 15 }).setDepth(401);
+      this.waveBtn = UI.makeButton(this, width / 2, 96, 'Iniciar Onda', () => this.startNextWave(), { width: 200, height: 48, fontSize: 15 }).setDepth(401);
       if (this.waveIndex > 0) this.waveBtn.list[1].setText(`Iniciar ${D.WAVES[Math.min(this.waveIndex, D.WAVES.length - 1)].label}`);
 
       this.updateHud();
@@ -209,8 +209,9 @@
     // ---------- botao de compra ----------
     buildBuyArea() {
       const { width, height } = this.scale;
-      this.buyBtn = UI.makeButton(this, 110, height - 60, `Comprar (${this.buyCost})`, () => this.buyDefense(), { width: 190, height: 64, fontSize: 18 }).setDepth(401);
-      this.heldPreview = this.add.container(320, height - 60).setDepth(401);
+      const groupCenter = width / 2;
+      this.buyBtn = UI.makeButton(this, groupCenter - 105, height - 60, `Comprar (${this.buyCost})`, () => this.buyDefense(), { width: 180, height: 64, fontSize: 17 }).setDepth(401);
+      this.heldPreview = this.add.container(groupCenter + 110, height - 60).setDepth(401);
       this.heldIcon = this.add.image(0, 0, 'tex-defense-archer').setVisible(false);
       this.heldLabel = this.add.text(0, 34, '', { fontFamily: 'Georgia, serif', fontSize: '12px', color: '#f2e2b8' }).setOrigin(0.5).setVisible(false);
       this.heldPreview.add([this.heldIcon, this.heldLabel]);

@@ -24,14 +24,17 @@
 
       this.cardNodes = {};
       const owned = D.DEFENSE_ORDER.filter(id => state.collection[id].owned);
-      const cols = Math.min(owned.length, 5);
-      const cardW = 170, cardH = 220, gap = 20;
+      const cardW = 150, cardH = 200, gap = 16;
+      const maxCols = Math.max(1, Math.floor((width - 30) / (cardW + gap)));
+      const cols = Math.min(owned.length, maxCols);
       const totalW = cols * cardW + (cols - 1) * gap;
       const startX = width / 2 - totalW / 2 + cardW / 2;
+      const startY = 150;
 
       owned.forEach((id, i) => {
-        const x = startX + i * (cardW + gap);
-        const y = height / 2 - 10;
+        const col = i % cols, row = Math.floor(i / cols);
+        const x = startX + col * (cardW + gap);
+        const y = startY + row * (cardH + gap);
         this.buildCard(id, x, y, cardW, cardH);
       });
 

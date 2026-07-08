@@ -10,8 +10,14 @@
       const { width, height } = this.scale;
       const state = this.registry.get('state');
 
-      this.add.rectangle(0, 0, width, height, 0x1a1712).setOrigin(0);
-      this.drawSkyline(width, height);
+      if (this.textures.exists('tex-menu-bg')) {
+        this.add.image(width / 2, height / 2, 'tex-menu-bg').setDisplaySize(width, height);
+        this.add.rectangle(0, 0, width, height, 0x080604, 0.32).setOrigin(0);
+        this.add.rectangle(0, 0, width, height * 0.35, 0x000000, 0.30).setOrigin(0);
+      } else {
+        this.add.rectangle(0, 0, width, height, 0x1a1712).setOrigin(0);
+        this.drawSkyline(width, height);
+      }
 
       this.add.text(width / 2, height * 0.22, 'CAMINHO DOS', {
         fontFamily: 'Georgia, serif', fontSize: '30px', color: '#cbb98a', fontStyle: 'bold'

@@ -20,6 +20,9 @@ html, body {
 }
 
 #game-root canvas {
-  max-width: 100%;
-  max-height: 100%;
+  width: min(100vw, 56.25vh) !important;
+  height: min(100vh, 177.7778vw) !important;
+  max-width: none;
+  max-height: none;
+  display: block;
 }

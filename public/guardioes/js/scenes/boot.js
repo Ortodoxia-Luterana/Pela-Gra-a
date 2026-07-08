@@ -6,9 +6,8 @@
   // automaticamente - basta soltar um PNG com o mesmo nome, sem mexer em codigo.
   const ASSET_BASE = '/assets/guardioes/assets/';
   const OVERRIDE_MANIFEST = [
-    ['tex-map-bg', 'map.png'],
-    ['tex-ground', 'ground.png'],
-    ...global.GuardioesData.LEVELS.map(l => [`tex-map-${l.id}`, `map-${l.id}.png`]),
+    ['tex-menu-bg', 'menu-bg.jpg'],
+    ...global.GuardioesData.LEVELS.map(l => [`tex-map-${l.id}`, `map-${l.id}.jpg`]),
     ...global.GuardioesData.DEFENSE_ORDER.map(id => [`tex-defense-${id}`, `defense-${id}.png`]),
     ...Object.keys(global.GuardioesData.ENEMIES).map(id => [`tex-enemy-${id}`, `enemy-${id}.png`])
   ];

@@ -858,7 +858,7 @@ img.feed-avatar {
 
 
 .ol-game-card.guardioes-cover {
-  background: linear-gradient(90deg, rgba(20, 14, 8, .3), rgba(10, 8, 5, .88)), linear-gradient(135deg, #3a2a1c 0%, #6a4f18 45%, #1c1712 100%);
+  background: linear-gradient(90deg, rgba(0,0,0,.08), rgba(0,0,0,.80)), url("/assets/guardioes-card.jpg") center/cover;
 }
 
 .ol-game-card.concordium-exploracao-cover {
@@ -1929,6 +1929,9 @@ img.feed-avatar {
   background:linear-gradient(90deg, rgba(0,0,0,.08), rgba(0,0,0,.78)), url("/assets/quiz-ortodoxia-card.png?v=cards-20260611") center/cover !important;
 }
 
+.ol-game-card.guardioes-cover{
+  background:linear-gradient(90deg, rgba(0,0,0,.08), rgba(0,0,0,.80)), url("/assets/guardioes-card.jpg?v=cards-20260708") center/cover !important;
+}
 
 .ol-game-card.concordium-exploracao-cover{
   background:linear-gradient(90deg, rgba(0,0,0,.08), rgba(0,0,0,.78)), url("/assets/concordium-exploracao-card.png?v=cards-20260614") center/cover !important;

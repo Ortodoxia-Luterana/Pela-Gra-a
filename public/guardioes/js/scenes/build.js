@@ -34,7 +34,7 @@
       const cols = Math.min(owned.length, maxCols);
       const totalW = cols * cardW + (cols - 1) * gap;
       const startX = width / 2 - totalW / 2 + cardW / 2;
-      const startY = 150;
+      const startY = 210;
 
       owned.forEach((id, i) => {
         const col = i % cols, row = Math.floor(i / cols);

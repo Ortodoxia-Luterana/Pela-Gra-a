@@ -67,6 +67,13 @@
       upgrades: ['damage', 'pierce', 'range'],
       desc: 'Tiro lento e pesado que atravessa vários inimigos na linha.'
     },
+    banner: {
+      id: 'banner', name: 'Estandarte de Guerra', rarity: 'rara', role: 'Suporte',
+      cost: 110, damage: 0, range: 0, rate: 0, auraRadius: 170, auraDamageMult: 0.25,
+      onPath: false, color: 0x8a2f3f, shape: 'banner',
+      upgrades: ['auraRadius', 'auraDamageMult'],
+      desc: 'Não ataca. Todas as torres próximas causam +25% de dano. Fundir amplia o bônus.'
+    },
     relic: {
       id: 'relic', name: 'Relíquia do Arcanjo', rarity: 'lendaria', role: 'Explosão em área',
       cost: 320, damage: 70, range: 240, rate: 3200, aoeRadius: 150,
@@ -76,22 +83,35 @@
     }
   };
 
-  const DEFENSE_ORDER = ['archer', 'fire', 'trap', 'ballista', 'relic'];
+  const DEFENSE_ORDER = ['archer', 'fire', 'trap', 'banner', 'ballista', 'relic'];
 
   const ENEMIES = {
     raider: { id: 'raider', name: 'Saqueador', hp: 34, speed: 78, bounty: 6, color: 0x8a3a3a, shape: 'raider' },
+    runner: { id: 'runner', name: 'Batedor', hp: 20, speed: 135, bounty: 5, color: 0xb07a2a, shape: 'runner' },
     shield: { id: 'shield', name: 'Escudeiro', hp: 70, speed: 60, bounty: 10, armor: 4, color: 0x6a6a78, shape: 'shield' },
     ram: { id: 'ram', name: 'Aríete', hp: 160, speed: 40, bounty: 18, armor: 2, color: 0x5a4632, shape: 'ram' },
     boss: { id: 'boss', name: 'Chefe Saqueador', hp: 620, speed: 34, bounty: 80, armor: 6, color: 0x3a1f1f, shape: 'boss', isBoss: true }
   };
 
-  // Ondas: cada entrada é {enemy, count, interval(ms), delay(ms antes de comecar)}
+  // Escala geometrica de HP por onda: onda N usa hp * HP_GROWTH^(N-1).
+  // Mantem pressao de upgrade sem trivializar o comeco (ref: skill tower-defense).
+  const HP_GROWTH = 1.13;
+  // Bonus de moedas ao limpar cada onda (alem do bounty por abate).
+  const WAVE_CLEAR_BONUS = 25;
+
+  // Ondas: cada entrada é {enemy, count, interval(ms), delay(ms antes de comecar)}.
+  // Ritmo: pico -> respiro -> pico (nao monotonico). Batedores puxam picos de tensao.
   const WAVES = [
     { label: 'Onda 1', spawns: [{ enemy: 'raider', count: 6, interval: 700 }] },
     { label: 'Onda 2', spawns: [{ enemy: 'raider', count: 6, interval: 600 }, { enemy: 'shield', count: 3, interval: 900, delay: 1500 }] },
-    { label: 'Onda 3', spawns: [{ enemy: 'raider', count: 10, interval: 450 }, { enemy: 'shield', count: 4, interval: 800, delay: 1000 }] },
+    { label: 'Onda 3', spawns: [{ enemy: 'runner', count: 6, interval: 350 }, { enemy: 'raider', count: 6, interval: 550, delay: 1200 }] },
     { label: 'Onda 4', spawns: [{ enemy: 'shield', count: 6, interval: 700 }, { enemy: 'ram', count: 3, interval: 1200, delay: 1500 }] },
-    { label: 'Onda 5 - Chefe', spawns: [{ enemy: 'raider', count: 8, interval: 500 }, { enemy: 'ram', count: 2, interval: 1400, delay: 2000 }, { enemy: 'boss', count: 1, interval: 0, delay: 5000 }] }
+    { label: 'Onda 5 - Chefe', spawns: [{ enemy: 'raider', count: 8, interval: 500 }, { enemy: 'ram', count: 2, interval: 1400, delay: 2000 }, { enemy: 'boss', count: 1, interval: 0, delay: 5000 }] },
+    { label: 'Onda 6', spawns: [{ enemy: 'runner', count: 10, interval: 300 }, { enemy: 'shield', count: 4, interval: 800, delay: 2000 }] },
+    { label: 'Onda 7', spawns: [{ enemy: 'raider', count: 12, interval: 400 }, { enemy: 'ram', count: 4, interval: 1100, delay: 1500 }] },
+    { label: 'Onda 8', spawns: [{ enemy: 'runner', count: 8, interval: 280 }, { enemy: 'shield', count: 8, interval: 600, delay: 1000 }] },
+    { label: 'Onda 9', spawns: [{ enemy: 'ram', count: 6, interval: 900 }, { enemy: 'runner', count: 10, interval: 300, delay: 2500 }] },
+    { label: 'Onda 10 - Chefe Final', spawns: [{ enemy: 'shield', count: 6, interval: 600 }, { enemy: 'ram', count: 3, interval: 1200, delay: 1500 }, { enemy: 'boss', count: 2, interval: 4000, delay: 5000 }] }
   ];
 
   // Classes: cada ramo tem ate 4 nos lineares. Efeitos aplicados via applyClassEffects().
@@ -199,6 +219,7 @@
   global.GuardioesData = {
     MAP, RARITY, RARITY_ORDER, MAX_FUSION_LEVEL,
     DEFENSES, DEFENSE_ORDER, ENEMIES, WAVES,
+    HP_GROWTH, WAVE_CLEAR_BONUS,
     CLASSES, CLASS_ORDER,
     rarityWeights, pickRarity, defensesByRarity
   };

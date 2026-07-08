@@ -174,6 +174,16 @@
         gfx.lineBetween(-24, -27, 24, -27);
       });
 
+      // Estandarte: mastro com bandeira rasgada
+      this.drawTowerBase(D.banner.id, D.banner.color, gfx => {
+        gfx.fillStyle(0x3a2a1c, 1);
+        gfx.fillRect(-2, -48, 4, 44);
+        gfx.fillStyle(D.banner.color, 1);
+        gfx.fillTriangle(2, -46, 2, -26, 26, -36);
+        gfx.fillStyle(0xe0c05a, 1);
+        gfx.fillCircle(0, -48, 4);
+      });
+
       // Reliquia: base dourada com orbe flutuante
       this.drawTowerBase(D.relic.id, D.relic.color, gfx => {
         gfx.fillStyle(0x6a4f18, 1);
@@ -226,6 +236,13 @@
       this.drawEnemy(E.raider.id, E.raider.color, 22, gfx => {
         gfx.fillStyle(0x2a2a2a, 1);
         gfx.fillTriangle(-6, -14, 6, -14, 0, -22);
+      });
+      this.drawEnemy(E.runner.id, E.runner.color, 16, gfx => {
+        // rastro de velocidade atras do corpo
+        gfx.fillStyle(0xd8a84a, 0.5);
+        gfx.fillTriangle(-14, -4, -14, 4, -30, 0);
+        gfx.fillStyle(0x2a2a2a, 1);
+        gfx.fillCircle(5, -4, 3);
       });
       this.drawEnemy(E.shield.id, E.shield.color, 26, gfx => {
         gfx.fillStyle(0x9a9aa4, 1);

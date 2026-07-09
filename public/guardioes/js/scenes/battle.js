@@ -18,6 +18,9 @@
   const SELL_REFUND = 0.7;
   const TARGETING_MODES = ['first', 'strong', 'close'];
   const TARGETING_LABELS = { first: 'Primeiro', strong: 'Mais Forte', close: 'Mais Perto' };
+  const TOWER_DISPLAY_SIZES = { archer: 92, fire: 94, trap: 104, banner: 104, ballista: 108, relic: 108 };
+  const ENEMY_DISPLAY_SIZES = { runner: 66, raider: 74, shield: 82, ram: 92, boss: 116 };
+  const HP_BAR_HEIGHT = 5;
 
   class BattleScene extends Phaser.Scene {
     constructor() { super('Battle'); }
@@ -199,7 +202,7 @@
 
       const g = this.add.graphics();
       const path = this.level.path;
-      const pathAlpha = hasMapArt ? 0.35 : 1;
+      const pathAlpha = hasMapArt ? 0.16 : 1;
       g.lineStyle(96, 0x8a6a45, pathAlpha);
       g.beginPath();
       g.moveTo(path[0].x, path[0].y);
@@ -321,7 +324,8 @@
         .setOrigin(0.5).setVisible(false).setInteractive({ useHandCursor: true });
       this.cancelBtn.on('pointerdown', () => this.cancelHeld());
       this.heldPreview.add([this.heldIcon, this.heldLabel, this.cancelBtn]);
-      this.previewMarker = this.add.image(0, 0, 'tex-valid-preview').setVisible(false).setDepth(50);
+      this.previewMarker = this.add.image(0, 0, 'tex-valid-preview').setVisible(false).setDepth(84).setAlpha(0.6);
+      this.previewGhost = this.add.image(0, 0, 'tex-defense-archer').setVisible(false).setDepth(86).setAlpha(0.82);
       this.rangeRing = this.add.image(0, 0, 'tex-range-ring').setVisible(false).setDepth(49).setAlpha(0.5);
 
       this.input.on('pointermove', p => this.updateHeldPreview(p));
@@ -354,6 +358,7 @@
       this.closeTowerPanel();
 
       this.heldIcon.setTexture(`tex-defense-${pick}`).setVisible(true);
+      this.heldIcon.setDisplaySize(58, 58);
       this.heldLabel.setText(D.DEFENSES[pick].name).setVisible(true);
       this.cancelBtn.setVisible(true);
       this.buyBtn.list[1].setText(`Comprar (${this.buyCost})`);
@@ -379,11 +384,37 @@
       this.heldLabel.setVisible(false);
       this.cancelBtn.setVisible(false);
       this.previewMarker.setVisible(false);
+      this.previewGhost.setVisible(false);
       this.rangeRing.setVisible(false);
     }
 
     rarityColorHex(rarity) {
       return '#' + D.RARITY[rarity].color.toString(16).padStart(6, '0');
+    }
+
+    towerDisplaySize(defenseId, level) {
+      const base = TOWER_DISPLAY_SIZES[defenseId] || 92;
+      return Math.round(base * (1 + (level - 1) * 0.13));
+    }
+
+    applyTowerDisplay(tower, stretchX, stretchY) {
+      const size = this.towerDisplaySize(tower.defenseId, tower.level);
+      tower.sprite.setDisplaySize(size, size);
+      const normalScaleX = tower.sprite.scaleX;
+      const normalScaleY = tower.sprite.scaleY;
+      if (stretchX || stretchY) {
+        tower.sprite.setScale(normalScaleX * (stretchX || 1), normalScaleY * (stretchY || 1));
+      }
+      return { normalScaleX, normalScaleY };
+    }
+
+    enemyDisplaySize(enemyId) {
+      return ENEMY_DISPLAY_SIZES[enemyId] || 74;
+    }
+
+    hpBarSpec(enemyId) {
+      const size = this.enemyDisplaySize(enemyId);
+      return { width: Math.round(size * 0.58), yOffset: Math.round(size * 0.55) };
     }
 
     // ---------- posicionamento ----------
@@ -422,11 +453,22 @@
     }
 
     updateHeldPreview(pointer) {
-      if (!this.held || this.paused) { if (!this.selectedTower) { this.previewMarker.setVisible(false); this.rangeRing.setVisible(false); } return; }
+      if (!this.held || this.paused) {
+        if (!this.selectedTower) { this.previewMarker.setVisible(false); this.previewGhost.setVisible(false); this.rangeRing.setVisible(false); }
+        return;
+      }
       const p = this.toWorldPoint(pointer);
       const def = D.DEFENSES[this.held.defenseId];
       const valid = this.isValidPlacement(p.x, p.y, this.held.defenseId);
-      this.previewMarker.setTexture(valid ? 'tex-valid-preview' : 'tex-invalid-preview').setPosition(p.x, p.y).setVisible(true);
+      const previewSize = this.towerDisplaySize(this.held.defenseId, this.held.level);
+      this.previewMarker.setTexture(valid ? 'tex-valid-preview' : 'tex-invalid-preview').setPosition(p.x, p.y).setDisplaySize(74, 74).setVisible(true);
+      this.previewGhost
+        .setTexture(`tex-defense-${this.held.defenseId}`)
+        .setPosition(p.x, p.y)
+        .setDisplaySize(previewSize, previewSize)
+        .setAlpha(valid ? 0.86 : 0.58)
+        .setTint(valid ? 0xffffff : 0xff7777)
+        .setVisible(true);
       const radius = def.auraRadius ? this.towerStat(this.held.defenseId, 'auraRadius') : (def.range ? this.towerStat(this.held.defenseId, 'range') * (1 + (this.effects.rangeMult || 0)) : 0);
       if (radius) {
         this.rangeRing.setPosition(p.x, p.y).setDisplaySize(radius * 2, radius * 2).setVisible(true);
@@ -472,8 +514,8 @@
       const def = D.DEFENSES[defenseId];
       const sprite = this.add.image(x, y, `tex-defense-${defenseId}`);
       const tower = { defenseId, level, x, y, sprite, lastFire: 0, targetCooldowns: new Map(), targeting: targeting || 'first', auraRing: null };
-      const baseScale = 1 + (level - 1) * 0.12;
-      sprite.setScale(baseScale);
+      sprite.setDepth(88);
+      const normal = this.applyTowerDisplay(tower);
       if (def.auraRadius) {
         const r = this.towerStat(defenseId, 'auraRadius') * (1 + (level - 1) * 0.15);
         tower.auraRing = this.add.circle(x, y, r, def.color, 0.07).setStrokeStyle(2, def.color, 0.35).setDepth(20);
@@ -481,8 +523,8 @@
       this.towers.push(tower);
       if (!silent) {
         // squash & stretch: achata no impacto e volta com overshoot (game-feel)
-        sprite.setScale(baseScale * 1.3, baseScale * 0.7);
-        this.tweens.add({ targets: sprite, scaleX: baseScale, scaleY: baseScale, duration: 220, ease: 'Back.Out' });
+        sprite.setScale(normal.normalScaleX * 1.3, normal.normalScaleY * 0.7);
+        this.tweens.add({ targets: sprite, scaleX: normal.normalScaleX, scaleY: normal.normalScaleY, duration: 220, ease: 'Back.Out' });
       }
     }
 
@@ -494,9 +536,8 @@
         return;
       }
       tower.level += 1;
-      const baseScale = 1 + (tower.level - 1) * 0.12;
-      tower.sprite.setScale(baseScale * 1.35, baseScale * 0.65);
-      this.tweens.add({ targets: tower.sprite, scaleX: baseScale, scaleY: baseScale, duration: 260, ease: 'Back.Out' });
+      const normal = this.applyTowerDisplay(tower, 1.35, 0.65);
+      this.tweens.add({ targets: tower.sprite, scaleX: normal.normalScaleX, scaleY: normal.normalScaleY, duration: 260, ease: 'Back.Out' });
       if (tower.auraRing) {
         const r = this.towerStat(tower.defenseId, 'auraRadius') * (1 + (tower.level - 1) * 0.15);
         tower.auraRing.setRadius(r);
@@ -603,16 +644,19 @@
       const def = D.ENEMIES[enemyId];
       const start = this.level.path[0];
       const sprite = this.physics.add.sprite(start.x, start.y, `tex-enemy-${enemyId}`);
+      const displaySize = this.enemyDisplaySize(enemyId);
+      sprite.setDepth(92).setDisplaySize(displaySize, displaySize);
       sprite.body.setAllowGravity(false);
       sprite.body.setCircle(sprite.width / 2.4, sprite.width * 0.08, sprite.height * 0.08);
       this.enemyGroup.add(sprite);
-      if (def.isBoss) sprite.setScale(1.15);
       // Escala geometrica por onda x multiplicador do nivel (pressao de upgrade constante)
       const hpMult = this.level.hpMult * Math.pow(D.HP_GROWTH, this.waveIndex);
       const hp = Math.round(def.hp * hpMult);
-      const hpBar = this.add.rectangle(start.x, start.y - 30, 40, 6, 0x2ecc71).setDepth(60);
+      const bar = this.hpBarSpec(enemyId);
+      const hpBack = this.add.rectangle(start.x, start.y - bar.yOffset, bar.width + 4, HP_BAR_HEIGHT + 2, 0x160f0b, 0.82).setDepth(104);
+      const hpBar = this.add.rectangle(start.x, start.y - bar.yOffset, bar.width, HP_BAR_HEIGHT, 0x35d16f, 0.95).setDepth(105);
       const enemy = {
-        id: enemyId, def, hp, maxHp: hp, sprite, hpBar,
+        id: enemyId, def, hp, maxHp: hp, sprite, hpBack, hpBar,
         pathIndex: 1, slowUntil: 0, slowFactor: 1
       };
       sprite.setData('ref', enemy);
@@ -673,14 +717,16 @@
           if (!path[e.pathIndex]) { this.enemyReachedEnd(e, i); continue; }
         }
         this.steerEnemy(e);
-        e.hpBar.setPosition(e.sprite.x, e.sprite.y - 30);
-        e.hpBar.width = 40 * Math.max(0, e.hp / e.maxHp);
+        const bar = this.hpBarSpec(e.id);
+        e.hpBack.setPosition(e.sprite.x, e.sprite.y - bar.yOffset);
+        e.hpBar.setPosition(e.sprite.x, e.sprite.y - bar.yOffset);
+        e.hpBar.width = bar.width * Math.max(0, e.hp / e.maxHp);
       }
     }
 
     enemyReachedEnd(e, index) {
       this.archiveHp = Math.max(0, this.archiveHp - 1);
-      e.sprite.destroy(); e.hpBar.destroy();
+      e.sprite.destroy(); e.hpBack.destroy(); e.hpBar.destroy();
       this.enemies.splice(index, 1);
       AUDIO.baseHit();
       UI.screenShake(this, 0.008, 200);
@@ -777,7 +823,7 @@
 
       const spr = this.projectileGroup.get(tower.x, tower.y - 20, texKey);
       if (!spr) return;
-      spr.setActive(true).setVisible(true).setTexture(texKey);
+      spr.setActive(true).setVisible(true).setTexture(texKey).setDepth(98);
       if (!spr.body) this.physics.world.enable(spr);
       spr.body.setAllowGravity(false);
       spr.body.reset(tower.x, tower.y - 20);
@@ -863,8 +909,9 @@
       // pop de morte: infla e some em vez de simplesmente sumir
       e.sprite.body.enable = false;
       this.enemies.splice(idx, 1);
+      e.hpBack.destroy();
       e.hpBar.destroy();
-      this.tweens.add({ targets: e.sprite, scale: e.sprite.scale * 1.45, alpha: 0, duration: 200, ease: 'Cubic.Out', onComplete: () => e.sprite.destroy() });
+      this.tweens.add({ targets: e.sprite, scaleX: e.sprite.scaleX * 1.45, scaleY: e.sprite.scaleY * 1.45, alpha: 0, duration: 200, ease: 'Cubic.Out', onComplete: () => e.sprite.destroy() });
       this.updateHud();
     }
 

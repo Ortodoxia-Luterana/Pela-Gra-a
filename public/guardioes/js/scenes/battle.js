@@ -716,13 +716,13 @@
     }
 
     enemiesInRadius(x, y, radius) {
-      const bodies = this.physics.world.overlapCirc(x, y, radius, true, false);
-      const found = [];
-      bodies.forEach(body => {
-        const ref = body.gameObject && body.gameObject.getData && body.gameObject.getData('ref');
-        if (ref) found.push(ref);
+      const radiusSq = radius * radius;
+      return this.enemies.filter(e => {
+        if (!e || !e.sprite || !e.sprite.active || e.hp <= 0) return false;
+        const dx = e.sprite.x - x;
+        const dy = e.sprite.y - y;
+        return dx * dx + dy * dy <= radiusSq;
       });
-      return found;
     }
 
     // Prioridade de alvo por torre: primeiro no caminho / mais forte / mais perto

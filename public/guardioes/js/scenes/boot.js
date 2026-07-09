@@ -5,6 +5,7 @@
   // Assets reais (se existirem em /assets/guardioes/assets/) substituem a arte procedural
   // automaticamente - basta soltar um PNG com o mesmo nome, sem mexer em codigo.
   const ASSET_BASE = '/assets/guardioes/assets/';
+  const ASSET_VERSION = 'guardioes-visuals-2026-07-08-2';
   const OVERRIDE_MANIFEST = [
     ['tex-menu-bg', 'menu-bg.jpg'],
     ...global.GuardioesData.LEVELS.map(l => [`tex-map-${l.id}`, `map-${l.id}.jpg`]),
@@ -17,7 +18,7 @@
 
     preload() {
       this.load.on('loaderror', () => { /* arquivo ainda nao existe: segue com o procedural */ });
-      OVERRIDE_MANIFEST.forEach(([key, file]) => this.load.image(key, ASSET_BASE + file));
+      OVERRIDE_MANIFEST.forEach(([key, file]) => this.load.image(key, `${ASSET_BASE}${file}?v=${ASSET_VERSION}`));
     }
 
     hasOverride(key) { return this.textures.exists(key); }

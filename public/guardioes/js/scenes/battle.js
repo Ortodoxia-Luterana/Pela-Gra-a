@@ -200,21 +200,29 @@
         this.add.tileSprite(0, 0, width, height, 'tex-ground').setOrigin(0);
       }
 
+      // O caminho e SEMPRE desenhado com opacidade forte, por cima da arte de fundo
+      // (procedural ou real). A arte gerada por IA nao sabe as coordenadas exatas do
+      // path e pode pintar uma estrada que nao bate com a rota de verdade - esconder
+      // o overlay (como uma versao anterior fazia, quase invisivel) so torna o
+      // problema pior: o jogador nao consegue ver onde os inimigos realmente andam
+      // nem onde pode ou nao pode colocar torre. O overlay e a fonte da verdade.
       const g = this.add.graphics();
       const path = this.level.path;
-      const pathAlpha = hasMapArt ? 0.16 : 1;
-      g.lineStyle(96, 0x8a6a45, pathAlpha);
+      g.lineStyle(100, 0x000000, hasMapArt ? 0.22 : 0);
       g.beginPath();
       g.moveTo(path[0].x, path[0].y);
       for (let i = 1; i < path.length; i++) g.lineTo(path[i].x, path[i].y);
       g.strokePath();
-      if (!hasMapArt) {
-        g.lineStyle(4, 0x6f5636, 0.6);
-        g.beginPath();
-        g.moveTo(path[0].x, path[0].y);
-        for (let i = 1; i < path.length; i++) g.lineTo(path[i].x, path[i].y);
-        g.strokePath();
-      }
+      g.lineStyle(94, 0x8a6a45, hasMapArt ? 0.62 : 1);
+      g.beginPath();
+      g.moveTo(path[0].x, path[0].y);
+      for (let i = 1; i < path.length; i++) g.lineTo(path[i].x, path[i].y);
+      g.strokePath();
+      g.lineStyle(4, 0x6f5636, hasMapArt ? 0.5 : 0.6);
+      g.beginPath();
+      g.moveTo(path[0].x, path[0].y);
+      for (let i = 1; i < path.length; i++) g.lineTo(path[i].x, path[i].y);
+      g.strokePath();
     }
 
     // ---------- HUD ----------
@@ -647,7 +655,14 @@
       const displaySize = this.enemyDisplaySize(enemyId);
       sprite.setDepth(92).setDisplaySize(displaySize, displaySize);
       sprite.body.setAllowGravity(false);
-      sprite.body.setCircle(sprite.width / 2.4, sprite.width * 0.08, sprite.height * 0.08);
+      // IMPORTANTE: setCircle espera radius/offset em unidades NAO escaladas (o frame
+      // nativo da textura) - o Phaser aplica o scale do sprite por cima sozinho. Usar
+      // sprite.width/height aqui (que ja e o tamanho de EXIBICAO pos-scale) faz o raio
+      // ser escalado duas vezes, encolhendo e deslocando o hitbox de cada inimigo de um
+      // jeito diferente (cada arte real tem uma proporcao de escala diferente). Isso é
+      // a causa raiz de fusao/mira/posicionamento parecendo "errados" depois da arte real.
+      const frameW = sprite.frame.width, frameH = sprite.frame.height;
+      sprite.body.setCircle(frameW / 2.4, frameW * 0.08, frameH * 0.08);
       this.enemyGroup.add(sprite);
       // Escala geometrica por onda x multiplicador do nivel (pressao de upgrade constante)
       const hpMult = this.level.hpMult * Math.pow(D.HP_GROWTH, this.waveIndex);

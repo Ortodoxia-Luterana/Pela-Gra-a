@@ -1053,7 +1053,13 @@
 
         const upgrades = [
           { id: "fervor", title: "Fervor", text: "+18% de ataque nesta fase.", apply: s => s.bonusAtk += 0.18 },
-          { id: "vigilia", title: "Vigília", text: "+24 de vida para todos.", apply: s => s.bonusHp += 24 },
+          { id: "vigilia", title: "Vigília", text: "+24 de vida para todos.", apply: s => {
+            s.bonusHp += 24;
+            s.party.forEach(unit => {
+              unit.maxHp += 24;
+              unit.hp = Math.min(unit.maxHp, unit.hp + 24);
+            });
+          } },
           { id: "disciplina", title: "Disciplina", text: "Ataques ficam mais rápidos.", apply: s => s.bonusSpeed += 0.16 },
           { id: "provisao", title: "Provisão", text: "Ganhe 45 moedas agora.", apply: s => { state.coins += 45; } },
           { id: "salmo", title: "Salmo", text: "Cura parcial da equipe.", apply: s => { s.party.forEach(unit => unit.hp = Math.min(unit.maxHp, unit.hp + 28)); } }
@@ -1351,7 +1357,7 @@
         }
 
         function makeHero(hero, index) {
-          const hp = hero.hp + (state.level - 1) * 8;
+            const hp = hero.hp + (state.level - 1) * 8;
           return {
             side: "hero",
             id: hero.id,

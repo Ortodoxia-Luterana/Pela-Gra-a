@@ -4,9 +4,11 @@
 
   // Mobile-first: canvas vertical. Os caminhos de cada nivel vivem em LEVELS;
   // aqui ficam so as dimensoes e as regras de posicionamento.
+  const BASE_MAP = { width: 720, height: 1280 };
+
   const MAP = {
-    width: 720,
-    height: 1280,
+    width: BASE_MAP.width,
+    height: BASE_MAP.height,
     trapPathRadius: 70,
     towerPathRadius: 66,
     towerMinGap: 58,
@@ -305,7 +307,7 @@
   }
 
   global.GuardioesData = {
-    MAP, RARITY, RARITY_ORDER, MAX_FUSION_LEVEL,
+    BASE_MAP, MAP, RARITY, RARITY_ORDER, MAX_FUSION_LEVEL,
     DEFENSES, DEFENSE_ORDER, ENEMIES, LEVELS,
     HP_GROWTH, WAVE_CLEAR_BONUS, WAVE_CLEAR_BONUS_GROWTH,
     CLASSES, CLASS_ORDER,

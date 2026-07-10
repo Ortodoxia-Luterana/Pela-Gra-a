@@ -51,7 +51,8 @@
       this.placementSlots = [];
 
       const run = state.run && state.run.active ? state.run : null;
-      const isResume = Boolean(this.wantsResume && run);
+      const runtimeLayout = this.runtime().layout;
+      const isResume = Boolean(this.wantsResume && run && (run.layout ? run.layout === runtimeLayout : runtimeLayout === 'mobile'));
 
       this.rngSeed = (run && run.randomSeed) || SAVE.randomSeed();
       this.rng = SAVE.mulberry32(this.rngSeed);
@@ -75,6 +76,7 @@
       }
 
       this.level = D.LEVELS[Math.min(this.levelIndex, D.LEVELS.length - 1)];
+      this.arenaPath = this.buildArenaPath();
       this.held = null;
       this.towers = [];
       this.enemies = [];
@@ -237,13 +239,49 @@
       });
     }
 
+    runtime() {
+      return global.GuardioesRuntime || {
+        layout: 'mobile',
+        isDesktop: false,
+        width: D.MAP.width,
+        height: D.MAP.height
+      };
+    }
+
+    isDesktopLayout() {
+      return this.runtime().isDesktop;
+    }
+
+    safeArea() {
+      const { width, height } = this.scale;
+      if (this.isDesktopLayout()) {
+        return { top: 86, bottom: height - 108, left: 28, right: width - 28, commandY: height - 54 };
+      }
+      return { top: TOP_HUD_SAFE_Y, bottom: BOTTOM_COMMAND_SAFE_Y, left: 20, right: width - 20, commandY: height - 74 };
+    }
+
+    mapPointToArena(point) {
+      if (!this.isDesktopLayout()) return { x: point.x, y: point.y };
+      const base = D.BASE_MAP || { width: 720, height: 1280 };
+      const { width, height } = this.scale;
+      const arena = { left: 78, top: 108, width: width - 156, height: height - 228 };
+      return {
+        x: arena.left + (point.y / base.height) * arena.width,
+        y: arena.top + (point.x / base.width) * arena.height
+      };
+    }
+
+    buildArenaPath() {
+      return this.level.path.map(point => this.mapPointToArena(point));
+    }
+
     // ---------- mapa ----------
     buildMap() {
       const { width, height } = this.scale;
       this.add.rectangle(0, 0, width, height, 0x20321d).setOrigin(0);
       const bg = this.add.graphics().setDepth(0);
       this.drawArenaGround(bg, width, height);
-      this.drawNaturalRoad(bg, this.level.path);
+      this.drawNaturalRoad(bg, this.arenaPath);
       this.placementSlots = this.createPlacementSlots();
       this.drawPlacementSlots(bg);
       this.drawProtectedObjective(bg, width, height);
@@ -265,9 +303,10 @@
         const y = (i * 149 + 89) % height;
         g.fillEllipse(x, y, 18 + (i % 4) * 5, 9 + (i % 3) * 3);
       }
+      const safe = this.safeArea();
       g.fillStyle(0x5c3d2a, 0.7);
-      g.fillRect(0, 0, width, TOP_HUD_SAFE_Y - 12);
-      g.fillRect(0, BOTTOM_COMMAND_SAFE_Y - 8, width, height - BOTTOM_COMMAND_SAFE_Y + 8);
+      g.fillRect(0, 0, width, safe.top - 12);
+      g.fillRect(0, safe.bottom - 8, width, height - safe.bottom + 8);
     }
 
     drawNaturalRoad(g, path) {
@@ -297,7 +336,7 @@
     }
 
     drawProtectedObjective(g, width, height) {
-      const end = this.level.path[this.level.path.length - 1];
+      const end = this.arenaPath[this.arenaPath.length - 1];
       const y = Math.min(height - 106, end.y - 72);
       g.fillStyle(0x1a2434, 1);
       g.fillRoundedRect(width / 2 - 90, y - 34, 180, 74, 10);
@@ -313,7 +352,10 @@
 
     createPlacementSlots() {
       const slots = [];
-      const path = this.level.path;
+      const path = this.arenaPath;
+      const safe = this.safeArea();
+      const offset = this.isDesktopLayout() ? 96 : 128;
+      const minGap = this.isDesktopLayout() ? 112 : 128;
       for (let i = 1; i < path.length - 1; i++) {
         const prev = path[i - 1], p = path[i], next = path[i + 1];
         const dx = next.x - prev.x;
@@ -322,14 +364,14 @@
         const nx = -dy / len;
         const ny = dx / len;
         [-1, 1].forEach(side => {
-          const x = Phaser.Math.Clamp(p.x + nx * side * 128, 58, D.MAP.width - 58);
-          const y = Phaser.Math.Clamp(p.y + ny * side * 128, TOP_HUD_SAFE_Y + 40, BOTTOM_COMMAND_SAFE_Y - 50);
+          const x = Phaser.Math.Clamp(p.x + nx * side * offset, safe.left + 42, safe.right - 42);
+          const y = Phaser.Math.Clamp(p.y + ny * side * offset, safe.top + 34, safe.bottom - 42);
           if (this.distanceToPath(x, y) < D.MAP.towerPathRadius + 26) return;
-          if (slots.some(s => Math.hypot(s.x - x, s.y - y) < 128)) return;
+          if (slots.some(s => Math.hypot(s.x - x, s.y - y) < minGap)) return;
           slots.push({ x, y });
         });
       }
-      return slots.slice(0, 10);
+      return slots.slice(0, this.isDesktopLayout() ? 14 : 10);
     }
 
     drawPlacementSlots(g) {
@@ -347,6 +389,11 @@
 
     // ---------- HUD ----------
     buildHud() {
+      if (this.isDesktopLayout()) {
+        this.buildDesktopHud();
+        return;
+      }
+
       const width = this.scale.width;
       this.add.rectangle(width / 2, 64, width, 128, 0x07101b, 0.88).setOrigin(0.5).setDepth(398);
 
@@ -403,6 +450,58 @@
       this.updateWavePreview();
     }
 
+    buildDesktopHud() {
+      const { width } = this.scale;
+      this.add.rectangle(width / 2, 34, width, 68, 0x07101b, 0.9).setOrigin(0.5).setDepth(398);
+
+      this.hpPanel = this.add.container(132, 34).setDepth(401);
+      this.wavePanel = this.add.container(width / 2, 34).setDepth(401);
+      this.moneyPanel = this.add.container(width - 142, 34).setDepth(401);
+      this.buildHudPanel(this.hpPanel, 238, 62, 'INTEGRIDADE');
+      this.buildHudPanel(this.wavePanel, 220, 62, 'ONDA');
+      this.buildHudPanel(this.moneyPanel, 238, 62, 'SUPRIMENTOS');
+
+      this.hpBarMaxWidth = 148;
+      this.hpText = this.add.text(0, 4, '', { fontFamily: 'Georgia, serif', fontSize: '21px', color: '#f3f7ff', fontStyle: 'bold' }).setOrigin(0.5);
+      this.hpBarBack = this.add.rectangle(0, 24, this.hpBarMaxWidth, 8, 0x102011, 0.9).setOrigin(0.5);
+      this.hpBarFill = this.add.rectangle(-this.hpBarMaxWidth / 2, 24, this.hpBarMaxWidth, 8, 0x62d64c, 0.98).setOrigin(0, 0.5);
+      this.hpPanel.add([this.hpText, this.hpBarBack, this.hpBarFill]);
+
+      this.waveText = this.add.text(0, 1, '', { fontFamily: 'Georgia, serif', fontSize: '22px', color: '#f3f7ff', fontStyle: 'bold', align: 'center' }).setOrigin(0.5);
+      this.enemyCountText = this.add.text(0, 24, '', { fontFamily: 'Georgia, serif', fontSize: '12px', color: '#d9e2ef', fontStyle: 'bold' }).setOrigin(0.5);
+      this.wavePanel.add([this.waveText, this.enemyCountText]);
+
+      this.moneyText = this.add.text(0, 6, '', { fontFamily: 'Georgia, serif', fontSize: '24px', color: '#f3f7ff', fontStyle: 'bold' }).setOrigin(0.5);
+      this.moneyPanel.add(this.moneyText);
+
+      this.autoWave = false;
+      this.autoBtn = this.add.text(316, 34, 'Auto OFF', {
+        fontFamily: 'Georgia, serif', fontSize: '14px', color: '#9a8a6a', fontStyle: 'bold',
+        backgroundColor: '#142238', padding: { x: 12, y: 7 }
+      }).setOrigin(0.5).setDepth(401).setInteractive({ useHandCursor: true });
+      this.autoBtn.on('pointerdown', () => { AUDIO.uiClick(); this.toggleAutoWave(); });
+
+      this.speedBtn = this.add.text(width - 386, 34, '1x', {
+        fontFamily: 'Georgia, serif', fontSize: '20px', color: '#f2e2b8', fontStyle: 'bold',
+        backgroundColor: '#142238', padding: { x: 15, y: 8 }
+      }).setOrigin(0.5).setDepth(401).setInteractive({ useHandCursor: true });
+      this.speedBtn.on('pointerdown', () => { AUDIO.uiClick(); this.toggleGameSpeed(); });
+
+      this.menuBtn = this.add.text(width - 326, 34, 'II', {
+        fontFamily: 'Arial, sans-serif', fontSize: '18px', color: '#f2e2b8', fontStyle: 'bold',
+        backgroundColor: '#142238', padding: { x: 14, y: 8 }
+      }).setOrigin(0.5).setDepth(401).setInteractive({ useHandCursor: true });
+      this.menuBtn.on('pointerdown', () => this.openPauseMenu());
+      this.muteBtn = UI.muteButton(this, width - 268, 34).setDepth(401);
+
+      this.previewText = this.add.text(width / 2, 73, '', {
+        fontFamily: 'Georgia, serif', fontSize: '12px', color: '#cbb98a'
+      }).setOrigin(0.5).setDepth(401);
+
+      this.updateHud();
+      this.updateWavePreview();
+    }
+
     buildHudPanel(container, width, height, title) {
       const bg = this.add.image(0, 0, 'tex-stone-panel').setDisplaySize(width, height);
       const rim = this.add.rectangle(0, 0, width - 6, height - 6, 0x000000, 0).setStrokeStyle(3, 0xd7a83d, 0.9);
@@ -414,7 +513,8 @@
 
     updateHud() {
       this.hpText.setText(`${this.archiveHp}/${this.maxArchiveHp}`);
-      if (this.hpBarFill) this.hpBarFill.width = 150 * Phaser.Math.Clamp(this.archiveHp / this.maxArchiveHp, 0, 1);
+      const hpBarWidth = this.hpBarMaxWidth || 150;
+      if (this.hpBarFill) this.hpBarFill.width = hpBarWidth * Phaser.Math.Clamp(this.archiveHp / this.maxArchiveHp, 0, 1);
       this.moneyText.setText(`${this.money}`);
       const total = this.level.waves.length;
       this.waveText.setText(this.waveIndex >= total ? 'VITORIA' : `${Math.min(this.waveIndex + 1, total)}/${total}`);
@@ -475,6 +575,11 @@
 
     // ---------- gerar torre / torre na mao ----------
     buildBuyArea() {
+      if (this.isDesktopLayout()) {
+        this.buildDesktopBuyArea();
+        return;
+      }
+
       const { width, height } = this.scale;
       this.add.rectangle(width / 2, height - 74, width, 148, 0x07101b, 0.9).setDepth(398);
 
@@ -495,6 +600,36 @@
 
       this.buyBtn = UI.makeButton(this, width / 2 - 18, height - 70, `GERAR TORRE\n${this.buyCost}`, () => this.generateTower(), { width: 320, height: 92, fontSize: 25 }).setDepth(401);
       this.waveBtn = UI.makeButton(this, width - 92, height - 70, 'INICIAR\nONDA', () => this.startNextWave(), { width: 160, height: 92, fontSize: 23 }).setDepth(401);
+      if (this.waveIndex > 0 && this.waveIndex < this.level.waves.length) this.waveBtn.list[1].setText(`INICIAR\n${this.waveIndex + 1}`);
+
+      this.previewMarker = this.add.image(0, 0, 'tex-valid-preview').setVisible(false).setDepth(84).setAlpha(0.6);
+      this.previewGhost = this.add.image(0, 0, 'tex-defense-archer').setVisible(false).setDepth(86).setAlpha(0.82);
+      this.rangeRing = this.add.image(0, 0, 'tex-range-ring').setVisible(false).setDepth(49).setAlpha(0.5);
+
+      this.input.on('pointermove', p => this.updateHeldPreview(p));
+    }
+
+    buildDesktopBuyArea() {
+      const { width, height } = this.scale;
+      this.add.rectangle(width / 2, height - 54, width, 108, 0x07101b, 0.92).setDepth(398);
+
+      this.heldPreview = this.add.container(128, height - 54).setDepth(401);
+      const heldBg = this.add.image(0, 0, 'tex-stone-panel').setDisplaySize(224, 78);
+      const heldTitle = this.add.text(-44, -24, 'TORRE', {
+        fontFamily: 'Georgia, serif', fontSize: '12px', color: '#f2e2b8', fontStyle: 'bold'
+      }).setOrigin(0.5);
+      this.heldIcon = this.add.image(-54, 10, 'tex-defense-archer').setVisible(false);
+      this.heldLabel = this.add.text(38, 8, 'vazio', {
+        fontFamily: 'Georgia, serif', fontSize: '13px', color: '#8a9ab0', align: 'left',
+        wordWrap: { width: 116 }
+      }).setOrigin(0.5);
+      this.cancelBtn = this.add.text(92, -24, 'X', { fontSize: '20px', color: '#e74c3c', fontStyle: 'bold' })
+        .setOrigin(0.5).setVisible(false).setInteractive({ useHandCursor: true });
+      this.cancelBtn.on('pointerdown', () => this.cancelHeld());
+      this.heldPreview.add([heldBg, heldTitle, this.heldIcon, this.heldLabel, this.cancelBtn]);
+
+      this.buyBtn = UI.makeButton(this, width / 2 - 128, height - 54, `GERAR TORRE\n${this.buyCost}`, () => this.generateTower(), { width: 310, height: 70, fontSize: 22 }).setDepth(401);
+      this.waveBtn = UI.makeButton(this, width - 166, height - 54, 'INICIAR\nONDA', () => this.startNextWave(), { width: 238, height: 70, fontSize: 22 }).setDepth(401);
       if (this.waveIndex > 0 && this.waveIndex < this.level.waves.length) this.waveBtn.list[1].setText(`INICIAR\n${this.waveIndex + 1}`);
 
       this.previewMarker = this.add.image(0, 0, 'tex-valid-preview').setVisible(false).setDepth(84).setAlpha(0.6);
@@ -596,7 +731,7 @@
 
     // ---------- posicionamento ----------
     distanceToPath(x, y) {
-      const path = this.level.path;
+      const path = this.arenaPath;
       let min = Infinity;
       for (let i = 0; i < path.length - 1; i++) {
         min = Math.min(min, this.distToSegment(x, y, path[i], path[i + 1]));
@@ -629,8 +764,8 @@
 
     isValidPlacement(x, y, defenseId, ignoreTower) {
       const def = D.DEFENSES[defenseId];
-      const margin = 20;
-      if (x < margin || y < TOP_HUD_SAFE_Y || x > D.MAP.width - margin || y > BOTTOM_COMMAND_SAFE_Y) return false;
+      const safe = this.safeArea();
+      if (x < safe.left || y < safe.top || x > safe.right || y > safe.bottom) return false;
       const dist = this.distanceToPath(x, y);
       if (def.onPath) {
         if (dist > D.MAP.trapPathRadius) return false;
@@ -690,7 +825,8 @@
     }
 
     pointerInCommandZone(pointer) {
-      return pointer.y < TOP_HUD_SAFE_Y || pointer.y > BOTTOM_COMMAND_SAFE_Y;
+      const safe = this.safeArea();
+      return pointer.y < safe.top || pointer.y > safe.bottom;
     }
 
     towerAt(x, y) {
@@ -945,7 +1081,7 @@
 
     spawnEnemy(enemyId) {
       const def = D.ENEMIES[enemyId];
-      const start = this.level.path[0];
+      const start = this.arenaPath[0];
       const sprite = this.physics.add.sprite(start.x, start.y, `tex-enemy-${enemyId}`);
       const displaySize = this.enemyDisplaySize(enemyId);
       sprite.setDepth(92).setDisplaySize(displaySize, displaySize);
@@ -975,7 +1111,7 @@
     }
 
     steerEnemy(e) {
-      const path = this.level.path;
+      const path = this.arenaPath;
       const target = path[e.pathIndex];
       if (!target) return;
       const speed = e.def.speed * ((this.battleTime < e.slowUntil) ? e.slowFactor : 1);
@@ -1025,7 +1161,7 @@
     }
 
     updateEnemies() {
-      const path = this.level.path;
+      const path = this.arenaPath;
       for (let i = this.enemies.length - 1; i >= 0; i--) {
         const e = this.enemies[i];
         const target = path[e.pathIndex];
@@ -1344,6 +1480,7 @@
     persistRunSnapshot() {
       this.state.run = {
         active: !this.runEnded,
+        layout: this.runtime().layout,
         levelIndex: this.levelIndex,
         wave: this.waveIndex,
         hp: this.archiveHp,

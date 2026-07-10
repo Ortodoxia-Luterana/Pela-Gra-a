@@ -4,6 +4,15 @@
 
   async function boot() {
     const state = await global.GuardioesSave.load();
+    const desktopQuery = '(min-width: 900px) and (min-height: 560px) and (orientation: landscape)';
+    const isDesktop = global.matchMedia && global.matchMedia(desktopQuery).matches;
+    global.GuardioesRuntime = {
+      layout: isDesktop ? 'desktop' : 'mobile',
+      isDesktop,
+      width: isDesktop ? 1280 : global.GuardioesData.MAP.width,
+      height: isDesktop ? 720 : global.GuardioesData.MAP.height
+    };
+    document.documentElement.dataset.guardioesLayout = global.GuardioesRuntime.layout;
 
     const config = {
       type: Phaser.AUTO,
@@ -12,8 +21,8 @@
       scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
-        width: global.GuardioesData.MAP.width,
-        height: global.GuardioesData.MAP.height
+        width: global.GuardioesRuntime.width,
+        height: global.GuardioesRuntime.height
       },
       physics: {
         default: 'arcade',

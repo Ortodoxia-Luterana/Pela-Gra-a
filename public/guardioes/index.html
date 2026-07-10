@@ -7,7 +7,26 @@
 <link rel="stylesheet" href="/assets/guardioes/game.css">
 </head>
 <body>
-  <div id="game-root"></div>
+  <main class="game-shell" aria-label="Tower Defense">
+    <aside class="desktop-rail desktop-rail-left" aria-hidden="true">
+      <div class="rail-kicker">Tower Defense</div>
+      <div class="rail-title">Defesa da Fortaleza</div>
+      <div class="rail-line"></div>
+      <div class="rail-copy">Estrada, torres e ondas em campo vertical preservado.</div>
+    </aside>
+
+    <section class="game-stage" aria-label="Campo de jogo">
+      <div id="game-root"></div>
+    </section>
+
+    <aside class="desktop-rail desktop-rail-right" aria-hidden="true">
+      <div class="rail-medallion"></div>
+      <div class="rail-title small">Campanha</div>
+      <div class="rail-copy">Gere torres, posicione, reposicione e funda durante a batalha.</div>
+      <div class="rail-line"></div>
+      <div class="rail-copy muted">Mobile primeiro. PC com tela expandida.</div>
+    </aside>
+  </main>
 
   <script src="/assets/guardioes/vendor/phaser.min.js"></script>
   <script src="/assets/guardioes/js/data.js"></script>

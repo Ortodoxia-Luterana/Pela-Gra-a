@@ -862,7 +862,7 @@ img.feed-avatar {
 }
 
 .ol-game-card.heroi-cover {
-  background: linear-gradient(90deg, rgba(0, 0, 0, .08), rgba(0, 0, 0, .80)), url("/assets/heroi-ortodoxo-cover.png") center/cover;
+  background: linear-gradient(90deg, rgba(0, 0, 0, .02), rgba(0, 0, 0, .70)), url("/assets/heroi-ortodoxo-hub.png") center 48%/cover;
 }
 
 .ol-game-card.concordium-exploracao-cover {
@@ -1938,7 +1938,7 @@ img.feed-avatar {
 }
 
 .ol-game-card.heroi-cover{
-  background:linear-gradient(90deg, rgba(0,0,0,.08), rgba(0,0,0,.80)), url("/assets/heroi-ortodoxo-cover.png?v=cards-20260710") center/cover !important;
+  background:linear-gradient(90deg, rgba(0,0,0,.02), rgba(0,0,0,.72)), url("/assets/heroi-ortodoxo-hub.png?v=cards-20260710b") center 48%/cover !important;
 }
 
 .ol-game-card.concordium-exploracao-cover{

@@ -14,7 +14,7 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v3.28.2';
+const GAME_VERSION = 'v3.28.3';
 const GAME_ID = 'pela-graca-1904';
 const CRONICAS_GAME_ID = 'cronicas-do-levante';
 const LUTHER_MATCH_GAME_ID = 'luther-metch';
@@ -1288,7 +1288,7 @@ async function handleApi(req, res, url, user) {
         },
         {
           id: 'heroi-ortodoxo',
-          title: 'Heroi Ortodoxo',
+          title: 'Herói Ortodoxo',
           status: 'prototype',
           playUrl: '/heroi-ortodoxo',
           rankingUrl: null
@@ -1733,7 +1733,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   const gameCard = `<section class="ol-panel ol-games">
     <article class="ol-game-card pela-cover"><div><h4>Pela Graça 1904</h4><p>Gerencie igrejas, forme pastores, responda perguntas doutrinárias e acompanhe a história da IELB no Brasil.</p></div><a href="/play">Jogar</a></article>
     <article class="ol-game-card cronicas-cover"><div><h4>Crônicas do Levante</h4><p>Uma narrativa bíblica interativa nos dias do rei Davi, com escolhas, descobertas, relações e consequências pelo caminho.</p></div><a href="/cronicas-do-levante">${cronicasSave ? 'Continuar' : 'Jogar'}</a></article>
-    <article class="ol-game-card heroi-cover"><div><h4>Herói Ortodoxo</h4><p>Invoque personagens bíblicos, monte sua formação e vença arenas com combate automático, cartas e recompensas.</p></div><a href="/heroi-ortodoxo">Jogar</a></article>
+    <article class="ol-game-card heroi-cover"><div><h4>Herói Ortodoxo</h4><p>Monte uma equipe de heróis bíblicos, explore capítulos curtos e escolha bênçãos para vencer arenas cheias de recompensas.</p></div><a href="/heroi-ortodoxo">Jogar</a></article>
     <article class="ol-game-card match3-cover"><div><h4>Luther Metch</h4><p>Junte 3 ou mais peças iguais para cumprir objetivos e avançar de fase.</p></div><a href="/luther-metch">Jogar</a></article>
     <article class="ol-game-card quiz-cover"><div><h4>Quiz Ortodoxia</h4><p>Dispute perguntas de Bíblia, Reforma e luteranismo em modo solo, duelo online, convite ou competição geral.</p></div><a href="/quiz-ortodoxia">Jogar</a></article>
     <article class="ol-game-card guardioes-cover"><div><h4>Caminho dos Guardiões</h4><p>Tower defense de fantasia histórica: monte sua build, compre defesas por sorte e raridade, funda torres iguais e defenda o arquivo sagrado.</p></div><a href="/caminho-dos-guardioes">Jogar</a></article>

@@ -1,0 +1,1408 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>HerÃ³i Ortodoxo | Ortodoxia Luterana Gaming</title>
+    <style>
+      :root {
+        --ink: #09121d;
+        --night: #0b1625;
+        --blue: #102a4b;
+        --lapis: #195c86;
+        --bronze: #b98232;
+        --bronze-2: #e1b35c;
+        --ivory: #f6ead1;
+        --linen: #dfcfaa;
+        --muted: #aeb8bb;
+        --danger: #d95b4b;
+        --good: #72d18b;
+        --panel: rgba(10, 21, 34, 0.9);
+        --panel-2: rgba(19, 38, 58, 0.86);
+        --line: rgba(225, 179, 92, 0.36);
+        --shadow: 0 24px 80px rgba(0, 0, 0, 0.48);
+      }
+
+      * { box-sizing: border-box; }
+      html, body { min-height: 100%; }
+      body {
+        margin: 0;
+        color: var(--ivory);
+        background:
+          radial-gradient(circle at 50% -20%, rgba(72, 153, 184, 0.3), transparent 28rem),
+          linear-gradient(180deg, #07101a, #03070d 72%);
+        font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+        overflow-x: hidden;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -2;
+        background:
+          linear-gradient(180deg, rgba(5, 12, 21, 0.2), rgba(5, 12, 21, 0.95)),
+          url("/assets/heroi-ortodoxo-cover.png") center / cover no-repeat;
+        opacity: 0.46;
+        filter: saturate(0.9);
+      }
+
+      button, a { font: inherit; }
+      button { cursor: pointer; }
+      .hidden { display: none !important; }
+
+      .app {
+        width: min(100%, 520px);
+        min-height: 100vh;
+        margin: 0 auto;
+        position: relative;
+        border-inline: 1px solid rgba(225, 179, 92, 0.18);
+        background: linear-gradient(180deg, rgba(5, 13, 23, 0.82), rgba(4, 9, 16, 0.96));
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      .app::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background:
+          radial-gradient(circle at 18% 28%, rgba(225, 179, 92, 0.13), transparent 12rem),
+          radial-gradient(circle at 88% 12%, rgba(25, 92, 134, 0.22), transparent 11rem);
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 0.7rem;
+        align-items: center;
+        padding: max(0.9rem, env(safe-area-inset-top)) 1rem 0.75rem;
+        border-bottom: 1px solid rgba(225, 179, 92, 0.18);
+        background: rgba(5, 13, 23, 0.9);
+        backdrop-filter: blur(16px);
+      }
+
+      .brand small, .eyebrow {
+        display: block;
+        color: var(--bronze-2);
+        text-transform: uppercase;
+        letter-spacing: 0.11em;
+        font-size: 0.68rem;
+        font-weight: 800;
+      }
+
+      .brand h1 {
+        margin: 0.1rem 0 0;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 1.35rem;
+        line-height: 1;
+      }
+
+      .resource-row {
+        display: flex;
+        gap: 0.35rem;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+      }
+
+      .chip {
+        min-height: 2rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        border: 1px solid rgba(225, 179, 92, 0.28);
+        border-radius: 999px;
+        padding: 0.25rem 0.52rem;
+        color: #fff3d6;
+        background: rgba(3, 9, 16, 0.62);
+        font-size: 0.72rem;
+        font-weight: 800;
+      }
+
+      .view {
+        display: none;
+        position: relative;
+        z-index: 1;
+        min-height: calc(100vh - 136px);
+        padding: 1rem 1rem 6rem;
+      }
+
+      .view.active { display: block; }
+
+      .hall {
+        position: relative;
+        min-height: 320px;
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        overflow: hidden;
+        padding: 1rem;
+        background:
+          linear-gradient(180deg, rgba(12, 34, 54, 0.18), rgba(4, 11, 20, 0.86)),
+          url("/assets/heroi-ortodoxo-cover.png") center / cover;
+        box-shadow: 0 18px 52px rgba(0, 0, 0, 0.42);
+      }
+
+      .hall::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(circle at 30% 22%, rgba(243, 194, 94, 0.34), transparent 14rem),
+          linear-gradient(180deg, transparent 20%, rgba(3, 8, 14, 0.88) 88%);
+        animation: breathe 4s ease-in-out infinite alternate;
+      }
+
+      .hall-content {
+        position: absolute;
+        left: 1rem;
+        right: 1rem;
+        bottom: 1rem;
+        z-index: 1;
+      }
+
+      .hall h2 {
+        margin: 0.3rem 0 0.4rem;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 2rem;
+        line-height: 1;
+      }
+
+      .hall p {
+        max-width: 26rem;
+        margin: 0;
+        color: #eadfca;
+        line-height: 1.45;
+        font-size: 0.92rem;
+      }
+
+      .hotspots {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+      }
+
+      .hotspot {
+        position: absolute;
+        width: 44px;
+        height: 44px;
+        border: 1px solid rgba(246, 234, 209, 0.6);
+        border-radius: 50%;
+        color: var(--ivory);
+        background: radial-gradient(circle, rgba(225, 179, 92, 0.34), rgba(11, 32, 54, 0.78));
+        box-shadow: 0 0 0 0 rgba(225, 179, 92, 0.34);
+        animation: pulse 1.8s ease-in-out infinite;
+      }
+
+      .hotspot.summon { left: 12%; top: 32%; }
+      .hotspot.heroes { right: 16%; top: 42%; animation-delay: 0.3s; }
+      .hotspot.adventure { left: 48%; top: 58%; animation-delay: 0.6s; }
+
+      .panel {
+        border: 1px solid rgba(225, 179, 92, 0.22);
+        border-radius: 18px;
+        background: var(--panel);
+        box-shadow: 0 15px 44px rgba(0, 0, 0, 0.26);
+        padding: 1rem;
+        margin-top: 1rem;
+      }
+
+      .panel-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 0.85rem;
+      }
+
+      .panel h2, .panel h3 {
+        margin: 0;
+        font-family: Georgia, "Times New Roman", serif;
+      }
+
+      .panel p { color: var(--muted); line-height: 1.5; }
+
+      .book-card {
+        min-height: 170px;
+        border-radius: 18px;
+        padding: 1rem;
+        display: grid;
+        align-content: end;
+        border: 1px solid rgba(225, 179, 92, 0.24);
+        background:
+          linear-gradient(180deg, rgba(4, 11, 20, 0.08), rgba(4, 11, 20, 0.9)),
+          var(--book-bg);
+        background-size: cover;
+        background-position: center;
+      }
+
+      .book-card h3 { font-size: 1.65rem; }
+
+      .button-row {
+        display: flex;
+        gap: 0.65rem;
+        flex-wrap: wrap;
+        margin-top: 0.85rem;
+      }
+
+      .btn {
+        min-height: 3rem;
+        border: 0;
+        border-radius: 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        padding: 0.75rem 1rem;
+        color: #271806;
+        background: linear-gradient(180deg, #f3d484, var(--bronze));
+        box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22), inset 0 1px rgba(255, 255, 255, 0.36);
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+
+      .btn.secondary {
+        color: var(--ivory);
+        border: 1px solid rgba(225, 179, 92, 0.34);
+        background: rgba(13, 35, 57, 0.72);
+      }
+
+      .btn.ghost {
+        color: var(--bronze-2);
+        border: 1px solid rgba(225, 179, 92, 0.26);
+        background: rgba(5, 13, 23, 0.55);
+      }
+
+      .btn:disabled {
+        opacity: 0.46;
+        filter: grayscale(0.4);
+        cursor: not-allowed;
+      }
+
+      .btn.full { width: 100%; }
+
+      .grid {
+        display: grid;
+        gap: 0.85rem;
+      }
+
+      .two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+      .hero-card, .stage-card, .reward-card, .mission-card {
+        position: relative;
+        min-width: 0;
+        border: 1px solid rgba(225, 179, 92, 0.18);
+        border-radius: 18px;
+        background:
+          linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01)),
+          rgba(14, 30, 48, 0.78);
+        padding: 0.85rem;
+        overflow: hidden;
+      }
+
+      .hero-card.locked { opacity: 0.62; filter: grayscale(0.35); }
+
+      .portrait {
+        width: 68px;
+        height: 68px;
+        display: grid;
+        place-items: center;
+        border: 2px solid var(--rarity, var(--bronze));
+        border-radius: 20px;
+        margin-bottom: 0.65rem;
+        color: var(--ivory);
+        background:
+          radial-gradient(circle at 34% 22%, rgba(255, 255, 255, 0.25), transparent 24px),
+          linear-gradient(150deg, rgba(25, 92, 134, 0.9), rgba(74, 42, 21, 0.96));
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 1.35rem;
+        font-weight: 900;
+        text-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+      }
+
+      .hero-card h3, .stage-card h3, .mission-card h3 {
+        margin: 0 0 0.25rem;
+        color: var(--ivory);
+        font-size: 1rem;
+      }
+
+      .meta {
+        color: var(--bronze-2);
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 900;
+      }
+
+      .small {
+        margin: 0.25rem 0 0;
+        color: var(--muted);
+        font-size: 0.82rem;
+        line-height: 1.35;
+      }
+
+      .slot-row {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.55rem;
+      }
+
+      .slot {
+        min-height: 102px;
+        border: 1px dashed rgba(225, 179, 92, 0.36);
+        border-radius: 18px;
+        display: grid;
+        align-content: center;
+        justify-items: center;
+        gap: 0.35rem;
+        padding: 0.55rem;
+        background: rgba(4, 11, 20, 0.42);
+        text-align: center;
+      }
+
+      .slot strong { font-size: 0.8rem; }
+      .slot small { color: var(--muted); }
+
+      .nav {
+        position: fixed;
+        left: 50%;
+        bottom: 0;
+        z-index: 30;
+        width: min(100%, 520px);
+        transform: translateX(-50%);
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 0.25rem;
+        padding: 0.55rem 0.65rem max(0.55rem, env(safe-area-inset-bottom));
+        border-top: 1px solid rgba(225, 179, 92, 0.22);
+        background: rgba(5, 13, 23, 0.94);
+        backdrop-filter: blur(16px);
+      }
+
+      .nav button {
+        min-height: 3.6rem;
+        border: 0;
+        border-radius: 16px;
+        color: var(--muted);
+        background: transparent;
+        display: grid;
+        place-items: center;
+        gap: 0.15rem;
+        font-size: 0.68rem;
+        font-weight: 800;
+      }
+
+      .nav button span { font-size: 1.1rem; }
+      .nav button.active { color: var(--ivory); background: rgba(225, 179, 92, 0.14); }
+
+      .modal {
+        position: fixed;
+        inset: 0;
+        z-index: 60;
+        display: grid;
+        place-items: end center;
+        padding: 1rem;
+        background: rgba(2, 5, 10, 0.76);
+        backdrop-filter: blur(12px);
+      }
+
+      .modal-card {
+        width: min(100%, 500px);
+        max-height: calc(100vh - 2rem);
+        overflow: auto;
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: linear-gradient(180deg, rgba(18, 39, 60, 0.98), rgba(6, 13, 23, 0.98));
+        box-shadow: var(--shadow);
+        padding: 1rem;
+      }
+
+      .summon-altar {
+        min-height: 220px;
+        border: 1px solid rgba(225, 179, 92, 0.3);
+        border-radius: 24px;
+        display: grid;
+        place-items: center;
+        text-align: center;
+        padding: 1rem;
+        background:
+          radial-gradient(circle at 50% 34%, rgba(225, 179, 92, 0.34), transparent 6rem),
+          radial-gradient(circle at 50% 60%, rgba(25, 92, 134, 0.36), transparent 9rem),
+          linear-gradient(180deg, rgba(10, 29, 47, 0.92), rgba(4, 11, 20, 0.92));
+      }
+
+      .altar-ring {
+        width: 132px;
+        height: 132px;
+        display: grid;
+        place-items: center;
+        border: 3px solid var(--bronze-2);
+        border-radius: 50%;
+        box-shadow: 0 0 48px rgba(225, 179, 92, 0.38), inset 0 0 24px rgba(25, 92, 134, 0.45);
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 2.2rem;
+        font-weight: 900;
+      }
+
+      .battle-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        width: min(100%, 520px);
+        margin: 0 auto;
+        background:
+          radial-gradient(circle at 50% 18%, rgba(225, 179, 92, 0.18), transparent 16rem),
+          linear-gradient(180deg, #112238, #060d16);
+        left: 50%;
+        transform: translateX(-50%);
+      }
+
+      .battle-top {
+        display: grid;
+        gap: 0.6rem;
+        padding: max(0.9rem, env(safe-area-inset-top)) 0.85rem 0.75rem;
+        border-bottom: 1px solid rgba(225, 179, 92, 0.2);
+        background: rgba(5, 13, 23, 0.86);
+      }
+
+      .battle-stats {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 0.65rem;
+        align-items: center;
+      }
+
+      .bar {
+        height: 9px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.12);
+        overflow: hidden;
+      }
+
+      .bar span {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, var(--bronze), var(--bronze-2));
+      }
+
+      .arena {
+        position: relative;
+        display: grid;
+        grid-template-rows: auto 1fr;
+        gap: 0.6rem;
+        padding: 0.8rem;
+        overflow: hidden;
+      }
+
+      .arena-bg {
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(180deg, rgba(10, 35, 58, 0.24), rgba(7, 14, 23, 0.9)),
+          var(--arena-bg);
+        background-size: cover;
+        background-position: center;
+        opacity: 0.44;
+      }
+
+      .battle-log {
+        position: relative;
+        z-index: 1;
+        min-height: 2.5rem;
+        border: 1px solid rgba(225, 179, 92, 0.16);
+        border-radius: 14px;
+        padding: 0.55rem 0.7rem;
+        color: #eadfca;
+        background: rgba(5, 13, 23, 0.58);
+        font-size: 0.78rem;
+      }
+
+      .field {
+        position: relative;
+        z-index: 1;
+        align-self: stretch;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: repeat(4, 1fr);
+        gap: 0.45rem;
+      }
+
+      .cell {
+        position: relative;
+        min-height: 78px;
+        border: 1px solid rgba(225, 179, 92, 0.18);
+        border-radius: 18px;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.12)),
+          rgba(16, 42, 75, 0.44);
+        overflow: hidden;
+      }
+
+      .cell.valid { outline: 2px solid rgba(114, 209, 139, 0.8); }
+      .cell.danger { box-shadow: inset 0 0 0 2px rgba(217, 91, 75, 0.68); }
+
+      .unit {
+        position: absolute;
+        left: 8%;
+        right: 8%;
+        bottom: 9%;
+        min-height: 48px;
+        border-radius: 16px;
+        display: grid;
+        align-content: center;
+        justify-items: center;
+        padding: 0.3rem;
+        text-align: center;
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.34);
+      }
+
+      .unit.hero {
+        border: 1px solid rgba(225, 179, 92, 0.6);
+        color: var(--ivory);
+        background: linear-gradient(145deg, rgba(28, 97, 132, 0.96), rgba(73, 48, 24, 0.96));
+      }
+
+      .unit.enemy {
+        border: 1px solid rgba(217, 91, 75, 0.48);
+        color: #fff1e8;
+        background: linear-gradient(145deg, rgba(97, 32, 32, 0.96), rgba(27, 22, 21, 0.96));
+      }
+
+      .unit b { font-size: 0.76rem; }
+      .unit small { font-size: 0.62rem; opacity: 0.82; }
+
+      .hp {
+        width: 82%;
+        height: 5px;
+        margin-top: 0.25rem;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.35);
+        overflow: hidden;
+      }
+
+      .hp span { display: block; height: 100%; background: var(--good); }
+      .enemy .hp span { background: var(--danger); }
+
+      .battle-actions {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: 0.55rem;
+        padding: 0.75rem;
+        border-top: 1px solid rgba(225, 179, 92, 0.2);
+        background: rgba(5, 13, 23, 0.9);
+      }
+
+      .card-choice {
+        display: grid;
+        gap: 0.7rem;
+      }
+
+      .choice-card {
+        border: 1px solid rgba(225, 179, 92, 0.34);
+        border-radius: 20px;
+        padding: 0.9rem;
+        text-align: left;
+        color: var(--ivory);
+        background:
+          radial-gradient(circle at 12% 20%, rgba(225, 179, 92, 0.18), transparent 5rem),
+          rgba(14, 30, 48, 0.94);
+      }
+
+      .choice-card h3 { margin: 0.2rem 0 0.4rem; }
+      .choice-card p { margin: 0; color: var(--muted); line-height: 1.42; }
+
+      .toast {
+        position: fixed;
+        left: 50%;
+        bottom: 5.4rem;
+        z-index: 80;
+        width: min(calc(100% - 2rem), 480px);
+        transform: translateX(-50%);
+        border: 1px solid rgba(225, 179, 92, 0.34);
+        border-radius: 16px;
+        padding: 0.8rem 1rem;
+        color: var(--ivory);
+        background: rgba(6, 13, 23, 0.94);
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.34);
+      }
+
+      @keyframes pulse {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(225, 179, 92, 0.3); }
+        80% { transform: scale(1.06); box-shadow: 0 0 0 16px rgba(225, 179, 92, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(225, 179, 92, 0); }
+      }
+
+      @keyframes breathe {
+        from { opacity: 0.74; }
+        to { opacity: 1; }
+      }
+
+      @media (max-width: 380px) {
+        .view { padding-inline: 0.7rem; }
+        .topbar { grid-template-columns: 1fr; }
+        .resource-row { justify-content: flex-start; }
+        .two, .three { grid-template-columns: 1fr; }
+        .slot-row { grid-template-columns: repeat(2, 1fr); }
+        .nav { padding-inline: 0.35rem; }
+        .nav button { font-size: 0.62rem; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app" id="app">
+      <header class="topbar">
+        <div class="brand">
+          <small>SalÃ£o das CrÃ´nicas</small>
+          <h1>HerÃ³i Ortodoxo</h1>
+        </div>
+        <div class="resource-row" id="resources"></div>
+      </header>
+
+      <section class="view active" id="view-home"></section>
+      <section class="view" id="view-summon"></section>
+      <section class="view" id="view-heroes"></section>
+      <section class="view" id="view-formation"></section>
+      <section class="view" id="view-campaign"></section>
+
+      <nav class="nav" id="nav">
+        <button class="active" data-view="home"><span>âŒ‚</span>Home</button>
+        <button data-view="summon"><span>âœ¦</span>Invocar</button>
+        <button data-view="heroes"><span>â™œ</span>HerÃ³is</button>
+        <button data-view="formation"><span>â–¦</span>FormaÃ§Ã£o</button>
+        <button data-view="campaign"><span>âž¤</span>Campanha</button>
+      </nav>
+    </main>
+
+    <div class="modal hidden" id="modal"></div>
+    <div class="battle-screen hidden" id="battle"></div>
+    <div class="toast hidden" id="toast"></div>
+
+    <script>
+      const STORAGE_KEY = "heroi-ortodoxo-save-v1";
+      const RARITY = {
+        comum: { label: "Comum", color: "#9fc6d2", chance: 60, shards: 10 },
+        raro: { label: "Raro", color: "#67b7ff", chance: 30, shards: 20 },
+        epico: { label: "Ã‰pico", color: "#bd8cff", chance: 9, shards: 40 },
+        lendario: { label: "LendÃ¡rio", color: "#f2c75f", chance: 1, shards: 80 },
+      };
+
+      const HEROES = [
+        { id: "hur", name: "Hur", rarity: "comum", role: "Suporte defensivo", hp: 165, atk: 12, speed: 1.05, range: 1, sigil: "Hu", kit: "Sustentar aumenta defesa e velocidade do aliado mais prÃ³ximo.", cards: ["Efeito maior", "DuraÃ§Ã£o maior", "Afeta 2 aliados"] },
+        { id: "bezalel", name: "Bezalel", rarity: "comum", role: "ArtÃ­fice", hp: 145, atk: 15, speed: 1, range: 2, sigil: "Be", kit: "Obra de Bronze fortalece temporariamente uma cÃ©lula.", cards: ["DuraÃ§Ã£o +", "BÃ´nus de dano", "Segundo dispositivo"] },
+        { id: "asael", name: "Asael", rarity: "comum", role: "Assassino rÃ¡pido", hp: 135, atk: 18, speed: 1.32, range: 1, sigil: "As", kit: "AvanÃ§o curto e ataques rÃ¡pidos contra alvos frÃ¡geis.", cards: ["Velocidade +", "CrÃ­tico +", "Salto para outro alvo"] },
+        { id: "tiquico", name: "TÃ­quico", rarity: "comum", role: "Mensageiro", hp: 130, atk: 14, speed: 1.16, range: 3, sigil: "Tq", kit: "Mensagem Urgente reduz recarga de habilidade de um aliado.", cards: ["Recarga maior", "Afeta linha", "Concede velocidade"] },
+        { id: "barzilai", name: "Barzilai", rarity: "comum", role: "Curador", hp: 150, atk: 10, speed: 1, range: 2, sigil: "Ba", kit: "ProvisÃµes curam e recuperam aliados ao longo do tempo.", cards: ["Cura +", "Remove reduÃ§Ã£o de cura", "ProvisÃ£o em Ã¡rea"] },
+        { id: "jael", name: "Jael", rarity: "raro", role: "Assassina", hp: 150, atk: 25, speed: 1.28, range: 1, sigil: "Ja", kit: "Marca um inimigo e causa grande dano apÃ³s breve atraso.", cards: ["Marca dupla", "Sangramento", "Dano de execuÃ§Ã£o"] },
+        { id: "benaia", name: "Benaia", rarity: "raro", role: "GuardiÃ£o", hp: 235, atk: 20, speed: 0.9, range: 1, sigil: "Bn", kit: "Provoca inimigos prÃ³ximos e reduz dano recebido.", cards: ["Escudo +", "Contra-ataque", "ProvocaÃ§Ã£o em Ã¡rea"] },
+        { id: "jonatas", name: "JÃ´natas", rarity: "raro", role: "Atirador", hp: 140, atk: 23, speed: 1.08, range: 3, sigil: "JÃ´", kit: "Dispara sequÃªncia de flechas em linha.", cards: ["Flecha extra", "Ricochete", "PerfuraÃ§Ã£o"] },
+        { id: "debora", name: "DÃ©bora", rarity: "epico", role: "Comandante", hp: 160, atk: 17, speed: 1.05, range: 3, sigil: "DÃ©", kit: "Fortalece fileira e enfraquece elites.", cards: ["BÃ´nus global", "ReduÃ§Ã£o de defesa", "Chamada de apoio"] },
+        { id: "gideao", name: "GideÃ£o", rarity: "epico", role: "Guerreiro tÃ¡tico", hp: 185, atk: 24, speed: 1, range: 1, sigil: "Gi", kit: "Espada e tocha ganham forÃ§a contra grupos.", cards: ["ExplosÃ£o de tocha", "Medo curto", "Dano por inimigo prÃ³ximo"] },
+        { id: "davi", name: "Davi", rarity: "lendario", role: "Atirador guerreiro", hp: 170, atk: 30, speed: 1.14, range: 3, sigil: "Da", kit: "Funda de longo alcance alterna precisÃ£o e avanÃ§o.", cards: ["ProjÃ©til extra", "Ricochete", "CrÃ­tico atordoa"] },
+      ];
+
+      const ENEMIES = {
+        "GEN-E01": { name: "Fera do Ermo", hp: 55, atk: 8, speed: 1.08, xp: 14 },
+        "GEN-E02": { name: "Saqueador das PlanÃ­cies", hp: 72, atk: 10, speed: 0.95, xp: 18 },
+        "GEN-E03": { name: "Arqueiro dos Quatro Reis", hp: 48, atk: 11, speed: 0.82, xp: 20, ranged: true },
+        "GEN-E04": { name: "Lanceiro de ElÃ£o", hp: 110, atk: 14, speed: 0.72, xp: 26 },
+        "GEN-B01": { name: "Quedorlaomer", hp: 380, atk: 20, speed: 0.58, xp: 80, boss: true },
+        "EXO-E01": { name: "Guarda EgÃ­pcio", hp: 76, atk: 11, speed: 0.94, xp: 18 },
+        "EXO-E02": { name: "Arqueiro EgÃ­pcio", hp: 54, atk: 12, speed: 0.82, xp: 20, ranged: true },
+        "EXO-E03": { name: "Carro de Guerra", hp: 150, atk: 18, speed: 0.78, xp: 32 },
+        "EXO-E04": { name: "Saqueador Amalequita", hp: 68, atk: 12, speed: 1.26, xp: 24 },
+        "EXO-B01": { name: "Comandante de Amaleque", hp: 430, atk: 22, speed: 0.56, xp: 90, boss: true },
+        "LEV-E01": { name: "Chacal do Ermo", hp: 42, atk: 8, speed: 1.42, xp: 16 },
+        "LEV-E02": { name: "Saqueador do Deserto", hp: 82, atk: 13, speed: 1, xp: 22 },
+        "LEV-E03": { name: "Portador da Praga", hp: 86, atk: 10, speed: 0.78, xp: 30, ranged: true },
+        "LEV-E04": { name: "Criatura das Cinzas", hp: 180, atk: 20, speed: 0.52, xp: 42 },
+        "LEV-B01": { name: "Devorador do Ermo", hp: 520, atk: 26, speed: 0.5, xp: 110, boss: true },
+      };
+
+      const BOOKS = [
+        {
+          id: "genesis",
+          title: "GÃªnesis",
+          palette: "arenito, cobre, azul profundo",
+          unlockedBy: null,
+          bg: "linear-gradient(145deg, #613d24, #102a4b)",
+          stages: [
+            { id: "1-1", title: "Jardim e Ermo", scene: "Limite fÃ©rtil com pedra, figueiras e vento seco.", waves: 6, enemies: ["GEN-E01"], reward: { coins: 90, fragments: 80 }, context: "Primeiro combate: leitura de alvo, alcance e Integridade." },
+            { id: "1-2", title: "Fora do Ã‰den", scene: "Campos Ã¡speros, tendas e trilhas antigas.", waves: 6, enemies: ["GEN-E01", "GEN-E02"], reward: { coins: 110, fragments: 90 }, context: "Grupos rÃ¡pidos alternam com saqueadores mais resistentes." },
+            { id: "1-3", title: "PlanÃ­cie de Sinar", scene: "Cidade monumental em construÃ§Ã£o, tijolos e torre distante.", waves: 7, enemies: ["GEN-E02", "GEN-E03"], reward: { coins: 130, fragments: 110 }, context: "Arqueiros exigem alcance e foco de alvo." },
+            { id: "1-4", title: "A Guerra dos Reis", scene: "Vale amplo, tendas militares e estandartes.", waves: 8, enemies: ["GEN-E01", "GEN-E02", "GEN-E03", "GEN-E04"], reward: { coins: 160, fragments: 130, energy: 2 }, context: "Frente resistente e retaguarda a distÃ¢ncia." },
+            { id: "1-5", title: "O Resgate de LÃ³", scene: "Acampamento inimigo ao anoitecer.", waves: 10, enemies: ["GEN-E01", "GEN-E02", "GEN-E03", "GEN-E04"], boss: "GEN-B01", reward: { coins: 220, fragments: 180, tickets: 1, unlockBook: "exodo" }, context: "Chefe com investida em coluna, golpe circular e convocaÃ§Ã£o." },
+          ],
+        },
+        {
+          id: "exodo",
+          title: "ÃŠxodo",
+          palette: "cobre, vermelho egÃ­pcio, areia e azul profundo",
+          unlockedBy: "genesis",
+          bg: "linear-gradient(145deg, #734022, #1b5278)",
+          stages: [
+            { id: "2-1", title: "Tijolos sem Palha", scene: "PÃ¡tio de trabalho, fornos e muros egÃ­pcios.", waves: 6, enemies: ["EXO-E01"], reward: { coins: 120, fragments: 90 }, context: "Guardas surgem em pares e treinam dano sustentado." },
+            { id: "2-2", title: "A Noite da Partida", scene: "Ruas iluminadas por tochas e sombras de fuga.", waves: 7, enemies: ["EXO-E01", "EXO-E02"], reward: { coins: 140, fragments: 120 }, context: "Arqueiros atrÃ¡s de guardas exigem foco." },
+            { id: "2-3", title: "Ã€s Margens do Mar", scene: "Areia entre Ã¡guas e tropas ao fundo.", waves: 8, enemies: ["EXO-E01", "EXO-E02", "EXO-E03"], reward: { coins: 160, fragments: 120, tickets: 1 }, context: "Carros telegrapham investida por coluna." },
+            { id: "2-4", title: "Caminho pelo Deserto", scene: "Desfiladeiro seco, tendas e vento de areia.", waves: 9, enemies: ["EXO-E01", "EXO-E02", "EXO-E03", "EXO-E04"], reward: { coins: 180, fragments: 150, energy: 2 }, context: "Saqueadores tentam alcanÃ§ar a retaguarda." },
+            { id: "2-5", title: "Batalha em Refidim", scene: "Vale rochoso com acampamento ao fundo.", waves: 10, enemies: ["EXO-E01", "EXO-E02", "EXO-E03", "EXO-E04"], boss: "EXO-B01", reward: { coins: 260, fragments: 220, unlockBook: "levitico", fifthSlot: true }, context: "Chefe ergue estandarte, convoca e golpeia em frente." },
+          ],
+        },
+        {
+          id: "levitico",
+          title: "LevÃ­tico",
+          palette: "bronze, cinzas, tendas e deserto noturno",
+          unlockedBy: "exodo",
+          bg: "linear-gradient(145deg, #4a3327, #153f55)",
+          stages: [
+            { id: "3-1", title: "Fora do Acampamento", scene: "Tendas, fogueiras e dunas no limite externo.", waves: 6, enemies: ["LEV-E01"], reward: { coins: 150, fragments: 120 }, context: "Grupos rÃ¡pidos ensinam controle de multidÃ£o." },
+            { id: "3-2", title: "VigÃ­lia no Deserto", scene: "Noite, tochas, pedras e vento.", waves: 7, enemies: ["LEV-E01", "LEV-E02"], reward: { coins: 170, fragments: 130 }, context: "Enxames pequenos alternam com saqueadores." },
+            { id: "3-3", title: "A Praga no Acampamento", scene: "Tendas isoladas e nÃ©voa baixa estilizada.", waves: 8, enemies: ["LEV-E01", "LEV-E02", "LEV-E03"], reward: { coins: 190, fragments: 150, tickets: 1 }, context: "Ãreas de contaminaÃ§Ã£o marcadas com clareza." },
+            { id: "3-4", title: "Cinzas do Altar", scene: "PÃ¡tio de pedra e bronze, brasas e fumaÃ§a.", waves: 9, enemies: ["LEV-E01", "LEV-E02", "LEV-E03", "LEV-E04"], reward: { coins: 220, fragments: 190 }, context: "Elite lenta ataca em Ã¡rea e exige separaÃ§Ã£o." },
+            { id: "3-5", title: "No CoraÃ§Ã£o do Ermo", scene: "CÃ¢nion desÃ©rtico e tempestade de areia.", waves: 10, enemies: ["LEV-E01", "LEV-E02", "LEV-E03", "LEV-E04"], boss: "LEV-B01", reward: { coins: 320, fragments: 300, tickets: 10 }, context: "Chefe ficcional como adaptaÃ§Ã£o de fantasia do ambiente." },
+          ],
+        },
+      ];
+
+      const DAILY = [
+        "100 Fragmentos", "Moedas", "ExperiÃªncia de herÃ³i", "20 fragmentos comuns", "1 Bilhete", "Energia e moedas", "BaÃº raro",
+        "Moedas", "Fragmentos", "Energia", "Material de evoluÃ§Ã£o", "Fragmentos", "Moedas", "10 Bilhetes",
+        "Fragmentos", "Energia", "Moedas", "Material raro", "Fragmentos", "BaÃº comum", "BaÃº Ã©pico",
+        "Energia", "Fragmentos", "Moedas", "Bilhete", "Material Ã©pico", "Fragmentos", "HerÃ³i raro ou 40 fragmentos",
+      ];
+
+      let state = load();
+      let battle = null;
+      let loop = null;
+
+      function defaultState() {
+        return {
+          accountLevel: 1, accountXp: 0, coins: 250, fragments: 100, tickets: 1, energy: 20,
+          unlockedBooks: ["genesis"], completed: {}, heroes: {}, formation: [null, null, null, null],
+          pity: { rare: 0, epic: 0, legendary: 0 }, summonHistory: [], tutorial: "summon",
+          daily: { day: 1, month: new Date().getUTCMonth(), last: null, claimedToday: false },
+          missions: { login: 1, battles: 0, cards: 0, upgrade: 0 },
+          settings: { speed2: false },
+        };
+      }
+
+      function load() {
+        try {
+          const merged = { ...defaultState(), ...JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") };
+          return normalizeDaily(merged);
+        } catch {
+          return defaultState();
+        }
+      }
+
+      function normalizeDaily(saveData) {
+        const now = new Date();
+        const last = saveData.daily?.last ? new Date(saveData.daily.last) : null;
+        if (saveData.daily?.month !== now.getUTCMonth()) {
+          saveData.daily = { day: 1, month: now.getUTCMonth(), last: null, claimedToday: false };
+          return saveData;
+        }
+        const sameUtcDay = last
+          && last.getUTCFullYear() === now.getUTCFullYear()
+          && last.getUTCMonth() === now.getUTCMonth()
+          && last.getUTCDate() === now.getUTCDate();
+        saveData.daily.claimedToday = Boolean(sameUtcDay && saveData.daily.claimedToday);
+        return saveData;
+      }
+
+      function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+      function $(id) { return document.getElementById(id); }
+      function hero(id) { return HEROES.find((h) => h.id === id); }
+      function allStages() { return BOOKS.flatMap((book) => book.stages.map((stage) => ({ ...stage, book }))); }
+      function stageKey(stage) { return `${stage.book.id}-${stage.id}`; }
+      function stageDone(stage) { return Boolean(state.completed[stageKey(stage)]); }
+      function hasHero(id) { return Boolean(state.heroes[id]?.unlocked); }
+      function firstUnlockedHero() { return HEROES.find((h) => hasHero(h.id)); }
+      function fmt(n) { return Number(n || 0).toLocaleString("pt-BR"); }
+
+      function toast(text) {
+        const el = $("toast");
+        el.textContent = text;
+        el.classList.remove("hidden");
+        clearTimeout(toast.timer);
+        toast.timer = setTimeout(() => el.classList.add("hidden"), 2600);
+      }
+
+      function renderResources() {
+        $("resources").innerHTML = [
+          `Nv ${state.accountLevel}`,
+          `âš¡ ${state.energy}`,
+          `âœ¦ ${fmt(state.fragments)}`,
+          `â—‰ ${fmt(state.coins)}`,
+          `Bil ${state.tickets}`,
+        ].map((x) => `<span class="chip">${x}</span>`).join("");
+      }
+
+      function switchView(view) {
+        document.querySelectorAll(".view").forEach((el) => el.classList.toggle("active", el.id === `view-${view}`));
+        document.querySelectorAll(".nav button").forEach((btn) => btn.classList.toggle("active", btn.dataset.view === view));
+        render();
+      }
+
+      function render() {
+        renderResources();
+        renderHome();
+        renderSummon();
+        renderHeroes();
+        renderFormation();
+        renderCampaign();
+      }
+
+      function nextStage() {
+        return allStages().find((stage) => state.unlockedBooks.includes(stage.book.id) && !stageDone(stage)) || allStages()[0];
+      }
+
+      function renderHome() {
+        const stage = nextStage();
+        const dayReady = !state.daily.claimedToday;
+        $("view-home").innerHTML = `
+          <section class="hall">
+            <div class="hotspots">
+              <button class="hotspot summon" aria-label="InvocaÃ§Ã£o" onclick="switchView('summon')">âœ¦</button>
+              <button class="hotspot heroes" aria-label="HerÃ³is" onclick="switchView('heroes')">â™œ</button>
+              <button class="hotspot adventure" aria-label="Campanha" onclick="switchView('campaign')">âž¤</button>
+            </div>
+            <div class="hall-content">
+              <span class="eyebrow">Arquivo vivo</span>
+              <h2>SalÃ£o das CrÃ´nicas</h2>
+              <p>Registros heroicos da BÃ­blia se reÃºnem para reviver arenas inspiradas nos primeiros livros, sem transformar a campanha em sermÃ£o.</p>
+            </div>
+          </section>
+          <section class="panel">
+            <div class="panel-head">
+              <div><span class="eyebrow">Livro atual</span><h2>${stage.book.title} ${stage.id}</h2></div>
+              <span class="chip">${stageDone(stage) ? "ConcluÃ­do" : "PrÃ³ximo"}</span>
+            </div>
+            <div class="book-card" style="--book-bg:${stage.book.bg}">
+              <span class="eyebrow">${stage.scene}</span>
+              <h3>${stage.title}</h3>
+              <p>${stage.context}</p>
+              <button class="btn full" onclick="openPreBattle('${stage.book.id}','${stage.id}')">Continuar</button>
+            </div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><div><span class="eyebrow">Rotina</span><h2>Check-in e missÃµes</h2></div>${dayReady ? '<span class="chip">Novo</span>' : ''}</div>
+            <div class="grid two">
+              <article class="mission-card"><h3>Dia ${state.daily.day}</h3><p class="small">${DAILY[state.daily.day - 1]}</p><button class="btn secondary full" onclick="claimDaily()" ${dayReady ? "" : "disabled"}>Coletar</button></article>
+              <article class="mission-card"><h3>MissÃµes diÃ¡rias</h3><p class="small">Entrar, concluir 3 batalhas, escolher 5 cartas e melhorar 1 herÃ³i.</p><button class="btn secondary full" onclick="showMissions()">Ver progresso</button></article>
+            </div>
+          </section>
+        `;
+      }
+
+      function renderSummon() {
+        const needsTutorial = !firstUnlockedHero();
+        $("view-summon").innerHTML = `
+          <section class="summon-altar">
+            <div>
+              <div class="altar-ring">âœ¦</div>
+              <h2>${needsTutorial ? "Primeira invocaÃ§Ã£o" : "Altar de InvocaÃ§Ã£o"}</h2>
+              <p>${needsTutorial ? "O primeiro bilhete garante Jael, Benaia ou JÃ´natas." : "100 fragmentos ou 1 bilhete por invocaÃ§Ã£o. Probabilidades: 60/30/9/1."}</p>
+            </div>
+          </section>
+          <section class="panel">
+            <div class="button-row">
+              <button class="btn full" onclick="${needsTutorial ? "tutorialSummon()" : "summon(1)"}">${needsTutorial ? "Invocar herÃ³i raro" : "Invocar 1x"}</button>
+              <button class="btn secondary" onclick="summon(10)" ${needsTutorial ? "disabled" : ""}>Invocar 10x</button>
+              <button class="btn ghost" onclick="showProbabilities()">?</button>
+            </div>
+            <p class="small">Garantias: raro a cada 10, Ã©pico a cada 40 e lendÃ¡rio atÃ© a 100Âª invocaÃ§Ã£o sem lendÃ¡rio.</p>
+          </section>
+          <section class="panel"><span class="eyebrow">HistÃ³rico</span><div class="grid">${state.summonHistory.slice(-8).reverse().map((x) => `<article class="reward-card"><strong>${x}</strong></article>`).join("") || '<p>Nenhuma invocaÃ§Ã£o feita ainda.</p>'}</div></section>
+        `;
+      }
+
+      function renderHeroes() {
+        $("view-heroes").innerHTML = `
+          <section class="panel">
+            <div class="panel-head"><div><span class="eyebrow">ColeÃ§Ã£o</span><h2>HerÃ³is bÃ­blicos</h2></div><span class="chip">${Object.keys(state.heroes).filter((id) => hasHero(id)).length}/11</span></div>
+            <div class="grid two">${HEROES.map(heroCard).join("")}</div>
+          </section>
+        `;
+      }
+
+      function heroCard(h) {
+        const owned = hasHero(h.id);
+        const data = state.heroes[h.id] || {};
+        const rarity = RARITY[h.rarity];
+        return `
+          <article class="hero-card ${owned ? "" : "locked"}" style="--rarity:${rarity.color}">
+            <div class="portrait">${h.sigil}</div>
+            <span class="meta">${rarity.label} â€¢ ${h.role}</span>
+            <h3>${h.name}</h3>
+            <p class="small">${owned ? h.kit : "Ainda nÃ£o desbloqueado."}</p>
+            <p class="small">${owned ? `NÃ­vel ${data.level || 1} â€¢ Estrelas ${data.stars || 1}` : `Fragmentos: ${data.shards || 0}`}</p>
+            <button class="btn secondary full" onclick="upgradeHero('${h.id}')" ${owned ? "" : "disabled"}>Melhorar</button>
+          </article>
+        `;
+      }
+
+      function renderFormation() {
+        const slots = state.formation.map((id, index) => {
+          const h = id ? hero(id) : null;
+          return `<button class="slot" onclick="chooseFormationSlot(${index})">${h ? `<div class="portrait">${h.sigil}</div><strong>${h.name}</strong><small>${index === 0 ? "CapitÃ£o" : "RecrutÃ¡vel"}</small>` : `<strong>${index === 0 ? "CapitÃ£o" : "Slot " + (index + 1)}</strong><small>Toque para escolher</small>`}</button>`;
+        }).join("");
+        $("view-formation").innerHTML = `
+          <section class="panel">
+            <div class="panel-head"><div><span class="eyebrow">Equipe</span><h2>FormaÃ§Ã£o</h2></div><span class="chip">${state.formation.filter(Boolean).length}/${state.formation.length}</span></div>
+            <div class="slot-row">${slots}</div>
+            <p class="small">O capitÃ£o comeÃ§a em campo. Os demais entram quando uma carta de recrutamento aparece durante a batalha.</p>
+          </section>
+          <section class="panel"><span class="eyebrow">DisponÃ­veis</span><div class="grid two">${HEROES.filter((h) => hasHero(h.id)).map((h) => `<button class="hero-card" onclick="quickAddFormation('${h.id}')"><div class="portrait">${h.sigil}</div><h3>${h.name}</h3><p class="small">${h.role}</p></button>`).join("") || "<p>FaÃ§a a primeira invocaÃ§Ã£o para liberar um herÃ³i.</p>"}</div></section>
+        `;
+      }
+
+      function renderCampaign() {
+        $("view-campaign").innerHTML = `
+          <section class="panel">
+            <div class="panel-head"><div><span class="eyebrow">Aventura</span><h2>Campanha bÃ­blica</h2></div></div>
+            <div class="grid">${BOOKS.map(renderBook).join("")}</div>
+          </section>
+        `;
+      }
+
+      function renderBook(book) {
+        const unlocked = state.unlockedBooks.includes(book.id);
+        return `
+          <article class="panel" style="margin:0;opacity:${unlocked ? 1 : 0.48}">
+            <div class="panel-head"><div><span class="eyebrow">${book.palette}</span><h2>${book.title}</h2></div><span class="chip">${book.stages.filter((s) => stageDone({ ...s, book })).length}/5</span></div>
+            <div class="grid">
+              ${book.stages.map((stage) => `<button class="stage-card" onclick="openPreBattle('${book.id}','${stage.id}')" ${unlocked ? "" : "disabled"}><span class="meta">${book.title} ${stage.id}</span><h3>${stage.title}</h3><p class="small">${stage.context}</p></button>`).join("")}
+            </div>
+          </article>
+        `;
+      }
+
+      function tutorialSummon() {
+        const pool = ["jael", "benaia", "jonatas"];
+        const id = pool[Math.floor(Math.random() * pool.length)];
+        unlockHero(id);
+        state.tickets = Math.max(0, state.tickets - 1);
+        state.formation[0] = id;
+        state.tutorial = "formation";
+        state.summonHistory.push(`${hero(id).name} recebido na primeira invocaÃ§Ã£o`);
+        save();
+        render();
+        showHeroReveal([id], "Primeiro herÃ³i garantido");
+      }
+
+      function summon(count) {
+        if (count === 10 && state.fragments < 1000 && state.tickets < 10) return toast("VocÃª precisa de 1.000 fragmentos ou 10 bilhetes.");
+        if (count === 1 && state.fragments < 100 && state.tickets < 1) return toast("VocÃª precisa de fragmentos ou bilhete.");
+        const results = [];
+        for (let i = 0; i < count; i += 1) {
+          if (state.tickets > 0) state.tickets -= 1;
+          else state.fragments -= 100;
+          const rarity = rollRarity();
+          const pool = HEROES.filter((h) => h.rarity === rarity);
+          const picked = pool[Math.floor(Math.random() * pool.length)];
+          if (hasHero(picked.id)) {
+            state.heroes[picked.id].shards = (state.heroes[picked.id].shards || 0) + RARITY[picked.rarity].shards;
+            state.summonHistory.push(`${picked.name} duplicado: +${RARITY[picked.rarity].shards} fragmentos`);
+          } else {
+            unlockHero(picked.id);
+            state.summonHistory.push(`${picked.name} desbloqueado`);
+          }
+          results.push(picked.id);
+        }
+        save();
+        render();
+        showHeroReveal(results, "Resultado da invocaÃ§Ã£o");
+      }
+
+      function rollRarity() {
+        state.pity.rare += 1; state.pity.epic += 1; state.pity.legendary += 1;
+        if (state.pity.legendary >= 100) return resetPity("lendario");
+        if (state.pity.epic >= 40) return resetPity(Math.random() < 0.1 ? "lendario" : "epico");
+        if (state.pity.rare >= 10) return resetPity(["raro", "epico", "lendario"][weighted([30, 9, 1])]);
+        const rarity = ["comum", "raro", "epico", "lendario"][weighted([60, 30, 9, 1])];
+        return resetPity(rarity);
+      }
+
+      function weighted(weights) {
+        let roll = Math.random() * weights.reduce((a, b) => a + b, 0);
+        for (let i = 0; i < weights.length; i += 1) {
+          roll -= weights[i];
+          if (roll <= 0) return i;
+        }
+        return weights.length - 1;
+      }
+
+      function resetPity(rarity) {
+        if (rarity === "raro" || rarity === "epico" || rarity === "lendario") state.pity.rare = 0;
+        if (rarity === "epico" || rarity === "lendario") state.pity.epic = 0;
+        if (rarity === "lendario") state.pity.legendary = 0;
+        return rarity;
+      }
+
+      function unlockHero(id) {
+        state.heroes[id] = { ...(state.heroes[id] || {}), unlocked: true, level: state.heroes[id]?.level || 1, stars: state.heroes[id]?.stars || 1, shards: state.heroes[id]?.shards || 0 };
+      }
+
+      function upgradeHero(id) {
+        const h = state.heroes[id];
+        if (!h) return;
+        const cost = (h.level || 1) * 70;
+        if (state.coins < cost) return toast(`Faltam moedas. Custo: ${cost}.`);
+        state.coins -= cost;
+        h.level = (h.level || 1) + 1;
+        state.missions.upgrade = 1;
+        save();
+        render();
+        toast(`${hero(id).name} melhorado para nÃ­vel ${h.level}.`);
+      }
+
+      function chooseFormationSlot(slot) {
+        const owned = HEROES.filter((h) => hasHero(h.id));
+        showModal("Escolher herÃ³i", `<div class="grid two">${owned.map((h) => `<button class="hero-card" onclick="setFormation(${slot},'${h.id}')"><div class="portrait">${h.sigil}</div><h3>${h.name}</h3><p class="small">${h.role}</p></button>`).join("") || "<p>Nenhum herÃ³i disponÃ­vel.</p>"}</div>`);
+      }
+
+      function setFormation(slot, id) {
+        state.formation = state.formation.map((current) => current === id ? null : current);
+        state.formation[slot] = id;
+        save();
+        closeModal();
+        render();
+      }
+
+      function quickAddFormation(id) {
+        const empty = state.formation.findIndex((slot) => !slot);
+        if (empty === -1) return toast("Todos os slots disponÃ­veis estÃ£o preenchidos.");
+        setFormation(empty, id);
+      }
+
+      function claimDaily() {
+        if (state.daily.claimedToday) return;
+        const day = state.daily.day;
+        if ([1, 8, 9, 13, 15, 19, 23, 27].includes(day)) state.fragments += 100;
+        if ([2, 6, 11, 16, 20, 24].includes(day)) state.coins += 180;
+        if ([5, 14, 25].includes(day)) state.tickets += day === 14 ? 10 : 1;
+        if ([6, 10, 17, 22].includes(day)) state.energy += 3;
+        if (day === 28) unlockHero(["jael", "benaia", "jonatas"].find((id) => !hasHero(id)) || "jael");
+        state.daily.claimedToday = true;
+        state.daily.last = new Date().toISOString();
+        state.daily.day = Math.min(28, state.daily.day + 1);
+        save();
+        render();
+        toast("Recompensa diÃ¡ria coletada.");
+      }
+
+      function showMissions() {
+        showModal("MissÃµes diÃ¡rias", `
+          <div class="grid">
+            ${mission("Entrar no jogo", state.missions.login, 1, "Moedas")}
+            ${mission("Concluir batalhas", state.missions.battles, 3, "Fragmentos de InvocaÃ§Ã£o")}
+            ${mission("Escolher melhorias", state.missions.cards, 5, "ExperiÃªncia de conta")}
+            ${mission("Melhorar um herÃ³i", state.missions.upgrade, 1, "Material de evoluÃ§Ã£o")}
+          </div>
+        `);
+      }
+
+      function mission(title, progress, goal, reward) {
+        return `<article class="mission-card"><h3>${title}</h3><p class="small">${Math.min(progress || 0, goal)}/${goal} â€¢ ${reward}</p><div class="bar"><span style="width:${Math.min(100, ((progress || 0) / goal) * 100)}%"></span></div></article>`;
+      }
+
+      function showProbabilities() {
+        showModal("Probabilidades", `<div class="grid">${Object.values(RARITY).map((r) => `<article class="reward-card"><h3>${r.label}</h3><p class="small">${r.chance}% por invocaÃ§Ã£o. Duplicata converte em fragmentos.</p></article>`).join("")}<p class="small">Raro garantido a cada 10, Ã©pico a cada 40 e lendÃ¡rio no mÃ¡ximo na 100Âª invocaÃ§Ã£o sem lendÃ¡rio.</p></div>`);
+      }
+
+      function showHeroReveal(ids, title) {
+        showModal(title, `<div class="grid two">${ids.map((id) => heroCard(hero(id))).join("")}</div><button class="btn full" onclick="closeModal()">Continuar</button>`);
+      }
+
+      function openPreBattle(bookId, stageId) {
+        const book = BOOKS.find((b) => b.id === bookId);
+        const stage = book.stages.find((s) => s.id === stageId);
+        if (!state.unlockedBooks.includes(book.id)) return toast("Livro ainda bloqueado.");
+        if (!state.formation[0]) return toast("Escolha um capitÃ£o na FormaÃ§Ã£o.");
+        showModal(`${book.title} ${stage.id}`, `
+          <span class="eyebrow">${stage.scene}</span>
+          <h2>${stage.title}</h2>
+          <p>${stage.context}</p>
+          <p class="small">Objetivo: vencer ${stage.waves} ondas${stage.boss ? " e derrotar o chefe" : ""}. Custo: 1 energia.</p>
+          <div class="grid three" id="placement-grid">${[...Array(12)].map((_, i) => `<button class="slot" onclick="startBattle('${book.id}','${stage.id}',${i})">${i >= 6 ? "Posicionar" : "Frente"}</button>`).join("")}</div>
+        `);
+      }
+
+      function startBattle(bookId, stageId, cellIndex) {
+        if (state.energy <= 0) return toast("Sem energia.");
+        state.energy -= 1;
+        closeModal();
+        const book = BOOKS.find((b) => b.id === bookId);
+        const stage = book.stages.find((s) => s.id === stageId);
+        const captain = hero(state.formation[0]);
+        battle = {
+          book, stage, tick: 0, wave: 1, spawned: 0, camp: 100, xp: 0, level: 1, paused: false,
+          recruited: [captain.id], cardChoices: 0, placingRecruit: null, log: "Toque em Iniciar batalha.",
+          heroes: [makeBattleHero(captain, cellIndex)],
+          enemies: [], modifiers: { damage: 1, speed: 1, defense: 1, heal: 0 },
+        };
+        $("battle").classList.remove("hidden");
+        renderBattle();
+        save();
+      }
+
+      function makeBattleHero(h, cell) {
+        const row = Math.floor(cell / 3);
+        const col = cell % 3;
+        const level = state.heroes[h.id]?.level || 1;
+        return { id: h.id, name: h.name, sigil: h.sigil, hp: h.hp + level * 12, maxHp: h.hp + level * 12, atk: h.atk + level * 2, speed: h.speed, range: h.range, row, col, cd: 0 };
+      }
+
+      function makeEnemy(id, col) {
+        const e = ENEMIES[id];
+        return { id, name: e.name, hp: e.hp, maxHp: e.hp, atk: e.atk, speed: e.speed, xp: e.xp, ranged: e.ranged, boss: e.boss, row: 0, col, cd: 0, move: 0 };
+      }
+
+      function renderBattle() {
+        if (!battle) return;
+        $("battle").style.setProperty("--arena-bg", battle.book.bg);
+        $("battle").innerHTML = `
+          <header class="battle-top">
+            <div class="battle-stats"><div><span class="eyebrow">${battle.book.title} ${battle.stage.id}</span><strong>${battle.stage.title}</strong></div><span class="chip">Onda ${Math.min(battle.wave, battle.stage.waves)}/${battle.stage.waves}</span></div>
+            <div class="grid two">
+              <div><small>Integridade</small><div class="bar"><span style="width:${battle.camp}%"></span></div></div>
+              <div><small>XP da partida</small><div class="bar"><span style="width:${Math.min(100, battle.xp)}%"></span></div></div>
+            </div>
+          </header>
+          <section class="arena">
+            <div class="arena-bg"></div>
+            <div class="battle-log">${battle.log}</div>
+            <div class="field">${[...Array(12)].map((_, i) => renderCell(i)).join("")}</div>
+          </section>
+          <footer class="battle-actions">
+            <button class="btn" onclick="runBattle()" ${loop ? "disabled" : ""}>${loop ? "Lutando" : "Iniciar"}</button>
+            <button class="btn secondary" onclick="toggleSpeed()" ${state.completed["genesis-1-5"] ? "" : "disabled"}>2x</button>
+            <button class="btn ghost" onclick="quitBattle()">Sair</button>
+          </footer>
+        `;
+      }
+
+      function renderCell(i) {
+        const row = Math.floor(i / 3), col = i % 3;
+        const h = battle.heroes.find((u) => u.row === row && u.col === col && u.hp > 0);
+        const e = battle.enemies.find((u) => u.row === row && u.col === col && u.hp > 0);
+        const valid = battle.placingRecruit && !h && row >= 1;
+        return `<button class="cell ${valid ? "valid" : ""}" onclick="placeRecruit(${i})">
+          ${e ? unitHtml(e, "enemy") : ""}
+          ${h ? unitHtml(h, "hero") : ""}
+        </button>`;
+      }
+
+      function unitHtml(u, kind) {
+        const pct = Math.max(0, Math.round((u.hp / u.maxHp) * 100));
+        return `<div class="unit ${kind}"><b>${kind === "hero" ? u.sigil : (u.boss ? "Chefe" : "Inimigo")}</b><small>${u.name}</small><div class="hp"><span style="width:${pct}%"></span></div></div>`;
+      }
+
+      function runBattle() {
+        if (!battle || loop) return;
+        battle.log = "A batalha comeÃ§ou. HerÃ³is atacam automaticamente.";
+        loop = setInterval(stepBattle, state.settings.speed2 ? 260 : 520);
+        renderBattle();
+      }
+
+      function stepBattle() {
+        if (!battle || battle.paused) return;
+        battle.tick += 1;
+        if (battle.tick % 3 === 0 && battle.spawned < battle.stage.waves) spawnWave();
+        battle.heroes.forEach(heroAct);
+        battle.enemies.forEach(enemyAct);
+        battle.heroes = battle.heroes.filter((u) => u.hp > 0);
+        battle.enemies = battle.enemies.filter((u) => u.hp > 0 && u.row < 4);
+        if (battle.camp <= 0 || battle.heroes.length === 0) return finishBattle(false);
+        const bossDown = battle.stage.boss ? battle.spawned >= battle.stage.waves && !battle.enemies.some((e) => e.boss) : true;
+        if (battle.spawned >= battle.stage.waves && battle.enemies.length === 0 && bossDown) return finishBattle(true);
+        renderBattle();
+      }
+
+      function spawnWave() {
+        battle.spawned += 1;
+        battle.wave = battle.spawned;
+        const isBoss = battle.stage.boss && battle.spawned === battle.stage.waves;
+        const id = isBoss ? battle.stage.boss : battle.stage.enemies[Math.min(battle.stage.enemies.length - 1, (battle.spawned - 1) % battle.stage.enemies.length)];
+        battle.enemies.push(makeEnemy(id, battle.spawned % 3));
+        if (!isBoss && battle.stage.enemies.length > 2 && battle.spawned % 4 === 0) battle.enemies.push(makeEnemy(battle.stage.enemies[0], (battle.spawned + 1) % 3));
+        battle.log = isBoss ? `${ENEMIES[id].name} entrou na arena. Avisos grandes marcam os golpes.` : `${ENEMIES[id].name} surgiu na coluna ${(battle.spawned % 3) + 1}.`;
+      }
+
+      function heroAct(u) {
+        u.cd -= u.speed * battle.modifiers.speed;
+        if (u.cd > 0) return;
+        const targets = battle.enemies
+          .filter((e) => Math.abs(e.col - u.col) <= (u.range > 1 ? 2 : 1))
+          .sort((a, b) => b.row - a.row || a.hp - b.hp);
+        const target = targets[0];
+        if (!target) return;
+        const damage = Math.round(u.atk * battle.modifiers.damage);
+        target.hp -= damage;
+        u.cd = 4;
+        battle.log = `${u.name} causou ${damage} de dano em ${target.name}.`;
+        if (target.hp <= 0) {
+          battle.xp += target.xp;
+          if (battle.xp >= 100) levelUp();
+        }
+      }
+
+      function enemyAct(e) {
+        e.cd -= e.speed;
+        e.move += e.speed;
+        const target = battle.heroes
+          .filter((h) => h.col === e.col || Math.abs(h.col - e.col) <= (e.ranged ? 2 : 0))
+          .sort((a, b) => b.row - a.row || a.hp - b.hp)[0];
+        if (target && e.cd <= 0) {
+          const damage = Math.max(1, Math.round(e.atk / battle.modifiers.defense));
+          target.hp -= damage;
+          e.cd = e.ranged ? 5 : 4;
+          battle.log = `${e.name} causou ${damage} de dano em ${target.name}.`;
+          return;
+        }
+        if (e.move >= 3) {
+          e.move = 0;
+          e.row += 1;
+          if (e.row > 3) {
+            battle.camp -= e.boss ? 28 : 10;
+            e.hp = 0;
+            battle.log = `${e.name} atingiu a Integridade do Acampamento.`;
+          }
+        }
+      }
+
+      function levelUp() {
+        battle.xp = 0;
+        battle.level += 1;
+        battle.paused = true;
+        clearInterval(loop);
+        loop = null;
+        const choices = buildCardChoices();
+        battle.currentCards = choices;
+        state.missions.cards += 1;
+        save();
+        showModal("Escolha uma melhoria", `<p class="small">A batalha pausa e exatamente trÃªs cartas vÃ¡lidas aparecem.</p><div class="card-choice">${choices.map((c, i) => `<button class="choice-card" onclick="chooseCard(${i})"><span class="meta">${c.type}</span><h3>${c.title}</h3><p>${c.text}</p></button>`).join("")}</div>`, true);
+      }
+
+      function buildCardChoices() {
+        const unrecruited = state.formation.filter((id) => id && !battle.recruited.includes(id));
+        const choices = [];
+        if (unrecruited.length && battle.level <= 3) {
+          const id = unrecruited[0];
+          choices.push({ type: "Recrutamento", title: `Recrutar ${hero(id).name}`, text: "Toque em uma cÃ©lula livre para colocar este herÃ³i em campo.", recruit: id });
+        }
+        const pool = [
+          { type: "Universal", title: "Dano coordenado I", text: "+20% de dano da equipe nesta partida.", apply: () => battle.modifiers.damage += 0.2 },
+          { type: "Universal", title: "Ritmo de batalha I", text: "+15% de velocidade de ataque da equipe.", apply: () => battle.modifiers.speed += 0.15 },
+          { type: "Universal", title: "Linha protegida I", text: "+20% de defesa para todos os herÃ³is.", apply: () => battle.modifiers.defense += 0.2 },
+          { type: "Universal", title: "ProvisÃµes de campo I", text: "Todos os herÃ³is recuperam 25 de vida agora.", apply: () => battle.heroes.forEach((h) => h.hp = Math.min(h.maxHp, h.hp + 25)) },
+        ];
+        battle.recruited.forEach((id) => {
+          const h = hero(id);
+          pool.push({ type: h.name, title: `${h.cards[0]} I`, text: `${h.name} recebe +25% de dano nesta partida.`, apply: () => battle.heroes.filter((u) => u.id === id).forEach((u) => u.atk = Math.round(u.atk * 1.25)) });
+        });
+        while (choices.length < 3 && pool.length) {
+          const pick = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
+          choices.push(pick);
+        }
+        return choices.slice(0, 3);
+      }
+
+      function chooseCard(index) {
+        const card = battle.currentCards[index];
+        closeModal();
+        if (card.recruit) {
+          battle.placingRecruit = card.recruit;
+          battle.paused = true;
+          battle.log = `Escolha uma cÃ©lula livre para recrutar ${hero(card.recruit).name}.`;
+          renderBattle();
+          return;
+        }
+        card.apply();
+        battle.paused = false;
+        battle.log = `${card.title} aplicada.`;
+        runBattle();
+      }
+
+      function placeRecruit(cell) {
+        if (!battle?.placingRecruit) return;
+        const row = Math.floor(cell / 3), col = cell % 3;
+        if (battle.heroes.some((h) => h.row === row && h.col === col) || row < 1) return toast("Escolha uma cÃ©lula livre da zona de herÃ³is.");
+        const h = hero(battle.placingRecruit);
+        battle.heroes.push(makeBattleHero(h, cell));
+        battle.recruited.push(h.id);
+        battle.placingRecruit = null;
+        battle.paused = false;
+        battle.log = `${h.name} entrou em campo.`;
+        runBattle();
+      }
+
+      function finishBattle(win) {
+        clearInterval(loop);
+        loop = null;
+        const { stage } = battle;
+        if (win) {
+          state.coins += stage.reward.coins || 0;
+          state.fragments += stage.reward.fragments || 0;
+          state.tickets += stage.reward.tickets || 0;
+          state.energy += stage.reward.energy || 0;
+          state.accountXp += 80;
+          state.missions.battles += 1;
+          if (stage.reward.unlockBook && !state.unlockedBooks.includes(stage.reward.unlockBook)) state.unlockedBooks.push(stage.reward.unlockBook);
+          if (stage.reward.fifthSlot && state.formation.length < 5) state.formation.push(null);
+          state.completed[`${battle.book.id}-${stage.id}`] = true;
+          if (state.accountXp >= state.accountLevel * 120) {
+            state.accountXp = 0;
+            state.accountLevel += 1;
+          }
+        }
+        save();
+        const reward = win ? `+${stage.reward.coins || 0} moedas, +${stage.reward.fragments || 0} fragmentos${stage.reward.tickets ? `, +${stage.reward.tickets} bilhete(s)` : ""}` : "Nenhuma recompensa. Ajuste a formaÃ§Ã£o e tente novamente.";
+        $("battle").classList.add("hidden");
+        showModal(win ? "VitÃ³ria" : "Derrota", `<p>${win ? "A arena foi concluÃ­da com sucesso." : "A Integridade do Acampamento chegou a zero ou todos os herÃ³is caÃ­ram."}</p><article class="reward-card"><h3>${reward}</h3></article><button class="btn full" onclick="closeModal()">Voltar</button>`);
+        battle = null;
+        render();
+      }
+
+      function toggleSpeed() {
+        state.settings.speed2 = !state.settings.speed2;
+        save();
+        if (loop) {
+          clearInterval(loop);
+          loop = null;
+          runBattle();
+        }
+        toast(state.settings.speed2 ? "Velocidade 2x ativa." : "Velocidade normal.");
+      }
+
+      function quitBattle() {
+        clearInterval(loop);
+        loop = null;
+        battle = null;
+        $("battle").classList.add("hidden");
+        render();
+      }
+
+      function showModal(title, body, locked = false) {
+        $("modal").innerHTML = `<section class="modal-card"><div class="panel-head"><div><span class="eyebrow">HerÃ³i Ortodoxo</span><h2>${title}</h2></div>${locked ? "" : '<button class="btn ghost" onclick="closeModal()">Fechar</button>'}</div>${body}</section>`;
+        $("modal").classList.remove("hidden");
+      }
+
+      function closeModal() {
+        $("modal").classList.add("hidden");
+      }
+
+      document.querySelectorAll(".nav button").forEach((button) => button.addEventListener("click", () => switchView(button.dataset.view)));
+      render();
+    </script>
+  </body>
+</html>
+

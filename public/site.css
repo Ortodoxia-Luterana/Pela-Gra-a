@@ -861,6 +861,10 @@ img.feed-avatar {
   background: linear-gradient(90deg, rgba(0,0,0,.08), rgba(0,0,0,.80)), url("/assets/guardioes-card.jpg") center/cover;
 }
 
+.ol-game-card.heroi-cover {
+  background: linear-gradient(90deg, rgba(0, 0, 0, .08), rgba(0, 0, 0, .80)), url("/assets/heroi-ortodoxo-cover.png") center/cover;
+}
+
 .ol-game-card.concordium-exploracao-cover {
   background: linear-gradient(90deg, rgba(0, 0, 0, .08), rgba(0, 0, 0, .78)), url("/assets/concordium-exploracao-card.png") center/cover;
 }
@@ -1931,6 +1935,10 @@ img.feed-avatar {
 
 .ol-game-card.guardioes-cover{
   background:linear-gradient(90deg, rgba(0,0,0,.08), rgba(0,0,0,.80)), url("/assets/guardioes-card.jpg?v=cards-20260708") center/cover !important;
+}
+
+.ol-game-card.heroi-cover{
+  background:linear-gradient(90deg, rgba(0,0,0,.08), rgba(0,0,0,.80)), url("/assets/heroi-ortodoxo-cover.png?v=cards-20260710") center/cover !important;
 }
 
 .ol-game-card.concordium-exploracao-cover{

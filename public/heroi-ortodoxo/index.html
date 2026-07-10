@@ -728,6 +728,85 @@
         gap: 10px;
       }
 
+      .checkin-summary {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 10px;
+        padding: 12px;
+        border-radius: 18px;
+        background: linear-gradient(145deg, rgba(255, 231, 139, 0.86), rgba(255, 247, 218, 0.72));
+        border: 2px solid rgba(99, 65, 25, 0.18);
+      }
+
+      .checkin-summary strong {
+        display: block;
+        font-size: 1.1rem;
+      }
+
+      .checkin-timer {
+        min-width: 112px;
+        padding: 8px 10px;
+        border-radius: 14px;
+        color: #fff8db;
+        background: rgba(34, 37, 51, 0.9);
+        text-align: center;
+        font-weight: 1000;
+      }
+
+      .checkin-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 7px;
+      }
+
+      .day-reward {
+        min-height: 92px;
+        border-radius: 15px;
+        padding: 6px 4px;
+        display: grid;
+        justify-items: center;
+        align-content: center;
+        gap: 3px;
+        background: rgba(255,255,255,0.66);
+        border: 2px solid rgba(99, 65, 25, 0.16);
+        box-shadow: 0 4px 0 rgba(118, 72, 20, 0.1);
+        text-align: center;
+        font-size: 0.66rem;
+        font-weight: 1000;
+      }
+
+      .day-reward img {
+        width: 30px;
+        height: 30px;
+        object-fit: contain;
+      }
+
+      .day-reward.claimed {
+        background: linear-gradient(145deg, #d4f3ba, #fff4b7);
+        border-color: rgba(82, 150, 74, 0.42);
+      }
+
+      .day-reward.current {
+        background: linear-gradient(145deg, #fff6a8, #ffc456);
+        border-color: rgba(166, 93, 18, 0.4);
+        transform: translateY(-1px);
+      }
+
+      .day-reward.locked {
+        opacity: 0.74;
+        filter: saturate(0.75);
+      }
+
+      .day-reward b {
+        color: #65400f;
+      }
+
+      .day-reward span {
+        color: #2d2418;
+        line-height: 1.05;
+      }
+
       .stage-card {
         display: grid;
         grid-template-columns: 1fr auto;
@@ -974,6 +1053,7 @@
         .hotspot { min-height: 54px; }
         .hotspot span { font-size: 0.72rem; }
         .daily-gift { min-width: 96px; font-size: 0.72rem; }
+        .checkin-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
         .sheet { inset-inline: 8px; }
         .grid { grid-template-columns: 1fr; }
       }
@@ -1009,9 +1089,9 @@
           </div>
           <div class="resources" aria-label="Recursos">
             <div class="resource" aria-label="Energia"><img src="/assets/heroi-icon-energy.png?v=20260710h" alt=""><span><b>Energia</b><strong id="energy">60/60</strong></span></div>
-            <div class="resource" aria-label="Gemas"><img src="/assets/heroi-icon-gems.png?v=20260710h" alt=""><span><b>Gemas</b><strong id="gems">120</strong></span></div>
-            <div class="resource" aria-label="Moedas"><img src="/assets/heroi-icon-coins.png?v=20260710h" alt=""><span><b>Moedas</b><strong id="coins">1653</strong></span></div>
-            <div class="resource" aria-label="Pergaminhos"><img src="/assets/heroi-icon-scroll.png?v=20260710h" alt=""><span><b>Perg.</b><strong id="tickets">1</strong></span></div>
+            <div class="resource" aria-label="Gemas"><img src="/assets/heroi-icon-gems.png?v=20260710h" alt=""><span><b>Gemas</b><strong id="gems">0</strong></span></div>
+            <div class="resource" aria-label="Moedas"><img src="/assets/heroi-icon-coins.png?v=20260710h" alt=""><span><b>Moedas</b><strong id="coins">0</strong></span></div>
+            <div class="resource" aria-label="Pergaminhos"><img src="/assets/heroi-icon-scroll.png?v=20260710h" alt=""><span><b>Pergaminhos</b><strong id="tickets">0</strong></span></div>
           </div>
         </header>
 
@@ -1023,7 +1103,7 @@
 
           <button class="daily-gift" type="button" id="checkin-btn">
             <img src="/assets/heroi-icon-gift.png?v=20260710h" alt="">
-            <span>Oferta</span>
+            <span>Check-in</span>
             <small id="checkin-badge">!</small>
           </button>
 
@@ -1069,7 +1149,12 @@
 
     <script>
       (() => {
-        const saveKey = "heroi-ortodoxo-save-v3";
+        const saveKey = "heroi-ortodoxo-save-v4";
+        const maxEnergy = 60;
+        const arenaEnergyCost = 5;
+        const summonGemCost = 120;
+        const energyRegenMs = 10 * 60 * 1000;
+        const checkinCooldownMs = 24 * 60 * 60 * 1000;
         const heroes = [
           { id: "davi", name: "Davi", role: "Harpa e funda", color: "#4aa5db", tool: "#f2d35a", hp: 95, atk: 13, spd: 1.12, rarity: "Inicial" },
           { id: "debora", name: "Débora", role: "Juízo e coragem", color: "#9b65d8", tool: "#ffdf69", hp: 80, atk: 16, spd: 1.18, rarity: "Rara" },
@@ -1085,7 +1170,7 @@
             book: "Gênesis",
             name: "Jardim e Ermo",
             tip: "A criação abre caminho para a primeira provação no ermo.",
-            cost: 8,
+            cost: arenaEnergyCost,
             enemies: 2,
             arena: "heroi-arena-genesis.png",
             enemyPool: [
@@ -1099,7 +1184,7 @@
             book: "Êxodo",
             name: "Travessia do Mar",
             tip: "A perseguição no deserto testa resistência e ordem da equipe.",
-            cost: 12,
+            cost: arenaEnergyCost,
             enemies: 4,
             arena: "heroi-arena-exodo.png",
             enemyPool: [
@@ -1113,7 +1198,7 @@
             book: "Josué",
             name: "Porta do Vale",
             tip: "O caminho até a cidade exige coragem, formação e bênçãos certas.",
-            cost: 14,
+            cost: arenaEnergyCost,
             enemies: 5,
             arena: "heroi-arena-josue.png",
             enemyPool: [
@@ -1136,6 +1221,39 @@
           { id: "disciplina", title: "Disciplina", text: "Ataques ficam mais rápidos.", apply: s => s.bonusSpeed += 0.16 },
           { id: "provisao", title: "Provisão", text: "Ganhe 45 moedas agora.", apply: s => { state.coins += 45; } },
           { id: "salmo", title: "Salmo", text: "Cura parcial da equipe.", apply: s => { s.party.forEach(unit => unit.hp = Math.min(unit.maxHp, unit.hp + 28)); } }
+        ];
+
+        const checkinRewards = [
+          { gems: 120, coins: 80 },
+          { coins: 120 },
+          { gems: 25 },
+          { coins: 160 },
+          { tickets: 1 },
+          { gems: 35 },
+          { coins: 220 },
+          { gems: 30, coins: 120 },
+          { coins: 260 },
+          { tickets: 1 },
+          { gems: 45 },
+          { coins: 320 },
+          { gems: 35, coins: 160 },
+          { tickets: 1 },
+          { gems: 60 },
+          { coins: 400 },
+          { gems: 45, coins: 180 },
+          { coins: 460 },
+          { tickets: 1 },
+          { gems: 75 },
+          { coins: 540 },
+          { gems: 55, coins: 220 },
+          { coins: 620 },
+          { tickets: 1 },
+          { gems: 90 },
+          { coins: 720 },
+          { gems: 70, coins: 260 },
+          { tickets: 1, coins: 300 },
+          { gems: 100 },
+          { tickets: 2, gems: 120, coins: 500 }
         ];
 
         const state = load();
@@ -1167,20 +1285,26 @@
 
         let battle = null;
         let timer = null;
+        let checkinTimer = null;
 
         document.querySelectorAll("[data-view]").forEach(button => {
           button.addEventListener("click", () => openView(button.dataset.view));
         });
         document.getElementById("start-button").addEventListener("click", () => {
           if (!state.owned.length) {
-            toast("Faça a primeira invocação grátis para liberar a equipe.");
-            openView("summon");
+            if (state.gems < summonGemCost && state.tickets < 1) {
+              toast("Faça o check-in para ganhar as gemas da primeira invocação.");
+              renderCheckin(true);
+            } else {
+              toast("Faça a primeira invocação para liberar a equipe.");
+              openView("summon");
+            }
             return;
           }
           startBattle(state.stage);
         });
         document.getElementById("battle-exit").addEventListener("click", endBattle);
-        document.getElementById("checkin-btn").addEventListener("click", dailyGift);
+        document.getElementById("checkin-btn").addEventListener("click", renderCheckin);
         document.getElementById("sound-btn").addEventListener("click", () => {
           state.sound = !state.sound;
           save();
@@ -1188,11 +1312,12 @@
           toast(state.sound ? "Som marcado como ligado." : "Som marcado como pausado.");
         });
 
+        applyEnergyRegen();
         render();
         if (!state.seenIntro) {
           state.seenIntro = true;
           save();
-          setTimeout(() => openView("summon"), 650);
+          setTimeout(() => renderCheckin(true), 650);
         }
 
         function defaultState() {
@@ -1201,14 +1326,16 @@
             level: 1,
             xp: 0,
             energy: 60,
-            gems: 120,
-            coins: 1653,
-            tickets: 1,
+            gems: 0,
+            coins: 0,
+            tickets: 0,
             stage: 1,
             owned: [],
             formation: [],
             summons: 0,
-            lastGift: "",
+            checkinDay: 0,
+            lastCheckinAt: 0,
+            lastEnergyAt: Date.now(),
             sound: true,
             seenIntro: false
           };
@@ -1227,11 +1354,12 @@
         }
 
         function render() {
+          applyEnergyRegen();
           const levelProgress = Math.min(100, (state.xp % 100));
           els.avatar.dataset.level = state.level;
           els.player.textContent = state.name;
           els.xpBar.style.width = `${levelProgress}%`;
-          els.energy.textContent = `${state.energy}/60`;
+          els.energy.textContent = `${state.energy}/${maxEnergy}`;
           els.gems.textContent = state.gems;
           els.coins.textContent = state.coins;
           els.tickets.textContent = state.tickets;
@@ -1240,7 +1368,7 @@
           const activeStage = stages.find(stage => stage.id === state.stage) || stages[stages.length - 1];
           els.chapterKicker.textContent = `Livro atual: ${activeStage.book}`;
           document.getElementById("chapter-name").textContent = activeStage.name;
-          els.checkinBadge.classList.toggle("hidden", canGift() === false);
+          els.checkinBadge.classList.toggle("hidden", canCheckin() === false);
           document.getElementById("sound-btn").textContent = state.sound ? "II" : "M";
           renderParty();
         }
@@ -1268,6 +1396,7 @@
         }
 
         function openView(view) {
+          clearCheckinTimer();
           if (view === "home") {
             els.sheet.classList.add("hidden");
           } else if (view === "summon") {
@@ -1284,14 +1413,17 @@
 
         function sheet(title, body) {
           els.sheet.innerHTML = `<div class="sheet-head"><div><h1>${title}</h1></div><button class="close-button" type="button" aria-label="Fechar">X</button></div>${body}`;
-          els.sheet.querySelector(".close-button").addEventListener("click", () => openView("home"));
+          els.sheet.querySelector(".close-button").addEventListener("click", () => {
+            clearCheckinTimer();
+            openView("home");
+          });
           els.sheet.classList.remove("hidden");
         }
 
         function renderSummon() {
           sheet("Invocação", `
             <p>Use pergaminhos para chamar aliados bíblicos e fortalecer a equipe antes das arenas.</p>
-            <div class="summon-orb"><strong>${state.tickets > 0 ? "1 livre" : "120 gemas"}</strong><span class="tag">chance de herói raro</span></div>
+            <div class="summon-orb"><strong>${state.tickets > 0 ? "1 livre" : `${summonGemCost} gemas`}</strong><span class="tag">chance de herói raro</span></div>
             <button class="primary-button" id="summon-now" type="button">${state.tickets > 0 ? "Invocar grátis" : "Invocar herói"}</button>
             <div class="card"><b>Convite inicial</b><p>A primeira invocação sempre libera um aliado para a formação.</p></div>
           `);
@@ -1299,12 +1431,13 @@
         }
 
         function summonHero() {
-          if (state.tickets <= 0 && state.gems < 120) {
-            toast("Faltam gemas para invocar.");
+          if (state.tickets <= 0 && state.gems < summonGemCost) {
+            toast("Faltam gemas. Faça o check-in para começar.");
+            renderCheckin(true);
             return;
           }
           if (state.tickets > 0) state.tickets -= 1;
-          else state.gems -= 120;
+          else state.gems -= summonGemCost;
           const pool = heroes.filter(hero => !state.owned.includes(hero.id));
           const next = state.summons === 0 && !state.owned.includes("davi")
             ? heroById("davi")
@@ -1401,7 +1534,7 @@
             return;
           }
           if (state.energy < stage.cost) {
-            toast("Energia insuficiente. Pegue a oferta diária.");
+            toast(`Energia insuficiente. Cada arena custa ${arenaEnergyCost} energia.`);
             return;
           }
           state.energy -= stage.cost;
@@ -1559,7 +1692,6 @@
             render();
             els.result.innerHTML = `<article class="result-card"><h2>Vitória!</h2><p>Você recebeu ${reward} moedas, gemas e experiência.</p><button class="primary-button" id="result-close" type="button">Voltar ao acampamento</button></article>`;
           } else {
-            state.energy = Math.min(60, state.energy + 3);
             save();
             render();
             els.result.innerHTML = `<article class="result-card"><h2>Derrota</h2><p>Melhore a formação, invoque mais aliados e tente de novo.</p><button class="primary-button" id="result-close" type="button">Voltar ao acampamento</button></article>`;
@@ -1584,32 +1716,141 @@
           els.battleLog.textContent = text;
         }
 
-        function dailyGift() {
-          if (!canGift()) {
-            toast("A oferta diária já foi coletada.");
+        function renderCheckin(isTutorial = false) {
+          clearCheckinTimer();
+          const currentDay = Math.min(state.checkinDay, checkinRewards.length - 1);
+          const claimable = canCheckin() && state.checkinDay < checkinRewards.length;
+          const nextText = state.checkinDay >= checkinRewards.length
+            ? "Ciclo completo"
+            : (claimable ? "Liberado agora" : formatDuration(nextCheckinIn()));
+          const cards = checkinRewards.map((reward, index) => {
+            const claimed = index < state.checkinDay;
+            const current = index === state.checkinDay && state.checkinDay < checkinRewards.length;
+            const status = claimed ? "Coletado" : (current ? (claimable ? "Hoje" : "Próximo") : "Bloq.");
+            return `<article class="day-reward ${claimed ? "claimed" : current ? "current" : "locked"}">
+              <b>Dia ${index + 1}</b>
+              <img src="${rewardIcon(reward)}" alt="">
+              <span>${rewardText(reward)}</span>
+              <small>${status}</small>
+            </article>`;
+          }).join("");
+
+          sheet("Check-in diário", `
+            <div class="checkin-summary">
+              <div>
+                <strong>${isTutorial ? "Comece por aqui" : `Dia ${Math.min(state.checkinDay + 1, 30)} de 30`}</strong>
+                <p>${isTutorial ? "Colete o primeiro prêmio para ganhar gemas e fazer sua primeira invocação." : "Colete uma recompensa por dia e acompanhe quando o próximo prêmio libera."}</p>
+              </div>
+              <div class="checkin-timer"><small>Próximo</small><span id="checkin-countdown">${nextText}</span></div>
+            </div>
+            <button class="primary-button" id="claim-checkin" type="button" ${claimable ? "" : "disabled"}>${claimable ? "Coletar check-in" : "Aguardar próximo"}</button>
+            <div class="checkin-grid">${cards}</div>
+          `);
+
+          const claimButton = document.getElementById("claim-checkin");
+          claimButton.addEventListener("click", claimCheckin);
+          checkinTimer = window.setInterval(updateCheckinCountdown, 1000);
+          updateCheckinCountdown();
+        }
+
+        function claimCheckin() {
+          if (!canCheckin()) {
+            toast(`Próximo check-in em ${formatDuration(nextCheckinIn())}.`);
             return;
           }
-          state.lastGift = today();
-          state.energy = 60;
-          state.tickets += 1;
-          state.coins += 120;
+          if (state.checkinDay >= checkinRewards.length) {
+            toast("Você completou os 30 dias deste ciclo.");
+            return;
+          }
+          const reward = checkinRewards[state.checkinDay];
+          applyReward(reward);
+          state.checkinDay += 1;
+          state.lastCheckinAt = Date.now();
           save();
           render();
-          toast("Oferta coletada: energia cheia, pergaminho e moedas.");
+          toast(`Check-in coletado: ${rewardText(reward)}.`);
+          renderCheckin();
         }
 
-        function canGift() {
-          return state.lastGift !== today();
+        function applyReward(reward) {
+          state.gems += reward.gems || 0;
+          state.coins += reward.coins || 0;
+          state.tickets += reward.tickets || 0;
+          if (reward.energy) state.energy = Math.min(maxEnergy, state.energy + reward.energy);
         }
 
-        function today() {
-          return new Date().toISOString().slice(0, 10);
+        function rewardIcon(reward) {
+          if (reward.tickets) return "/assets/heroi-icon-scroll.png?v=20260710h";
+          if (reward.gems) return "/assets/heroi-icon-gems.png?v=20260710h";
+          if (reward.coins) return "/assets/heroi-icon-coins.png?v=20260710h";
+          return "/assets/heroi-icon-gift.png?v=20260710h";
+        }
+
+        function rewardText(reward) {
+          return [
+            reward.gems ? `${reward.gems} gemas` : "",
+            reward.coins ? `${reward.coins} moedas` : "",
+            reward.tickets ? `${reward.tickets} perg.` : "",
+            reward.energy ? `${reward.energy} energia` : ""
+          ].filter(Boolean).join(" + ");
+        }
+
+        function canCheckin() {
+          return !state.lastCheckinAt || Date.now() - state.lastCheckinAt >= checkinCooldownMs;
+        }
+
+        function nextCheckinIn() {
+          if (canCheckin()) return 0;
+          return Math.max(0, checkinCooldownMs - (Date.now() - state.lastCheckinAt));
+        }
+
+        function updateCheckinCountdown() {
+          const countdown = document.getElementById("checkin-countdown");
+          const button = document.getElementById("claim-checkin");
+          if (!countdown || !button) return;
+          const claimable = canCheckin() && state.checkinDay < checkinRewards.length;
+          countdown.textContent = state.checkinDay >= checkinRewards.length
+            ? "Ciclo completo"
+            : (claimable ? "Liberado agora" : formatDuration(nextCheckinIn()));
+          button.disabled = !claimable;
+          button.textContent = claimable ? "Coletar check-in" : "Aguardar próximo";
+        }
+
+        function clearCheckinTimer() {
+          if (checkinTimer) window.clearInterval(checkinTimer);
+          checkinTimer = null;
+        }
+
+        function formatDuration(ms) {
+          const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+          const hours = Math.floor(totalSeconds / 3600);
+          const minutes = Math.floor((totalSeconds % 3600) / 60);
+          const seconds = totalSeconds % 60;
+          if (hours > 0) return `${hours}h ${String(minutes).padStart(2, "0")}m`;
+          return `${minutes}m ${String(seconds).padStart(2, "0")}s`;
+        }
+
+        function applyEnergyRegen() {
+          const now = Date.now();
+          if (!state.lastEnergyAt) state.lastEnergyAt = now;
+          if (state.energy >= maxEnergy) {
+            state.energy = maxEnergy;
+            state.lastEnergyAt = now;
+            return;
+          }
+          const gained = Math.floor((now - state.lastEnergyAt) / energyRegenMs);
+          if (gained > 0) {
+            state.energy = Math.min(maxEnergy, state.energy + gained);
+            state.lastEnergyAt += gained * energyRegenMs;
+            if (state.energy >= maxEnergy) state.lastEnergyAt = now;
+            save();
+          }
         }
 
         function levelCheck() {
           while (state.xp >= state.level * 100) {
             state.level += 1;
-            state.energy = 60;
+            state.energy = maxEnergy;
           }
         }
 

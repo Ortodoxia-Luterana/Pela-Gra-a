@@ -6,8 +6,11 @@
   // automaticamente - basta soltar um PNG com o mesmo nome, sem mexer em codigo.
   const ASSET_BASE = '/assets/guardioes/assets/';
   const ASSET_VERSION = 'guardioes-visuals-2026-07-08-2';
+  const HUB_BUILDINGS = ['build', 'collection', 'class', 'shop'];
   const OVERRIDE_MANIFEST = [
     ['tex-menu-bg', 'menu-bg.jpg'],
+    ['tex-guardian', 'guardian.png'],
+    ...HUB_BUILDINGS.map(id => [`tex-building-${id}`, `building-${id}.png`]),
     ...global.GuardioesData.LEVELS.map(l => [`tex-map-${l.id}`, `map-${l.id}.jpg`]),
     ...global.GuardioesData.DEFENSE_ORDER.map(id => [`tex-defense-${id}`, `defense-${id}.png`]),
     ...Object.keys(global.GuardioesData.ENEMIES).map(id => [`tex-enemy-${id}`, `enemy-${id}.png`])
@@ -29,6 +32,7 @@
       this.buildDefenseTextures();
       this.buildEnemyTextures();
       this.buildEffectTextures();
+      this.buildHubTextures();
       this.scene.start('Menu');
     }
 
@@ -331,6 +335,91 @@
       gfx.fillStyle(0xe74c3c, 0.35);
       gfx.fillCircle(30, 30, 28);
       gfx.generateTexture('tex-invalid-preview', 60, 60);
+      gfx.destroy();
+    }
+
+    // --- vilarejo (tela inicial estilo hub): predios clicaveis + guardiao parado ---
+    buildHubTextures() {
+      this.buildBuildingIcon('build', 0x8a2f3f, gfx => {
+        // Estandarte num mastro sobre uma tenda de comando
+        gfx.fillStyle(0x4a3a2a, 1);
+        gfx.fillTriangle(-30, 20, 30, 20, 0, -18);
+        gfx.fillStyle(0x3a2a1c, 1);
+        gfx.fillRect(-2, -46, 4, 34);
+        gfx.fillStyle(0x8a2f3f, 1);
+        gfx.fillTriangle(2, -44, 2, -26, 22, -35);
+      });
+
+      this.buildBuildingIcon('collection', 0x8a6a3a, gfx => {
+        // Bau do tesouro
+        gfx.fillStyle(0x5a4020, 1);
+        gfx.fillRoundedRect(-26, -6, 52, 26, 4);
+        gfx.fillStyle(0x7a5a2e, 1);
+        gfx.fillRoundedRect(-28, -22, 56, 20, 6);
+        gfx.fillStyle(0xe0c05a, 1);
+        gfx.fillRect(-6, -14, 12, 8);
+        gfx.lineStyle(2, 0x2a1c12, 0.6);
+        gfx.strokeRoundedRect(-26, -6, 52, 26, 4);
+      });
+
+      this.buildBuildingIcon('class', 0x3d8bcf, gfx => {
+        // Pergaminho com arvore de habilidades (arvore estilizada)
+        gfx.fillStyle(0x4a3a2a, 1);
+        gfx.fillRect(-3, 0, 6, 24);
+        gfx.fillStyle(0x3d8bcf, 1);
+        gfx.fillCircle(0, -8, 16);
+        gfx.fillStyle(0x5aa3e0, 1);
+        gfx.fillCircle(-14, 2, 10);
+        gfx.fillCircle(14, 2, 10);
+      });
+
+      this.buildBuildingIcon('shop', 0xc65b2b, gfx => {
+        // Barraca de feira com listras
+        gfx.fillStyle(0x8a4a1c, 1);
+        gfx.fillRect(-26, -4, 52, 28);
+        for (let i = -24; i < 24; i += 12) {
+          gfx.fillStyle(i % 24 === 0 ? 0xe0c05a : 0xc65b2b, 1);
+          gfx.fillTriangle(i, -22, i + 12, -22, i + 6, -4);
+        }
+        gfx.fillStyle(0x2a1c12, 1);
+        gfx.fillRect(-8, 8, 16, 16);
+      });
+
+      // Guardiao parado na tela inicial - figura robusta com capa e lanca
+      const key = 'tex-guardian';
+      if (!this.hasOverride(key)) {
+        const gfx = this.g();
+        gfx.fillStyle(0x000000, 0.28);
+        gfx.fillEllipse(0, 74, 46, 16);
+        gfx.fillStyle(0x3a4a5a, 1);
+        gfx.fillTriangle(-24, 70, 24, 70, 0, -10);
+        gfx.fillStyle(0x2c3a46, 1);
+        gfx.fillRoundedRect(-16, -8, 32, 46, 8);
+        gfx.fillStyle(0xd8b98a, 1);
+        gfx.fillCircle(0, -30, 15);
+        gfx.fillStyle(0x5a4632, 1);
+        gfx.fillRoundedRect(-16, -42, 32, 14, 6);
+        gfx.fillStyle(0x8a6a3a, 1);
+        gfx.fillRect(28, -60, 4, 100);
+        gfx.fillStyle(0xc9c9d2, 1);
+        gfx.fillTriangle(24, -60, 36, -60, 30, -78);
+        gfx.generateTexture(key, 100, 190, 50, 96);
+        gfx.destroy();
+      }
+    }
+
+    buildBuildingIcon(id, color, drawTop) {
+      const key = `tex-building-${id}`;
+      if (this.hasOverride(key)) return;
+      const gfx = this.g();
+      gfx.fillStyle(0x000000, 0.25);
+      gfx.fillEllipse(0, 26, 60, 18);
+      gfx.fillStyle(0xcab989, 1);
+      gfx.fillRoundedRect(-32, 10, 64, 18, 6);
+      gfx.lineStyle(2, 0x00000033, 1);
+      gfx.strokeRoundedRect(-32, 10, 64, 18, 6);
+      drawTop(gfx);
+      gfx.generateTexture(key, 120, 120, 60, 70);
       gfx.destroy();
     }
   }

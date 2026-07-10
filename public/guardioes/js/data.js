@@ -283,11 +283,25 @@
     return DEFENSE_ORDER.filter(id => DEFENSES[id].rarity === rarity);
   }
 
+  // Gate de progressao dos "predios" do vilarejo (tela inicial estilo hub de RPG mobile).
+  // Build e Colecao sempre abertos (o jogador precisa deles pra jogar a 1a fase).
+  // Loja abre depois da 1a fase (ja tem moeda/fragmento pra gastar). Classe abre no nivel 2
+  // (evita jogador se perder na arvore de habilidade antes de entender o loop principal).
+  function isFeatureUnlocked(state, feature) {
+    if (feature === 'build' || feature === 'collection') return true;
+    if (feature === 'shop') {
+      const first = LEVELS[0];
+      return Boolean(state.progress.levels[first.id] && state.progress.levels[first.id].completed);
+    }
+    if (feature === 'class') return state.profile.level >= 2;
+    return true;
+  }
+
   global.GuardioesData = {
     MAP, RARITY, RARITY_ORDER, MAX_FUSION_LEVEL,
     DEFENSES, DEFENSE_ORDER, ENEMIES, LEVELS,
     HP_GROWTH, WAVE_CLEAR_BONUS, WAVE_CLEAR_BONUS_GROWTH,
     CLASSES, CLASS_ORDER,
-    rarityWeights, pickRarity, defensesByRarity
+    rarityWeights, pickRarity, defensesByRarity, isFeatureUnlocked
   };
 })(window);

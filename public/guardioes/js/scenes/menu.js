@@ -1,7 +1,25 @@
-/* Caminho dos Guardioes - MenuScene: tela inicial como jogo, nao dashboard web */
+/* Caminho dos Guardioes - MenuScene: vilarejo-hub (padrao dos RPGs mobile de heroi/colecao):
+   barra de recursos no topo, cenario com predios clicaveis (alguns travados), guardiao parado,
+   navegador de fase com setas + botao Comecar, e uma barra de abas embaixo. */
 (function (global) {
   'use strict';
   const UI = global.GuardioesUI;
+  const D = global.GuardioesData;
+
+  const BUILDINGS = [
+    { id: 'build', feature: 'build', label: 'Build', scene: 'BuildSetup', x: 0.72, y: 0.30 },
+    { id: 'collection', feature: 'collection', label: 'Coleção', scene: 'Collection', x: 0.24, y: 0.42 },
+    { id: 'class', feature: 'class', label: 'Classe', scene: 'ClassTree', x: 0.76, y: 0.52 },
+    { id: 'shop', feature: 'shop', label: 'Loja', scene: 'Shop', x: 0.30, y: 0.62 }
+  ];
+
+  const TABS = [
+    { id: 'home', label: 'Início', icon: '🏠' },
+    { id: 'build', label: 'Build', icon: 'tex-building-build', scene: 'BuildSetup' },
+    { id: 'collection', label: 'Coleção', icon: 'tex-building-collection', scene: 'Collection' },
+    { id: 'class', label: 'Classe', icon: 'tex-building-class', scene: 'ClassTree' },
+    { id: 'shop', label: 'Loja', icon: 'tex-building-shop', scene: 'Shop' }
+  ];
 
   class MenuScene extends Phaser.Scene {
     constructor() { super('Menu'); }
@@ -9,62 +27,233 @@
     create() {
       const { width, height } = this.scale;
       const state = this.registry.get('state');
+      this.state = state;
 
-      if (this.textures.exists('tex-menu-bg')) {
-        this.add.image(width / 2, height / 2, 'tex-menu-bg').setDisplaySize(width, height);
-        this.add.rectangle(0, 0, width, height, 0x080604, 0.32).setOrigin(0);
-        this.add.rectangle(0, 0, width, height * 0.35, 0x000000, 0.30).setOrigin(0);
-      } else {
-        this.add.rectangle(0, 0, width, height, 0x1a1712).setOrigin(0);
-        this.drawSkyline(width, height);
-      }
+      this.selectedLevelIndex = this.pickDefaultLevelIndex();
 
-      this.add.text(width / 2, height * 0.22, 'CAMINHO DOS', {
-        fontFamily: 'Georgia, serif', fontSize: '30px', color: '#cbb98a', fontStyle: 'bold'
-      }).setOrigin(0.5);
-      this.add.text(width / 2, height * 0.22 + 42, 'GUARDIÕES', {
-        fontFamily: 'Georgia, serif', fontSize: '54px', color: '#f2e2b8', fontStyle: 'bold'
-      }).setOrigin(0.5).setShadow(0, 4, '#000', 6, true, true);
-
-      const profile = state.profile;
-      UI.makePanel(this, width / 2, height * 0.42, 420, 60);
-      this.add.text(width / 2, height * 0.42, `Nível ${profile.level}  •  ${profile.coins} moedas`, {
-        fontFamily: 'Georgia, serif', fontSize: '20px', color: '#3a2c1a', fontStyle: 'bold'
-      }).setOrigin(0.5);
-
-      const cx = width / 2;
-      const startY = height * 0.56;
-      const gapY = 78;
-
-      const hasRun = Boolean(state.run && state.run.active);
-      UI.makeButton(this, cx, startY, hasRun ? 'Continuar Partida' : 'Jogar', () => {
-        if (hasRun) this.scene.start('Battle', { resume: true, loadout: state.run.loadout, levelIndex: state.run.levelIndex || 0 });
-        else this.scene.start('LevelSelect');
-      }, { width: 300, height: 74, fontSize: 26 });
-      UI.makeButton(this, cx - 170, startY + gapY, 'Coleção', () => this.scene.start('Collection'), { width: 200 });
-      UI.makeButton(this, cx + 170, startY + gapY, 'Classe', () => this.scene.start('ClassTree'), { width: 200 });
-      UI.makeButton(this, cx - 170, startY + gapY * 2, 'Loja', () => this.scene.start('Shop'), { width: 200 });
-      UI.makeButton(this, cx + 170, startY + gapY * 2, 'Build', () => this.scene.start('BuildSetup'), { width: 200 });
-
-      const fsBtn = this.add.text(width - 26, 26, '⛶', { fontFamily: 'Georgia', fontSize: '26px', color: '#f2e2b8' })
-        .setOrigin(1, 0).setInteractive({ useHandCursor: true });
-      fsBtn.on('pointerdown', () => global.GuardioesOrientation.requestFullscreen());
-      UI.muteButton(this, width - 74, 32);
+      this.add.rectangle(0, 0, width, height, 0x1a1712).setOrigin(0);
+      this.buildVillageScene(width, height);
+      this.buildBuildings(width, height);
+      this.buildTopBar(width);
+      this.buildLevelBrowser(width, height);
+      this.buildBottomTabs(width, height);
+      this.buildResumeChip(width, height);
     }
 
-    drawSkyline(width, height) {
+    pickDefaultLevelIndex() {
+      const state = this.state;
+      for (let i = 0; i < D.LEVELS.length; i++) {
+        const lvl = D.LEVELS[i];
+        const done = state.progress.levels[lvl.id] && state.progress.levels[lvl.id].completed;
+        if (!done) return i;
+      }
+      return D.LEVELS.length - 1;
+    }
+
+    highestUnlockedIndex() {
+      const state = this.state;
+      let idx = 0;
+      for (let i = 1; i < D.LEVELS.length; i++) {
+        const prevDone = state.progress.levels[D.LEVELS[i - 1].id] && state.progress.levels[D.LEVELS[i - 1].id].completed;
+        if (prevDone) idx = i; else break;
+      }
+      return idx;
+    }
+
+    // ---------- cenario ----------
+    buildVillageScene(width, height) {
+      const top = 64, bottom = height - 220;
+      if (this.textures.exists('tex-menu-bg')) {
+        const img = this.add.image(width / 2, (top + bottom) / 2, 'tex-menu-bg');
+        img.setDisplaySize(width, bottom - top + 40);
+      } else {
+        this.add.rectangle(0, top, width, bottom - top, 0x241d16).setOrigin(0, 0);
+        this.drawSkyline(width, bottom);
+      }
+      // guardiao parado no centro-baixo do vilarejo
+      const g = this.add.image(width * 0.5, bottom - 40, 'tex-guardian');
+      g.setDisplaySize(120, 228);
+      this.tweens.add({ targets: g, y: g.y - 6, duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+    }
+
+    drawSkyline(width, bottom) {
       const g = this.add.graphics();
-      g.fillStyle(0x252017, 1);
-      const baseY = height * 0.86;
+      g.fillStyle(0x2e2618, 1);
+      const baseY = bottom * 0.92;
       let x = 0;
       while (x < width) {
         const w = 40 + Math.random() * 60;
-        const h = 40 + Math.random() * 120;
+        const h = 40 + Math.random() * 100;
         g.fillRect(x, baseY - h, w, h + 200);
         x += w + 6;
       }
-      g.fillStyle(0x120f0a, 1);
-      g.fillRect(0, baseY + 40, width, height);
+    }
+
+    // ---------- predios clicaveis ----------
+    buildBuildings(width, height) {
+      const top = 64, bottom = height - 220;
+      const usableH = bottom - top;
+      BUILDINGS.forEach(b => {
+        const x = width * b.x;
+        const y = top + usableH * b.y;
+        const unlocked = D.isFeatureUnlocked(this.state, b.feature);
+        const container = this.add.container(x, y);
+        const icon = this.add.image(0, 0, `tex-building-${b.id}`).setScale(0.86);
+        const label = this.add.text(0, 46, b.label, {
+          fontFamily: 'Georgia, serif', fontSize: '13px', color: '#f2e2b8', fontStyle: 'bold'
+        }).setOrigin(0.5).setShadow(0, 2, '#000', 3, true, true);
+        container.add([icon, label]);
+        if (!unlocked) {
+          icon.setTint(0x555555);
+          label.setColor('#8a8a8a');
+          const lock = this.add.text(18, -18, '🔒', { fontSize: '18px' }).setOrigin(0.5);
+          container.add(lock);
+        }
+        container.setSize(90, 90);
+        container.setInteractive({ useHandCursor: true });
+        container.on('pointerover', () => this.tweens.add({ targets: container, scale: 1.08, duration: 90 }));
+        container.on('pointerout', () => this.tweens.add({ targets: container, scale: 1, duration: 90 }));
+        container.on('pointerdown', () => {
+          global.GuardioesAudio.uiClick();
+          if (!unlocked) {
+            this.showLockedHint(b, x, y);
+            return;
+          }
+          this.goToScene(b.scene);
+        });
+      });
+    }
+
+    showLockedHint(building, x, y) {
+      const hints = {
+        shop: 'Vença a Fase 1 pra abrir a Loja',
+        class: 'Alcance o Nível 2 pra abrir a Classe'
+      };
+      UI.floatingText(this, x, y - 60, hints[building.feature] || 'Ainda bloqueado', '#e74c3c');
+    }
+
+    // ---------- barra de recursos (topo) ----------
+    buildTopBar(width) {
+      const profile = this.state.profile;
+      this.add.rectangle(width / 2, 32, width, 64, 0x120e0a, 0.88).setOrigin(0.5).setDepth(300);
+
+      const levelPill = this.add.container(70, 32).setDepth(301);
+      const levelBg = this.add.circle(0, 0, 22, 0x3a2a1c).setStrokeStyle(2, 0x8a6a3a);
+      const levelTxt = this.add.text(0, 0, String(profile.level), {
+        fontFamily: 'Georgia, serif', fontSize: '18px', color: '#f2e2b8', fontStyle: 'bold'
+      }).setOrigin(0.5);
+      levelPill.add([levelBg, levelTxt]);
+
+      this.add.text(105, 20, 'Nível', { fontFamily: 'Georgia, serif', fontSize: '10px', color: '#8a7a5a' }).setDepth(301);
+      this.add.text(105, 32, `${profile.xp} XP`, { fontFamily: 'Georgia, serif', fontSize: '13px', color: '#cbb98a' }).setDepth(301);
+
+      const coinIcon = this.add.circle(width - 130, 32, 12, 0xe0a52a).setStrokeStyle(2, 0x8a6a1a).setDepth(301);
+      this.add.text(width - 110, 32, `${profile.coins}`, {
+        fontFamily: 'Georgia, serif', fontSize: '17px', color: '#f2e2b8', fontStyle: 'bold'
+      }).setOrigin(0, 0.5).setDepth(301);
+
+      const muteBtn = UI.muteButton(this, width - 26, 32).setDepth(301);
+    }
+
+    // ---------- navegador de fase + botao Comecar ----------
+    buildLevelBrowser(width, height) {
+      const y = height - 195;
+      const level = D.LEVELS[this.selectedLevelIndex];
+      const highest = this.highestUnlockedIndex();
+
+      this.browserPanel = this.add.container(0, 0).setDepth(310);
+      this.renderLevelBrowser(width, y, level, highest);
+
+      this.leftArrow = this.add.text(30, y, '◀', { fontSize: '30px', color: '#f2e2b8' })
+        .setOrigin(0.5).setDepth(311).setInteractive({ useHandCursor: true });
+      this.rightArrow = this.add.text(width - 30, y, '▶', { fontSize: '30px', color: '#f2e2b8' })
+        .setOrigin(0.5).setDepth(311).setInteractive({ useHandCursor: true });
+      this.leftArrow.on('pointerdown', () => this.changeLevel(-1));
+      this.rightArrow.on('pointerdown', () => this.changeLevel(1));
+
+      UI.makeButton(this, width / 2, height - 110, 'Começar', () => {
+        this.scene.start('BuildSetup', { levelIndex: this.selectedLevelIndex });
+      }, { width: 300, height: 70, fontSize: 26 }).setDepth(311);
+    }
+
+    changeLevel(dir) {
+      const highest = this.highestUnlockedIndex();
+      const next = Phaser.Math.Clamp(this.selectedLevelIndex + dir, 0, highest);
+      if (next === this.selectedLevelIndex) return;
+      global.GuardioesAudio.uiClick();
+      this.selectedLevelIndex = next;
+      const width = this.scale.width;
+      const y = this.scale.height - 195;
+      this.renderLevelBrowser(width, y, D.LEVELS[next], highest);
+    }
+
+    renderLevelBrowser(width, y, level, highest) {
+      this.browserPanel.removeAll(true);
+      const bg = UI.makePanel(this, width / 2, y, width - 110, 74);
+      const isTop = this.selectedLevelIndex === highest;
+      const name = this.add.text(width / 2, y - 12, `${this.selectedLevelIndex + 1}. ${level.name}`, {
+        fontFamily: 'Georgia, serif', fontSize: '17px', color: '#3a2c1a', fontStyle: 'bold'
+      }).setOrigin(0.5);
+      const tag = this.add.text(width / 2, y + 14, isTop ? 'Capítulo mais alto' : 'Concluída', {
+        fontFamily: 'Georgia, serif', fontSize: '11px', color: isTop ? '#7a3a1a' : '#2e7a3a'
+      }).setOrigin(0.5);
+      bg.setInteractive({ useHandCursor: true });
+      bg.on('pointerdown', () => { global.GuardioesAudio.uiClick(); this.scene.start('LevelSelect'); });
+      this.browserPanel.add([bg, name, tag]);
+      if (this.leftArrow) this.leftArrow.setAlpha(this.selectedLevelIndex > 0 ? 1 : 0.3);
+      if (this.rightArrow) this.rightArrow.setAlpha(this.selectedLevelIndex < highest ? 1 : 0.3);
+    }
+
+    // ---------- chip de continuar partida ----------
+    buildResumeChip(width, height) {
+      const state = this.state;
+      const hasRun = Boolean(state.run && state.run.active);
+      if (!hasRun) return;
+      const chip = UI.makeButton(this, width / 2, 100, '▶ Continuar Partida', () => {
+        this.scene.start('Battle', { resume: true, loadout: state.run.loadout, levelIndex: state.run.levelIndex || 0 });
+      }, { width: 260, height: 46, fontSize: 15 }).setDepth(320);
+    }
+
+    // ---------- barra de abas ----------
+    buildBottomTabs(width, height) {
+      const barY = height - 44;
+      this.add.rectangle(width / 2, barY, width, 88, 0x120e0a, 0.92).setOrigin(0.5).setDepth(300);
+      const cols = TABS.length;
+      const colW = width / cols;
+      TABS.forEach((tab, i) => {
+        const x = colW * i + colW / 2;
+        const active = tab.id === 'home';
+        const container = this.add.container(x, barY).setDepth(301);
+        if (tab.icon.startsWith('tex-')) {
+          const icon = this.add.image(0, -8, tab.icon).setScale(0.34);
+          if (!active) icon.setTint(0xaaaaaa);
+          container.add(icon);
+        } else {
+          container.add(this.add.text(0, -8, tab.icon, { fontSize: '22px' }).setOrigin(0.5));
+        }
+        container.add(this.add.text(0, 20, tab.label, {
+          fontFamily: 'Georgia, serif', fontSize: '10px', color: active ? '#f2e2b8' : '#9a8a6a'
+        }).setOrigin(0.5));
+        if (tab.scene) {
+          container.setSize(colW, 80);
+          container.setInteractive({ useHandCursor: true });
+          container.on('pointerdown', () => {
+            const feature = tab.id;
+            if (!D.isFeatureUnlocked(this.state, feature)) {
+              global.GuardioesAudio.invalid();
+              UI.floatingText(this, x, barY - 50, 'Bloqueado', '#e74c3c');
+              return;
+            }
+            global.GuardioesAudio.uiClick();
+            this.goToScene(tab.scene);
+          });
+        }
+      });
+    }
+
+    goToScene(scene) {
+      if (scene === 'BuildSetup') this.scene.start(scene, { levelIndex: this.selectedLevelIndex });
+      else this.scene.start(scene);
     }
   }
 

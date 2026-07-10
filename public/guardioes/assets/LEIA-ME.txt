@@ -8,7 +8,14 @@ usa a imagem no lugar do desenho procedural - nao precisa mexer em nenhum
 codigo.
 
 Tela inicial (opcional, 720x1280 vertical, JPG otimizado):
-  menu-bg.jpg         -> fundo da tela inicial do jogo
+  menu-bg.jpg         -> fundo do vilarejo (cenario da tela inicial)
+  guardian.png        -> personagem parado no vilarejo (PNG, fundo transparente, ~200x380)
+
+Predios do vilarejo (opcional, PNG fundo transparente, ~240x240):
+  building-build.png       (montar build - estandarte/tenda de comando)
+  building-collection.png  (colecao - bau do tesouro)
+  building-class.png       (classe/arvore - pergaminho ou torre de estudo)
+  building-shop.png        (loja - barraca de feira)
 
 Mapas (opcional, 720x1280 vertical, JPG otimizado):
   map-portoes.jpg     -> Nivel 1: Portoes da Cidade

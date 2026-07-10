@@ -1047,8 +1047,8 @@
 
         const stages = [
           { id: 1, name: "Jardim e Ermo", tip: "Primeira arena: alcance, integridade e leitura de alvo.", cost: 8, enemies: 2 },
-          { id: 2, name: "Areia Vermelha", tip: "Inimigos se aproximam mais rápido.", cost: 12, enemies: 5 },
-          { id: 3, name: "Porta do Vale", tip: "Defenda a formação contra duas ondas.", cost: 14, enemies: 6 }
+          { id: 2, name: "Areia Vermelha", tip: "Inimigos se aproximam mais rápido.", cost: 12, enemies: 4 },
+          { id: 3, name: "Porta do Vale", tip: "Defenda a formação contra duas ondas.", cost: 14, enemies: 5 }
         ];
 
         const upgrades = [
@@ -1158,6 +1158,8 @@
           els.tickets.textContent = state.tickets;
           els.battleEnergy.textContent = state.energy;
           els.note.innerHTML = `Recrutar heróis: <span>${state.owned.length}/3</span>`;
+          const activeStage = stages.find(stage => stage.id === state.stage) || stages[stages.length - 1];
+          document.getElementById("chapter-name").textContent = activeStage.name;
           els.summonBadge.classList.toggle("hidden", state.tickets < 1);
           els.checkinBadge.classList.toggle("hidden", canGift() === false);
           document.getElementById("sound-btn").textContent = state.sound ? "II" : "M";
@@ -1370,9 +1372,9 @@
             side: "enemy",
             id: `enemy-${wave}-${index}`,
             name: ["Sombra", "Saqueador", "Fera"][index % 3],
-            maxHp: 34 + stage.id * 8 + wave * 6,
-            hp: 34 + stage.id * 8 + wave * 6,
-            atk: 5 + stage.id * 2 + wave,
+            maxHp: 30 + stage.id * 7 + wave * 5,
+            hp: 30 + stage.id * 7 + wave * 5,
+            atk: 4 + stage.id * 2 + wave,
             spd: 0.92 + stage.id * 0.04,
             x: 74 + index * 5,
             y: [32, 51, 69][index] || 51,

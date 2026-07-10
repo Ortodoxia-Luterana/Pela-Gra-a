@@ -1046,7 +1046,7 @@
         ];
 
         const stages = [
-          { id: 1, name: "Jardim e Ermo", tip: "Primeira arena: alcance, integridade e leitura de alvo.", cost: 10, enemies: 4 },
+          { id: 1, name: "Jardim e Ermo", tip: "Primeira arena: alcance, integridade e leitura de alvo.", cost: 8, enemies: 2 },
           { id: 2, name: "Areia Vermelha", tip: "Inimigos se aproximam mais rápido.", cost: 12, enemies: 5 },
           { id: 3, name: "Porta do Vale", tip: "Defenda a formação contra duas ondas.", cost: 14, enemies: 6 }
         ];
@@ -1225,7 +1225,9 @@
           if (state.tickets > 0) state.tickets -= 1;
           else state.gems -= 120;
           const pool = heroes.filter(hero => !state.owned.includes(hero.id));
-          const next = pool.length ? pool[(state.summons + state.stage) % pool.length] : heroes[(state.summons + 2) % heroes.length];
+          const next = state.summons === 0 && !state.owned.includes("davi")
+            ? heroById("davi")
+            : (pool.length ? pool[(state.summons + state.stage) % pool.length] : heroes[(state.summons + 2) % heroes.length]);
           if (!state.owned.includes(next.id)) state.owned.push(next.id);
           if (!state.formation.includes(next.id) && state.formation.length < 3) state.formation.push(next.id);
           state.summons += 1;
@@ -1368,9 +1370,9 @@
             side: "enemy",
             id: `enemy-${wave}-${index}`,
             name: ["Sombra", "Saqueador", "Fera"][index % 3],
-            maxHp: 48 + stage.id * 18 + wave * 12,
-            hp: 48 + stage.id * 18 + wave * 12,
-            atk: 7 + stage.id * 3 + wave,
+            maxHp: 34 + stage.id * 8 + wave * 6,
+            hp: 34 + stage.id * 8 + wave * 6,
+            atk: 5 + stage.id * 2 + wave,
             spd: 0.92 + stage.id * 0.04,
             x: 74 + index * 5,
             y: [32, 51, 69][index] || 51,

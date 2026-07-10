@@ -253,6 +253,22 @@
         gfx.fillStyle(0x9a9aa4, 1);
         gfx.fillRect(-16, -6, 8, 22);
       });
+      this.drawEnemy(E.flyer.id, E.flyer.color, 19, gfx => {
+        // asas abertas dos dois lados (voadora - passa por cima das armadilhas)
+        gfx.fillStyle(0x9a7ab8, 0.9);
+        gfx.fillTriangle(-16, -4, -38, -16, -20, 6);
+        gfx.fillTriangle(16, -4, 38, -16, 20, 6);
+        gfx.fillStyle(0x2a2a2a, 1);
+        gfx.fillCircle(4, -5, 3);
+      });
+      this.drawEnemy(E.healer.id, E.healer.color, 23, gfx => {
+        // cruz de cura no peito + capuz
+        gfx.fillStyle(0x2a5a36, 1);
+        gfx.fillTriangle(-14, -12, 14, -12, 0, -30);
+        gfx.fillStyle(0xd8f0d8, 1);
+        gfx.fillRect(-3, -8, 6, 18);
+        gfx.fillRect(-9, -2, 18, 6);
+      });
       this.drawEnemy(E.ram.id, E.ram.color, 32, gfx => {
         gfx.fillStyle(0x4a3a26, 1);
         gfx.fillRect(-24, -8, 48, 16);

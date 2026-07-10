@@ -68,8 +68,11 @@
       container.add(mini);
 
       if (completed) {
-        const check = this.add.text(w / 2 - 20, -h / 2 + 22, '✔', { fontSize: '24px', color: '#2ecc71' }).setOrigin(0.5);
-        container.add(check);
+        const entry = this.state.progress.levels[level.id] || {};
+        const stars = entry.stars || 1;
+        const starStr = '★'.repeat(stars) + '☆'.repeat(3 - stars);
+        const starText = this.add.text(w / 2 - 44, -h / 2 + 22, starStr, { fontSize: '20px', color: '#e0a52a' }).setOrigin(0.5);
+        container.add(starText);
       }
 
       if (unlocked) {

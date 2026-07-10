@@ -77,6 +77,12 @@
     raider: { id: 'raider', name: 'Saqueador', hp: 34, speed: 78, bounty: 9, color: 0x8a3a3a, shape: 'raider' },
     runner: { id: 'runner', name: 'Batedor', hp: 20, speed: 135, bounty: 7, color: 0xb07a2a, shape: 'runner' },
     shield: { id: 'shield', name: 'Escudeiro', hp: 70, speed: 60, bounty: 14, armor: 4, color: 0x6a6a78, shape: 'shield' },
+    // Voadora: passa POR CIMA das armadilhas (imune a dano/lentidao delas) - forca
+    // o jogador a ter dano de projetil na build, nao so controle de chao.
+    flyer: { id: 'flyer', name: 'Harpia', hp: 45, speed: 95, bounty: 13, flying: true, color: 0x6a4a8a, shape: 'flyer' },
+    // Curandeiro: cura inimigos proximos enquanto vivo - vira alvo prioritario
+    // (o modo de mira "Mais Forte" e a Balista perfurante brilham contra ele).
+    healer: { id: 'healer', name: 'Curandeiro', hp: 55, speed: 55, bounty: 18, healRadius: 130, healAmount: 9, color: 0x3a7a4a, shape: 'healer' },
     ram: { id: 'ram', name: 'Aríete', hp: 160, speed: 40, bounty: 25, armor: 2, color: 0x5a4632, shape: 'ram' },
     boss: { id: 'boss', name: 'Chefe Saqueador', hp: 620, speed: 34, bounty: 110, armor: 6, color: 0x3a1f1f, shape: 'boss', isBoss: true }
   };
@@ -124,8 +130,8 @@
         { label: 'Onda 1', spawns: [{ enemy: 'raider', count: 8, interval: 550 }] },
         { label: 'Onda 2', spawns: [{ enemy: 'runner', count: 6, interval: 350 }] },
         { label: 'Onda 3', spawns: [{ enemy: 'runner', count: 6, interval: 320 }, { enemy: 'shield', count: 4, interval: 850, delay: 1500 }] },
-        { label: 'Onda 4', spawns: [{ enemy: 'runner', count: 10, interval: 280 }, { enemy: 'raider', count: 6, interval: 500, delay: 2000 }] },
-        { label: 'Onda 5 - Chefe', spawns: [{ enemy: 'runner', count: 8, interval: 300 }, { enemy: 'boss', count: 1, interval: 0, delay: 4500 }] }
+        { label: 'Onda 4', spawns: [{ enemy: 'runner', count: 8, interval: 280 }, { enemy: 'flyer', count: 3, interval: 900, delay: 2000 }] },
+        { label: 'Onda 5 - Chefe', spawns: [{ enemy: 'runner', count: 8, interval: 300 }, { enemy: 'flyer', count: 2, interval: 1000, delay: 2500 }, { enemy: 'boss', count: 1, interval: 0, delay: 4500 }] }
       ]
     },
     {
@@ -140,8 +146,8 @@
       waves: [
         { label: 'Onda 1', spawns: [{ enemy: 'shield', count: 6, interval: 700 }] },
         { label: 'Onda 2', spawns: [{ enemy: 'ram', count: 3, interval: 1200 }, { enemy: 'raider', count: 6, interval: 500, delay: 1500 }] },
-        { label: 'Onda 3', spawns: [{ enemy: 'runner', count: 8, interval: 300 }, { enemy: 'ram', count: 2, interval: 1400, delay: 2200 }] },
-        { label: 'Onda 4', spawns: [{ enemy: 'shield', count: 7, interval: 650 }, { enemy: 'ram', count: 3, interval: 1100, delay: 1800 }] },
+        { label: 'Onda 3', spawns: [{ enemy: 'runner', count: 8, interval: 300 }, { enemy: 'flyer', count: 4, interval: 800, delay: 2200 }] },
+        { label: 'Onda 4', spawns: [{ enemy: 'shield', count: 7, interval: 650 }, { enemy: 'healer', count: 2, interval: 1500, delay: 1800 }, { enemy: 'ram', count: 3, interval: 1100, delay: 3000 }] },
         { label: 'Onda 5 - Chefe', spawns: [{ enemy: 'ram', count: 3, interval: 1300 }, { enemy: 'boss', count: 1, interval: 0, delay: 5000 }] }
       ]
     },
@@ -156,10 +162,10 @@
       ],
       waves: [
         { label: 'Onda 1', spawns: [{ enemy: 'raider', count: 12, interval: 400 }] },
-        { label: 'Onda 2', spawns: [{ enemy: 'runner', count: 10, interval: 280 }, { enemy: 'shield', count: 4, interval: 800, delay: 2000 }] },
-        { label: 'Onda 3', spawns: [{ enemy: 'shield', count: 8, interval: 600 }, { enemy: 'ram', count: 3, interval: 1100, delay: 1500 }] },
+        { label: 'Onda 2', spawns: [{ enemy: 'flyer', count: 6, interval: 700 }, { enemy: 'shield', count: 4, interval: 800, delay: 2000 }] },
+        { label: 'Onda 3', spawns: [{ enemy: 'shield', count: 8, interval: 600 }, { enemy: 'healer', count: 2, interval: 1600, delay: 1200 }, { enemy: 'ram', count: 3, interval: 1100, delay: 2500 }] },
         { label: 'Onda 4', spawns: [{ enemy: 'raider', count: 10, interval: 350 }, { enemy: 'runner', count: 8, interval: 300, delay: 2500 }] },
-        { label: 'Onda 5 - Chefe', spawns: [{ enemy: 'shield', count: 6, interval: 600 }, { enemy: 'boss', count: 1, interval: 0, delay: 5000 }] }
+        { label: 'Onda 5 - Chefe', spawns: [{ enemy: 'shield', count: 6, interval: 600 }, { enemy: 'healer', count: 2, interval: 1800, delay: 1500 }, { enemy: 'boss', count: 1, interval: 0, delay: 5000 }] }
       ]
     },
     {
@@ -174,9 +180,9 @@
       waves: [
         { label: 'Onda 1', spawns: [{ enemy: 'runner', count: 8, interval: 300 }, { enemy: 'shield', count: 5, interval: 700, delay: 1500 }] },
         { label: 'Onda 2', spawns: [{ enemy: 'ram', count: 4, interval: 1000 }, { enemy: 'raider', count: 10, interval: 400, delay: 1500 }] },
-        { label: 'Onda 3', spawns: [{ enemy: 'runner', count: 12, interval: 250 }, { enemy: 'ram', count: 3, interval: 1200, delay: 2500 }] },
+        { label: 'Onda 3', spawns: [{ enemy: 'flyer', count: 8, interval: 550 }, { enemy: 'healer', count: 2, interval: 1600, delay: 2000 }, { enemy: 'ram', count: 3, interval: 1200, delay: 3500 }] },
         { label: 'Onda 4', spawns: [{ enemy: 'shield', count: 8, interval: 550 }, { enemy: 'ram', count: 4, interval: 1000, delay: 2000 }, { enemy: 'runner', count: 6, interval: 300, delay: 4500 }] },
-        { label: 'Onda 5 - Chefe Final', spawns: [{ enemy: 'shield', count: 6, interval: 600 }, { enemy: 'ram', count: 3, interval: 1200, delay: 1500 }, { enemy: 'boss', count: 2, interval: 4000, delay: 5000 }] }
+        { label: 'Onda 5 - Chefe Final', spawns: [{ enemy: 'shield', count: 6, interval: 600 }, { enemy: 'healer', count: 3, interval: 1500, delay: 1200 }, { enemy: 'ram', count: 3, interval: 1200, delay: 2500 }, { enemy: 'boss', count: 2, interval: 4000, delay: 5000 }] }
       ]
     }
   ];

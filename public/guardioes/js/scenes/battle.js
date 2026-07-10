@@ -19,7 +19,8 @@
   const TARGETING_MODES = ['first', 'strong', 'close'];
   const TARGETING_LABELS = { first: 'Primeiro', strong: 'Mais Forte', close: 'Mais Perto' };
   const TOWER_DISPLAY_SIZES = { archer: 92, fire: 94, trap: 104, banner: 104, ballista: 108, relic: 108 };
-  const ENEMY_DISPLAY_SIZES = { runner: 66, raider: 74, shield: 82, ram: 92, boss: 116 };
+  const ENEMY_DISPLAY_SIZES = { runner: 66, raider: 74, flyer: 72, shield: 82, healer: 80, ram: 92, boss: 116 };
+  const HEAL_TICK_MS = 1500;
   const HP_BAR_HEIGHT = 5;
 
   class BattleScene extends Phaser.Scene {
@@ -88,7 +89,41 @@
         run.towers.forEach(t => this.placeTower(t.defenseId, t.level, t.x, t.y, true, t.targeting));
       }
 
+      this.tutorialStep = 0;
+      if (this.levelIndex === 0 && !state.stats.tutorialDone && !isResume) this.startTutorial();
+
       this.persistRunSnapshot();
+    }
+
+    // ---------- tutorial da primeira partida ----------
+    startTutorial() {
+      this.tutorialStep = 1;
+      this.tutorialText = this.add.text(this.scale.width / 2, this.scale.height - 160, '', {
+        fontFamily: 'Georgia, serif', fontSize: '17px', color: '#ffe9a8', fontStyle: 'bold',
+        backgroundColor: '#1c1712dd', padding: { x: 14, y: 8 }, align: 'center',
+        wordWrap: { width: this.scale.width - 80 }
+      }).setOrigin(0.5).setDepth(650);
+      this.tweens.add({ targets: this.tutorialText, alpha: 0.72, duration: 600, yoyo: true, repeat: -1 });
+      this.setTutorialHint('Toque em "Comprar" pra receber uma defesa aleatória da sua build');
+    }
+
+    setTutorialHint(msg) {
+      if (this.tutorialText) this.tutorialText.setText(msg);
+    }
+
+    advanceTutorial(fromStep) {
+      if (this.tutorialStep !== fromStep) return;
+      this.tutorialStep = fromStep + 1;
+      if (this.tutorialStep === 2) {
+        this.setTutorialHint('Agora toque num espaço livre FORA do caminho pra posicionar (armadilhas vão EM CIMA do caminho)');
+      } else if (this.tutorialStep === 3) {
+        this.setTutorialHint('Defesa no lugar! Toque em "Iniciar Onda" pra começar o ataque');
+      } else {
+        if (this.tutorialText) { this.tutorialText.destroy(); this.tutorialText = null; }
+        this.tutorialStep = 0;
+        this.state.stats.tutorialDone = true;
+        SAVE.save(this.state);
+      }
     }
 
     // ---------- classe / efeitos ----------
@@ -158,6 +193,13 @@
 
     toggleGameSpeed() { this.setGameSpeed(this.gameSpeed === 1 ? 2 : 1); }
 
+    toggleAutoWave() {
+      this.autoWave = !this.autoWave;
+      this.autoBtn.setText(this.autoWave ? 'Auto: ON' : 'Auto: OFF');
+      this.autoBtn.setColor(this.autoWave ? '#5ae08a' : '#9a8a6a');
+      if (this.autoWave && !this.waveActive && !this.runEnded) this.startNextWave();
+    }
+
     // Hit-stop: congela a fisica por alguns ms REAIS pra vender o impacto (game-feel).
     hitStop(ms) {
       if (this._hitStopActive || this.paused || this.runEnded) return;
@@ -175,6 +217,7 @@
       this.input.keyboard.on('keydown-SPACE', () => this.buyDefense());
       this.input.keyboard.on('keydown-W', () => this.startNextWave());
       this.input.keyboard.on('keydown-X', () => this.cancelHeld());
+      this.input.keyboard.on('keydown-A', () => this.toggleAutoWave());
       this.input.keyboard.on('keydown-ONE', () => this.setGameSpeed(1));
       this.input.keyboard.on('keydown-TWO', () => this.setGameSpeed(2));
       this.input.keyboard.on('keydown-M', () => {
@@ -242,6 +285,14 @@
         backgroundColor: '#3a2a1c', padding: { x: 8, y: 3 }
       }).setOrigin(0.5).setDepth(401).setInteractive({ useHandCursor: true });
       this.speedBtn.on('pointerdown', () => { AUDIO.uiClick(); this.toggleGameSpeed(); });
+
+      // Onda automatica: emenda a proxima onda sozinha (padrao do genero p/ farm confortavel)
+      this.autoWave = false;
+      this.autoBtn = this.add.text(width - 150, 50, 'Auto: OFF', {
+        fontFamily: 'Georgia, serif', fontSize: '14px', color: '#9a8a6a', fontStyle: 'bold',
+        backgroundColor: '#3a2a1c', padding: { x: 8, y: 4 }
+      }).setOrigin(0.5).setDepth(401).setInteractive({ useHandCursor: true });
+      this.autoBtn.on('pointerdown', () => { AUDIO.uiClick(); this.toggleAutoWave(); });
 
       this.waveBtn = UI.makeButton(this, width / 2, 96, 'Iniciar Onda', () => this.startNextWave(), { width: 200, height: 48, fontSize: 15 }).setDepth(401);
       if (this.waveIndex > 0 && this.waveIndex < this.level.waves.length) this.waveBtn.list[1].setText(`Iniciar ${this.level.waves[this.waveIndex].label}`);
@@ -372,6 +423,7 @@
       this.buyBtn.list[1].setText(`Comprar (${this.buyCost})`);
       AUDIO.buy();
       this.floatText(this.buyBtn.x, this.scale.height - 110, `${D.DEFENSES[pick].name}!`, this.rarityColorHex(D.DEFENSES[pick].rarity));
+      this.advanceTutorial(1);
       this.updateHud();
       this.persistRunSnapshot();
     }
@@ -514,6 +566,7 @@
       }
       this.placeTower(this.held.defenseId, this.held.level, p.x, p.y);
       AUDIO.place();
+      this.advanceTutorial(2);
       this.clearHeld();
       this.persistRunSnapshot();
     }
@@ -636,6 +689,7 @@
       if (this.paused || this.runEnded || this.waveActive || this.waveIndex >= this.level.waves.length) return;
       this.waveActive = true;
       this.waveBtn.setAlpha(0.4);
+      this.advanceTutorial(3);
       AUDIO.waveStart();
       const wave = this.level.waves[this.waveIndex];
       wave.spawns.forEach(spawnDef => {
@@ -712,6 +766,7 @@
           this.floatText(this.scale.width / 2, 180, `Onda vencida! +${bonus}`, '#2ecc71');
           this.waveBtn.setAlpha(1);
           this.waveBtn.list[1].setText(`Iniciar ${this.level.waves[this.waveIndex].label}`);
+          if (this.autoWave) this.time.delayedCall(1600, () => { if (!this.runEnded && !this.paused) this.startNextWave(); });
         }
         this.persistRunSnapshot();
         this.updateHud();
@@ -740,10 +795,28 @@
           if (!path[e.pathIndex]) { this.enemyReachedEnd(e, i); continue; }
         }
         this.steerEnemy(e);
+        if (e.def.healRadius) this.tickHealer(e);
         const bar = this.hpBarSpec(e.id);
         e.hpBack.setPosition(e.sprite.x, e.sprite.y - bar.yOffset);
         e.hpBar.setPosition(e.sprite.x, e.sprite.y - bar.yOffset);
         e.hpBar.width = bar.width * Math.max(0, e.hp / e.maxHp);
+      }
+    }
+
+    tickHealer(healer) {
+      if (this.battleTime - (healer.lastHeal || 0) < HEAL_TICK_MS) return;
+      healer.lastHeal = this.battleTime;
+      const amount = Math.round(healer.def.healAmount * this.level.hpMult);
+      let healedAny = false;
+      this.enemiesInRadius(healer.sprite.x, healer.sprite.y, healer.def.healRadius).forEach(ally => {
+        if (ally === healer || ally.hp >= ally.maxHp) return;
+        ally.hp = Math.min(ally.maxHp, ally.hp + amount);
+        this.floatText(ally.sprite.x, ally.sprite.y - 50, `+${amount}`, '#5aE08a');
+        healedAny = true;
+      });
+      if (healedAny) {
+        const ring = this.add.circle(healer.sprite.x, healer.sprite.y, healer.def.healRadius, 0x5ae08a, 0.10).setDepth(44);
+        this.tweens.add({ targets: ring, alpha: 0, duration: 400, onComplete: () => ring.destroy() });
       }
     }
 
@@ -775,6 +848,7 @@
       const nearby = this.enemiesInRadius(tower.x, tower.y, D.MAP.trapPathRadius);
       const rate = this.towerStat(tower.defenseId, 'rate');
       nearby.forEach(e => {
+        if (e.def.flying) return;   // voadoras passam por cima das armadilhas
         const cd = tower.targetCooldowns.get(e) || 0;
         if (now - cd < rate) return;
         tower.targetCooldowns.set(e, now);
@@ -955,11 +1029,19 @@
       this.applyLevelUp(state);
       this.loadout.forEach(id => { state.collection[id].fragments += fragmentsReward; });
       state.stats.wins = (state.stats.wins || 0) + 1;
-      state.progress.levels[this.level.id] = { completed: true, completedAt: new Date().toISOString() };
+      // Estrelas por desempenho: 3 = quase sem levar dano, 2 = metade da vida, 1 = sobreviveu.
+      const hpRatio = this.archiveHp / this.maxArchiveHp;
+      const stars = hpRatio >= 0.9 ? 3 : (hpRatio >= 0.5 ? 2 : 1);
+      const prev = state.progress.levels[this.level.id] || {};
+      state.progress.levels[this.level.id] = {
+        completed: true,
+        stars: Math.max(prev.stars || 0, stars),
+        completedAt: new Date().toISOString()
+      };
       state.run = null;
       SAVE.save(state, true);
 
-      this.showEndOverlay(true, coinsReward, xpReward, fragmentsReward);
+      this.showEndOverlay(true, coinsReward, xpReward, fragmentsReward, stars);
     }
 
     onDefeat() {
@@ -980,13 +1062,20 @@
       }
     }
 
-    showEndOverlay(victory, coins, xp, fragments) {
+    showEndOverlay(victory, coins, xp, fragments, stars) {
       const { width, height } = this.scale;
       const dim = this.add.rectangle(0, 0, width, height, 0x000000, 0.65).setOrigin(0).setDepth(500);
       const box = UI.makePanel(this, width / 2, height / 2, 460, 360).setDepth(501);
       const title = this.add.text(width / 2, height / 2 - 140, victory ? 'Vitória!' : 'O Arquivo Caiu', {
         fontFamily: 'Georgia, serif', fontSize: '30px', color: victory ? '#2ecc71' : '#e74c3c', fontStyle: 'bold'
       }).setOrigin(0.5).setDepth(502);
+      if (victory && stars) {
+        const starStr = '★'.repeat(stars) + '☆'.repeat(3 - stars);
+        const starText = this.add.text(width / 2, height / 2 - 106, starStr, {
+          fontSize: '34px', color: '#e0a52a'
+        }).setOrigin(0.5).setDepth(502).setScale(0);
+        this.tweens.add({ targets: starText, scale: 1, duration: 420, ease: 'Back.Out' });
+      }
       let detail = '';
       if (victory) detail = `${this.level.name} concluído!\n+${coins} moedas\n+${xp} XP\n+${fragments} fragmentos por defesa equipada`;
       const desc = this.add.text(width / 2, height / 2 - 60, detail, {

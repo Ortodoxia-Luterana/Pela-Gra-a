@@ -1,4 +1,4 @@
-/* Caminho dos Guardioes - dados centrais do jogo (defesas, inimigos, raridades, classes, ondas, mapa) */
+/* Tower Defense - dados centrais do jogo: torres, inimigos, ondas e mapas. */
 (function (global) {
   'use strict';
 
@@ -9,7 +9,8 @@
     height: 1280,
     trapPathRadius: 70,
     towerPathRadius: 66,
-    towerMinGap: 58
+    towerMinGap: 58,
+    slotSnapRadius: 54
   };
 
   const RARITY = {
@@ -61,18 +62,18 @@
       desc: 'Não ataca. Todas as torres próximas causam +25% de dano. Fundir amplia o bônus.'
     },
     relic: {
-      id: 'relic', name: 'Relíquia do Arcanjo', rarity: 'lendaria', role: 'Explosão em área',
+      id: 'relic', name: 'Obelisco Prismático', rarity: 'lendaria', role: 'Explosão em área',
       cost: 320, damage: 70, range: 240, rate: 3200, aoeRadius: 150,
       onPath: false, color: 0xe8c65a, shape: 'relic',
       upgrades: ['damage', 'aoeRadius', 'rate'],
-      desc: 'Libera uma onda de luz sagrada em área a cada recarga. Rara de se conseguir, decisiva quando aparece.'
+      desc: 'Libera uma onda de energia em área a cada recarga. Rara de se conseguir, decisiva quando aparece.'
     }
   };
 
   const DEFENSE_ORDER = ['archer', 'fire', 'trap', 'banner', 'ballista', 'relic'];
 
-  // Bounties recalibrados: a economia antiga (comum=6, raro=10...) so dava pra
-  // comprar 1x por onda mesmo limpando tudo. Subiu ~35-45% em cada inimigo.
+  // Bounties recalibrados: a economia antiga so dava para gerar 1 torre por
+  // onda mesmo limpando tudo. Subiu ~35-45% em cada inimigo.
   const ENEMIES = {
     raider: { id: 'raider', name: 'Saqueador', hp: 34, speed: 78, bounty: 9, color: 0x8a3a3a, shape: 'raider' },
     runner: { id: 'runner', name: 'Batedor', hp: 20, speed: 135, bounty: 7, color: 0xb07a2a, shape: 'runner' },
@@ -90,9 +91,9 @@
   // Escala geometrica de HP por onda: onda N usa hp * HP_GROWTH^(N-1).
   // Mantem pressao de upgrade sem trivializar o comeco (ref: skill tower-defense).
   const HP_GROWTH = 1.13;
-  // Bonus de moedas ao limpar cada onda (alem do bounty por abate). Cresce por
-  // onda porque o custo de compra tambem sobe ao longo da partida - sem isso o
-  // jogador ficava sem dinheiro pra comprar mais de uma vez por onda cedo demais.
+  // Bonus de suprimentos ao limpar cada onda (alem do bounty por abate). Cresce por
+  // onda porque o custo de gerar torre tambem sobe ao longo da partida - sem isso o
+  // jogador ficava sem suprimentos para gerar mais de uma torre por onda cedo demais.
   const WAVE_CLEAR_BONUS = 30;
   const WAVE_CLEAR_BONUS_GROWTH = 18;
 

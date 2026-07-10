@@ -1,4 +1,4 @@
-/* Caminho dos Guardioes - LevelSelectScene: escolha de mapa com progressao (vencer libera o proximo) */
+/* Tower Defense - LevelSelectScene: escolha de mapa com progressao (vencer libera o proximo) */
 (function (global) {
   'use strict';
   const UI = global.GuardioesUI;

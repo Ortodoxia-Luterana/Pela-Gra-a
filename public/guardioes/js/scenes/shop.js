@@ -1,4 +1,4 @@
-/* Caminho dos Guardioes - ShopScene: economia fora da partida (moedas -> defesas/fragmentos) */
+/* Tower Defense - ShopScene: economia fora da partida (moedas -> torres/fragmentos) */
 (function (global) {
   'use strict';
   const UI = global.GuardioesUI;

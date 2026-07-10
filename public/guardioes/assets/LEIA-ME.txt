@@ -31,7 +31,7 @@ Torres / defesas (recomendado 160x160, fundo transparente):
   defense-trap.png       (Armadilha, comum - fica achatada no chao)
   defense-banner.png     (Estandarte de Guerra, rara - suporte, mastro com bandeira)
   defense-ballista.png   (Balista, epica)
-  defense-relic.png      (Reliquia do Arcanjo, lendaria)
+  defense-relic.png      (Obelisco Prismático, lendaria)
 
 Inimigos (recomendado 160x160, fundo transparente):
   enemy-raider.png   (Saqueador)

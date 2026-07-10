@@ -1,4 +1,4 @@
-/* Caminho dos Guardioes - ClassTreeScene: classe atual e arvore de habilidades por ramo */
+/* Tower Defense - ClassTreeScene: trilha atual e arvore de habilidades por ramo */
 (function (global) {
   'use strict';
   const UI = global.GuardioesUI;

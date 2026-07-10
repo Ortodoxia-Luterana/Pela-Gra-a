@@ -1,4 +1,4 @@
-/* Caminho dos Guardioes - audio sintetizado via Web Audio API (sem arquivos externos) */
+/* Tower Defense - audio sintetizado via Web Audio API (sem arquivos externos) */
 (function (global) {
   'use strict';
 

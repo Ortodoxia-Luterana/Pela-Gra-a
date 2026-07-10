@@ -1,4 +1,4 @@
-/* Caminho dos Guardioes - persistencia (server + cache local) */
+/* Tower Defense - persistencia (server + cache local) */
 (function (global) {
   'use strict';
 
@@ -28,8 +28,9 @@
     const D = global.GuardioesData;
     const collection = {};
     D.DEFENSE_ORDER.forEach(id => { collection[id] = defaultCollectionEntry(); });
-    collection.archer.owned = true;
-    collection.trap.owned = true;
+    ['archer', 'trap', 'fire', 'banner', 'ballista'].forEach(id => {
+      collection[id].owned = true;
+    });
 
     const classes = {};
     D.CLASS_ORDER.forEach(id => { classes[id] = { spent: 0, nodes: {} }; });
@@ -44,7 +45,7 @@
         classes
       },
       collection,
-      loadouts: [{ name: 'Padrão', defenseIds: ['archer', 'trap'] }],
+      loadouts: [{ name: 'Padrao', defenseIds: ['archer', 'trap', 'fire', 'banner', 'ballista'] }],
       activeLoadout: 0,
       progress: { levels: {} },
       stats: { wins: 0, losses: 0, packsOpened: 0, lastDailyPack: '' },

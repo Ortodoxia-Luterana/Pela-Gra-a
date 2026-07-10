@@ -1,4 +1,4 @@
-/* Caminho dos Guardioes - CollectionScene: coleçao de defesas, evoluir atributos com fragmentos */
+/* Tower Defense - CollectionScene: colecao de torres, evoluir atributos com fragmentos */
 (function (global) {
   'use strict';
   const UI = global.GuardioesUI;

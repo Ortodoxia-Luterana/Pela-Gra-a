@@ -1,4 +1,4 @@
-/* Caminho dos Guardioes - BuildSetupScene: escolhe quais defesas entram no sorteio da partida */
+/* Tower Defense - BuildSetupScene: escolhe quais torres entram no sorteio da partida */
 (function (global) {
   'use strict';
   const UI = global.GuardioesUI;
@@ -23,15 +23,15 @@
       const level = D.LEVELS[this.levelIndex];
       UI.topBar(this, `Build · ${level.name}`, () => this.scene.start('Menu'));
 
-      this.add.text(width / 2, 92, 'Escolha até 5 defesas para entrarem no sorteio da partida', {
+      this.add.text(width / 2, 92, 'Escolha ate 5 torres para entrarem no sorteio da partida', {
         fontFamily: 'Georgia, serif', fontSize: '16px', color: '#cbb98a'
       }).setOrigin(0.5);
 
       this.cardNodes = {};
       const owned = D.DEFENSE_ORDER.filter(id => state.collection[id].owned);
-      const cardW = 150, cardH = 200, gap = 16;
+      const cardW = 170, cardH = 188, gap = 20;
       const maxCols = Math.max(1, Math.floor((width - 30) / (cardW + gap)));
-      const cols = Math.min(owned.length, maxCols);
+      const cols = Math.min(3, owned.length, maxCols);
       const totalW = cols * cardW + (cols - 1) * gap;
       const startX = width / 2 - totalW / 2 + cardW / 2;
       const startY = 210;
@@ -51,9 +51,15 @@
       const def = D.DEFENSES[id];
       const container = this.add.container(x, y);
       const bg = UI.makePanel(this, 0, 0, w, h);
-      const sprite = this.add.image(0, -50, `tex-defense-${id}`).setScale(1.1);
-      const name = this.add.text(0, 20, def.name, { fontFamily: 'Georgia, serif', fontSize: '16px', color: '#3a2c1a', fontStyle: 'bold' }).setOrigin(0.5);
-      const role = this.add.text(0, 42, def.role, { fontFamily: 'Georgia, serif', fontSize: '11px', color: '#5a4a32', wordWrap: { width: w - 20 } }).setOrigin(0.5);
+      const sprite = this.add.image(0, -48, `tex-defense-${id}`).setDisplaySize(86, 86);
+      const name = this.add.text(0, 22, def.name, {
+        fontFamily: 'Georgia, serif', fontSize: '14px', color: '#3a2c1a', fontStyle: 'bold',
+        align: 'center', wordWrap: { width: w - 22 }
+      }).setOrigin(0.5);
+      const role = this.add.text(0, 54, def.role, {
+        fontFamily: 'Georgia, serif', fontSize: '10px', color: '#5a4a32', align: 'center',
+        wordWrap: { width: w - 24 }
+      }).setOrigin(0.5);
       const seal = UI.makeRaritySeal(this, -w / 2 + 22, -h / 2 + 22, def.rarity, 0.5);
       const check = this.add.text(w / 2 - 24, -h / 2 + 16, '', { fontFamily: 'Georgia', fontSize: '26px', color: '#2ecc71' }).setOrigin(0.5);
       container.add([bg, sprite, name, role, seal, check]);

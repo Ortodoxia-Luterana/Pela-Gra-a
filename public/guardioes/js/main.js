@@ -1,4 +1,4 @@
-/* Caminho dos Guardioes - bootstrap: carrega save e cria o jogo (vertical, mobile-first) */
+/* Tower Defense - bootstrap: carrega save e cria o jogo (vertical, mobile-first) */
 (function (global) {
   'use strict';
 

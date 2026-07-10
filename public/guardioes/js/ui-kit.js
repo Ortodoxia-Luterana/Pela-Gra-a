@@ -1,4 +1,4 @@
-/* Caminho dos Guardioes - kit de UI reutilizavel (botoes/paineis com identidade propria) */
+/* Tower Defense - kit de UI reutilizavel (botoes/paineis com identidade propria) */
 (function (global) {
   'use strict';
 

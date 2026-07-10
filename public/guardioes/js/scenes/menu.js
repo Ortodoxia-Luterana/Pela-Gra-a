@@ -1,4 +1,4 @@
-/* Caminho dos Guardioes - MenuScene: vilarejo-hub (padrao dos RPGs mobile de heroi/colecao):
+/* Tower Defense - MenuScene: hub de campanha mobile:
    barra de recursos no topo, cenario com predios clicaveis (alguns travados), guardiao parado,
    navegador de fase com setas + botao Comecar, e uma barra de abas embaixo. */
 (function (global) {

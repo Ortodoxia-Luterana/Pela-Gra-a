@@ -335,7 +335,7 @@ function normalizeGamePresence(input) {
   if (value === QUIZ_GAME_ID) return { gameId: QUIZ_GAME_ID, location: 'Quiz Ortodoxia' };
   if (value === CRONICAS_GAME_ID) return { gameId: CRONICAS_GAME_ID, location: 'Cronicas do Levante' };
   if (value === CONCORDIUM_EXPLORACAO_GAME_ID) return { gameId: CONCORDIUM_EXPLORACAO_GAME_ID, location: 'Concordium' };
-  if (value === GUARDIOES_GAME_ID) return { gameId: GUARDIOES_GAME_ID, location: 'Caminho dos Guardiões' };
+  if (value === GUARDIOES_GAME_ID) return { gameId: GUARDIOES_GAME_ID, location: 'Tower Defense' };
   if (value === GAME_ID) return { gameId: GAME_ID, location: 'Pela Graca 1904' };
   return { gameId: 'hub', location: 'Hub' };
 }
@@ -1295,7 +1295,7 @@ async function handleApi(req, res, url, user) {
         },
         {
           id: 'caminho-dos-guardioes',
-          title: 'Caminho dos Guardiões',
+          title: 'Tower Defense',
           status: 'prototype',
           playUrl: '/caminho-dos-guardioes',
           rankingUrl: null
@@ -1736,7 +1736,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     <article class="ol-game-card heroi-cover"><div><h4>Herói Ortodoxo</h4><p>Monte uma equipe de heróis bíblicos, explore capítulos curtos e escolha bênçãos para vencer arenas cheias de recompensas.</p></div><a href="/heroi-ortodoxo">Jogar</a></article>
     <article class="ol-game-card match3-cover"><div><h4>Luther Metch</h4><p>Junte 3 ou mais peças iguais para cumprir objetivos e avançar de fase.</p></div><a href="/luther-metch">Jogar</a></article>
     <article class="ol-game-card quiz-cover"><div><h4>Quiz Ortodoxia</h4><p>Dispute perguntas de Bíblia, Reforma e luteranismo em modo solo, duelo online, convite ou competição geral.</p></div><a href="/quiz-ortodoxia">Jogar</a></article>
-    <article class="ol-game-card guardioes-cover"><div><h4>Caminho dos Guardiões</h4><p>Tower defense de fantasia histórica: monte sua build, compre defesas por sorte e raridade, funda torres iguais e defenda o arquivo sagrado.</p></div><a href="/caminho-dos-guardioes">Jogar</a></article>
+    <article class="ol-game-card guardioes-cover"><div><h4>Tower Defense</h4><p>Defenda a fortaleza em arenas verticais: monte uma build de torres, gere unidades em batalha, reposicione, funda torres iguais e sobreviva às ondas.</p></div><a href="/caminho-dos-guardioes">Jogar</a></article>
   </section>`;
   const rankCard = `<aside class="ol-panel ol-rank"><p>Seu rank geral</p><img class="rank-badge" src="${rank.current.file}?v=${GAME_VERSION}" alt="${escapeHtml(rank.current.title)}"><div class="rank-xp"><strong>${xp} XP</strong><span>${rank.next ? `${Math.max(0, rank.next.xp - rank.currentXp)} XP para ${escapeHtml(rank.next.title)}` : 'Rank maximo alcancado'}</span><div class="rank-bar"><span style="width:${Math.round(rank.progress)}%"></span></div></div><a href="/?section=ranking">Ver ranking geral</a><div class="hub-online-panel"><div class="panel-head"><h3>Online agora</h3></div><div id="hub-online-list" class="hub-online-list">${renderOnlinePlayers(onlinePlayers)}</div></div></aside>`;
   const chatWidget = `<section class="hub-chat" id="hub-chat" aria-label="Chat geral"><div class="hub-chat-head"><strong>Chat geral</strong><button type="button" id="hub-chat-toggle" aria-label="Minimizar chat">-</button></div><div class="hub-chat-messages" id="hub-chat-messages"></div><form id="hub-chat-form" class="hub-chat-form"><input id="hub-chat-input" name="message" maxlength="${CHAT_MAX_LENGTH}" autocomplete="off" placeholder="Mensagem"><button type="submit">Enviar</button></form></section>`;

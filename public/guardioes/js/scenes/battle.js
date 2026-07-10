@@ -1,4 +1,4 @@
-/* Caminho dos Guardioes - BattleScene: loop central do tower defense.
+/* Tower Defense - BattleScene: loop central do tower defense.
    Arcade Physics + pooling + audio + pausa real + velocidade 2x + teclado (PC)
    + selecao/venda de torre + aura de suporte + upgrades de fragmento aplicados. */
 (function (global) {
@@ -22,6 +22,9 @@
   const ENEMY_DISPLAY_SIZES = { runner: 66, raider: 74, flyer: 72, shield: 82, healer: 80, ram: 92, boss: 116 };
   const HEAL_TICK_MS = 1500;
   const HP_BAR_HEIGHT = 5;
+  const TOP_HUD_SAFE_Y = 150;
+  const BOTTOM_COMMAND_SAFE_Y = 1130;
+  const SLOT_SNAP_RADIUS = 54;
 
   class BattleScene extends Phaser.Scene {
     constructor() { super('Battle'); }
@@ -44,6 +47,8 @@
       this.selectedTower = null;
       this.towerPanel = null;
       this.pauseOverlay = null;
+      this.dragCandidate = null;
+      this.placementSlots = [];
 
       const run = state.run && state.run.active ? state.run : null;
       const isResume = Boolean(this.wantsResume && run);
@@ -82,7 +87,9 @@
       this.buildHud();
       this.buildBuyArea();
       this.bindKeyboard();
-      this.input.on('pointerdown', (p, over) => this.onMapTap(p, over));
+      this.input.on('pointerdown', (p, over) => this.onPointerDown(p, over));
+      this.input.on('pointerup', (p, over) => this.onPointerUp(p, over));
+      this.input.on('pointerupoutside', p => this.onPointerUp(p, []));
       this.physics.add.overlap(this.projectileGroup, this.enemyGroup, (proj, enemySprite) => this.onProjectileHitEnemy(proj, enemySprite));
 
       if (isResume && run.towers) {
@@ -104,7 +111,7 @@
         wordWrap: { width: this.scale.width - 80 }
       }).setOrigin(0.5).setDepth(650);
       this.tweens.add({ targets: this.tutorialText, alpha: 0.72, duration: 600, yoyo: true, repeat: -1 });
-      this.setTutorialHint('Toque em "Comprar" pra receber uma defesa aleatória da sua build');
+      this.setTutorialHint('Toque em "GERAR TORRE" pra receber uma torre aleatoria da sua build');
     }
 
     setTutorialHint(msg) {
@@ -195,7 +202,7 @@
 
     toggleAutoWave() {
       this.autoWave = !this.autoWave;
-      this.autoBtn.setText(this.autoWave ? 'Auto: ON' : 'Auto: OFF');
+      this.autoBtn.setText(this.autoWave ? 'Auto ON' : 'Auto OFF');
       this.autoBtn.setColor(this.autoWave ? '#5ae08a' : '#9a8a6a');
       if (this.autoWave && !this.waveActive && !this.runEnded) this.startNextWave();
     }
@@ -214,7 +221,7 @@
     // ---------- teclado (PC) ----------
     bindKeyboard() {
       if (!this.input.keyboard) return;
-      this.input.keyboard.on('keydown-SPACE', () => this.buyDefense());
+      this.input.keyboard.on('keydown-SPACE', () => this.generateTower());
       this.input.keyboard.on('keydown-W', () => this.startNextWave());
       this.input.keyboard.on('keydown-X', () => this.cancelHeld());
       this.input.keyboard.on('keydown-A', () => this.toggleAutoWave());
@@ -233,78 +240,161 @@
     // ---------- mapa ----------
     buildMap() {
       const { width, height } = this.scale;
-      // arte por nivel (map-<id>.png) > arte generica (map.png) > chao procedural
-      const levelKey = `tex-map-${this.level.id}`;
-      const mapKey = this.textures.exists(levelKey) ? levelKey : (this.textures.exists('tex-map-bg') ? 'tex-map-bg' : null);
-      const hasMapArt = Boolean(mapKey);
-      if (hasMapArt) {
-        this.add.image(width / 2, height / 2, mapKey).setDisplaySize(width, height);
-      } else {
-        this.add.tileSprite(0, 0, width, height, 'tex-ground').setOrigin(0);
-      }
+      this.add.rectangle(0, 0, width, height, 0x20321d).setOrigin(0);
+      const bg = this.add.graphics().setDepth(0);
+      this.drawArenaGround(bg, width, height);
+      this.drawNaturalRoad(bg, this.level.path);
+      this.placementSlots = this.createPlacementSlots();
+      this.drawPlacementSlots(bg);
+      this.drawProtectedObjective(bg, width, height);
+    }
 
-      // O caminho e SEMPRE desenhado com opacidade forte, por cima da arte de fundo
-      // (procedural ou real). A arte gerada por IA nao sabe as coordenadas exatas do
-      // path e pode pintar uma estrada que nao bate com a rota de verdade - esconder
-      // o overlay (como uma versao anterior fazia, quase invisivel) so torna o
-      // problema pior: o jogador nao consegue ver onde os inimigos realmente andam
-      // nem onde pode ou nao pode colocar torre. O overlay e a fonte da verdade.
-      const g = this.add.graphics();
-      const path = this.level.path;
-      g.lineStyle(100, 0x000000, hasMapArt ? 0.22 : 0);
-      g.beginPath();
-      g.moveTo(path[0].x, path[0].y);
-      for (let i = 1; i < path.length; i++) g.lineTo(path[i].x, path[i].y);
-      g.strokePath();
-      g.lineStyle(94, 0x8a6a45, hasMapArt ? 0.62 : 1);
-      g.beginPath();
-      g.moveTo(path[0].x, path[0].y);
-      for (let i = 1; i < path.length; i++) g.lineTo(path[i].x, path[i].y);
-      g.strokePath();
-      g.lineStyle(4, 0x6f5636, hasMapArt ? 0.5 : 0.6);
+    drawArenaGround(g, width, height) {
+      g.fillStyle(0x263d22, 1);
+      g.fillRect(0, 0, width, height);
+      g.fillStyle(0x365d2b, 0.95);
+      for (let i = 0; i < 140; i++) {
+        const x = (i * 137 + this.levelIndex * 53) % width;
+        const y = (i * 211 + this.levelIndex * 97) % height;
+        const r = 12 + (i % 5) * 5;
+        g.fillEllipse(x, y, r * 1.9, r);
+      }
+      g.fillStyle(0x5f6f4b, 0.85);
+      for (let i = 0; i < 60; i++) {
+        const x = (i * 173 + 31) % width;
+        const y = (i * 149 + 89) % height;
+        g.fillEllipse(x, y, 18 + (i % 4) * 5, 9 + (i % 3) * 3);
+      }
+      g.fillStyle(0x5c3d2a, 0.7);
+      g.fillRect(0, 0, width, TOP_HUD_SAFE_Y - 12);
+      g.fillRect(0, BOTTOM_COMMAND_SAFE_Y - 8, width, height - BOTTOM_COMMAND_SAFE_Y + 8);
+    }
+
+    drawNaturalRoad(g, path) {
+      this.strokePath(g, path, 136, 0x3b2b1d, 0.55);
+      this.strokePath(g, path, 122, 0x705135, 1);
+      this.strokePath(g, path, 102, 0xba9259, 1);
+      this.strokePath(g, path, 76, 0xd0aa6b, 0.95);
+      this.strokePath(g, path, 8, 0x8c6b43, 0.28);
+      g.fillStyle(0xf0cf8a, 0.22);
+      for (let i = 0; i < path.length - 1; i++) {
+        const a = path[i], b = path[i + 1];
+        for (let s = 0; s <= 5; s++) {
+          const t = (s + 0.35) / 6;
+          const x = Phaser.Math.Linear(a.x, b.x, t);
+          const y = Phaser.Math.Linear(a.y, b.y, t);
+          g.fillEllipse(x + ((i + s) % 3 - 1) * 18, y + ((i + s * 2) % 3 - 1) * 9, 34, 13);
+        }
+      }
+    }
+
+    strokePath(g, path, width, color, alpha) {
+      g.lineStyle(width, color, alpha);
       g.beginPath();
       g.moveTo(path[0].x, path[0].y);
       for (let i = 1; i < path.length; i++) g.lineTo(path[i].x, path[i].y);
       g.strokePath();
     }
 
+    drawProtectedObjective(g, width, height) {
+      const end = this.level.path[this.level.path.length - 1];
+      const y = Math.min(height - 106, end.y - 72);
+      g.fillStyle(0x1a2434, 1);
+      g.fillRoundedRect(width / 2 - 90, y - 34, 180, 74, 10);
+      g.lineStyle(5, 0xd8b24a, 0.95);
+      g.strokeRoundedRect(width / 2 - 90, y - 34, 180, 74, 10);
+      g.fillStyle(0x46b9ff, 0.35);
+      g.fillCircle(width / 2, y - 26, 30);
+      g.fillStyle(0x9be7ff, 1);
+      g.fillTriangle(width / 2, y - 72, width / 2 - 22, y - 20, width / 2 + 22, y - 20);
+      g.fillStyle(0xeef9ff, 0.65);
+      g.fillTriangle(width / 2 + 4, y - 62, width / 2 - 4, y - 24, width / 2 + 16, y - 24);
+    }
+
+    createPlacementSlots() {
+      const slots = [];
+      const path = this.level.path;
+      for (let i = 1; i < path.length - 1; i++) {
+        const prev = path[i - 1], p = path[i], next = path[i + 1];
+        const dx = next.x - prev.x;
+        const dy = next.y - prev.y;
+        const len = Math.hypot(dx, dy) || 1;
+        const nx = -dy / len;
+        const ny = dx / len;
+        [-1, 1].forEach(side => {
+          const x = Phaser.Math.Clamp(p.x + nx * side * 128, 58, D.MAP.width - 58);
+          const y = Phaser.Math.Clamp(p.y + ny * side * 128, TOP_HUD_SAFE_Y + 40, BOTTOM_COMMAND_SAFE_Y - 50);
+          if (this.distanceToPath(x, y) < D.MAP.towerPathRadius + 26) return;
+          if (slots.some(s => Math.hypot(s.x - x, s.y - y) < 128)) return;
+          slots.push({ x, y });
+        });
+      }
+      return slots.slice(0, 10);
+    }
+
+    drawPlacementSlots(g) {
+      this.placementSlots.forEach(slot => {
+        g.fillStyle(0x101922, 0.28);
+        g.fillCircle(slot.x, slot.y + 7, 47);
+        g.fillStyle(0xf0dfad, 0.28);
+        g.fillCircle(slot.x, slot.y, 43);
+        g.lineStyle(5, 0xffd45c, 0.5);
+        g.strokeCircle(slot.x, slot.y, 43);
+        g.lineStyle(2, 0xffffff, 0.25);
+        g.strokeCircle(slot.x, slot.y, 34);
+      });
+    }
+
     // ---------- HUD ----------
     buildHud() {
       const width = this.scale.width;
-      this.hudBar = this.add.rectangle(width / 2, 30, width, 60, 0x1c1712, 0.82).setOrigin(0.5).setDepth(400);
-      this.hpText = this.add.text(20, 16, '', { fontFamily: 'Georgia, serif', fontSize: '18px', color: '#e74c3c', fontStyle: 'bold' }).setDepth(401);
-      this.moneyText = this.add.text(20, 40, '', { fontFamily: 'Georgia, serif', fontSize: '16px', color: '#e0a52a' }).setDepth(401);
-      this.waveText = this.add.text(width / 2, 28, '', { fontFamily: 'Georgia, serif', fontSize: '18px', color: '#f2e2b8', fontStyle: 'bold' }).setOrigin(0.5).setDepth(401);
+      this.add.rectangle(width / 2, 64, width, 128, 0x07101b, 0.88).setOrigin(0.5).setDepth(398);
 
-      this.menuBtn = this.add.text(width - 22, 20, '☰', { fontSize: '24px', color: '#f2e2b8' }).setOrigin(1, 0.5).setDepth(401).setInteractive({ useHandCursor: true });
+      this.hpPanel = this.add.container(126, 48).setDepth(401);
+      this.wavePanel = this.add.container(width / 2, 48).setDepth(401);
+      this.moneyPanel = this.add.container(width - 126, 48).setDepth(401);
+      this.buildHudPanel(this.hpPanel, 238, 84, 'INTEGRIDADE');
+      this.buildHudPanel(this.wavePanel, 220, 84, 'ONDA');
+      this.buildHudPanel(this.moneyPanel, 238, 84, 'SUPRIMENTOS');
+
+      this.hpText = this.add.text(0, 10, '', { fontFamily: 'Georgia, serif', fontSize: '25px', color: '#f3f7ff', fontStyle: 'bold' }).setOrigin(0.5);
+      this.hpBarBack = this.add.rectangle(0, 36, 150, 10, 0x102011, 0.9).setOrigin(0.5);
+      this.hpBarFill = this.add.rectangle(-75, 36, 150, 10, 0x62d64c, 0.98).setOrigin(0, 0.5);
+      this.hpPanel.add([this.hpText, this.hpBarBack, this.hpBarFill]);
+
+      this.waveText = this.add.text(0, 5, '', { fontFamily: 'Georgia, serif', fontSize: '25px', color: '#f3f7ff', fontStyle: 'bold', align: 'center' }).setOrigin(0.5);
+      this.enemyCountText = this.add.text(0, 33, '', { fontFamily: 'Georgia, serif', fontSize: '13px', color: '#d9e2ef', fontStyle: 'bold' }).setOrigin(0.5);
+      this.wavePanel.add([this.waveText, this.enemyCountText]);
+
+      this.moneyText = this.add.text(0, 15, '', { fontFamily: 'Georgia, serif', fontSize: '27px', color: '#f3f7ff', fontStyle: 'bold' }).setOrigin(0.5);
+      this.moneyPanel.add(this.moneyText);
+
+      this.menuBtn = this.add.text(width - 102, 112, 'Ⅱ', {
+        fontFamily: 'Arial, sans-serif', fontSize: '34px', color: '#f2e2b8', fontStyle: 'bold',
+        backgroundColor: '#142238', padding: { x: 18, y: 8 }
+      }).setOrigin(0.5).setDepth(401).setInteractive({ useHandCursor: true });
       this.menuBtn.on('pointerdown', () => this.openPauseMenu());
-      this.muteBtn = UI.muteButton(this, width - 30, 50).setDepth(401);
+      this.muteBtn = UI.muteButton(this, width - 28, 112).setDepth(401);
 
-      this.speedBtn = this.add.text(width - 80, 50, '1x', {
-        fontFamily: 'Georgia, serif', fontSize: '18px', color: '#f2e2b8', fontStyle: 'bold',
-        backgroundColor: '#3a2a1c', padding: { x: 8, y: 3 }
+      this.speedBtn = this.add.text(width - 180, 112, '1x', {
+        fontFamily: 'Georgia, serif', fontSize: '26px', color: '#f2e2b8', fontStyle: 'bold',
+        backgroundColor: '#142238', padding: { x: 18, y: 9 }
       }).setOrigin(0.5).setDepth(401).setInteractive({ useHandCursor: true });
       this.speedBtn.on('pointerdown', () => { AUDIO.uiClick(); this.toggleGameSpeed(); });
 
-      // Onda automatica: emenda a proxima onda sozinha (padrao do genero p/ farm confortavel)
       this.autoWave = false;
-      this.autoBtn = this.add.text(width - 150, 50, 'Auto: OFF', {
+      this.autoBtn = this.add.text(72, 112, 'Auto OFF', {
         fontFamily: 'Georgia, serif', fontSize: '14px', color: '#9a8a6a', fontStyle: 'bold',
-        backgroundColor: '#3a2a1c', padding: { x: 8, y: 4 }
+        backgroundColor: '#142238', padding: { x: 10, y: 7 }
       }).setOrigin(0.5).setDepth(401).setInteractive({ useHandCursor: true });
       this.autoBtn.on('pointerdown', () => { AUDIO.uiClick(); this.toggleAutoWave(); });
 
-      this.waveBtn = UI.makeButton(this, width / 2, 96, 'Iniciar Onda', () => this.startNextWave(), { width: 200, height: 48, fontSize: 15 }).setDepth(401);
-      if (this.waveIndex > 0 && this.waveIndex < this.level.waves.length) this.waveBtn.list[1].setText(`Iniciar ${this.level.waves[this.waveIndex].label}`);
-
-      // Telegraph: mostra a composicao da proxima onda (skill tower-defense: sem preview,
-      // inimigos especiais parecem aleatorios e injustos).
-      this.previewText = this.add.text(width / 2, 134, '', {
+      this.previewText = this.add.text(width / 2, 136, '', {
         fontFamily: 'Georgia, serif', fontSize: '13px', color: '#cbb98a'
       }).setOrigin(0.5).setDepth(401);
 
       if (this.sys.game.device.os.desktop) {
-        this.add.text(width / 2, this.scale.height - 116, 'Espaço: comprar · W: onda · X: cancelar · 1/2: velocidade · Esc: pausa', {
+        this.add.text(width / 2, this.scale.height - 148, 'Espaco: gerar torre | W: onda | X: cancelar | 1/2: velocidade | Esc: pausa', {
           fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8a7a5a'
         }).setOrigin(0.5).setDepth(401);
       }
@@ -313,11 +403,23 @@
       this.updateWavePreview();
     }
 
+    buildHudPanel(container, width, height, title) {
+      const bg = this.add.image(0, 0, 'tex-stone-panel').setDisplaySize(width, height);
+      const rim = this.add.rectangle(0, 0, width - 6, height - 6, 0x000000, 0).setStrokeStyle(3, 0xd7a83d, 0.9);
+      const label = this.add.text(0, -24, title, {
+        fontFamily: 'Georgia, serif', fontSize: '14px', color: '#d9e2ef', fontStyle: 'bold'
+      }).setOrigin(0.5);
+      container.add([bg, rim, label]);
+    }
+
     updateHud() {
-      this.hpText.setText(`Arquivo: ${this.archiveHp}/${this.maxArchiveHp}`);
-      this.moneyText.setText(`${this.money} moedas`);
+      this.hpText.setText(`${this.archiveHp}/${this.maxArchiveHp}`);
+      if (this.hpBarFill) this.hpBarFill.width = 150 * Phaser.Math.Clamp(this.archiveHp / this.maxArchiveHp, 0, 1);
+      this.moneyText.setText(`${this.money}`);
       const total = this.level.waves.length;
-      this.waveText.setText(this.waveActive ? `${this.level.waves[this.waveIndex].label} · ${this.waveIndex + 1}/${total}` : (this.waveIndex >= total ? 'Vitória!' : `Pronto · ${this.waveIndex + 1}/${total}`));
+      this.waveText.setText(this.waveIndex >= total ? 'VITORIA' : `${Math.min(this.waveIndex + 1, total)}/${total}`);
+      const remaining = this.enemies.length + this.spawnTimers.filter(t => t && t.getRemaining && t.getRemaining() > 0).length;
+      this.enemyCountText.setText(this.waveActive ? `${remaining} INIMIGOS` : 'PRONTO');
     }
 
     updateWavePreview() {
@@ -371,18 +473,30 @@
       this.scene.start('Menu');
     }
 
-    // ---------- compra / defesa na mao ----------
+    // ---------- gerar torre / torre na mao ----------
     buildBuyArea() {
       const { width, height } = this.scale;
-      const groupCenter = width / 2;
-      this.buyBtn = UI.makeButton(this, groupCenter - 105, height - 60, `Comprar (${this.buyCost})`, () => this.buyDefense(), { width: 180, height: 64, fontSize: 17 }).setDepth(401);
-      this.heldPreview = this.add.container(groupCenter + 110, height - 60).setDepth(401);
-      this.heldIcon = this.add.image(0, 0, 'tex-defense-archer').setVisible(false);
-      this.heldLabel = this.add.text(0, 34, '', { fontFamily: 'Georgia, serif', fontSize: '12px', color: '#f2e2b8' }).setOrigin(0.5).setVisible(false);
-      this.cancelBtn = this.add.text(58, -20, '✕', { fontSize: '22px', color: '#e74c3c', fontStyle: 'bold' })
+      this.add.rectangle(width / 2, height - 74, width, 148, 0x07101b, 0.9).setDepth(398);
+
+      this.heldPreview = this.add.container(84, height - 76).setDepth(401);
+      const heldBg = this.add.image(0, 0, 'tex-stone-panel').setDisplaySize(146, 116);
+      const heldTitle = this.add.text(0, -46, 'TORRE SORTEADA', {
+        fontFamily: 'Georgia, serif', fontSize: '12px', color: '#f2e2b8', fontStyle: 'bold'
+      }).setOrigin(0.5);
+      this.heldIcon = this.add.image(0, -10, 'tex-defense-archer').setVisible(false);
+      this.heldLabel = this.add.text(0, 38, 'vazio', {
+        fontFamily: 'Georgia, serif', fontSize: '12px', color: '#8a9ab0', align: 'center',
+        wordWrap: { width: 122 }
+      }).setOrigin(0.5);
+      this.cancelBtn = this.add.text(58, -36, 'X', { fontSize: '20px', color: '#e74c3c', fontStyle: 'bold' })
         .setOrigin(0.5).setVisible(false).setInteractive({ useHandCursor: true });
       this.cancelBtn.on('pointerdown', () => this.cancelHeld());
-      this.heldPreview.add([this.heldIcon, this.heldLabel, this.cancelBtn]);
+      this.heldPreview.add([heldBg, heldTitle, this.heldIcon, this.heldLabel, this.cancelBtn]);
+
+      this.buyBtn = UI.makeButton(this, width / 2 - 18, height - 70, `GERAR TORRE\n${this.buyCost}`, () => this.generateTower(), { width: 320, height: 92, fontSize: 25 }).setDepth(401);
+      this.waveBtn = UI.makeButton(this, width - 92, height - 70, 'INICIAR\nONDA', () => this.startNextWave(), { width: 160, height: 92, fontSize: 23 }).setDepth(401);
+      if (this.waveIndex > 0 && this.waveIndex < this.level.waves.length) this.waveBtn.list[1].setText(`INICIAR\n${this.waveIndex + 1}`);
+
       this.previewMarker = this.add.image(0, 0, 'tex-valid-preview').setVisible(false).setDepth(84).setAlpha(0.6);
       this.previewGhost = this.add.image(0, 0, 'tex-defense-archer').setVisible(false).setDepth(86).setAlpha(0.82);
       this.rangeRing = this.add.image(0, 0, 'tex-range-ring').setVisible(false).setDepth(49).setAlpha(0.5);
@@ -390,10 +504,10 @@
       this.input.on('pointermove', p => this.updateHeldPreview(p));
     }
 
-    buyDefense() {
+    generateTower() {
       if (this.paused || this.runEnded) return;
-      if (this.held) { this.floatText(this.buyBtn.x, this.scale.height - 110, 'Posicione a defesa na mão primeiro', '#e74c3c'); return; }
-      if (this.money < this.buyCost) { this.floatText(this.buyBtn.x, this.scale.height - 110, 'Moedas insuficientes', '#e74c3c'); return; }
+      if (this.held) { this.floatText(this.buyBtn.x, this.scale.height - 142, 'Posicione a torre na mao primeiro', '#e74c3c'); return; }
+      if (this.money < this.buyCost) { this.floatText(this.buyBtn.x, this.scale.height - 142, 'Suprimentos insuficientes', '#e74c3c'); return; }
       const luckShift = this.effects.luckShift || 0;
       const epicLuckShift = this.effects.epicLuckShift || 0;
       const rarity = D.pickRarity(this.rng, luckShift, epicLuckShift);
@@ -413,20 +527,22 @@
       this.money -= paid;
       this.buyCount += 1;
       this.buyCost = Math.round((BASE_BUY_COST + this.buyCount * BUY_COST_INCREMENT) * (1 + (this.effects.buyCostMult || 0)));
-      this.held = { defenseId: pick, level: 1, paidCost: paid };
+      this.held = { defenseId: pick, level: 1, paidCost: paid, sourceTower: null };
       this.closeTowerPanel();
 
       this.heldIcon.setTexture(`tex-defense-${pick}`).setVisible(true);
-      this.heldIcon.setDisplaySize(58, 58);
-      this.heldLabel.setText(D.DEFENSES[pick].name).setVisible(true);
+      this.heldIcon.setDisplaySize(66, 66);
+      this.heldLabel.setText(`${D.DEFENSES[pick].name}\nNv 1`).setColor('#f2e2b8').setVisible(true);
       this.cancelBtn.setVisible(true);
-      this.buyBtn.list[1].setText(`Comprar (${this.buyCost})`);
+      this.buyBtn.list[1].setText(`GERAR TORRE\n${this.buyCost}`);
       AUDIO.buy();
-      this.floatText(this.buyBtn.x, this.scale.height - 110, `${D.DEFENSES[pick].name}!`, this.rarityColorHex(D.DEFENSES[pick].rarity));
+      this.floatText(this.buyBtn.x, this.scale.height - 142, `${D.DEFENSES[pick].name}!`, this.rarityColorHex(D.DEFENSES[pick].rarity));
       this.advanceTutorial(1);
       this.updateHud();
       this.persistRunSnapshot();
     }
+
+    buyDefense() { this.generateTower(); }
 
     cancelHeld() {
       if (!this.held || this.paused) return;
@@ -438,10 +554,11 @@
       this.persistRunSnapshot();
     }
 
-    clearHeld() {
+    clearHeld(restoreMoved = true) {
+      if (restoreMoved && this.held && this.held.sourceTower) this.restoreMovedTower();
       this.held = null;
       this.heldIcon.setVisible(false);
-      this.heldLabel.setVisible(false);
+      this.heldLabel.setText('vazio').setColor('#8a9ab0').setVisible(true);
       this.cancelBtn.setVisible(false);
       this.previewMarker.setVisible(false);
       this.previewGhost.setVisible(false);
@@ -496,20 +613,39 @@
       return Math.hypot(px - cx, py - cy);
     }
 
-    isValidPlacement(x, y, defenseId) {
+    nearestSlot(x, y) {
+      let best = null;
+      let bestDist = Infinity;
+      this.placementSlots.forEach(slot => {
+        const d = Math.hypot(slot.x - x, slot.y - y);
+        if (d < bestDist) { bestDist = d; best = slot; }
+      });
+      return best && bestDist <= SLOT_SNAP_RADIUS ? best : null;
+    }
+
+    slotOccupied(slot, ignoreTower) {
+      return this.towers.some(t => t !== ignoreTower && Math.hypot(t.x - slot.x, t.y - slot.y) < D.MAP.towerMinGap);
+    }
+
+    isValidPlacement(x, y, defenseId, ignoreTower) {
       const def = D.DEFENSES[defenseId];
       const margin = 20;
-      if (x < margin || y < margin + 60 || x > D.MAP.width - margin || y > D.MAP.height - margin) return false;
+      if (x < margin || y < TOP_HUD_SAFE_Y || x > D.MAP.width - margin || y > BOTTOM_COMMAND_SAFE_Y) return false;
       const dist = this.distanceToPath(x, y);
       if (def.onPath) {
         if (dist > D.MAP.trapPathRadius) return false;
       } else {
-        if (dist < D.MAP.towerPathRadius) return false;
-        for (const t of this.towers) {
-          if (Math.hypot(t.x - x, t.y - y) < D.MAP.towerMinGap) return false;
-        }
+        const slot = this.nearestSlot(x, y);
+        if (!slot || this.slotOccupied(slot, ignoreTower)) return false;
       }
       return true;
+    }
+
+    snapPlacement(x, y, defenseId) {
+      const def = D.DEFENSES[defenseId];
+      if (def.onPath) return { x, y };
+      const slot = this.nearestSlot(x, y);
+      return slot ? { x: slot.x, y: slot.y } : { x, y };
     }
 
     updateHeldPreview(pointer) {
@@ -519,19 +655,31 @@
       }
       const p = this.toWorldPoint(pointer);
       const def = D.DEFENSES[this.held.defenseId];
-      const valid = this.isValidPlacement(p.x, p.y, this.held.defenseId);
+      const snapped = this.snapPlacement(p.x, p.y, this.held.defenseId);
+      const targetX = snapped.x;
+      const targetY = snapped.y;
+      const valid = this.isValidPlacement(targetX, targetY, this.held.defenseId, this.held.sourceTower);
       const previewSize = this.towerDisplaySize(this.held.defenseId, this.held.level);
-      this.previewMarker.setTexture(valid ? 'tex-valid-preview' : 'tex-invalid-preview').setPosition(p.x, p.y).setDisplaySize(74, 74).setVisible(true);
-      this.previewGhost
-        .setTexture(`tex-defense-${this.held.defenseId}`)
-        .setPosition(p.x, p.y)
-        .setDisplaySize(previewSize, previewSize)
-        .setAlpha(valid ? 0.86 : 0.58)
-        .setTint(valid ? 0xffffff : 0xff7777)
-        .setVisible(true);
+      const fuseTarget = this.findFuseTarget(targetX, targetY);
+      this.previewMarker.setTexture((valid || fuseTarget) ? 'tex-valid-preview' : 'tex-invalid-preview').setPosition(targetX, targetY).setDisplaySize(80, 80).setVisible(true);
+      if (this.held.sourceTower) {
+        this.previewGhost.setVisible(false);
+        this.held.sourceTower.sprite
+          .setPosition(p.x, p.y)
+          .setAlpha((valid || fuseTarget) ? 0.9 : 0.62)
+          .setTint((valid || fuseTarget) ? 0xffffff : 0xff7777);
+      } else {
+        this.previewGhost
+          .setTexture(`tex-defense-${this.held.defenseId}`)
+          .setPosition(targetX, targetY)
+          .setDisplaySize(previewSize, previewSize)
+          .setAlpha((valid || fuseTarget) ? 0.86 : 0.58)
+          .setTint((valid || fuseTarget) ? 0xffffff : 0xff7777)
+          .setVisible(true);
+      }
       const radius = def.auraRadius ? this.towerStat(this.held.defenseId, 'auraRadius') : (def.range ? this.towerStat(this.held.defenseId, 'range') * (1 + (this.effects.rangeMult || 0)) : 0);
       if (radius) {
-        this.rangeRing.setPosition(p.x, p.y).setDisplaySize(radius * 2, radius * 2).setVisible(true);
+        this.rangeRing.setPosition(targetX, targetY).setDisplaySize(radius * 2, radius * 2).setVisible(true);
       } else {
         this.rangeRing.setVisible(false);
       }
@@ -541,33 +689,117 @@
       return this.cameras.main.getWorldPoint(pointer.x, pointer.y);
     }
 
-    onMapTap(pointer, currentlyOver) {
+    pointerInCommandZone(pointer) {
+      return pointer.y < TOP_HUD_SAFE_Y || pointer.y > BOTTOM_COMMAND_SAFE_Y;
+    }
+
+    towerAt(x, y) {
+      return this.towers.find(t => Math.hypot(t.x - x, t.y - y) < 46);
+    }
+
+    findFuseTarget(x, y) {
+      if (!this.held) return null;
+      return this.towers.find(t =>
+        t !== this.held.sourceTower &&
+        Math.hypot(t.x - x, t.y - y) < 48 &&
+        t.defenseId === this.held.defenseId &&
+        t.level === this.held.level
+      );
+    }
+
+    onPointerDown(pointer, currentlyOver) {
       if (this.paused || this.runEnded) return;
-      if (currentlyOver && currentlyOver.length) return;      // clique caiu num botao/painel
-      if (pointer.y < 70) return;                              // HUD superior
-      if (pointer.y > this.scale.height - 130) return;         // faixa de comandos inferior
+      if (currentlyOver && currentlyOver.length) return;
+      if (this.pointerInCommandZone(pointer)) return;
       const p = this.toWorldPoint(pointer);
 
-      if (!this.held) {
-        const tower = this.towers.find(t => Math.hypot(t.x - p.x, t.y - p.y) < 42);
-        if (tower) this.openTowerPanel(tower);
-        else this.closeTowerPanel();
+      if (this.held) {
+        if (!this.held.sourceTower) this.commitHeldAt(p.x, p.y);
+        else this.updateHeldPreview(pointer);
         return;
       }
 
-      const fuseTarget = this.towers.find(t => Math.hypot(t.x - p.x, t.y - p.y) < 40 && t.defenseId === this.held.defenseId && t.level === this.held.level);
-      if (fuseTarget) { this.fuseTower(fuseTarget); return; }
+      const tower = this.towerAt(p.x, p.y);
+      if (!tower) { this.closeTowerPanel(); return; }
+      this.dragCandidate = {
+        tower, startX: p.x, startY: p.y, pointerId: pointer.id, started: false,
+        holdTimer: this.time.delayedCall(180, () => {
+          if (this.dragCandidate && this.dragCandidate.tower === tower) this.beginTowerMove(tower);
+        })
+      };
+    }
 
-      if (!this.isValidPlacement(p.x, p.y, this.held.defenseId)) {
-        this.floatText(p.x, p.y - 30, 'Posição inválida', '#e74c3c');
+    onPointerUp(pointer, currentlyOver) {
+      if (this.paused || this.runEnded) return;
+      const p = this.toWorldPoint(pointer);
+      if (this.held && !this.pointerInCommandZone(pointer)) {
+        this.commitHeldAt(p.x, p.y);
+        this.dragCandidate = null;
+        return;
+      }
+      if (this.dragCandidate && !this.dragCandidate.started) {
+        if (this.dragCandidate.holdTimer) this.dragCandidate.holdTimer.remove(false);
+        const tower = this.dragCandidate.tower;
+        this.dragCandidate = null;
+        this.openTowerPanel(tower);
+      }
+    }
+
+    beginTowerMove(tower) {
+      if (!tower || !this.towers.includes(tower) || this.held || this.paused) return;
+      this.closeTowerPanel();
+      this.dragCandidate.started = true;
+      tower.dragging = true;
+      tower.originX = tower.x;
+      tower.originY = tower.y;
+      tower.sprite.setDepth(120);
+      if (tower.auraRing) tower.auraRing.setAlpha(0.25);
+      this.held = { defenseId: tower.defenseId, level: tower.level, paidCost: 0, sourceTower: tower };
+      this.heldIcon.setTexture(`tex-defense-${tower.defenseId}`).setDisplaySize(66, 66).setVisible(true);
+      this.heldLabel.setText(`${D.DEFENSES[tower.defenseId].name}\nNv ${tower.level}`).setColor('#f2e2b8').setVisible(true);
+      this.cancelBtn.setVisible(true);
+    }
+
+    restoreMovedTower() {
+      const tower = this.held && this.held.sourceTower;
+      if (!tower) return;
+      tower.x = tower.originX;
+      tower.y = tower.originY;
+      tower.dragging = false;
+      tower.sprite.clearTint().setAlpha(1).setDepth(88).setPosition(tower.x, tower.y);
+      if (tower.auraRing) tower.auraRing.setPosition(tower.x, tower.y).setAlpha(0.07);
+    }
+
+    commitHeldAt(x, y) {
+      if (!this.held) return;
+      const fuseTarget = this.findFuseTarget(x, y);
+      if (fuseTarget) { this.fuseTower(fuseTarget, this.held.sourceTower); return; }
+
+      const snapped = this.snapPlacement(x, y, this.held.defenseId);
+      if (!this.isValidPlacement(snapped.x, snapped.y, this.held.defenseId, this.held.sourceTower)) {
+        this.floatText(x, y - 30, 'Posicao invalida', '#e74c3c');
         AUDIO.invalid();
         UI.screenShake(this, 0.003, 100);
+        if (this.held.sourceTower) {
+          this.restoreMovedTower();
+          this.clearHeld(false);
+        }
         return;
       }
-      this.placeTower(this.held.defenseId, this.held.level, p.x, p.y);
+
+      if (this.held.sourceTower) {
+        const tower = this.held.sourceTower;
+        tower.x = snapped.x;
+        tower.y = snapped.y;
+        tower.dragging = false;
+        tower.sprite.clearTint().setAlpha(1).setDepth(88).setPosition(tower.x, tower.y);
+        if (tower.auraRing) tower.auraRing.setPosition(tower.x, tower.y).setAlpha(0.07);
+      } else {
+        this.placeTower(this.held.defenseId, this.held.level, snapped.x, snapped.y);
+      }
       AUDIO.place();
       this.advanceTutorial(2);
-      this.clearHeld();
+      this.clearHeld(false);
       this.persistRunSnapshot();
     }
 
@@ -589,12 +821,21 @@
       }
     }
 
-    fuseTower(tower) {
+    fuseTower(tower, consumedTower) {
       const maxLevel = D.MAX_FUSION_LEVEL + (this.effects.maxFusionBonus || 0);
       if (tower.level >= maxLevel) {
-        this.floatText(tower.x, tower.y - 40, 'Nível máximo', '#e0a52a');
-        this.clearHeld();
+        this.floatText(tower.x, tower.y - 40, 'Nivel maximo', '#e0a52a');
+        if (consumedTower) {
+          this.restoreMovedTower();
+          this.clearHeld(false);
+        }
         return;
+      }
+      if (consumedTower) {
+        const idx = this.towers.indexOf(consumedTower);
+        if (idx !== -1) this.towers.splice(idx, 1);
+        consumedTower.sprite.destroy();
+        if (consumedTower.auraRing) consumedTower.auraRing.destroy();
       }
       tower.level += 1;
       const normal = this.applyTowerDisplay(tower, 1.35, 0.65);
@@ -606,7 +847,7 @@
       this.spawnFusionFx(tower.x, tower.y);
       AUDIO.fuse();
       this.hitStop(60);
-      this.clearHeld();
+      this.clearHeld(false);
       this.persistRunSnapshot();
     }
 
@@ -759,13 +1000,13 @@
           this.money += bonus;
           // Alivia metade do custo acumulado de compra entre ondas - sem isso o
           // preco sobe pra sempre dentro da mesma partida e fica impossivel de
-          // comprar de novo depois de algumas ondas mesmo limpando tudo.
+          // gerar de novo depois de algumas ondas mesmo limpando tudo.
           this.buyCount = Math.floor(this.buyCount * 0.5);
           this.buyCost = Math.round((BASE_BUY_COST + this.buyCount * BUY_COST_INCREMENT) * (1 + (this.effects.buyCostMult || 0)));
-          this.buyBtn.list[1].setText(`Comprar (${this.buyCost})`);
+          this.buyBtn.list[1].setText(`GERAR TORRE\n${this.buyCost}`);
           this.floatText(this.scale.width / 2, 180, `Onda vencida! +${bonus}`, '#2ecc71');
           this.waveBtn.setAlpha(1);
-          this.waveBtn.list[1].setText(`Iniciar ${this.level.waves[this.waveIndex].label}`);
+          this.waveBtn.list[1].setText(`INICIAR\n${this.waveIndex + 1}`);
           if (this.autoWave) this.time.delayedCall(1600, () => { if (!this.runEnded && !this.paused) this.startNextWave(); });
         }
         this.persistRunSnapshot();
@@ -833,6 +1074,7 @@
     updateTowers() {
       const now = this.battleTime;
       for (const tower of this.towers) {
+        if (tower.dragging) continue;
         const def = D.DEFENSES[tower.defenseId];
         if (def.auraRadius) continue;                          // suporte nao ataca
         if (def.onPath) { this.updateTrapTower(tower, def, now); continue; }
@@ -1066,7 +1308,7 @@
       const { width, height } = this.scale;
       const dim = this.add.rectangle(0, 0, width, height, 0x000000, 0.65).setOrigin(0).setDepth(500);
       const box = UI.makePanel(this, width / 2, height / 2, 460, 360).setDepth(501);
-      const title = this.add.text(width / 2, height / 2 - 140, victory ? 'Vitória!' : 'O Arquivo Caiu', {
+      const title = this.add.text(width / 2, height / 2 - 140, victory ? 'Vitória!' : 'A Fortaleza Caiu', {
         fontFamily: 'Georgia, serif', fontSize: '30px', color: victory ? '#2ecc71' : '#e74c3c', fontStyle: 'bold'
       }).setOrigin(0.5).setDepth(502);
       if (victory && stars) {

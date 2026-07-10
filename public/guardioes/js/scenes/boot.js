@@ -1,4 +1,4 @@
-/* Caminho dos Guardioes - BootScene: gera todas as texturas proceduralmente (sem assets externos ainda) */
+/* Tower Defense - BootScene: gera texturas e carrega assets externos quando existem. */
 (function (global) {
   'use strict';
 
@@ -7,13 +7,14 @@
   const ASSET_BASE = '/assets/guardioes/assets/';
   const ASSET_VERSION = 'guardioes-visuals-2026-07-08-2';
   const HUB_BUILDINGS = ['build', 'collection', 'class', 'shop'];
+  const ENEMY_ASSET_IDS = ['raider', 'runner', 'shield', 'flyer', 'healer', 'ram', 'boss'];
   const OVERRIDE_MANIFEST = [
     ['tex-menu-bg', 'menu-bg.jpg'],
     ['tex-guardian', 'guardian.png'],
     ...HUB_BUILDINGS.map(id => [`tex-building-${id}`, `building-${id}.png`]),
     ...global.GuardioesData.LEVELS.map(l => [`tex-map-${l.id}`, `map-${l.id}.jpg`]),
     ...global.GuardioesData.DEFENSE_ORDER.map(id => [`tex-defense-${id}`, `defense-${id}.png`]),
-    ...Object.keys(global.GuardioesData.ENEMIES).map(id => [`tex-enemy-${id}`, `enemy-${id}.png`])
+    ...ENEMY_ASSET_IDS.map(id => [`tex-enemy-${id}`, `enemy-${id}.png`])
   ];
 
   class BootScene extends Phaser.Scene {
@@ -253,22 +254,8 @@
         gfx.fillStyle(0x9a9aa4, 1);
         gfx.fillRect(-16, -6, 8, 22);
       });
-      this.drawEnemy(E.flyer.id, E.flyer.color, 19, gfx => {
-        // asas abertas dos dois lados (voadora - passa por cima das armadilhas)
-        gfx.fillStyle(0x9a7ab8, 0.9);
-        gfx.fillTriangle(-16, -4, -38, -16, -20, 6);
-        gfx.fillTriangle(16, -4, 38, -16, 20, 6);
-        gfx.fillStyle(0x2a2a2a, 1);
-        gfx.fillCircle(4, -5, 3);
-      });
-      this.drawEnemy(E.healer.id, E.healer.color, 23, gfx => {
-        // cruz de cura no peito + capuz
-        gfx.fillStyle(0x2a5a36, 1);
-        gfx.fillTriangle(-14, -12, 14, -12, 0, -30);
-        gfx.fillStyle(0xd8f0d8, 1);
-        gfx.fillRect(-3, -8, 6, 18);
-        gfx.fillRect(-9, -2, 18, 6);
-      });
+      this.drawFlyerTexture(E.flyer);
+      this.drawHealerTexture(E.healer);
       this.drawEnemy(E.ram.id, E.ram.color, 32, gfx => {
         gfx.fillStyle(0x4a3a26, 1);
         gfx.fillRect(-24, -8, 48, 16);
@@ -281,6 +268,83 @@
         gfx.fillStyle(0x8a1010, 1);
         gfx.fillCircle(0, -10, 6);
       });
+    }
+
+    // Harpia: desenho dedicado em camadas - sombra descolada (esta VOANDO),
+    // asas membranosas com "dedos", corpo com barriga clara, cabeca com bico.
+    drawFlyerTexture(def) {
+      const key = `tex-enemy-${def.id}`;
+      if (this.hasOverride(key)) return;
+      const gfx = this.g();
+      // sombra pequena e afastada do corpo = sensacao de altitude
+      gfx.fillStyle(0x000000, 0.20);
+      gfx.fillEllipse(0, 30, 26, 8);
+      // asas: membrana em dois tons + linhas de "dedos"
+      [[-1, 0], [1, 0]].forEach(([s]) => {
+        gfx.fillStyle(0x5a3f78, 1);
+        gfx.fillTriangle(s * 10, -8, s * 44, -26, s * 16, 6);
+        gfx.fillStyle(0x8a6ab0, 1);
+        gfx.fillTriangle(s * 10, -8, s * 38, -20, s * 15, 2);
+        gfx.lineStyle(2, 0x3a2a52, 0.8);
+        gfx.lineBetween(s * 12, -6, s * 40, -23);
+        gfx.lineBetween(s * 12, -3, s * 33, -12);
+      });
+      // corpo com barriga clara
+      gfx.fillStyle(0x6a4a8a, 1);
+      gfx.fillEllipse(0, -4, 24, 30);
+      gfx.fillStyle(0x9a7ab8, 1);
+      gfx.fillEllipse(0, 2, 14, 18);
+      // cabeca + bico + olhos
+      gfx.fillStyle(0x6a4a8a, 1);
+      gfx.fillCircle(0, -20, 11);
+      gfx.fillStyle(0xe0c05a, 1);
+      gfx.fillTriangle(-3, -18, 3, -18, 0, -10);
+      gfx.fillStyle(0xffe08a, 1);
+      gfx.fillCircle(-4, -22, 2.5);
+      gfx.fillCircle(4, -22, 2.5);
+      gfx.lineStyle(2, 0x2a1c3a, 0.7);
+      gfx.strokeEllipse(0, -4, 24, 30);
+      gfx.generateTexture(key, 100, 84, 50, 42);
+      gfx.destroy();
+    }
+
+    // Curandeiro: monge encapuzado com manto em camadas, corda na cintura
+    // e cajado com orbe de cura brilhante.
+    drawHealerTexture(def) {
+      const key = `tex-enemy-${def.id}`;
+      if (this.hasOverride(key)) return;
+      const gfx = this.g();
+      gfx.fillStyle(0x000000, 0.25);
+      gfx.fillEllipse(0, 26, 34, 11);
+      // manto: base escura + frente clara
+      gfx.fillStyle(0x2a5a36, 1);
+      gfx.fillTriangle(-20, 24, 20, 24, 0, -26);
+      gfx.fillStyle(0x3a7a4a, 1);
+      gfx.fillTriangle(-13, 22, 13, 22, 0, -20);
+      // capuz com rosto sombreado
+      gfx.fillStyle(0x2a5a36, 1);
+      gfx.fillCircle(0, -20, 12);
+      gfx.fillStyle(0x14301c, 1);
+      gfx.fillEllipse(0, -18, 14, 12);
+      gfx.fillStyle(0xd8f0d8, 0.9);
+      gfx.fillCircle(-3, -19, 1.8);
+      gfx.fillCircle(3, -19, 1.8);
+      // corda da cintura
+      gfx.lineStyle(3, 0xcab989, 1);
+      gfx.lineBetween(-11, 8, 11, 10);
+      // cajado com orbe de cura
+      gfx.lineStyle(4, 0x5a4632, 1);
+      gfx.lineBetween(17, 24, 20, -24);
+      gfx.fillStyle(0x5ae08a, 0.4);
+      gfx.fillCircle(20, -27, 9);
+      gfx.fillStyle(0xaef2c8, 1);
+      gfx.fillCircle(20, -27, 5);
+      // cruz de cura no peito
+      gfx.fillStyle(0xd8f0d8, 1);
+      gfx.fillRect(-2.5, -8, 5, 16);
+      gfx.fillRect(-8, -3, 16, 5);
+      gfx.generateTexture(key, 88, 92, 44, 50);
+      gfx.destroy();
     }
 
     drawEnemy(id, color, radius, drawExtra) {
@@ -357,69 +421,163 @@
     // --- vilarejo (tela inicial estilo hub): predios clicaveis + guardiao parado ---
     buildHubTextures() {
       this.buildBuildingIcon('build', 0x8a2f3f, gfx => {
-        // Estandarte num mastro sobre uma tenda de comando
-        gfx.fillStyle(0x4a3a2a, 1);
-        gfx.fillTriangle(-30, 20, 30, 20, 0, -18);
+        // Tenda de comando listrada com estandarte no topo
+        gfx.fillStyle(0x5a3a28, 1);
+        gfx.fillTriangle(-32, 22, 32, 22, 0, -20);
+        gfx.fillStyle(0x7a4a32, 1);
+        gfx.fillTriangle(-24, 22, 24, 22, 0, -14);
+        gfx.fillStyle(0x4a2a1c, 1);
+        gfx.fillTriangle(-8, 22, 8, 22, 0, 4);   // entrada da tenda
+        gfx.lineStyle(2, 0x2a1810, 0.7);
+        gfx.lineBetween(0, -20, -32, 22);
+        gfx.lineBetween(0, -20, 32, 22);
         gfx.fillStyle(0x3a2a1c, 1);
-        gfx.fillRect(-2, -46, 4, 34);
+        gfx.fillRect(-2, -48, 4, 32);
         gfx.fillStyle(0x8a2f3f, 1);
-        gfx.fillTriangle(2, -44, 2, -26, 22, -35);
+        gfx.fillTriangle(2, -46, 2, -28, 24, -37);
+        gfx.fillStyle(0xb84a5c, 1);
+        gfx.fillTriangle(2, -44, 2, -34, 15, -39);
+        gfx.fillStyle(0xe0c05a, 1);
+        gfx.fillCircle(0, -48, 3.5);
       });
 
       this.buildBuildingIcon('collection', 0x8a6a3a, gfx => {
-        // Bau do tesouro
+        // Bau do tesouro com faixas de metal e brilho saindo da tampa
+        gfx.fillStyle(0xffe9a8, 0.35);
+        gfx.fillTriangle(-20, -12, 20, -12, 0, -38);   // luz vazando
         gfx.fillStyle(0x5a4020, 1);
-        gfx.fillRoundedRect(-26, -6, 52, 26, 4);
+        gfx.fillRoundedRect(-26, -8, 52, 28, 5);
         gfx.fillStyle(0x7a5a2e, 1);
-        gfx.fillRoundedRect(-28, -22, 56, 20, 6);
+        gfx.fillRoundedRect(-28, -22, 56, 18, 7);
+        gfx.fillStyle(0x9a7a44, 1);
+        gfx.fillRoundedRect(-24, -20, 48, 8, 5);
+        // faixas de metal
+        gfx.fillStyle(0x8a8f9a, 1);
+        gfx.fillRect(-18, -22, 5, 42);
+        gfx.fillRect(13, -22, 5, 42);
+        // fechadura dourada
         gfx.fillStyle(0xe0c05a, 1);
-        gfx.fillRect(-6, -14, 12, 8);
-        gfx.lineStyle(2, 0x2a1c12, 0.6);
-        gfx.strokeRoundedRect(-26, -6, 52, 26, 4);
+        gfx.fillRoundedRect(-6, -12, 12, 12, 3);
+        gfx.fillStyle(0x5a4020, 1);
+        gfx.fillCircle(0, -7, 2.5);
+        gfx.lineStyle(2, 0x2a1c12, 0.7);
+        gfx.strokeRoundedRect(-26, -8, 52, 28, 5);
       });
 
       this.buildBuildingIcon('class', 0x3d8bcf, gfx => {
-        // Pergaminho com arvore de habilidades (arvore estilizada)
-        gfx.fillStyle(0x4a3a2a, 1);
-        gfx.fillRect(-3, 0, 6, 24);
-        gfx.fillStyle(0x3d8bcf, 1);
-        gfx.fillCircle(0, -8, 16);
-        gfx.fillStyle(0x5aa3e0, 1);
-        gfx.fillCircle(-14, 2, 10);
-        gfx.fillCircle(14, 2, 10);
+        // Arvore de habilidades: tronco + copa em camadas com "nos" dourados
+        gfx.fillStyle(0x5a4632, 1);
+        gfx.fillRect(-4, -2, 8, 26);
+        gfx.fillTriangle(-4, 6, -12, 14, -4, 12);
+        gfx.fillStyle(0x2e6a4a, 1);
+        gfx.fillCircle(0, -18, 19);
+        gfx.fillCircle(-15, -6, 13);
+        gfx.fillCircle(15, -6, 13);
+        gfx.fillStyle(0x3f8f63, 1);
+        gfx.fillCircle(-4, -20, 12);
+        gfx.fillCircle(12, -9, 8);
+        // nos de habilidade brilhando na copa
+        gfx.fillStyle(0xffe08a, 1);
+        gfx.fillCircle(-10, -14, 3.5);
+        gfx.fillCircle(8, -22, 3.5);
+        gfx.fillCircle(14, -4, 3.5);
+        gfx.lineStyle(2, 0xe0c05a, 0.6);
+        gfx.lineBetween(-10, -14, 8, -22);
+        gfx.lineBetween(8, -22, 14, -4);
       });
 
       this.buildBuildingIcon('shop', 0xc65b2b, gfx => {
-        // Barraca de feira com listras
-        gfx.fillStyle(0x8a4a1c, 1);
-        gfx.fillRect(-26, -4, 52, 28);
-        for (let i = -24; i < 24; i += 12) {
-          gfx.fillStyle(i % 24 === 0 ? 0xe0c05a : 0xc65b2b, 1);
-          gfx.fillTriangle(i, -22, i + 12, -22, i + 6, -4);
+        // Barraca de feira: toldo listrado, balcao de madeira e mercadorias
+        gfx.fillStyle(0x6a4a2c, 1);
+        gfx.fillRect(-26, -6, 5, 28);
+        gfx.fillRect(21, -6, 5, 28);
+        gfx.fillStyle(0x8a5a34, 1);
+        gfx.fillRect(-28, 12, 56, 12);   // balcao
+        gfx.fillStyle(0x7a4a28, 1);
+        gfx.fillRect(-28, 12, 56, 4);
+        // mercadorias no balcao
+        gfx.fillStyle(0xe0a52a, 1);
+        gfx.fillCircle(-14, 9, 5);
+        gfx.fillStyle(0x9b4fd6, 1);
+        gfx.fillCircle(0, 8, 6);
+        gfx.fillStyle(0x3d8bcf, 1);
+        gfx.fillCircle(14, 9, 5);
+        // toldo listrado com barra
+        for (let i = 0; i < 5; i++) {
+          gfx.fillStyle(i % 2 === 0 ? 0xe0c05a : 0xc65b2b, 1);
+          gfx.fillRect(-30 + i * 12, -24, 12, 14);
         }
-        gfx.fillStyle(0x2a1c12, 1);
-        gfx.fillRect(-8, 8, 16, 16);
+        gfx.fillStyle(0x8a4a1c, 1);
+        gfx.fillRect(-30, -12, 60, 4);
+        // recortes onduladas do toldo
+        for (let i = 0; i < 5; i++) {
+          gfx.fillStyle(i % 2 === 0 ? 0xe0c05a : 0xc65b2b, 1);
+          gfx.fillTriangle(-30 + i * 12, -8, -18 + i * 12, -8, -24 + i * 12, -2);
+        }
       });
 
-      // Guardiao parado na tela inicial - figura robusta com capa e lanca
+      // Defensor parado na tela inicial - cavaleiro com capa, armadura com
+      // detalhe dourado, elmo com pluma, escudo com emblema e lanca.
       const key = 'tex-guardian';
       if (!this.hasOverride(key)) {
         const gfx = this.g();
         gfx.fillStyle(0x000000, 0.28);
-        gfx.fillEllipse(0, 74, 46, 16);
-        gfx.fillStyle(0x3a4a5a, 1);
-        gfx.fillTriangle(-24, 70, 24, 70, 0, -10);
+        gfx.fillEllipse(0, 78, 52, 16);
+        // capa: externa escura + forro interno mais claro
+        gfx.fillStyle(0x4a2530, 1);
+        gfx.fillTriangle(-30, 72, 30, 72, 0, -22);
+        gfx.fillStyle(0x6a3542, 1);
+        gfx.fillTriangle(-22, 68, 22, 68, 0, -14);
+        // pernas/botas
+        gfx.fillStyle(0x2a2a30, 1);
+        gfx.fillRect(-12, 44, 9, 28);
+        gfx.fillRect(3, 44, 9, 28);
+        gfx.fillStyle(0x4a3a2a, 1);
+        gfx.fillRect(-13, 64, 11, 10);
+        gfx.fillRect(2, 64, 11, 10);
+        // torso: armadura com peitoral e faixa dourada
+        gfx.fillStyle(0x3a4656, 1);
+        gfx.fillRoundedRect(-17, -10, 34, 56, 9);
+        gfx.fillStyle(0x53637a, 1);
+        gfx.fillRoundedRect(-13, -6, 18, 46, 8);
+        gfx.lineStyle(3, 0xc9a24a, 1);
+        gfx.strokeRoundedRect(-17, -10, 34, 56, 9);
+        gfx.fillStyle(0xc9a24a, 1);
+        gfx.fillRect(-17, 16, 34, 5);
+        // ombreiras
         gfx.fillStyle(0x2c3a46, 1);
-        gfx.fillRoundedRect(-16, -8, 32, 46, 8);
+        gfx.fillEllipse(-19, -6, 14, 12);
+        gfx.fillEllipse(19, -6, 14, 12);
+        // cabeca: elmo com viseira e pluma
         gfx.fillStyle(0xd8b98a, 1);
-        gfx.fillCircle(0, -30, 15);
+        gfx.fillCircle(0, -28, 13);
+        gfx.fillStyle(0x53637a, 1);
+        gfx.fillRoundedRect(-14, -44, 28, 18, 7);
+        gfx.fillStyle(0x2c3a46, 1);
+        gfx.fillRect(-14, -30, 28, 5);
+        gfx.fillStyle(0xb03a3a, 1);
+        gfx.fillEllipse(0, -50, 8, 12);
+        gfx.fillEllipse(4, -46, 6, 10);
+        // escudo no braco esquerdo com emblema (rosa/cruz)
         gfx.fillStyle(0x5a4632, 1);
-        gfx.fillRoundedRect(-16, -42, 32, 14, 6);
+        gfx.fillEllipse(-28, 16, 22, 30);
         gfx.fillStyle(0x8a6a3a, 1);
-        gfx.fillRect(28, -60, 4, 100);
-        gfx.fillStyle(0xc9c9d2, 1);
-        gfx.fillTriangle(24, -60, 36, -60, 30, -78);
-        gfx.generateTexture(key, 100, 190, 50, 96);
+        gfx.fillEllipse(-28, 16, 16, 24);
+        gfx.fillStyle(0xe8dcb8, 1);
+        gfx.fillRect(-30, 8, 4, 16);
+        gfx.fillRect(-34, 14, 12, 4);
+        gfx.lineStyle(2, 0x2a1c12, 0.8);
+        gfx.strokeEllipse(-28, 16, 22, 30);
+        // lanca no braco direito: haste com anel + ponta metalica com brilho
+        gfx.fillStyle(0x6a4a2a, 1);
+        gfx.fillRect(28, -66, 5, 138);
+        gfx.fillStyle(0xc9a24a, 1);
+        gfx.fillRect(26, -20, 9, 5);
+        gfx.fillStyle(0xb8bfcc, 1);
+        gfx.fillTriangle(22, -66, 39, -66, 30.5, -92);
+        gfx.fillStyle(0xffffff, 0.5);
+        gfx.fillTriangle(27, -68, 31, -68, 29, -84);
+        gfx.generateTexture(key, 110, 200, 55, 100);
         gfx.destroy();
       }
     }

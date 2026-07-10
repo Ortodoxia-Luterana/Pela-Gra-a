@@ -181,48 +181,50 @@
 
       .resources {
         display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 6px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 7px;
       }
 
       .resource {
-        min-height: 34px;
+        min-height: 46px;
         display: flex;
         align-items: center;
-        justify-content: center;
-        gap: 4px;
-        border-radius: 999px;
+        justify-content: flex-start;
+        gap: 7px;
+        border-radius: 15px;
+        padding: 4px 9px 4px 6px;
         background: rgba(32, 37, 52, 0.9);
         color: #fff7dd;
-        font-size: 0.72rem;
+        font-size: 0.73rem;
         font-weight: 1000;
         box-shadow: 0 4px 0 rgba(24, 27, 38, 0.28);
         border: 2px solid rgba(255, 247, 206, 0.16);
       }
 
-      .gem, .coin, .energy, .scroll {
-        width: 20px;
-        height: 20px;
-        display: inline-block;
+      .resource img {
+        width: 34px;
+        height: 34px;
+        object-fit: contain;
         flex: 0 0 auto;
         filter: drop-shadow(0 2px 0 rgba(0,0,0,0.22));
       }
-      .energy {
-        border-radius: 50% 50% 44% 44%;
-        background: radial-gradient(circle at 55% 30%, #fff5a7 0 16%, transparent 17%), linear-gradient(145deg, #f94c4c, #b71f25);
+
+      .resource span {
+        display: grid;
+        min-width: 0;
+        line-height: 1.04;
       }
-      .gem {
-        clip-path: polygon(50% 0, 95% 28%, 78% 100%, 22% 100%, 5% 28%);
-        background: linear-gradient(145deg, #87edff, #2354df);
+
+      .resource b {
+        color: #ffd86d;
+        font-size: 0.64rem;
+        text-transform: uppercase;
       }
-      .coin {
-        border-radius: 50%;
-        background: radial-gradient(circle at 38% 30%, #fff59f 0 16%, transparent 17%), linear-gradient(145deg, #ffd85b, #ea8d20);
-      }
-      .scroll {
-        border-radius: 7px;
-        background: linear-gradient(90deg, #fff8cc, #e5b86b);
-        border: 2px solid #a0692a;
+
+      .resource strong {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .home-view {
@@ -233,7 +235,7 @@
 
       .chapter-pin {
         position: absolute;
-        top: 144px;
+        top: 198px;
         left: 50%;
         translate: -50% 0;
         width: min(72%, 330px);
@@ -313,25 +315,6 @@
         border: 2px solid #fff1bf;
         font-size: 0.72rem;
         font-weight: 1000;
-      }
-
-      .action-dock {
-        position: absolute;
-        left: 12px;
-        right: 12px;
-        top: 210px;
-        display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-        gap: 8px;
-        z-index: 5;
-      }
-
-      .hotspot.checkin {
-        position: relative;
-        top: auto;
-        right: auto;
-        width: auto;
-        z-index: 6;
       }
 
       .party-yard {
@@ -438,6 +421,46 @@
         font-weight: 1000;
       }
 
+      .daily-gift {
+        position: absolute;
+        top: 268px;
+        right: 14px;
+        z-index: 8;
+        min-width: 108px;
+        min-height: 48px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border-radius: 15px;
+        padding: 5px 10px 5px 6px;
+        color: #fff8db;
+        background: rgba(32, 37, 52, 0.9);
+        border: 2px solid rgba(255, 247, 206, 0.22);
+        box-shadow: 0 5px 0 rgba(24, 27, 38, 0.28);
+        font-weight: 1000;
+      }
+
+      .daily-gift img {
+        width: 36px;
+        height: 36px;
+        object-fit: contain;
+      }
+
+      .daily-gift small {
+        position: absolute;
+        top: -8px;
+        right: -7px;
+        min-width: 22px;
+        height: 22px;
+        display: grid;
+        place-items: center;
+        border-radius: 999px;
+        background: #ff4264;
+        color: white;
+        border: 2px solid #fff1bf;
+        font-size: 0.72rem;
+      }
+
       .start-button, .primary-button {
         width: 100%;
         min-height: 58px;
@@ -496,16 +519,11 @@
         font-weight: 1000;
       }
 
-      .nav button::before {
-        content: attr(data-icon);
-        width: 30px;
-        height: 30px;
-        display: grid;
-        place-items: center;
-        border-radius: 13px;
-        color: #4b2a10;
-        background: linear-gradient(#fff5a9, #f0a13b);
-        box-shadow: 0 4px 0 rgba(0,0,0,0.22);
+      .nav button img {
+        width: 34px;
+        height: 34px;
+        object-fit: contain;
+        filter: drop-shadow(0 4px 0 rgba(0,0,0,0.18));
       }
 
       .shell.battle-active .bottom-nav {
@@ -951,10 +969,11 @@
 
       @media (max-width: 380px) {
         .resources { gap: 5px; }
-        .resource { font-size: 0.68rem; }
+        .resource { font-size: 0.68rem; padding-right: 6px; }
+        .resource img { width: 30px; height: 30px; }
         .hotspot { min-height: 54px; }
         .hotspot span { font-size: 0.72rem; }
-        .action-dock { gap: 6px; }
+        .daily-gift { min-width: 96px; font-size: 0.72rem; }
         .sheet { inset-inline: 8px; }
         .grid { grid-template-columns: 1fr; }
       }
@@ -989,10 +1008,10 @@
             <button class="round-action" id="sound-btn" type="button" aria-label="Som">II</button>
           </div>
           <div class="resources" aria-label="Recursos">
-            <div class="resource"><i class="energy"></i><span id="energy">60/60</span></div>
-            <div class="resource"><i class="gem"></i><span id="gems">120</span></div>
-            <div class="resource"><i class="coin"></i><span id="coins">1653</span></div>
-            <div class="resource"><i class="scroll"></i><span id="tickets">1</span></div>
+            <div class="resource" aria-label="Energia"><img src="/assets/heroi-icon-energy.png?v=20260710h" alt=""><span><b>Energia</b><strong id="energy">60/60</strong></span></div>
+            <div class="resource" aria-label="Gemas"><img src="/assets/heroi-icon-gems.png?v=20260710h" alt=""><span><b>Gemas</b><strong id="gems">120</strong></span></div>
+            <div class="resource" aria-label="Moedas"><img src="/assets/heroi-icon-coins.png?v=20260710h" alt=""><span><b>Moedas</b><strong id="coins">1653</strong></span></div>
+            <div class="resource" aria-label="Pergaminhos"><img src="/assets/heroi-icon-scroll.png?v=20260710h" alt=""><span><b>Perg.</b><strong id="tickets">1</strong></span></div>
           </div>
         </header>
 
@@ -1002,23 +1021,11 @@
             <span id="chapter-name">Jardim e Ermo</span>
           </div>
 
-          <div class="action-dock">
-            <button class="hotspot summon" type="button" data-view="summon" data-icon="S">
-              <small id="summon-badge">1</small><span>Invocar</span>
-            </button>
-            <button class="hotspot heroes" type="button" data-view="heroes" data-icon="H">
-              <span>Heróis</span>
-            </button>
-            <button class="hotspot formation" type="button" data-view="formation" data-icon="F">
-              <span>Formação</span>
-            </button>
-            <button class="hotspot campaign" type="button" data-view="campaign" data-icon="C">
-              <span>Campanha</span>
-            </button>
-            <button class="hotspot checkin" type="button" id="checkin-btn" data-icon="+">
-              <small id="checkin-badge">!</small><span>Oferta</span>
-            </button>
-          </div>
+          <button class="daily-gift" type="button" id="checkin-btn">
+            <img src="/assets/heroi-icon-gift.png?v=20260710h" alt="">
+            <span>Oferta</span>
+            <small id="checkin-badge">!</small>
+          </button>
 
           <div class="party-yard" id="party-yard" aria-hidden="true"></div>
 
@@ -1032,11 +1039,11 @@
       </section>
 
       <nav class="bottom-nav nav" aria-label="Menu principal">
-        <button type="button" class="active" data-view="home" data-icon="A">Acamp.</button>
-        <button type="button" data-view="summon" data-icon="S">Invocar</button>
-        <button type="button" data-view="heroes" data-icon="H">Heróis</button>
-        <button type="button" data-view="formation" data-icon="F">Equipe</button>
-        <button type="button" data-view="campaign" data-icon="C">Fases</button>
+        <button type="button" class="active" data-view="home"><img src="/assets/heroi-nav-home.png?v=20260710h" alt="">Acamp.</button>
+        <button type="button" data-view="summon"><img src="/assets/heroi-nav-summon.png?v=20260710h" alt="">Invocar</button>
+        <button type="button" data-view="heroes"><img src="/assets/heroi-nav-heroes.png?v=20260710h" alt="">Heróis</button>
+        <button type="button" data-view="formation"><img src="/assets/heroi-nav-formation.png?v=20260710h" alt="">Equipe</button>
+        <button type="button" data-view="campaign"><img src="/assets/heroi-nav-campaign.png?v=20260710h" alt="">Fases</button>
       </nav>
 
       <section class="battle hidden" id="battle" aria-live="polite">
@@ -1046,7 +1053,7 @@
             <small id="battle-wave">Onda 1</small>
             <h1 id="battle-title">Jardim e Ermo</h1>
           </div>
-          <div class="resource"><i class="energy"></i><span id="battle-energy">60</span></div>
+          <div class="resource"><img src="/assets/heroi-icon-energy.png?v=20260710h" alt=""><span><b>Energia</b><strong id="battle-energy">60</strong></span></div>
         </div>
         <div class="arena" id="arena">
           <i class="lane one"></i>
@@ -1155,7 +1162,6 @@
           battleTitle: document.getElementById("battle-title"),
           battleEnergy: document.getElementById("battle-energy"),
           chapterKicker: document.getElementById("chapter-kicker"),
-          summonBadge: document.getElementById("summon-badge"),
           checkinBadge: document.getElementById("checkin-badge")
         };
 
@@ -1234,7 +1240,6 @@
           const activeStage = stages.find(stage => stage.id === state.stage) || stages[stages.length - 1];
           els.chapterKicker.textContent = `Livro atual: ${activeStage.book}`;
           document.getElementById("chapter-name").textContent = activeStage.name;
-          els.summonBadge.classList.toggle("hidden", state.tickets < 1);
           els.checkinBadge.classList.toggle("hidden", canGift() === false);
           document.getElementById("sound-btn").textContent = state.sound ? "II" : "M";
           renderParty();

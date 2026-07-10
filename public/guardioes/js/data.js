@@ -71,19 +71,24 @@
 
   const DEFENSE_ORDER = ['archer', 'fire', 'trap', 'banner', 'ballista', 'relic'];
 
+  // Bounties recalibrados: a economia antiga (comum=6, raro=10...) so dava pra
+  // comprar 1x por onda mesmo limpando tudo. Subiu ~35-45% em cada inimigo.
   const ENEMIES = {
-    raider: { id: 'raider', name: 'Saqueador', hp: 34, speed: 78, bounty: 6, color: 0x8a3a3a, shape: 'raider' },
-    runner: { id: 'runner', name: 'Batedor', hp: 20, speed: 135, bounty: 5, color: 0xb07a2a, shape: 'runner' },
-    shield: { id: 'shield', name: 'Escudeiro', hp: 70, speed: 60, bounty: 10, armor: 4, color: 0x6a6a78, shape: 'shield' },
-    ram: { id: 'ram', name: 'Aríete', hp: 160, speed: 40, bounty: 18, armor: 2, color: 0x5a4632, shape: 'ram' },
-    boss: { id: 'boss', name: 'Chefe Saqueador', hp: 620, speed: 34, bounty: 80, armor: 6, color: 0x3a1f1f, shape: 'boss', isBoss: true }
+    raider: { id: 'raider', name: 'Saqueador', hp: 34, speed: 78, bounty: 9, color: 0x8a3a3a, shape: 'raider' },
+    runner: { id: 'runner', name: 'Batedor', hp: 20, speed: 135, bounty: 7, color: 0xb07a2a, shape: 'runner' },
+    shield: { id: 'shield', name: 'Escudeiro', hp: 70, speed: 60, bounty: 14, armor: 4, color: 0x6a6a78, shape: 'shield' },
+    ram: { id: 'ram', name: 'Aríete', hp: 160, speed: 40, bounty: 25, armor: 2, color: 0x5a4632, shape: 'ram' },
+    boss: { id: 'boss', name: 'Chefe Saqueador', hp: 620, speed: 34, bounty: 110, armor: 6, color: 0x3a1f1f, shape: 'boss', isBoss: true }
   };
 
   // Escala geometrica de HP por onda: onda N usa hp * HP_GROWTH^(N-1).
   // Mantem pressao de upgrade sem trivializar o comeco (ref: skill tower-defense).
   const HP_GROWTH = 1.13;
-  // Bonus de moedas ao limpar cada onda (alem do bounty por abate).
-  const WAVE_CLEAR_BONUS = 25;
+  // Bonus de moedas ao limpar cada onda (alem do bounty por abate). Cresce por
+  // onda porque o custo de compra tambem sobe ao longo da partida - sem isso o
+  // jogador ficava sem dinheiro pra comprar mais de uma vez por onda cedo demais.
+  const WAVE_CLEAR_BONUS = 30;
+  const WAVE_CLEAR_BONUS_GROWTH = 18;
 
   // Niveis: cada um tem mapa (path proprio no canvas 720x1280), 5 ondas,
   // multiplicador de HP e recompensas crescentes. Vencer um nivel libera o proximo.
@@ -281,7 +286,7 @@
   global.GuardioesData = {
     MAP, RARITY, RARITY_ORDER, MAX_FUSION_LEVEL,
     DEFENSES, DEFENSE_ORDER, ENEMIES, LEVELS,
-    HP_GROWTH, WAVE_CLEAR_BONUS,
+    HP_GROWTH, WAVE_CLEAR_BONUS, WAVE_CLEAR_BONUS_GROWTH,
     CLASSES, CLASS_ORDER,
     rarityWeights, pickRarity, defensesByRarity
   };

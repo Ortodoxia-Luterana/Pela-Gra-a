@@ -9,9 +9,9 @@
   const AUDIO = global.GuardioesAudio;
 
   const BASE_START_HP = 20;
-  const BASE_START_MONEY = 120;
+  const BASE_START_MONEY = 140;
   const BASE_BUY_COST = 40;
-  const BUY_COST_INCREMENT = 6;
+  const BUY_COST_INCREMENT = 4;
   const ARRIVAL_THRESHOLD = 12;
   const TEXT_POOL_SIZE = 28;
   const PROJECTILE_POOL_SIZE = 60;
@@ -693,14 +693,22 @@
       if (!this.waveActive) return;
       const allSpawned = this.spawnTimers.every(t => !t.getRemaining || t.getRemaining() <= 0);
       if (allSpawned && this.enemies.length === 0) {
+        const clearedWave = this.waveIndex;
         this.waveActive = false;
         this.waveIndex += 1;
         this.spawnTimers = [];
         if (this.waveIndex >= this.level.waves.length) {
           this.onVictory();
         } else {
-          const bonus = Math.round(D.WAVE_CLEAR_BONUS * (1 + (this.effects.bountyMult || 0)));
+          // Bonus cresce por onda (custo de compra tambem sobe com o tempo).
+          const bonus = Math.round((D.WAVE_CLEAR_BONUS + clearedWave * D.WAVE_CLEAR_BONUS_GROWTH) * (1 + (this.effects.bountyMult || 0)));
           this.money += bonus;
+          // Alivia metade do custo acumulado de compra entre ondas - sem isso o
+          // preco sobe pra sempre dentro da mesma partida e fica impossivel de
+          // comprar de novo depois de algumas ondas mesmo limpando tudo.
+          this.buyCount = Math.floor(this.buyCount * 0.5);
+          this.buyCost = Math.round((BASE_BUY_COST + this.buyCount * BUY_COST_INCREMENT) * (1 + (this.effects.buyCostMult || 0)));
+          this.buyBtn.list[1].setText(`Comprar (${this.buyCost})`);
           this.floatText(this.scale.width / 2, 180, `Onda vencida! +${bonus}`, '#2ecc71');
           this.waveBtn.setAlpha(1);
           this.waveBtn.list[1].setText(`Iniciar ${this.level.waves[this.waveIndex].label}`);

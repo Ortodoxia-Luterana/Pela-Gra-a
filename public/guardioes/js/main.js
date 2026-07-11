@@ -9,8 +9,8 @@
     global.GuardioesRuntime = {
       layout: isDesktop ? 'desktop' : 'mobile',
       isDesktop,
-      width: isDesktop ? 1280 : global.GuardioesData.MAP.width,
-      height: isDesktop ? 720 : global.GuardioesData.MAP.height
+      width: isDesktop ? 1920 : global.GuardioesData.MAP.width,
+      height: isDesktop ? 1080 : global.GuardioesData.MAP.height
     };
     document.documentElement.dataset.guardioesLayout = global.GuardioesRuntime.layout;
 

@@ -63,9 +63,9 @@
     // ---------- cenario ----------
     buildVillageScene(width, height) {
       const top = 64, bottom = height - 220;
-      if (this.textures.exists('tex-menu-bg')) {
-        const img = this.add.image(width / 2, (top + bottom) / 2, 'tex-menu-bg');
-        img.setDisplaySize(width, bottom - top + 40);
+      const key = this.isDesktopLayout() && this.textures.exists('tex-menu-bg-desktop') ? 'tex-menu-bg-desktop' : 'tex-menu-bg';
+      if (this.textures.exists(key)) {
+        this.addCoverImage(key, width / 2, height / 2, width, height).setDepth(0);
       } else {
         this.add.rectangle(0, top, width, bottom - top, 0x241d16).setOrigin(0, 0);
         this.drawSkyline(width, bottom);
@@ -74,6 +74,18 @@
       const g = this.add.image(width * 0.5, bottom - 40, 'tex-guardian');
       g.setDisplaySize(120, 228);
       this.tweens.add({ targets: g, y: g.y - 6, duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+    }
+
+    isDesktopLayout() {
+      return Boolean(global.GuardioesRuntime && global.GuardioesRuntime.isDesktop);
+    }
+
+    addCoverImage(key, x, y, targetW, targetH) {
+      const img = this.add.image(x, y, key);
+      const tex = this.textures.get(key).getSourceImage();
+      const scale = Math.max(targetW / tex.width, targetH / tex.height);
+      img.setScale(scale);
+      return img;
     }
 
     drawSkyline(width, bottom) {
@@ -157,7 +169,7 @@
 
     // ---------- navegador de fase + botao Comecar ----------
     buildLevelBrowser(width, height) {
-      const y = height - 195;
+      const y = this.isDesktopLayout() ? height - 235 : height - 195;
       const level = D.LEVELS[this.selectedLevelIndex];
       const highest = this.highestUnlockedIndex();
 
@@ -183,13 +195,17 @@
       global.GuardioesAudio.uiClick();
       this.selectedLevelIndex = next;
       const width = this.scale.width;
-      const y = this.scale.height - 195;
+      const y = this.isDesktopLayout() ? this.scale.height - 235 : this.scale.height - 195;
       this.renderLevelBrowser(width, y, D.LEVELS[next], highest);
+    }
+
+    levelPanelWidth(width) {
+      return this.isDesktopLayout() ? Math.min(980, width - 320) : width - 110;
     }
 
     renderLevelBrowser(width, y, level, highest) {
       this.browserPanel.removeAll(true);
-      const bg = UI.makePanel(this, width / 2, y, width - 110, 74);
+      const bg = UI.makePanel(this, width / 2, y, this.levelPanelWidth(width), this.isDesktopLayout() ? 96 : 74);
       const isTop = this.selectedLevelIndex === highest;
       const name = this.add.text(width / 2, y - 12, `${this.selectedLevelIndex + 1}. ${level.name}`, {
         fontFamily: 'Georgia, serif', fontSize: '17px', color: '#3a2c1a', fontStyle: 'bold'

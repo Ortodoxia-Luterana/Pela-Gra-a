@@ -124,7 +124,10 @@
       if (this.tutorialStep !== fromStep) return;
       this.tutorialStep = fromStep + 1;
       if (this.tutorialStep === 2) {
-        this.setTutorialHint('Agora toque num espaço livre FORA do caminho pra posicionar (armadilhas vão EM CIMA do caminho)');
+        const heldDef = this.held && D.DEFENSES[this.held.defenseId];
+        this.setTutorialHint(heldDef && heldDef.onPath
+          ? 'Armadilhas devem ficar EM CIMA do caminho'
+          : 'Agora toque num espaço livre FORA do caminho pra posicionar');
       } else if (this.tutorialStep === 3) {
         this.setTutorialHint('Defesa no lugar! Toque em "Iniciar Onda" pra começar o ataque');
       } else {
@@ -255,7 +258,7 @@
     safeArea() {
       const { width, height } = this.scale;
       if (this.isDesktopLayout()) {
-        return { top: 86, bottom: height - 108, left: 28, right: width - 28, commandY: height - 54 };
+        return { top: 124, bottom: height - 142, left: 36, right: width - 36, commandY: height - 72 };
       }
       return { top: TOP_HUD_SAFE_Y, bottom: BOTTOM_COMMAND_SAFE_Y, left: 20, right: width - 20, commandY: height - 74 };
     }
@@ -279,12 +282,31 @@
     buildMap() {
       const { width, height } = this.scale;
       this.add.rectangle(0, 0, width, height, 0x20321d).setOrigin(0);
-      const bg = this.add.graphics().setDepth(0);
-      this.drawArenaGround(bg, width, height);
-      this.drawNaturalRoad(bg, this.arenaPath);
-      this.placementSlots = this.createPlacementSlots();
-      this.drawPlacementSlots(bg);
-      this.drawProtectedObjective(bg, width, height);
+      const mapKey = this.mapTextureKey();
+      if (mapKey && this.textures.exists(mapKey)) {
+        this.addCoverImage(mapKey, width / 2, height / 2, width, height).setDepth(0);
+      } else {
+        const bg = this.add.graphics().setDepth(0);
+        this.drawArenaGround(bg, width, height);
+        this.drawNaturalRoad(bg, this.arenaPath);
+        this.drawProtectedObjective(bg, width, height);
+      }
+      this.placementSlots = [];
+    }
+
+    mapTextureKey() {
+      const suffix = this.isDesktopLayout() ? '-desktop' : '';
+      const key = `tex-map-${this.level.id}${suffix}`;
+      if (this.textures.exists(key)) return key;
+      return this.textures.exists(`tex-map-${this.level.id}`) ? `tex-map-${this.level.id}` : null;
+    }
+
+    addCoverImage(key, x, y, targetW, targetH) {
+      const img = this.add.image(x, y, key);
+      const tex = this.textures.get(key).getSourceImage();
+      const scale = Math.max(targetW / tex.width, targetH / tex.height);
+      img.setScale(scale);
+      return img;
     }
 
     drawArenaGround(g, width, height) {
@@ -452,50 +474,50 @@
 
     buildDesktopHud() {
       const { width } = this.scale;
-      this.add.rectangle(width / 2, 34, width, 68, 0x07101b, 0.9).setOrigin(0.5).setDepth(398);
+      this.add.rectangle(width / 2, 48, width, 96, 0x07101b, 0.9).setOrigin(0.5).setDepth(398);
 
-      this.hpPanel = this.add.container(132, 34).setDepth(401);
-      this.wavePanel = this.add.container(width / 2, 34).setDepth(401);
-      this.moneyPanel = this.add.container(width - 142, 34).setDepth(401);
-      this.buildHudPanel(this.hpPanel, 238, 62, 'INTEGRIDADE');
-      this.buildHudPanel(this.wavePanel, 220, 62, 'ONDA');
-      this.buildHudPanel(this.moneyPanel, 238, 62, 'SUPRIMENTOS');
+      this.hpPanel = this.add.container(170, 48).setDepth(401);
+      this.wavePanel = this.add.container(width / 2, 48).setDepth(401);
+      this.moneyPanel = this.add.container(width - 182, 48).setDepth(401);
+      this.buildHudPanel(this.hpPanel, 310, 82, 'INTEGRIDADE');
+      this.buildHudPanel(this.wavePanel, 270, 82, 'ONDA');
+      this.buildHudPanel(this.moneyPanel, 310, 82, 'SUPRIMENTOS');
 
-      this.hpBarMaxWidth = 148;
-      this.hpText = this.add.text(0, 4, '', { fontFamily: 'Georgia, serif', fontSize: '21px', color: '#f3f7ff', fontStyle: 'bold' }).setOrigin(0.5);
-      this.hpBarBack = this.add.rectangle(0, 24, this.hpBarMaxWidth, 8, 0x102011, 0.9).setOrigin(0.5);
-      this.hpBarFill = this.add.rectangle(-this.hpBarMaxWidth / 2, 24, this.hpBarMaxWidth, 8, 0x62d64c, 0.98).setOrigin(0, 0.5);
+      this.hpBarMaxWidth = 190;
+      this.hpText = this.add.text(0, 8, '', { fontFamily: 'Georgia, serif', fontSize: '27px', color: '#f3f7ff', fontStyle: 'bold' }).setOrigin(0.5);
+      this.hpBarBack = this.add.rectangle(0, 34, this.hpBarMaxWidth, 12, 0x102011, 0.9).setOrigin(0.5);
+      this.hpBarFill = this.add.rectangle(-this.hpBarMaxWidth / 2, 34, this.hpBarMaxWidth, 12, 0x62d64c, 0.98).setOrigin(0, 0.5);
       this.hpPanel.add([this.hpText, this.hpBarBack, this.hpBarFill]);
 
-      this.waveText = this.add.text(0, 1, '', { fontFamily: 'Georgia, serif', fontSize: '22px', color: '#f3f7ff', fontStyle: 'bold', align: 'center' }).setOrigin(0.5);
-      this.enemyCountText = this.add.text(0, 24, '', { fontFamily: 'Georgia, serif', fontSize: '12px', color: '#d9e2ef', fontStyle: 'bold' }).setOrigin(0.5);
+      this.waveText = this.add.text(0, 6, '', { fontFamily: 'Georgia, serif', fontSize: '29px', color: '#f3f7ff', fontStyle: 'bold', align: 'center' }).setOrigin(0.5);
+      this.enemyCountText = this.add.text(0, 34, '', { fontFamily: 'Georgia, serif', fontSize: '14px', color: '#d9e2ef', fontStyle: 'bold' }).setOrigin(0.5);
       this.wavePanel.add([this.waveText, this.enemyCountText]);
 
-      this.moneyText = this.add.text(0, 6, '', { fontFamily: 'Georgia, serif', fontSize: '24px', color: '#f3f7ff', fontStyle: 'bold' }).setOrigin(0.5);
+      this.moneyText = this.add.text(0, 9, '', { fontFamily: 'Georgia, serif', fontSize: '31px', color: '#f3f7ff', fontStyle: 'bold' }).setOrigin(0.5);
       this.moneyPanel.add(this.moneyText);
 
       this.autoWave = false;
-      this.autoBtn = this.add.text(316, 34, 'Auto OFF', {
-        fontFamily: 'Georgia, serif', fontSize: '14px', color: '#9a8a6a', fontStyle: 'bold',
-        backgroundColor: '#142238', padding: { x: 12, y: 7 }
+      this.autoBtn = this.add.text(390, 48, 'Auto OFF', {
+        fontFamily: 'Georgia, serif', fontSize: '18px', color: '#9a8a6a', fontStyle: 'bold',
+        backgroundColor: '#142238', padding: { x: 16, y: 10 }
       }).setOrigin(0.5).setDepth(401).setInteractive({ useHandCursor: true });
       this.autoBtn.on('pointerdown', () => { AUDIO.uiClick(); this.toggleAutoWave(); });
 
-      this.speedBtn = this.add.text(width - 386, 34, '1x', {
-        fontFamily: 'Georgia, serif', fontSize: '20px', color: '#f2e2b8', fontStyle: 'bold',
-        backgroundColor: '#142238', padding: { x: 15, y: 8 }
+      this.speedBtn = this.add.text(width - 520, 48, '1x', {
+        fontFamily: 'Georgia, serif', fontSize: '26px', color: '#f2e2b8', fontStyle: 'bold',
+        backgroundColor: '#142238', padding: { x: 20, y: 11 }
       }).setOrigin(0.5).setDepth(401).setInteractive({ useHandCursor: true });
       this.speedBtn.on('pointerdown', () => { AUDIO.uiClick(); this.toggleGameSpeed(); });
 
-      this.menuBtn = this.add.text(width - 326, 34, 'II', {
-        fontFamily: 'Arial, sans-serif', fontSize: '18px', color: '#f2e2b8', fontStyle: 'bold',
-        backgroundColor: '#142238', padding: { x: 14, y: 8 }
+      this.menuBtn = this.add.text(width - 438, 48, 'II', {
+        fontFamily: 'Arial, sans-serif', fontSize: '25px', color: '#f2e2b8', fontStyle: 'bold',
+        backgroundColor: '#142238', padding: { x: 18, y: 10 }
       }).setOrigin(0.5).setDepth(401).setInteractive({ useHandCursor: true });
       this.menuBtn.on('pointerdown', () => this.openPauseMenu());
-      this.muteBtn = UI.muteButton(this, width - 268, 34).setDepth(401);
+      this.muteBtn = UI.muteButton(this, width - 360, 48).setDepth(401);
 
-      this.previewText = this.add.text(width / 2, 73, '', {
-        fontFamily: 'Georgia, serif', fontSize: '12px', color: '#cbb98a'
+      this.previewText = this.add.text(width / 2, 101, '', {
+        fontFamily: 'Georgia, serif', fontSize: '16px', color: '#cbb98a'
       }).setOrigin(0.5).setDepth(401);
 
       this.updateHud();
@@ -611,25 +633,25 @@
 
     buildDesktopBuyArea() {
       const { width, height } = this.scale;
-      this.add.rectangle(width / 2, height - 54, width, 108, 0x07101b, 0.92).setDepth(398);
+      this.add.rectangle(width / 2, height - 72, width, 144, 0x07101b, 0.92).setDepth(398);
 
-      this.heldPreview = this.add.container(128, height - 54).setDepth(401);
-      const heldBg = this.add.image(0, 0, 'tex-stone-panel').setDisplaySize(224, 78);
+      this.heldPreview = this.add.container(170, height - 72).setDepth(401);
+      const heldBg = this.add.image(0, 0, 'tex-stone-panel').setDisplaySize(300, 104);
       const heldTitle = this.add.text(-44, -24, 'TORRE', {
-        fontFamily: 'Georgia, serif', fontSize: '12px', color: '#f2e2b8', fontStyle: 'bold'
+        fontFamily: 'Georgia, serif', fontSize: '15px', color: '#f2e2b8', fontStyle: 'bold'
       }).setOrigin(0.5);
-      this.heldIcon = this.add.image(-54, 10, 'tex-defense-archer').setVisible(false);
-      this.heldLabel = this.add.text(38, 8, 'vazio', {
-        fontFamily: 'Georgia, serif', fontSize: '13px', color: '#8a9ab0', align: 'left',
-        wordWrap: { width: 116 }
+      this.heldIcon = this.add.image(-78, 13, 'tex-defense-archer').setVisible(false);
+      this.heldLabel = this.add.text(48, 12, 'vazio', {
+        fontFamily: 'Georgia, serif', fontSize: '16px', color: '#8a9ab0', align: 'left',
+        wordWrap: { width: 158 }
       }).setOrigin(0.5);
-      this.cancelBtn = this.add.text(92, -24, 'X', { fontSize: '20px', color: '#e74c3c', fontStyle: 'bold' })
+      this.cancelBtn = this.add.text(124, -32, 'X', { fontSize: '24px', color: '#e74c3c', fontStyle: 'bold' })
         .setOrigin(0.5).setVisible(false).setInteractive({ useHandCursor: true });
       this.cancelBtn.on('pointerdown', () => this.cancelHeld());
       this.heldPreview.add([heldBg, heldTitle, this.heldIcon, this.heldLabel, this.cancelBtn]);
 
-      this.buyBtn = UI.makeButton(this, width / 2 - 128, height - 54, `GERAR TORRE\n${this.buyCost}`, () => this.generateTower(), { width: 310, height: 70, fontSize: 22 }).setDepth(401);
-      this.waveBtn = UI.makeButton(this, width - 166, height - 54, 'INICIAR\nONDA', () => this.startNextWave(), { width: 238, height: 70, fontSize: 22 }).setDepth(401);
+      this.buyBtn = UI.makeButton(this, width / 2 - 170, height - 72, `GERAR TORRE\n${this.buyCost}`, () => this.generateTower(), { width: 410, height: 92, fontSize: 29 }).setDepth(401);
+      this.waveBtn = UI.makeButton(this, width - 220, height - 72, 'INICIAR\nONDA', () => this.startNextWave(), { width: 320, height: 92, fontSize: 29 }).setDepth(401);
       if (this.waveIndex > 0 && this.waveIndex < this.level.waves.length) this.waveBtn.list[1].setText(`INICIAR\n${this.waveIndex + 1}`);
 
       this.previewMarker = this.add.image(0, 0, 'tex-valid-preview').setVisible(false).setDepth(84).setAlpha(0.6);
@@ -666,7 +688,8 @@
       this.closeTowerPanel();
 
       this.heldIcon.setTexture(`tex-defense-${pick}`).setVisible(true);
-      this.heldIcon.setDisplaySize(66, 66);
+      const heldIconSize = this.isDesktopLayout() ? 86 : 66;
+      this.heldIcon.setDisplaySize(heldIconSize, heldIconSize);
       this.heldLabel.setText(`${D.DEFENSES[pick].name}\nNv 1`).setColor('#f2e2b8').setVisible(true);
       this.cancelBtn.setVisible(true);
       this.buyBtn.list[1].setText(`GERAR TORRE\n${this.buyCost}`);
@@ -762,6 +785,11 @@
       return this.towers.some(t => t !== ignoreTower && Math.hypot(t.x - slot.x, t.y - slot.y) < D.MAP.towerMinGap);
     }
 
+    towerTooClose(x, y, ignoreTower) {
+      const minGap = this.isDesktopLayout() ? 92 : D.MAP.towerMinGap;
+      return this.towers.some(t => t !== ignoreTower && Math.hypot(t.x - x, t.y - y) < minGap);
+    }
+
     isValidPlacement(x, y, defenseId, ignoreTower) {
       const def = D.DEFENSES[defenseId];
       const safe = this.safeArea();
@@ -770,17 +798,14 @@
       if (def.onPath) {
         if (dist > D.MAP.trapPathRadius) return false;
       } else {
-        const slot = this.nearestSlot(x, y);
-        if (!slot || this.slotOccupied(slot, ignoreTower)) return false;
+        if (dist < D.MAP.towerPathRadius) return false;
+        if (this.towerTooClose(x, y, ignoreTower)) return false;
       }
       return true;
     }
 
     snapPlacement(x, y, defenseId) {
-      const def = D.DEFENSES[defenseId];
-      if (def.onPath) return { x, y };
-      const slot = this.nearestSlot(x, y);
-      return slot ? { x: slot.x, y: slot.y } : { x, y };
+      return { x, y };
     }
 
     updateHeldPreview(pointer) {
@@ -891,7 +916,8 @@
       tower.sprite.setDepth(120);
       if (tower.auraRing) tower.auraRing.setAlpha(0.25);
       this.held = { defenseId: tower.defenseId, level: tower.level, paidCost: 0, sourceTower: tower };
-      this.heldIcon.setTexture(`tex-defense-${tower.defenseId}`).setDisplaySize(66, 66).setVisible(true);
+      const heldIconSize = this.isDesktopLayout() ? 86 : 66;
+      this.heldIcon.setTexture(`tex-defense-${tower.defenseId}`).setDisplaySize(heldIconSize, heldIconSize).setVisible(true);
       this.heldLabel.setText(`${D.DEFENSES[tower.defenseId].name}\nNv ${tower.level}`).setColor('#f2e2b8').setVisible(true);
       this.cancelBtn.setVisible(true);
     }

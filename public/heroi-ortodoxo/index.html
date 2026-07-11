@@ -112,6 +112,14 @@
         border: 4px solid #fff7ce;
         box-shadow: 0 4px 0 rgba(54, 36, 21, 0.24), 0 0 0 2px rgba(69, 47, 26, 0.18);
         position: relative;
+        overflow: hidden;
+      }
+
+      .avatar img {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: cover;
       }
 
       .avatar::after {
@@ -409,16 +417,58 @@
         z-index: 10;
       }
 
-      .recruit-note {
-        justify-self: start;
-        padding: 7px 12px;
-        border-radius: 999px;
+      .level-dock {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 46px minmax(0, 1fr) 46px;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .level-chip {
+        min-height: 54px;
+        border-radius: 17px;
+        padding: 8px 12px;
         color: #fff8dd;
-        background: rgba(35, 39, 52, 0.86);
-        border: 2px solid rgba(255,247,206,0.2);
-        box-shadow: 0 4px 0 rgba(24, 27, 38, 0.28);
-        font-size: 0.86rem;
+        background: rgba(35, 39, 52, 0.88);
+        border: 2px solid rgba(255,247,206,0.22);
+        box-shadow: 0 5px 0 rgba(24, 27, 38, 0.28);
+        text-align: center;
         font-weight: 1000;
+      }
+
+      .level-chip b {
+        display: block;
+        color: #ffe67c;
+        font-size: 0.76rem;
+        text-transform: uppercase;
+      }
+
+      .level-chip span {
+        display: block;
+        margin-top: 2px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .stage-arrow {
+        width: 46px;
+        height: 46px;
+        border-radius: 15px;
+        display: grid;
+        place-items: center;
+        color: #56320e;
+        background: linear-gradient(#fff1a9, #ffc045);
+        border: 3px solid #fff7ce;
+        box-shadow: 0 5px 0 rgba(101, 57, 19, 0.24);
+        font-size: 1.25rem;
+        font-weight: 1000;
+      }
+
+      .stage-arrow:disabled {
+        opacity: 0.45;
+        filter: grayscale(0.45);
       }
 
       .daily-gift {
@@ -479,7 +529,7 @@
         text-shadow: 0 2px 0 rgba(255,255,255,0.36);
       }
 
-      .start-button:active, .primary-button:active, .round-action:active, .hotspot:active, .nav button:active {
+      .start-button:active, .primary-button:active, .round-action:active, .stage-arrow:active, .hotspot:active, .nav button:active {
         transform: translateY(3px);
         box-shadow: 0 3px 0 rgba(101, 57, 19, 0.24);
       }
@@ -499,7 +549,7 @@
         width: min(100vw, 520px);
         padding: 7px 8px max(7px, env(safe-area-inset-bottom));
         display: grid;
-        grid-template-columns: repeat(5, 1fr);
+        grid-template-columns: repeat(4, 1fr);
         gap: 6px;
         background: rgba(31, 34, 48, 0.96);
         border-top: 2px solid rgba(255, 247, 206, 0.2);
@@ -701,7 +751,7 @@
 
       .formation-board {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(5, minmax(0, 1fr));
         gap: 10px;
       }
 
@@ -1096,11 +1146,6 @@
         </header>
 
         <section class="home-view" id="home-view" aria-label="Acampamento">
-          <div class="chapter-pin">
-            <b id="chapter-kicker">Capítulo mais alto</b>
-            <span id="chapter-name">Jardim e Ermo</span>
-          </div>
-
           <button class="daily-gift" type="button" id="checkin-btn">
             <img src="/assets/heroi-icon-gift.png?v=20260710h" alt="">
             <span>Check-in</span>
@@ -1110,7 +1155,11 @@
           <div class="party-yard" id="party-yard" aria-hidden="true"></div>
 
           <div class="start-pad">
-            <div class="recruit-note" id="quest-note">Recrutar heróis: <span>0/3</span></div>
+            <div class="level-dock">
+              <button class="stage-arrow" id="prev-stage" type="button" aria-label="Nível anterior">&lt;</button>
+              <div class="level-chip"><b id="campaign-label">Gênesis</b><span id="level-label">Nível 1</span></div>
+              <button class="stage-arrow" id="next-stage" type="button" aria-label="Próximo nível">&gt;</button>
+            </div>
             <button class="start-button" id="start-button" type="button">Começar</button>
           </div>
         </section>
@@ -1123,7 +1172,6 @@
         <button type="button" data-view="summon"><img src="/assets/heroi-nav-summon.png?v=20260710h" alt="">Invocar</button>
         <button type="button" data-view="heroes"><img src="/assets/heroi-nav-heroes.png?v=20260710h" alt="">Heróis</button>
         <button type="button" data-view="formation"><img src="/assets/heroi-nav-formation.png?v=20260710h" alt="">Equipe</button>
-        <button type="button" data-view="campaign"><img src="/assets/heroi-nav-campaign.png?v=20260710h" alt="">Fases</button>
       </nav>
 
       <section class="battle hidden" id="battle" aria-live="polite">
@@ -1150,7 +1198,10 @@
     <script>
       (() => {
         const saveKey = "heroi-ortodoxo-save-v4";
+        const boot = window.__HEROI_BOOT__ || {};
+        const hubUser = boot.user || {};
         const maxEnergy = 60;
+        const maxFormation = 5;
         const arenaEnergyCost = 5;
         const summonGemCost = 120;
         const energyRegenMs = 10 * 60 * 1000;
@@ -1164,14 +1215,18 @@
           { id: "josue", name: "Josué", role: "Frente de batalha", color: "#3f74d8", tool: "#e8c56d", hp: 110, atk: 15, spd: 1.02, rarity: "Raro" }
         ];
 
-        const stages = [
+        const bibleBooks = [
+          "Gênesis", "Êxodo", "Levítico", "Números", "Deuteronômio", "Josué", "Juízes", "Rute", "1 Samuel", "2 Samuel",
+          "1 Reis", "2 Reis", "1 Crônicas", "2 Crônicas", "Esdras", "Neemias", "Ester", "Jó", "Salmos", "Provérbios",
+          "Eclesiastes", "Cantares", "Isaías", "Jeremias", "Lamentações", "Ezequiel", "Daniel", "Oseias", "Joel", "Amós",
+          "Obadias", "Jonas", "Miqueias", "Naum", "Habacuque", "Sofonias", "Ageu", "Zacarias", "Malaquias", "Mateus",
+          "Marcos", "Lucas", "João", "Atos", "Romanos", "1 Coríntios", "2 Coríntios", "Gálatas", "Efésios", "Filipenses",
+          "Colossenses", "1 Tessalonicenses", "2 Tessalonicenses", "1 Timóteo", "2 Timóteo", "Tito", "Filemom", "Hebreus",
+          "Tiago", "1 Pedro", "2 Pedro", "1 João", "2 João", "3 João", "Judas", "Apocalipse"
+        ];
+        const levelNames = ["Porta de Entrada", "Travessia", "Cerco", "Provação", "Conquista"];
+        const arenaThemes = [
           {
-            id: 1,
-            book: "Gênesis",
-            name: "Jardim e Ermo",
-            tip: "A criação abre caminho para a primeira provação no ermo.",
-            cost: arenaEnergyCost,
-            enemies: 2,
             arena: "heroi-arena-genesis.png",
             enemyPool: [
               { name: "Serpente do Ermo", colors: ["#7fc35d", "#356b39"] },
@@ -1180,12 +1235,6 @@
             ]
           },
           {
-            id: 2,
-            book: "Êxodo",
-            name: "Travessia do Mar",
-            tip: "A perseguição no deserto testa resistência e ordem da equipe.",
-            cost: arenaEnergyCost,
-            enemies: 4,
             arena: "heroi-arena-exodo.png",
             enemyPool: [
               { name: "Feitor Egípcio", colors: ["#d15f45", "#79352d"] },
@@ -1194,12 +1243,6 @@
             ]
           },
           {
-            id: 3,
-            book: "Josué",
-            name: "Porta do Vale",
-            tip: "O caminho até a cidade exige coragem, formação e bênçãos certas.",
-            cost: arenaEnergyCost,
-            enemies: 5,
             arena: "heroi-arena-josue.png",
             enemyPool: [
               { name: "Vigia da Muralha", colors: ["#9b6b47", "#52352b"] },
@@ -1208,6 +1251,25 @@
             ]
           }
         ];
+        const stages = bibleBooks.flatMap((book, bookIndex) => {
+          const theme = arenaThemes[bookIndex % arenaThemes.length];
+          return levelNames.map((levelName, levelIndex) => {
+            const id = bookIndex * 5 + levelIndex + 1;
+            return {
+              id,
+              campaign: bookIndex + 1,
+              level: levelIndex + 1,
+              book,
+              name: levelName,
+              title: `${book} ${levelIndex + 1}`,
+              tip: `Campanha ${bookIndex + 1}: ${book}, nível ${levelIndex + 1} de 5.`,
+              cost: arenaEnergyCost,
+              enemies: Math.min(8, 2 + levelIndex + Math.floor(bookIndex / 8)),
+              arena: theme.arena,
+              enemyPool: theme.enemyPool
+            };
+          });
+        });
 
         const upgrades = [
           { id: "fervor", title: "Fervor", text: "+18% de ataque nesta fase.", apply: s => s.bonusAtk += 0.18 },
@@ -1266,7 +1328,10 @@
           gems: document.getElementById("gems"),
           coins: document.getElementById("coins"),
           tickets: document.getElementById("tickets"),
-          note: document.getElementById("quest-note"),
+          campaignLabel: document.getElementById("campaign-label"),
+          levelLabel: document.getElementById("level-label"),
+          prevStage: document.getElementById("prev-stage"),
+          nextStage: document.getElementById("next-stage"),
           party: document.getElementById("party-yard"),
           sheet: document.getElementById("sheet"),
           toast: document.getElementById("toast"),
@@ -1279,7 +1344,6 @@
           battleWave: document.getElementById("battle-wave"),
           battleTitle: document.getElementById("battle-title"),
           battleEnergy: document.getElementById("battle-energy"),
-          chapterKicker: document.getElementById("chapter-kicker"),
           checkinBadge: document.getElementById("checkin-badge")
         };
 
@@ -1290,6 +1354,8 @@
         document.querySelectorAll("[data-view]").forEach(button => {
           button.addEventListener("click", () => openView(button.dataset.view));
         });
+        els.prevStage.addEventListener("click", () => selectStage(state.selectedStage - 1));
+        els.nextStage.addEventListener("click", () => selectStage(state.selectedStage + 1));
         document.getElementById("start-button").addEventListener("click", () => {
           if (!state.owned.length) {
             if (state.gems < summonGemCost && state.tickets < 1) {
@@ -1301,7 +1367,7 @@
             }
             return;
           }
-          startBattle(state.stage);
+          startBattle(state.selectedStage);
         });
         document.getElementById("battle-exit").addEventListener("click", endBattle);
         document.getElementById("checkin-btn").addEventListener("click", renderCheckin);
@@ -1322,7 +1388,7 @@
 
         function defaultState() {
           return {
-            name: "Peregrino",
+            name: hubUser.name || "Peregrino",
             level: 1,
             xp: 0,
             energy: 60,
@@ -1330,6 +1396,9 @@
             coins: 0,
             tickets: 0,
             stage: 1,
+            selectedStage: 1,
+            highestStage: 1,
+            completedStage: 0,
             owned: [],
             formation: [],
             summons: 0,
@@ -1342,21 +1411,44 @@
         }
 
         function load() {
+          const source = boot.state || safeLocalState();
+          const merged = { ...defaultState(), ...(source || {}) };
+          merged.name = hubUser.name || merged.name || "Peregrino";
+          merged.highestStage = Math.min(stages.length, Math.max(1, Number(merged.highestStage || merged.stage || 1)));
+          merged.selectedStage = Math.min(Math.max(1, Number(merged.selectedStage || merged.stage || merged.highestStage || 1)), merged.highestStage);
+          merged.completedStage = Math.max(0, Number(merged.completedStage || Math.max(0, merged.highestStage - 1)));
+          merged.formation = Array.from(new Set((merged.formation || []).filter(id => (merged.owned || []).includes(id)))).slice(0, maxFormation);
+          merged.owned = Array.from(new Set(merged.owned || []));
+          return merged;
+        }
+
+        function safeLocalState() {
           try {
-            return { ...defaultState(), ...JSON.parse(localStorage.getItem(saveKey) || "{}") };
+            return JSON.parse(localStorage.getItem(saveKey) || "{}");
           } catch {
-            return defaultState();
+            return null;
           }
         }
 
         function save() {
+          state.name = hubUser.name || state.name;
           localStorage.setItem(saveKey, JSON.stringify(state));
+          if (location.protocol.startsWith("http")) {
+            fetch("/api/heroi-ortodoxo/save", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ state })
+            }).catch(() => {});
+          }
         }
 
         function render() {
           applyEnergyRegen();
           const levelProgress = Math.min(100, (state.xp % 100));
           els.avatar.dataset.level = state.level;
+          if (hubUser.avatarData && !els.avatar.querySelector("img")) {
+            els.avatar.innerHTML = `<img src="${escapeAttr(hubUser.avatarData)}" alt="">`;
+          }
           els.player.textContent = state.name;
           els.xpBar.style.width = `${levelProgress}%`;
           els.energy.textContent = `${state.energy}/${maxEnergy}`;
@@ -1364,10 +1456,11 @@
           els.coins.textContent = state.coins;
           els.tickets.textContent = state.tickets;
           els.battleEnergy.textContent = state.energy;
-          els.note.innerHTML = `Recrutar heróis: <span>${state.owned.length}/3</span>`;
-          const activeStage = stages.find(stage => stage.id === state.stage) || stages[stages.length - 1];
-          els.chapterKicker.textContent = `Livro atual: ${activeStage.book}`;
-          document.getElementById("chapter-name").textContent = activeStage.name;
+          const activeStage = getStage(state.selectedStage);
+          els.campaignLabel.textContent = `Campanha ${activeStage.campaign}: ${activeStage.book}`;
+          els.levelLabel.textContent = `Nível ${activeStage.level} de 5`;
+          els.prevStage.disabled = state.selectedStage <= 1;
+          els.nextStage.disabled = state.selectedStage >= state.highestStage;
           els.checkinBadge.classList.toggle("hidden", canCheckin() === false);
           document.getElementById("sound-btn").textContent = state.sound ? "II" : "M";
           renderParty();
@@ -1377,18 +1470,19 @@
           const ids = currentFormation();
           els.party.innerHTML = ids.map((id, index) => {
             const hero = heroById(id);
-            const left = [16, 43, 70][index] || 43;
-            return `<div class="chibi" style="left:${left}%;top:${index === 1 ? 0 : 22}px;--robe:${hero.color};--tool:${hero.tool}">
+            const left = [10, 28, 46, 64, 82][index] || 46;
+            const top = [24, 4, 22, 4, 24][index] || 22;
+            return `<div class="chibi" style="left:${left}%;top:${top}px;--robe:${hero.color};--tool:${hero.tool}">
               <i class="head"></i><i class="body"></i>
             </div>`;
           }).join("");
         }
 
         function currentFormation() {
-          const fallback = state.owned.slice(0, 3);
+          const fallback = state.owned.slice(0, maxFormation);
           const picked = state.formation.filter(id => state.owned.includes(id));
           const merged = [...picked, ...fallback.filter(id => !picked.includes(id))];
-          return merged.slice(0, 3);
+          return merged.slice(0, maxFormation);
         }
 
         function heroById(id) {
@@ -1405,8 +1499,6 @@
             renderHeroes();
           } else if (view === "formation") {
             renderFormation();
-          } else if (view === "campaign") {
-            renderCampaign();
           }
           els.nav.forEach(button => button.classList.toggle("active", button.dataset.view === view || (view === "home" && button.dataset.view === "home")));
         }
@@ -1441,9 +1533,9 @@
           const pool = heroes.filter(hero => !state.owned.includes(hero.id));
           const next = state.summons === 0 && !state.owned.includes("davi")
             ? heroById("davi")
-            : (pool.length ? pool[(state.summons + state.stage) % pool.length] : heroes[(state.summons + 2) % heroes.length]);
+            : (pool.length ? pool[(state.summons + state.selectedStage) % pool.length] : heroes[(state.summons + 2) % heroes.length]);
           if (!state.owned.includes(next.id)) state.owned.push(next.id);
-          if (!state.formation.includes(next.id) && state.formation.length < 3) state.formation.push(next.id);
+          if (!state.formation.includes(next.id) && state.formation.length < maxFormation) state.formation.push(next.id);
           state.summons += 1;
           state.xp += 20;
           levelCheck();
@@ -1470,11 +1562,11 @@
               <span class="stat-pill">ATQ ${hero.atk} / VIDA ${hero.hp}</span>
             </article>`;
           }).join("");
-          sheet("Heróis", `<p>Colecione aliados e escolha até três para entrar na campanha.</p><div class="grid">${cards}</div>`);
+          sheet("Heróis", `<p>Colecione aliados e escolha até cinco para entrar na campanha.</p><div class="grid">${cards}</div>`);
         }
 
         function renderFormation() {
-          const slots = [0, 1, 2].map(index => {
+          const slots = Array.from({ length: maxFormation }, (_, index) => {
             const id = currentFormation()[index];
             if (!id) return `<button class="slot" type="button" data-add="${index}">Vazio</button>`;
             const hero = heroById(id);
@@ -1503,7 +1595,7 @@
               const id = button.dataset.pick;
               state.formation = state.formation.filter(item => item !== id);
               state.formation.unshift(id);
-              state.formation = state.formation.slice(0, 3);
+              state.formation = state.formation.slice(0, maxFormation);
               save();
               render();
               renderFormation();
@@ -1511,23 +1603,23 @@
           });
         }
 
-        function renderCampaign() {
-          const list = stages.map(stage => {
-            const locked = stage.id > state.stage + 1;
-            const label = locked ? "Bloq." : (stage.id <= state.stage ? "Jogar" : "Novo");
-            return `<article class="card stage-card">
-              <div><span class="tag">Livro ${stage.book} · Fase ${stage.id}</span><h3>${stage.name}</h3><p>${stage.tip}</p></div>
-              <button type="button" data-stage="${stage.id}" ${locked ? "disabled" : ""}>${label}</button>
-            </article>`;
-          }).join("");
-          sheet("Campanha", `<p>Avance por arenas curtas, escolha bênçãos de combate e receba recompensas.</p><div class="campaign-list">${list}</div>`);
-          els.sheet.querySelectorAll("[data-stage]").forEach(button => {
-            button.addEventListener("click", () => startBattle(Number(button.dataset.stage)));
-          });
+        function getStage(stageId) {
+          return stages.find(item => item.id === stageId) || stages[0];
+        }
+
+        function selectStage(stageId) {
+          state.selectedStage = Math.min(Math.max(1, stageId), state.highestStage);
+          save();
+          render();
         }
 
         function startBattle(stageId) {
-          const stage = stages.find(item => item.id === stageId) || stages[0];
+          const stage = getStage(stageId);
+          if (stage.id > state.highestStage) {
+            toast("Conclua o nível anterior para liberar este.");
+            selectStage(state.highestStage);
+            return;
+          }
           if (!state.owned.length) {
             toast("Invoque pelo menos um herói antes da arena.");
             openView("summon");
@@ -1555,7 +1647,7 @@
           els.battle.style.setProperty("--arena-image", `url("/assets/${stage.arena}?v=20260710f")`);
           els.result.classList.add("hidden");
           els.choices.classList.add("hidden");
-          els.battleTitle.textContent = stage.name;
+          els.battleTitle.textContent = `${stage.book} ${stage.level}`;
           save();
           render();
           drawBattle();
@@ -1576,7 +1668,7 @@
             atk: hero.atk + Math.floor(state.level / 2),
             spd: hero.spd,
             x: 18,
-            y: [31, 51, 70][index] || 51,
+            y: [23, 36, 50, 64, 77][index] || 50,
             cd: 0
           };
         }
@@ -1585,7 +1677,7 @@
           const count = Math.max(0, Math.min(3, stage.enemies - (wave - 1) * 2));
           return Array.from({ length: count }, (_, index) => {
             const template = stage.enemyPool[(index + wave - 1) % stage.enemyPool.length];
-            const hp = 30 + stage.id * 7 + wave * 5;
+            const hp = 30 + stage.campaign * 3 + stage.level * 7 + wave * 5;
             return {
               side: "enemy",
               id: `enemy-${stage.id}-${wave}-${index}`,
@@ -1593,8 +1685,8 @@
               colors: template.colors,
               maxHp: hp,
               hp,
-              atk: 4 + stage.id * 2 + wave,
-              spd: 0.92 + stage.id * 0.04,
+              atk: 4 + stage.level * 2 + Math.floor(stage.campaign / 6) + wave,
+              spd: 0.92 + stage.level * 0.04,
               x: 74 + index * 5,
               y: [32, 51, 69][index] || 51,
               cd: index
@@ -1622,7 +1714,7 @@
             return;
           }
           if (!battle.enemies.length) {
-            if (battle.wave < 2 && battle.stage.id > 1) {
+            if (battle.wave < 2 && (battle.stage.level > 1 || battle.stage.campaign > 1)) {
               showChoices();
             } else {
               finish(true);
@@ -1641,7 +1733,7 @@
 
         function drawBattle() {
           if (!battle) return;
-          els.battleWave.textContent = `${battle.stage.book} · Onda ${battle.wave}`;
+          els.battleWave.textContent = `Campanha ${battle.stage.campaign} · Nível ${battle.stage.level} · Onda ${battle.wave}`;
           const units = [...battle.party, ...battle.enemies].map(unit => {
             const hp = Math.max(0, Math.round((unit.hp / unit.maxHp) * 100));
             const enemyColors = unit.colors || ["#d85e49", "#7e4030"];
@@ -1682,11 +1774,14 @@
           clearInterval(timer);
           timer = null;
           if (win) {
-            const reward = 90 + battle.stage.id * 35;
+            const reward = 90 + battle.stage.level * 35 + battle.stage.campaign * 8;
             state.coins += reward;
-            state.gems += 12 + battle.stage.id * 3;
-            state.xp += 45 + battle.stage.id * 12;
-            state.stage = Math.max(state.stage, Math.min(stages.length, battle.stage.id + 1));
+            state.gems += 12 + battle.stage.level * 3;
+            state.xp += 45 + battle.stage.level * 12 + battle.stage.campaign;
+            state.completedStage = Math.max(state.completedStage, battle.stage.id);
+            state.highestStage = Math.max(state.highestStage, Math.min(stages.length, battle.stage.id + 1));
+            state.selectedStage = Math.min(stages.length, battle.stage.id + 1);
+            state.stage = state.selectedStage;
             levelCheck();
             save();
             render();
@@ -1852,6 +1947,16 @@
             state.level += 1;
             state.energy = maxEnergy;
           }
+        }
+
+        function escapeAttr(value) {
+          return String(value || "").replace(/[&<>"']/g, char => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+          }[char]));
         }
 
         function toast(text) {

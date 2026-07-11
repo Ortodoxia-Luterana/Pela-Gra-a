@@ -1515,9 +1515,8 @@
         function renderSummon() {
           sheet("Invocação", `
             <p>Use pergaminhos para chamar aliados bíblicos e fortalecer a equipe antes das arenas.</p>
-            <div class="summon-orb"><strong>${state.tickets > 0 ? "1 livre" : `${summonGemCost} gemas`}</strong><span class="tag">chance de herói raro</span></div>
+            <div class="summon-orb"><strong>${state.tickets > 0 ? "1 livre" : `${summonGemCost} gemas`}</strong></div>
             <button class="primary-button" id="summon-now" type="button">${state.tickets > 0 ? "Invocar grátis" : "Invocar herói"}</button>
-            <div class="card"><b>Convite inicial</b><p>A primeira invocação sempre libera um aliado para a formação.</p></div>
           `);
           document.getElementById("summon-now").addEventListener("click", summonHero);
         }

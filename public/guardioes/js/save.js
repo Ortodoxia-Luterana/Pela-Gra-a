@@ -28,7 +28,7 @@
     const D = global.GuardioesData;
     const collection = {};
     D.DEFENSE_ORDER.forEach(id => { collection[id] = defaultCollectionEntry(); });
-    ['archer', 'trap', 'fire', 'banner', 'ballista'].forEach(id => {
+    ['spearman', 'archer', 'burning-oil'].forEach(id => {
       collection[id].owned = true;
     });
 
@@ -45,7 +45,7 @@
         classes
       },
       collection,
-      loadouts: [{ name: 'Padrao', defenseIds: ['archer', 'trap', 'fire', 'banner', 'ballista'] }],
+      loadouts: [{ name: 'Padrao', defenseIds: ['spearman', 'archer', 'burning-oil'] }],
       activeLoadout: 0,
       progress: { levels: {} },
       stats: { wins: 0, losses: 0, packsOpened: 0, lastDailyPack: '' },
@@ -59,15 +59,21 @@
     if (!state.profile) state.profile = def.profile;
     if (!state.collection) state.collection = def.collection;
     global.GuardioesData.DEFENSE_ORDER.forEach(id => {
-      if (!state.collection[id]) state.collection[id] = defaultCollectionEntry();
+      if (!state.collection[id]) state.collection[id] = JSON.parse(JSON.stringify(def.collection[id] || defaultCollectionEntry()));
     });
     if (!state.profile.classes) state.profile.classes = def.profile.classes;
     global.GuardioesData.CLASS_ORDER.forEach(id => {
       if (!state.profile.classes[id]) state.profile.classes[id] = { spent: 0, nodes: {} };
     });
     if (!global.GuardioesData.CLASSES[state.profile.selectedClass]) state.profile.selectedClass = def.profile.selectedClass;
+    const validDefenseIds = new Set(global.GuardioesData.DEFENSE_ORDER);
     if (!state.loadouts || !state.loadouts.length) state.loadouts = def.loadouts;
+    state.loadouts = state.loadouts.map(loadout => {
+      const defenseIds = (loadout.defenseIds || []).filter(id => validDefenseIds.has(id));
+      return Object.assign({}, loadout, { defenseIds: defenseIds.length ? defenseIds : def.loadouts[0].defenseIds.slice() });
+    });
     if (typeof state.activeLoadout !== 'number') state.activeLoadout = 0;
+    if (!state.loadouts[state.activeLoadout]) state.activeLoadout = 0;
     if (!state.progress) state.progress = { levels: {} };
     if (!state.progress.levels) state.progress.levels = {};
     if (!state.stats) state.stats = def.stats;

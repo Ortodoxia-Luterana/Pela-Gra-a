@@ -6,9 +6,12 @@
 
   const UPGRADE_LABELS = {
     damage: 'Dano', range: 'Alcance', rate: 'Velocidade de Ataque',
-    aoeRadius: 'Raio de Área', slowDuration: 'Duração de Lentidão',
-    slowFactor: 'Força de Lentidão', pierce: 'Perfuração',
-    auraRadius: 'Raio da Aura', auraDamageMult: 'Bônus da Aura'
+    aoeRadius: 'Raio de Area', slowDuration: 'Duracao de Lentidao',
+    slowFactor: 'Forca de Lentidao', pierce: 'Perfuracao',
+    auraRadius: 'Raio da Aura', auraDamageMult: 'Bonus da Aura',
+    burnDamage: 'Dano de Fogo', burnDuration: 'Duracao do Fogo',
+    guardHp: 'Vida', auraRateMult: 'Bencao de Velocidade',
+    healGuardAmount: 'Cura'
   };
   const FRAGMENT_COST_PER_LEVEL = 3;
   const MAX_UPGRADE_LEVEL = 5;

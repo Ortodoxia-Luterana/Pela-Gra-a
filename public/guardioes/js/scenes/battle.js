@@ -18,7 +18,11 @@
   const SELL_REFUND = 0.7;
   const TARGETING_MODES = ['first', 'strong', 'close'];
   const TARGETING_LABELS = { first: 'Primeiro', strong: 'Mais Forte', close: 'Mais Perto' };
-  const TOWER_DISPLAY_SIZES = { archer: 122, fire: 126, trap: 132, banner: 132, ballista: 142, relic: 146 };
+  const TOWER_DISPLAY_SIZES = {
+    spearman: 136, archer: 132, 'burning-oil': 130,
+    barbarian: 146, slinger: 138, shieldbearer: 148,
+    zealot: 142, priest: 136, 'fire-archer': 138
+  };
   const ENEMY_DISPLAY_SIZES = { runner: 86, raider: 96, flyer: 94, shield: 106, healer: 104, ram: 122, boss: 156 };
   const HEAL_TICK_MS = 1500;
   const HP_BAR_HEIGHT = 5;
@@ -95,7 +99,7 @@
       this.physics.add.overlap(this.projectileGroup, this.enemyGroup, (proj, enemySprite) => this.onProjectileHitEnemy(proj, enemySprite));
 
       if (isResume && run.towers) {
-        run.towers.forEach(t => this.placeTower(t.defenseId, t.level, t.x, t.y, true, t.targeting));
+        run.towers.forEach(t => this.placeTower(t.defenseId, t.level, t.x, t.y, true, t.targeting, t.guardHp));
       }
 
       this.tutorialStep = 0;
@@ -157,7 +161,7 @@
       const eff = 1 + (this.effects.upgradeEffectMult || 0);
       if (stat === 'rate') return base * Math.max(0.5, 1 - 0.06 * upg * eff);     // recarga menor = melhor
       if (stat === 'pierce') return base + Math.floor(upg / 2);
-      if (stat === 'slowFactor') return Math.min(0.8, base + 0.04 * upg * eff);
+      if (stat === 'slowFactor') return Math.min(0.96, base + 0.04 * upg * eff);
       return base * (1 + 0.08 * upg * eff);
     }
 
@@ -727,7 +731,10 @@
     defenseTextureKey(defenseId, level) {
       const lvl = Phaser.Math.Clamp(level || 1, 1, D.MAX_FUSION_LEVEL);
       const key = `tex-defense-${defenseId}-lv${lvl}`;
-      return this.textures.exists(key) ? key : `tex-defense-${defenseId}`;
+      if (this.textures.exists(key)) return key;
+      const baseKey = `tex-defense-${defenseId}-lv1`;
+      if (this.textures.exists(baseKey)) return baseKey;
+      return `tex-defense-${defenseId}`;
     }
 
     applyTowerDisplay(tower, stretchX, stretchY) {
@@ -926,6 +933,8 @@
       tower.originY = tower.y;
       tower.sprite.setDepth(120);
       if (tower.auraRing) tower.auraRing.setAlpha(0.25);
+      if (tower.guardHpBack) tower.guardHpBack.setVisible(false);
+      if (tower.guardHpBar) tower.guardHpBar.setVisible(false);
       this.held = { defenseId: tower.defenseId, level: tower.level, paidCost: 0, sourceTower: tower };
       const heldIconSize = this.isDesktopLayout() ? 86 : 66;
       this.heldIcon.setTexture(this.defenseTextureKey(tower.defenseId, tower.level)).setDisplaySize(heldIconSize, heldIconSize).setVisible(true);
@@ -941,6 +950,7 @@
       tower.dragging = false;
       tower.sprite.clearTint().setAlpha(1).setDepth(88).setPosition(tower.x, tower.y);
       if (tower.auraRing) tower.auraRing.setPosition(tower.x, tower.y).setAlpha(0.07);
+      this.updateGuardBar(tower);
     }
 
     commitHeldAt(x, y) {
@@ -975,6 +985,7 @@
         tower.dragging = false;
         tower.sprite.clearTint().setAlpha(1).setDepth(88).setPosition(tower.x, tower.y);
         if (tower.auraRing) tower.auraRing.setPosition(tower.x, tower.y).setAlpha(0.07);
+        this.updateGuardBar(tower);
       } else {
         this.placeTower(this.held.defenseId, this.held.level, snapped.x, snapped.y);
       }
@@ -984,12 +995,19 @@
       this.persistRunSnapshot();
     }
 
-    placeTower(defenseId, level, x, y, silent, targeting) {
+    placeTower(defenseId, level, x, y, silent, targeting, guardHp) {
       const def = D.DEFENSES[defenseId];
       const sprite = this.add.image(x, y, this.defenseTextureKey(defenseId, level));
       const tower = { defenseId, level, x, y, sprite, lastFire: 0, targetCooldowns: new Map(), targeting: targeting || 'first', auraRing: null };
       sprite.setDepth(88);
       const normal = this.applyTowerDisplay(tower);
+      if (def.guard) {
+        tower.maxGuardHp = Math.round(this.towerStat(defenseId, 'guardHp') * (1 + (level - 1) * 0.38));
+        tower.guardHp = Phaser.Math.Clamp(typeof guardHp === 'number' ? guardHp : tower.maxGuardHp, 0, tower.maxGuardHp);
+        tower.guardHpBack = this.add.rectangle(x, y - 74, 76, 8, 0x160f0b, 0.86).setDepth(106);
+        tower.guardHpBar = this.add.rectangle(x - 38, y - 74, 76, 6, 0x35d16f, 0.95).setOrigin(0, 0.5).setDepth(107);
+        this.updateGuardBar(tower);
+      }
       if (def.auraRadius) {
         const r = this.towerStat(defenseId, 'auraRadius') * (1 + (level - 1) * 0.15);
         tower.auraRing = this.add.circle(x, y, r, def.color, 0.07).setStrokeStyle(2, def.color, 0.35).setDepth(20);
@@ -1000,6 +1018,16 @@
         sprite.setScale(normal.normalScaleX * 1.3, normal.normalScaleY * 0.7);
         this.tweens.add({ targets: sprite, scaleX: normal.normalScaleX, scaleY: normal.normalScaleY, duration: 220, ease: 'Back.Out' });
       }
+    }
+
+    updateGuardBar(tower) {
+      if (!tower || !tower.guardHpBar) return;
+      tower.guardHpBack.setPosition(tower.x, tower.y - 74);
+      tower.guardHpBar.setPosition(tower.x - 38, tower.y - 74);
+      tower.guardHpBar.width = 76 * Math.max(0, tower.guardHp / tower.maxGuardHp);
+      const visible = tower.guardHp > 0;
+      tower.guardHpBack.setVisible(visible);
+      tower.guardHpBar.setVisible(visible);
     }
 
     fuseTower(tower, consumedTower) {
@@ -1017,8 +1045,17 @@
         if (idx !== -1) this.towers.splice(idx, 1);
         consumedTower.sprite.destroy();
         if (consumedTower.auraRing) consumedTower.auraRing.destroy();
+        if (consumedTower.guardHpBack) consumedTower.guardHpBack.destroy();
+        if (consumedTower.guardHpBar) consumedTower.guardHpBar.destroy();
       }
       tower.level += 1;
+      const def = D.DEFENSES[tower.defenseId];
+      if (def.guard) {
+        const previousMax = tower.maxGuardHp || this.towerStat(tower.defenseId, 'guardHp');
+        tower.maxGuardHp = Math.round(this.towerStat(tower.defenseId, 'guardHp') * (1 + (tower.level - 1) * 0.38));
+        tower.guardHp = Math.min(tower.maxGuardHp, Math.round((tower.guardHp || previousMax) + (tower.maxGuardHp - previousMax)));
+        this.updateGuardBar(tower);
+      }
       const normal = this.applyTowerDisplay(tower, 1.35, 0.65);
       this.tweens.add({ targets: tower.sprite, scaleX: normal.normalScaleX, scaleY: normal.normalScaleY, duration: 260, ease: 'Back.Out' });
       if (tower.auraRing) {
@@ -1101,6 +1138,8 @@
       AUDIO.uiClick();
       this.tweens.add({ targets: tower.sprite, scale: 0, alpha: 0, duration: 180, ease: 'Back.In', onComplete: () => tower.sprite.destroy() });
       if (tower.auraRing) tower.auraRing.destroy();
+      if (tower.guardHpBack) tower.guardHpBack.destroy();
+      if (tower.guardHpBar) tower.guardHpBar.destroy();
       this.closeTowerPanel();
       this.updateHud();
       this.persistRunSnapshot();
@@ -1217,7 +1256,9 @@
           if (!path[e.pathIndex]) { this.enemyReachedEnd(e, i); continue; }
         }
         this.steerEnemy(e);
+        this.tickBurn(e);
         if (e.def.healRadius) this.tickHealer(e);
+        if (!this.enemies.includes(e)) continue;
         const bar = this.hpBarSpec(e.id);
         e.hpBack.setPosition(e.sprite.x, e.sprite.y - bar.yOffset);
         e.hpBar.setPosition(e.sprite.x, e.sprite.y - bar.yOffset);
@@ -1242,6 +1283,14 @@
       }
     }
 
+    tickBurn(e) {
+      if (!e.burnUntil || this.battleTime >= e.burnUntil) return;
+      const tick = e.burnTick || 500;
+      if (this.battleTime - (e.lastBurn || 0) < tick) return;
+      e.lastBurn = this.battleTime;
+      this.damageEnemy(e, e.burnDamage || 1, '#ff9d3d');
+    }
+
     enemyReachedEnd(e, index) {
       this.archiveHp = Math.max(0, this.archiveHp - 1);
       e.sprite.destroy(); e.hpBack.destroy(); e.hpBar.destroy();
@@ -1257,28 +1306,80 @@
       for (const tower of this.towers) {
         if (tower.dragging) continue;
         const def = D.DEFENSES[tower.defenseId];
-        if (def.auraRadius) continue;                          // suporte nao ataca
+        if (tower.guardHpBar) this.updateGuardBar(tower);
+        if (def.healGuardAmount || def.auraRateMult) { this.updateSupportTower(tower, def, now); continue; }
         if (def.onPath) { this.updateTrapTower(tower, def, now); continue; }
-        const rate = this.towerStat(tower.defenseId, 'rate');
+        const rate = this.attackRate(tower);
         if (now - tower.lastFire < rate) continue;
         const range = this.towerStat(tower.defenseId, 'range') * (1 + (this.effects.rangeMult || 0));
         const target = this.findTarget(tower, range);
-        if (target) { this.fireProjectile(tower, target, def); tower.lastFire = now; }
+        if (!target) continue;
+        if (def.melee) this.meleeStrike(tower, target, def);
+        else this.fireProjectile(tower, target, def);
+        tower.lastFire = now;
       }
     }
 
     updateTrapTower(tower, def, now) {
+      if (def.guard && tower.guardHp <= 0) return;
       const nearby = this.enemiesInRadius(tower.x, tower.y, D.MAP.trapPathRadius);
-      const rate = this.towerStat(tower.defenseId, 'rate');
+      const rate = this.attackRate(tower);
       nearby.forEach(e => {
         if (e.def.flying) return;   // voadoras passam por cima das armadilhas
+        if (def.guard) {
+          e.slowUntil = now + this.towerStat(tower.defenseId, 'slowDuration');
+          e.slowFactor = 1 - this.towerStat(tower.defenseId, 'slowFactor');
+          if (now - (tower.lastGuardHit || 0) > 820) {
+            tower.lastGuardHit = now;
+            tower.guardHp = Math.max(0, tower.guardHp - Math.max(4, Math.round((e.def.hp || 30) / 10)));
+            this.updateGuardBar(tower);
+            if (tower.guardHp <= 0) {
+              tower.sprite.setAlpha(0.45);
+              this.floatText(tower.x, tower.y - 72, 'Caiu', '#e74c3c');
+            }
+          }
+        }
         const cd = tower.targetCooldowns.get(e) || 0;
         if (now - cd < rate) return;
         tower.targetCooldowns.set(e, now);
         this.damageEnemy(e, this.computeDamage(tower));
         e.slowUntil = now + this.towerStat(tower.defenseId, 'slowDuration');
         e.slowFactor = 1 - this.towerStat(tower.defenseId, 'slowFactor');
+        if (def.burnDamage) this.applyBurn(e, tower);
       });
+    }
+
+    updateSupportTower(tower, def, now) {
+      const healRate = this.towerStat(tower.defenseId, 'healRate') || def.healRate || 1000;
+      if (!def.healGuardAmount || now - (tower.lastHeal || 0) < healRate) return;
+      const radius = this.towerStat(tower.defenseId, 'auraRadius') * (1 + (tower.level - 1) * 0.15);
+      const amount = Math.round(this.towerStat(tower.defenseId, 'healGuardAmount') * (1 + (tower.level - 1) * 0.45));
+      let healedAny = false;
+      this.towers.forEach(ally => {
+        if (!ally.guardHpBar || ally.guardHp <= 0 || ally.guardHp >= ally.maxGuardHp) return;
+        if (Math.hypot(ally.x - tower.x, ally.y - tower.y) > radius) return;
+        ally.guardHp = Math.min(ally.maxGuardHp, ally.guardHp + amount);
+        this.updateGuardBar(ally);
+        this.floatText(ally.x, ally.y - 86, `+${amount}`, '#5aE08a');
+        healedAny = true;
+      });
+      if (healedAny) {
+        tower.lastHeal = now;
+        const ring = this.add.circle(tower.x, tower.y, radius, 0x5ae08a, 0.10).setDepth(44);
+        this.tweens.add({ targets: ring, alpha: 0, duration: 420, onComplete: () => ring.destroy() });
+      }
+    }
+
+    meleeStrike(tower, target, def) {
+      this.damageEnemy(target, this.computeDamage(tower));
+      if (def.aoeRadius) this.explodeAt(target.sprite.x, target.sprite.y, tower.defenseId, this.computeDamage(tower), target);
+      this.tweens.add({ targets: tower.sprite, x: tower.x + (target.sprite.x > tower.x ? 7 : -7), duration: 55, yoyo: true });
+      AUDIO.fire(tower.defenseId);
+    }
+
+    attackRate(tower) {
+      const base = this.towerStat(tower.defenseId, 'rate') || 999999;
+      return base * Math.max(0.55, 1 - this.rateBonusAt(tower.x, tower.y));
     }
 
     enemiesInRadius(x, y, radius) {
@@ -1335,11 +1436,23 @@
       return bonus;
     }
 
+    rateBonusAt(x, y) {
+      let bonus = 0;
+      for (const t of this.towers) {
+        const def = D.DEFENSES[t.defenseId];
+        if (!def.auraRadius || !def.auraRateMult) continue;
+        const r = this.towerStat(t.defenseId, 'auraRadius') * (1 + (t.level - 1) * 0.15);
+        if (Math.hypot(t.x - x, t.y - y) <= r) {
+          bonus += this.towerStat(t.defenseId, 'auraRateMult') * (1 + (t.level - 1) * 0.25);
+        }
+      }
+      return Math.min(0.45, bonus);
+    }
+
     fireProjectile(tower, target, def) {
       let texKey = 'tex-arrow';
-      if (tower.defenseId === 'fire') texKey = 'tex-fireball';
-      if (tower.defenseId === 'ballista') texKey = 'tex-bolt';
-      if (tower.defenseId === 'relic') texKey = 'tex-relic-orb';
+      if (tower.defenseId === 'fire-archer') texKey = 'tex-fireball';
+      if (tower.defenseId === 'slinger') texKey = 'tex-bolt';
 
       const spr = this.projectileGroup.get(tower.x, tower.y - 20, texKey);
       if (!spr) return;
@@ -1350,6 +1463,7 @@
       spr.setData('dmg', this.computeDamage(tower));
       spr.setData('def', def);
       spr.setData('towerId', tower.defenseId);
+      spr.setData('towerRef', tower);
       spr.setData('pierceLeft', this.towerStat(tower.defenseId, 'pierce') || 0);
       spr.setData('hitSet', new Set());
       const fireToken = (spr.getData('fireToken') || 0) + 1;
@@ -1390,6 +1504,7 @@
       const dmg = proj.getData('dmg');
       this.damageEnemy(ref, dmg);
       if (def.aoeRadius) this.explodeAt(proj.x, proj.y, proj.getData('towerId'), dmg, ref);
+      if (def.burnDamage && this.enemies.includes(ref)) this.applyBurn(ref, proj.getData('towerRef') || proj.getData('towerId'));
 
       let pierceLeft = proj.getData('pierceLeft');
       if (pierceLeft > 0) {
@@ -1409,11 +1524,20 @@
       this.tweens.add({ targets: ring, alpha: 0, scale: 1.3, duration: 260, onComplete: () => ring.destroy() });
     }
 
-    damageEnemy(e, amount) {
+    applyBurn(enemy, towerOrId) {
+      const towerId = typeof towerOrId === 'string' ? towerOrId : towerOrId.defenseId;
+      const towerLevel = typeof towerOrId === 'string' ? 1 : towerOrId.level;
+      const lvlMult = 1 + (towerLevel - 1) * 0.45;
+      enemy.burnDamage = Math.max(enemy.burnDamage || 0, this.towerStat(towerId, 'burnDamage') * lvlMult);
+      enemy.burnUntil = Math.max(enemy.burnUntil || 0, this.battleTime + this.towerStat(towerId, 'burnDuration'));
+      enemy.burnTick = this.towerStat(towerId, 'burnTick') || 500;
+    }
+
+    damageEnemy(e, amount, color) {
       const armor = e.def.armor || 0;
       const dmg = Math.max(1, amount - armor);
       e.hp -= dmg;
-      this.floatText(e.sprite.x, e.sprite.y - 40, `-${Math.round(dmg)}`, '#ffffff');
+      this.floatText(e.sprite.x, e.sprite.y - 40, `-${Math.round(dmg)}`, color || '#ffffff');
       this.tweens.add({ targets: e.sprite, tint: 0xff6666, duration: 60, yoyo: true });
       if (e.hp <= 0) this.killEnemy(e);
     }
@@ -1535,7 +1659,7 @@
         buyCount: this.buyCount,
         randomSeed: this.rngSeed,
         loadout: this.loadout,
-        towers: this.towers.map(t => ({ defenseId: t.defenseId, level: t.level, x: t.x, y: t.y, targeting: t.targeting }))
+        towers: this.towers.map(t => ({ defenseId: t.defenseId, level: t.level, x: t.x, y: t.y, targeting: t.targeting, guardHp: t.guardHp }))
       };
       SAVE.save(this.state);
     }

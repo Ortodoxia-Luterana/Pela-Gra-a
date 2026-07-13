@@ -5,10 +5,10 @@
   // Assets reais (se existirem em /assets/guardioes/assets/) substituem a arte procedural
   // automaticamente - basta soltar um PNG com o mesmo nome, sem mexer em codigo.
   const ASSET_BASE = '/assets/guardioes/assets/';
-  const ASSET_VERSION = 'sola-torre-defense-levels-2026-07-13-1';
+  const ASSET_VERSION = 'sola-torre-allies-illustrated-2026-07-13-1';
   const HUB_BUILDINGS = ['build', 'collection', 'class', 'shop'];
   const TAB_ASSET_IDS = ['home', 'build', 'collection', 'class', 'shop'];
-  const DEFENSE_LEVEL_ASSET_IDS = ['archer', 'trap'];
+  const DEFENSE_LEVEL_ASSET_IDS = global.GuardioesData.DEFENSE_ORDER;
   const DEFENSE_LEVELS = [1, 2, 3];
   const ENEMY_ASSET_IDS = ['raider', 'runner', 'shield', 'flyer', 'healer', 'ram', 'boss'];
   const OVERRIDE_MANIFEST = [
@@ -19,8 +19,8 @@
     ...TAB_ASSET_IDS.map(id => [`tex-tab-${id}`, `tab-${id}.png`]),
     ...global.GuardioesData.LEVELS.map(l => [`tex-map-${l.id}`, `map-${l.id}.jpg`]),
     ...global.GuardioesData.LEVELS.map(l => [`tex-map-${l.id}-desktop`, `map-${l.id}-desktop.jpg`]),
-    ...global.GuardioesData.DEFENSE_ORDER.map(id => [`tex-defense-${id}`, `defense-${id}.png`]),
-    ...DEFENSE_LEVEL_ASSET_IDS.flatMap(id => DEFENSE_LEVELS.map(level => [`tex-defense-${id}-lv${level}`, `defense-${id}-lv${level}.png`])),
+    ...global.GuardioesData.DEFENSE_ORDER.map(id => [`tex-defense-${id}`, `allies/ally-${id}-lv1.png`]),
+    ...DEFENSE_LEVEL_ASSET_IDS.flatMap(id => DEFENSE_LEVELS.map(level => [`tex-defense-${id}-lv${level}`, `allies/ally-${id}-lv${level}.png`])),
     ...ENEMY_ASSET_IDS.map(id => [`tex-enemy-${id}`, `enemy-${id}.png`])
   ];
 
@@ -146,6 +146,21 @@
     // --- silhuetas das defesas ---
     buildDefenseTextures() {
       const D = global.GuardioesData.DEFENSES;
+      if (!D.fire || !D.trap || !D.ballista || !D.banner || !D.relic) {
+        Object.values(D).forEach(def => {
+          const draw = gfx => {
+            gfx.fillStyle(0x2a1c12, 1);
+            gfx.fillRect(-5, -36, 10, 32);
+            gfx.fillStyle(def.color || 0x8a6a3a, 1);
+            gfx.fillCircle(0, -42, 13);
+            gfx.fillStyle(0xe8dcb8, 0.85);
+            gfx.fillRoundedRect(-14, -24, 28, 32, 7);
+          };
+          if (def.onPath) this.drawFlatBase(def.id, def.color || 0x8a6a3a, draw);
+          else this.drawTowerBase(def.id, def.color || 0x8a6a3a, draw);
+        });
+        return;
+      }
 
       // Arqueiro: base circular + figura em pe com arco
       this.drawTowerBase(D.archer.id, D.archer.color, gfx => {

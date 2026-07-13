@@ -28,51 +28,68 @@
   const MAX_FUSION_LEVEL = 3;
 
   const DEFENSES = {
+    spearman: {
+      id: 'spearman', name: 'Soldado de Lanca', rarity: 'comum', role: 'Dano direto de curta distancia',
+      cost: 38, damage: 14, range: 112, rate: 680, melee: true,
+      onPath: false, color: 0x6b8f52, upgrades: ['damage', 'range', 'rate'],
+      desc: 'Ataca de perto fora do caminho. Barato, firme e bom para segurar o comeco.'
+    },
     archer: {
-      id: 'archer', name: 'Arqueiro', rarity: 'comum', role: 'Dano rápido',
-      cost: 40, damage: 12, range: 205, rate: 520, projectileSpeed: 680,
-      onPath: false, color: 0x6b8f52, shape: 'archer',
-      upgrades: ['damage', 'range', 'rate'],
-      desc: 'Atira rápido em um único alvo. Base confiável de qualquer build.'
+      id: 'archer', name: 'Arqueiro', rarity: 'comum', role: 'Tiro rapido de alvo unico',
+      cost: 42, damage: 11, range: 230, rate: 560, projectileSpeed: 720,
+      onPath: false, color: 0x6b8f52, upgrades: ['damage', 'range', 'rate'],
+      desc: 'Atira com regularidade em um alvo. Simples, confiavel e comum.'
     },
-    fire: {
-      id: 'fire', name: 'Braseiro', rarity: 'rara', role: 'Dano em área contínua',
-      cost: 90, damage: 5, range: 145, rate: 860, aoeRadius: 78, dot: true,
-      onPath: false, color: 0xc65b2b, shape: 'fire',
-      upgrades: ['damage', 'aoeRadius', 'rate'],
-      desc: 'Queima uma área continuamente, ótimo contra grupos.'
+    'burning-oil': {
+      id: 'burning-oil', name: 'Oleo em Chamas', rarity: 'comum', role: 'Dano de fogo no caminho',
+      cost: 46, damage: 7, range: 0, rate: 680, slowFactor: 0.10, slowDuration: 420,
+      burnDamage: 3, burnDuration: 1600, onPath: true, color: 0xc65b2b,
+      upgrades: ['damage', 'burnDuration', 'rate'],
+      desc: 'Fica no caminho. Causa dano constante e deixa o inimigo queimando por um tempo curto.'
     },
-    trap: {
-      id: 'trap', name: 'Armadilha', rarity: 'comum', role: 'Controle de velocidade',
-      cost: 35, damage: 8, range: 0, rate: 1100, slowFactor: 0.48, slowDuration: 1900,
-      onPath: true, color: 0x5a4632, shape: 'trap',
-      upgrades: ['slowDuration', 'damage', 'slowFactor'],
-      desc: 'Só pode ser colocada sobre o caminho. Machuca e retarda quem passa.'
+    barbarian: {
+      id: 'barbarian', name: 'Barbaro de Machado', rarity: 'rara', role: 'Golpe em area',
+      cost: 82, damage: 18, range: 116, rate: 980, aoeRadius: 76, melee: true,
+      onPath: false, color: 0x9a5a2a, upgrades: ['damage', 'aoeRadius', 'rate'],
+      desc: 'Entra no combate de perto e acerta inimigos em volta do alvo.'
     },
-    ballista: {
-      id: 'ballista', name: 'Balista', rarity: 'epica', role: 'Dano pesado',
-      cost: 160, damage: 50, range: 280, rate: 1600, projectileSpeed: 880, pierce: 2,
-      onPath: false, color: 0x394456, shape: 'ballista',
-      upgrades: ['damage', 'pierce', 'range'],
-      desc: 'Tiro lento e pesado que atravessa vários inimigos na linha.'
+    slinger: {
+      id: 'slinger', name: 'Fundibulario', rarity: 'rara', role: 'Longo alcance em area',
+      cost: 78, damage: 13, range: 275, rate: 1250, projectileSpeed: 650, aoeRadius: 78,
+      onPath: false, color: 0x3d8bcf, upgrades: ['damage', 'aoeRadius', 'range'],
+      desc: 'Arremessa pedras de longe. Mais lento que o arqueiro, mas atinge grupos.'
     },
-    banner: {
-      id: 'banner', name: 'Estandarte de Guerra', rarity: 'rara', role: 'Suporte',
-      cost: 110, damage: 0, range: 0, rate: 0, auraRadius: 170, auraDamageMult: 0.25,
-      onPath: false, color: 0x8a2f3f, shape: 'banner',
-      upgrades: ['auraRadius', 'auraDamageMult'],
-      desc: 'Não ataca. Todas as torres próximas causam +25% de dano. Fundir amplia o bônus.'
+    shieldbearer: {
+      id: 'shieldbearer', name: 'Escudeiro', rarity: 'rara', role: 'Bloqueio com vida',
+      cost: 88, damage: 4, range: 0, rate: 860, guard: true, guardHp: 96,
+      slowFactor: 0.94, slowDuration: 1000, onPath: true, color: 0x3d6fa8,
+      upgrades: ['guardHp', 'slowDuration', 'rate'],
+      desc: 'Fica no caminho, entra em combate e segura inimigos enquanto tiver vida.'
     },
-    relic: {
-      id: 'relic', name: 'Obelisco Prismático', rarity: 'lendaria', role: 'Explosão em área',
-      cost: 320, damage: 82, range: 260, rate: 3000, aoeRadius: 160,
-      onPath: false, color: 0xe8c65a, shape: 'relic',
-      upgrades: ['damage', 'aoeRadius', 'rate'],
-      desc: 'Libera uma onda de energia em área a cada recarga. Rara de se conseguir, decisiva quando aparece.'
+    zealot: {
+      id: 'zealot', name: 'Zelote', rarity: 'rara', role: 'Duelista no caminho',
+      cost: 76, damage: 16, range: 0, rate: 650, guard: true, guardHp: 70,
+      slowFactor: 0.35, slowDuration: 260, onPath: true, color: 0x9b4f2f,
+      upgrades: ['damage', 'guardHp', 'rate'],
+      desc: 'Tambem luta no caminho, mas troca defesa por dano frontal.'
+    },
+    priest: {
+      id: 'priest', name: 'Sacerdote', rarity: 'epica', role: 'Cura e bencao',
+      cost: 128, damage: 0, range: 0, rate: 0, auraRadius: 210, auraDamageMult: 0,
+      auraRateMult: 0.22, healGuardAmount: 9, healRate: 900,
+      onPath: false, color: 0xe8dcb8, upgrades: ['auraRadius', 'auraRateMult', 'healGuardAmount'],
+      desc: 'Cura escudeiros e zelotes no alcance e acelera o ataque dos aliados proximos.'
+    },
+    'fire-archer': {
+      id: 'fire-archer', name: 'Arqueiro de Fogo', rarity: 'epica', role: 'Flecha incendiaria',
+      cost: 116, damage: 16, range: 238, rate: 760, projectileSpeed: 720,
+      burnDamage: 4, burnDuration: 2200, burnTick: 500,
+      onPath: false, color: 0xc65b2b, upgrades: ['damage', 'burnDamage', 'rate'],
+      desc: 'Acerta um alvo e deixa fogo queimando depois do impacto.'
     }
   };
 
-  const DEFENSE_ORDER = ['archer', 'fire', 'trap', 'banner', 'ballista', 'relic'];
+  const DEFENSE_ORDER = ['spearman', 'archer', 'burning-oil', 'barbarian', 'slinger', 'shieldbearer', 'zealot', 'priest', 'fire-archer'];
 
   // Bounties recalibrados: a economia antiga so dava para gerar 1 torre por
   // onda mesmo limpando tudo. Subiu ~35-45% em cada inimigo.

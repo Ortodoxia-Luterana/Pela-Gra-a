@@ -88,7 +88,11 @@
       [523, 659, 784].forEach((f, i) => this.tone(f, 0.16, { type: 'triangle', gain: 0.32, delay: i * 0.08 }));
     }
     fire(defenseId) {
-      const map = { archer: [900, 'triangle'], fire: [500, 'sine'], trap: [300, 'square'], ballista: [220, 'sawtooth'], relic: [700, 'sine'] };
+      const map = {
+        spearman: [360, 'square'], archer: [900, 'triangle'], 'burning-oil': [420, 'sine'],
+        barbarian: [220, 'sawtooth'], slinger: [520, 'square'], shieldbearer: [300, 'square'],
+        zealot: [460, 'sawtooth'], priest: [780, 'sine'], 'fire-archer': [650, 'sine']
+      };
       const [freq, type] = map[defenseId] || [600, 'triangle'];
       this.tone(freq, 0.05, { type, gain: 0.12 });
     }

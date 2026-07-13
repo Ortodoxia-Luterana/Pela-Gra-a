@@ -14,7 +14,7 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v3.33.0';
+const GAME_VERSION = 'v3.34.0';
 const GAME_ID = 'pela-graca-1904';
 const HEROI_GAME_ID = 'heroi-ortodoxo';
 const CRONICAS_GAME_ID = 'cronicas-do-levante';
@@ -1838,7 +1838,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     <article class="ol-game-card match3-cover"><div><h4>Luther Metch</h4><p>Junte 3 ou mais peças iguais para cumprir objetivos e avançar de fase.</p></div><a href="/luther-metch">Jogar</a></article>
     <article class="ol-game-card quiz-cover"><div><h4>Quiz Ortodoxia</h4><p>Dispute perguntas de Bíblia, Reforma e luteranismo em modo solo, duelo online, convite ou competição geral.</p></div><a href="/quiz-ortodoxia">Jogar</a></article>
     <article class="ol-game-card guardioes-cover"><div><h4>Sola Torre</h4><p>Defenda a fortaleza com torres, estratégia e fé. Escolha sua formação, enfrente as ondas e avance pela campanha.</p></div><a href="/caminho-dos-guardioes">Jogar</a></article>
-    <article class="ol-game-card babel-cover"><div><span>NOVO RPG IDLE</span><h4>A Queda de Babel</h4><p>Explore a Grande Estrada em quatro direções, monte sua build e enfrente o Senhor das Estacas em um mundo contínuo.</p></div><a href="/a-queda-de-babel">Jogar</a></article>
+    <article class="ol-game-card babel-cover"><div><span>RPG IDLE ONLINE</span><h4>A Queda de Babel</h4><p>Explore a Grande Estrada ao lado de outros aventureiros, monte sua build e enfrente o Senhor das Estacas em um mundo contínuo.</p></div><a href="/a-queda-de-babel">Jogar</a></article>
   </section>`;
   const rankCard = `<aside class="ol-panel ol-rank"><p>Seu rank geral</p><img class="rank-badge" src="${rank.current.file}?v=${GAME_VERSION}" alt="${escapeHtml(rank.current.title)}"><div class="rank-xp"><strong>${xp} XP</strong><span>${rank.next ? `${Math.max(0, rank.next.xp - rank.currentXp)} XP para ${escapeHtml(rank.next.title)}` : 'Rank maximo alcancado'}</span><div class="rank-bar"><span style="width:${Math.round(rank.progress)}%"></span></div></div><a href="/?section=ranking">Ver ranking geral</a><div class="hub-online-panel"><div class="panel-head"><h3>Online agora</h3></div><div id="hub-online-list" class="hub-online-list">${renderOnlinePlayers(onlinePlayers)}</div></div></aside>`;
   const chatWidget = `<section class="hub-chat" id="hub-chat" aria-label="Chat geral"><div class="hub-chat-head"><strong>Chat geral</strong><button type="button" id="hub-chat-toggle" aria-label="Minimizar chat">-</button></div><div class="hub-chat-messages" id="hub-chat-messages"></div><form id="hub-chat-form" class="hub-chat-form"><input id="hub-chat-input" name="message" maxlength="${CHAT_MAX_LENGTH}" autocomplete="off" placeholder="Mensagem"><button type="submit">Enviar</button></form></section>`;
@@ -2153,12 +2153,16 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-function initConcordiumMultiplayer(httpServer) {
+function initRealtimeMultiplayer(httpServer) {
   const io = new SocketIOServer(httpServer, { cors: { origin: false } });
   const players = new Map();
   const gbaPlayers = new Map();
   const gbaBattleInvites = new Map();
   const gbaBattles = new Map();
+  const babelPlayers = new Map();
+  const babelSocketByUser = new Map();
+  const babelRegions = new Set(['campos-fronteiras']);
+  const babelBounds = { minX: 35, minY: 55, maxX: 1365, maxY: 2200 };
   const mapBounds = { minX: 70, minY: 80, maxX: 1430, maxY: 920 };
   const dummy = { id: 'training-dummy', x: 760, y: 520, hp: 80, maxHp: 80 };
   const weaponPower = {
@@ -2239,6 +2243,41 @@ function initConcordiumMultiplayer(httpServer) {
       updatedAt: player.updatedAt
     };
   }
+  function babelRoom(regionId) {
+    return `babel:${regionId}`;
+  }
+  function publicBabelPlayer(player) {
+    return {
+      id: player.id,
+      userId: player.userId,
+      name: player.name,
+      regionId: player.regionId,
+      body: player.body,
+      weapon: player.weapon,
+      x: player.x,
+      y: player.y,
+      facing: player.facing,
+      moving: player.moving,
+      frame: player.frame,
+      level: player.level,
+      power: player.power,
+      sequence: player.sequence,
+      updatedAt: player.updatedAt
+    };
+  }
+  function broadcastBabelPopulation(regionId) {
+    const room = babelRoom(regionId);
+    const count = [...babelPlayers.values()].filter(player => player.room === room).length;
+    io.to(room).emit('babel:population', { regionId, count });
+  }
+  function removeBabelPlayer(socketId) {
+    const player = babelPlayers.get(socketId);
+    if (!player) return;
+    babelPlayers.delete(socketId);
+    if (babelSocketByUser.get(player.userId) === socketId) babelSocketByUser.delete(player.userId);
+    io.to(player.room).emit('babel:player-left', { id: socketId, userId: player.userId, name: player.name });
+    broadcastBabelPopulation(player.regionId);
+  }
   function publicGbaBattle(battle, message = '') {
     return {
       battleId: battle.id,
@@ -2287,6 +2326,101 @@ function initConcordiumMultiplayer(httpServer) {
   }
 
   io.on('connection', socket => {
+    socket.on('babel:join', (payload, acknowledge = () => {}) => {
+      const user = currentUser(socket.request);
+      if (!user) {
+        socket.emit('babel:error', { code: 'authentication_required', message: 'Entre novamente no Game Hub.' });
+        acknowledge({ ok: false, error: 'authentication_required' });
+        return;
+      }
+
+      const regionId = babelRegions.has(payload?.regionId) ? payload.regionId : 'campos-fronteiras';
+      const room = babelRoom(regionId);
+      const priorSocketId = babelSocketByUser.get(user.id);
+      if (priorSocketId && priorSocketId !== socket.id) {
+        const priorSocket = io.sockets.sockets.get(priorSocketId);
+        priorSocket?.emit('babel:session-replaced', { message: 'A jornada foi aberta em outra aba.' });
+        priorSocket?.leave(room);
+        removeBabelPlayer(priorSocketId);
+      }
+
+      const previous = babelPlayers.get(socket.id);
+      if (previous && previous.room !== room) {
+        socket.leave(previous.room);
+        removeBabelPlayer(socket.id);
+      }
+
+      const player = {
+        id: socket.id,
+        userId: user.id,
+        name: safeText(user.name, 'Aventureiro') || 'Aventureiro',
+        regionId,
+        room,
+        body: payload?.body === 'female' ? 'female' : 'male',
+        weapon: ['sword', 'bow', 'staff', 'spear'].includes(payload?.weapon) ? payload.weapon : 'sword',
+        x: clamp(payload?.x, babelBounds.minX, babelBounds.maxX),
+        y: clamp(payload?.y, babelBounds.minY, babelBounds.maxY),
+        facing: ['up', 'down', 'left', 'right'].includes(payload?.facing) ? payload.facing : 'down',
+        moving: Boolean(payload?.moving),
+        frame: Math.round(clamp(payload?.frame, 0, 3)),
+        level: Math.round(clamp(payload?.level, 1, 999)),
+        power: Math.round(clamp(payload?.power, 0, 9999999)),
+        sequence: 0,
+        updatedAt: Date.now(),
+        lastMoveAt: Date.now()
+      };
+
+      babelPlayers.set(socket.id, player);
+      babelSocketByUser.set(user.id, socket.id);
+      socket.join(room);
+      const others = [...babelPlayers.values()]
+        .filter(item => item.room === room && item.id !== socket.id)
+        .map(publicBabelPlayer);
+      socket.emit('babel:init', { id: socket.id, regionId, players: others, serverNow: Date.now() });
+      socket.to(room).emit('babel:player-joined', publicBabelPlayer(player));
+      broadcastBabelPopulation(regionId);
+      acknowledge({ ok: true, id: socket.id, regionId, count: others.length + 1 });
+    });
+
+    socket.on('babel:move', payload => {
+      const player = babelPlayers.get(socket.id);
+      if (!player) return;
+      const now = Date.now();
+      const elapsed = Math.max(16, Math.min(500, now - player.lastMoveAt));
+      if (now - player.lastMoveAt < 35) return;
+      let x = clamp(payload?.x, babelBounds.minX, babelBounds.maxX);
+      let y = clamp(payload?.y, babelBounds.minY, babelBounds.maxY);
+      const dx = x - player.x;
+      const dy = y - player.y;
+      const distance = Math.hypot(dx, dy);
+      const maxDistance = 72 + elapsed * .65;
+      if (distance > maxDistance) {
+        const ratio = maxDistance / distance;
+        x = player.x + dx * ratio;
+        y = player.y + dy * ratio;
+      }
+      player.x = x;
+      player.y = y;
+      player.facing = ['up', 'down', 'left', 'right'].includes(payload?.facing) ? payload.facing : player.facing;
+      player.moving = Boolean(payload?.moving);
+      player.frame = Math.round(clamp(payload?.frame, 0, 3));
+      player.sequence = Math.max(player.sequence + 1, Math.round(clamp(payload?.sequence, 0, Number.MAX_SAFE_INTEGER)));
+      player.updatedAt = now;
+      player.lastMoveAt = now;
+      socket.to(player.room).volatile.emit('babel:player-update', publicBabelPlayer(player));
+    });
+
+    socket.on('babel:profile', payload => {
+      const player = babelPlayers.get(socket.id);
+      if (!player) return;
+      player.body = payload?.body === 'female' ? 'female' : 'male';
+      player.weapon = ['sword', 'bow', 'staff', 'spear'].includes(payload?.weapon) ? payload.weapon : player.weapon;
+      player.level = Math.round(clamp(payload?.level, 1, 999));
+      player.power = Math.round(clamp(payload?.power, 0, 9999999));
+      player.updatedAt = Date.now();
+      socket.to(player.room).emit('babel:player-update', publicBabelPlayer(player));
+    });
+
     socket.on('concordium-gba:join', payload => {
       const user = currentUser(socket.request);
       const fallbackName = user?.name || `Jogador ${socket.id.slice(0, 4)}`;
@@ -2521,6 +2655,7 @@ function initConcordiumMultiplayer(httpServer) {
     });
 
     socket.on('disconnect', () => {
+      removeBabelPlayer(socket.id);
       if (gbaPlayers.has(socket.id)) {
         gbaPlayers.delete(socket.id);
         [...gbaBattleInvites.entries()].forEach(([id, invite]) => {
@@ -2541,6 +2676,6 @@ function initConcordiumMultiplayer(httpServer) {
   });
 }
 
-initConcordiumMultiplayer(server);
+initRealtimeMultiplayer(server);
 server.listen(PORT, () => console.log(`Cultivando SSR rodando em http://localhost:${PORT}`));
 

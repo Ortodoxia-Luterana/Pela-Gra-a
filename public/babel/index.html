@@ -7,7 +7,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <title>A Queda de Babel</title>
-  <link rel="stylesheet" href="/assets/babel/game.css?v=1.0.0">
+  <link rel="stylesheet" href="/assets/babel/game.css?v=1.1.0">
 </head>
 <body>
   <main id="game-shell" aria-label="A Queda de Babel">
@@ -21,7 +21,7 @@
       </button>
 
       <section class="region-chip" aria-live="polite">
-        <small>Campos das Fronteiras</small>
+        <div class="region-heading"><small>Campos das Fronteiras</small><span id="online-count">Conectando…</span></div>
         <strong id="region-status">Acampamento do Sul</strong>
         <span class="region-track"><i id="region-fill"></i></span>
       </section>
@@ -53,7 +53,7 @@
       <button data-panel="equipment" type="button"><i>⚔</i><span>Equip.</span><b id="inventory-badge" hidden>!</b></button>
       <button data-panel="skills" type="button"><i>✦</i><span>Skills</span></button>
       <button data-panel="companion" type="button"><i>♞</i><span>Comp.</span></button>
-      <button data-panel="guild" type="button"><i>♜</i><span>Companhia</span><small>em breve</small></button>
+      <button data-panel="guild" type="button"><i>♜</i><span>Companhia</span><small>online</small></button>
     </nav>
 
     <section id="drawer" class="drawer" hidden aria-modal="true" role="dialog">
@@ -95,6 +95,7 @@
   </main>
 
   <script src="/assets/guardioes/vendor/phaser.min.js"></script>
-  <script type="module" src="/assets/babel/js/main.js?v=1.0.0"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script type="module" src="/assets/babel/js/main.js?v=1.1.0"></script>
 </body>
 </html>

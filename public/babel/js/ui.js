@@ -13,14 +13,31 @@ export class GameUI {
     this.modalHandler = null;
     this.selectedBody = null;
     this.selectedWeapon = null;
+    this.currentPanel = null;
+    this.onlineState = { status: 'connecting', connected: false, count: 0, players: [] };
     this.bindProfile();
     this.bindControls();
     this.bindIntro();
     this.bindJoystick();
+    this.bindOnline();
     this.eventHandler = event => this.onSimulationEvent(event.detail.type, event.detail.payload);
     window.addEventListener('babel:event', this.eventHandler);
     this.refresh();
     this.interval = window.setInterval(() => this.refresh(), 120);
+  }
+
+  bindOnline() {
+    this.onlineHandler = event => {
+      this.onlineState = event.detail || this.onlineState;
+      const badge = document.getElementById('online-count');
+      badge.classList.toggle('online', Boolean(this.onlineState.connected));
+      badge.classList.toggle('reconnecting', !this.onlineState.connected);
+      badge.textContent = this.onlineState.connected
+        ? `● ${this.onlineState.count} online`
+        : this.onlineState.status === 'replaced' ? 'Outra aba ativa' : 'Reconectando…';
+      if (!this.drawer.hidden && this.currentPanel === 'guild') this.drawerContent.innerHTML = this.renderGuild();
+    };
+    window.addEventListener('babel:online', this.onlineHandler);
   }
 
   bindProfile() {
@@ -169,6 +186,7 @@ export class GameUI {
       guild: ['SISTEMA ONLINE', 'Companhia de Expedição']
     };
     const [kicker, title] = titles[panel] || titles.journey;
+    this.currentPanel = panel;
     document.getElementById('drawer-kicker').textContent = kicker;
     document.getElementById('drawer-title').textContent = title;
     this.drawerContent.innerHTML = (renderers[panel] || renderers.journey)();
@@ -195,6 +213,7 @@ export class GameUI {
 
   closeDrawer() {
     this.drawer.hidden = true;
+    this.currentPanel = null;
     document.querySelectorAll('.game-nav button').forEach(button => {
       button.classList.toggle('active', button.dataset.panel === 'journey');
     });
@@ -227,7 +246,12 @@ export class GameUI {
   }
 
   renderGuild() {
-    return '<article class="boss-card"><small>ROADMAP ONLINE</small><h3>Companhias de Expedição</h3><p>Guildas, chat, cargos e o boss coletivo assíncrono entrarão quando a economia server-side estiver estabilizada. O jogo já registra presença online com o mesmo perfil do hub.</p></article>';
+    const local = { name: this.boot.user?.name || 'Aventureiro', level: this.sim.state.player.level, power: this.sim.stats.power };
+    const players = [local, ...(this.onlineState.players || [])];
+    const roster = this.onlineState.connected
+      ? players.map(player => `<span><b>${escapeHtml(player.name)}</b><small>Nv. ${Number(player.level) || 1} · ${Number(player.power) || 0} poder</small></span>`).join('')
+      : '<p class="locked-copy">Reconectando ao mundo compartilhado…</p>';
+    return `<article class="boss-card"><small>MUNDO COMPARTILHADO · ${this.onlineState.count || 0} ONLINE</small><h3>Campos das Fronteiras ao vivo</h3><p>Os aventureiros abaixo estão na mesma região. Movimento, direção, animação, nível e poder são sincronizados em tempo real.</p><div class="online-roster">${roster}</div></article>`;
   }
 
   openPause() {

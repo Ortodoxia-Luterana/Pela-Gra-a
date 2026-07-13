@@ -128,7 +128,11 @@ button { color: inherit; }
   text-shadow: 0 1px 2px #000;
 }
 
+.region-heading { display: flex; align-items: center; justify-content: center; gap: 8px; }
 .region-chip small { display: block; color: var(--gold-light); font-size: .58rem; text-transform: uppercase; letter-spacing: .13em; }
+.region-heading span { color: #8da7b8; font-size: .52rem; font-weight: 800; letter-spacing: .04em; white-space: nowrap; }
+.region-heading span.online { color: #78efc6; }
+.region-heading span.reconnecting { color: #f3c765; }
 .region-chip strong { display: block; margin: 2px 0 5px; font-size: .76rem; }
 .region-track { display: block; height: 5px; border-radius: 99px; background: #020a11; overflow: hidden; }
 .region-track i { display: block; width: 0%; height: 100%; background: linear-gradient(90deg, var(--turquoise), var(--gold)); transition: width .4s; }
@@ -155,6 +159,12 @@ button { color: inherit; }
 .journey-controls button small { font-size: .47rem; color: #bcd3e0; letter-spacing: .08em; }
 .journey-controls button[aria-pressed="true"] { color: #fff; border-color: #5fe0c2; background: linear-gradient(160deg, #1b7d70, #0a3340); box-shadow: 0 0 18px rgba(67, 197, 194, .45); }
 .journey-controls button:disabled { filter: grayscale(1); opacity: .58; }
+
+.online-roster { display: grid; gap: 7px; margin-top: 12px; }
+.online-roster span { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 11px; border: 1px solid rgba(98, 195, 210, .2); border-radius: 9px; background: rgba(4, 20, 35, .72); }
+.online-roster span::before { content: ""; width: 8px; height: 8px; flex: 0 0 8px; border-radius: 50%; background: #42d99b; box-shadow: 0 0 10px rgba(66, 217, 155, .7); }
+.online-roster span b { margin-right: auto; font-size: .76rem; }
+.online-roster span small { color: #9fb8c8; font-size: .62rem; }
 
 .loot-feed {
   position: absolute;

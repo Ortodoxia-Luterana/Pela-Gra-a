@@ -3,11 +3,13 @@ import { ASSETS, WORLD } from './content.js';
 const Phaser = window.Phaser;
 
 export class JourneyScene extends Phaser.Scene {
-  constructor(simulation) {
+  constructor(simulation, realtime) {
     super({ key: 'JourneyScene' });
     this.sim = simulation;
+    this.realtime = realtime;
     this.enemyViews = new Map();
     this.damageBars = new Map();
+    this.remoteViews = new Map();
   }
 
   preload() {
@@ -44,7 +46,12 @@ export class JourneyScene extends Phaser.Scene {
 
     this.eventHandler = event => this.onSimulationEvent(event.detail.type, event.detail.payload);
     window.addEventListener('babel:event', this.eventHandler);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => window.removeEventListener('babel:event', this.eventHandler));
+    this.stopRealtimeSync = this.realtime.on('sync', () => this.syncRemoteViews());
+    this.syncRemoteViews();
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      window.removeEventListener('babel:event', this.eventHandler);
+      this.stopRealtimeSync?.();
+    });
   }
 
   heroKey() {
@@ -75,6 +82,8 @@ export class JourneyScene extends Phaser.Scene {
     this.renderPlayer();
     this.renderEnemies();
     this.renderCompanion();
+    this.renderRemotePlayers(delta);
+    this.realtime.updateLocal(performance.now());
   }
 
   renderPlayer() {
@@ -127,6 +136,61 @@ export class JourneyScene extends Phaser.Scene {
     this.companion.x = Phaser.Math.Linear(this.companion.x, targetX, .075);
     this.companion.y = Phaser.Math.Linear(this.companion.y, targetY, .075) + Math.sin(this.sim.runtime.now * 5) * .5;
     this.companion.setDepth(this.companion.y + 5).setFlipX(side > 0);
+  }
+
+  syncRemoteViews() {
+    for (const [id, player] of this.realtime.players) {
+      let view = this.remoteViews.get(id);
+      if (!view) {
+        const shadow = this.add.ellipse(player.x, player.y + 34, 70, 23, 0x071019, .28).setDepth(player.y - 1);
+        const key = player.body === 'female' ? 'hero-female' : 'hero-male';
+        const sprite = this.add.sprite(player.x, player.y, key, player.frame || 0)
+          .setOrigin(.5, .83)
+          .setDisplaySize(92, 122)
+          .setAlpha(0)
+          .setDepth(player.y + 18);
+        const label = this.add.text(player.x, player.y - 96, '', {
+          fontFamily: 'Segoe UI, sans-serif',
+          fontSize: '13px',
+          fontStyle: 'bold',
+          color: '#fff4cf',
+          align: 'center',
+          backgroundColor: 'rgba(4, 19, 33, .82)',
+          padding: { x: 7, y: 4 },
+          stroke: '#07121d',
+          strokeThickness: 2
+        }).setOrigin(.5, 1).setDepth(player.y + 19);
+        view = { sprite, shadow, label, targetX: player.x, targetY: player.y, state: player };
+        this.remoteViews.set(id, view);
+        this.tweens.add({ targets: sprite, alpha: 1, duration: 180 });
+      }
+      view.targetX = player.x;
+      view.targetY = player.y;
+      view.state = player;
+      view.label.setText(`${player.name}\nNv. ${player.level} · ${player.power} poder`);
+    }
+
+    for (const [id, view] of this.remoteViews) {
+      if (this.realtime.players.has(id)) continue;
+      view.sprite.destroy();
+      view.shadow.destroy();
+      view.label.destroy();
+      this.remoteViews.delete(id);
+    }
+  }
+
+  renderRemotePlayers(delta) {
+    const smoothing = 1 - Math.exp(-Math.min(60, delta) / 90);
+    for (const view of this.remoteViews.values()) {
+      const state = view.state;
+      view.sprite.x = Phaser.Math.Linear(view.sprite.x, view.targetX, smoothing);
+      view.sprite.y = Phaser.Math.Linear(view.sprite.y, view.targetY, smoothing);
+      const key = state.body === 'female' ? 'hero-female' : 'hero-male';
+      if (view.sprite.texture.key !== key) view.sprite.setTexture(key, state.frame || 0);
+      view.sprite.setFrame(state.frame || 0).setFlipX(state.facing === 'left').setDepth(view.sprite.y + 18);
+      view.shadow.setPosition(view.sprite.x, view.sprite.y + 34).setDepth(view.sprite.y - 1);
+      view.label.setPosition(view.sprite.x, view.sprite.y - 96).setDepth(view.sprite.y + 19);
+    }
   }
 
   onSimulationEvent(type, payload) {

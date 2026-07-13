@@ -45,8 +45,8 @@
       "projectile": "stone",
       "projectileSpawnFrame": 4,
       "projectileSocket": {
-        "x": 392,
-        "y": 218
+        "x": 410,
+        "y": 220
       },
       "hitFrame": 4
     }
@@ -58,109 +58,109 @@
   "normalization": {
     "front": {
       "source_bbox": [
-        116,
-        85,
-        787,
-        1560
+        36,
+        23,
+        282,
+        490
       ],
-      "scale": 0.488135593220339,
+      "scale": 1.5674518201284797,
       "placed": [
-        92,
-        38,
-        328,
-        720
+        63,
+        18,
+        385,
+        732
       ]
     },
     "sideIdle": {
       "source_bbox": [
-        217,
-        53,
-        1088,
-        1039
+        39,
+        17,
+        278,
+        476
       ],
-      "scale": 0.4614604462474645,
+      "scale": 1.037037037037037,
       "placed": [
-        55,
-        43,
-        402,
-        455
+        132,
+        18,
+        247,
+        476
       ]
     },
-    "attackSharedScale": 0.882466281310212,
+    "attackSharedScale": 0.8913857677902621,
     "attackFrames": [
       {
         "file": "/assets/heroi-ortodoxo/characters/davi/combat/attack-sling/frame-01.png",
         "source_bbox": [
-          49,
-          134,
-          434,
-          653
+          42,
+          156,
+          396,
+          690
         ],
         "placed": [
-          86,
-          40,
-          340,
-          458
+          98,
+          18,
+          315,
+          476
         ]
       },
       {
         "file": "/assets/heroi-ortodoxo/characters/davi/combat/attack-sling/frame-02.png",
         "source_bbox": [
-          434,
-          158,
-          865,
-          652
+          0,
+          163,
+          396,
+          690
         ],
         "placed": [
-          66,
-          62,
-          380,
-          436
+          80,
+          25,
+          352,
+          469
         ]
       },
       {
         "file": "/assets/heroi-ortodoxo/characters/davi/combat/attack-sling/frame-03.png",
         "source_bbox": [
-          881,
-          149,
-          1302,
-          654
+          0,
+          169,
+          396,
+          690
         ],
         "placed": [
-          70,
-          52,
-          372,
-          446
+          80,
+          30,
+          352,
+          464
         ]
       },
       {
         "file": "/assets/heroi-ortodoxo/characters/davi/combat/attack-sling/frame-04.png",
         "source_bbox": [
-          1302,
-          158,
-          1736,
-          655
+          0,
+          162,
+          395,
+          690
         ],
         "placed": [
-          64,
-          59,
-          383,
-          439
+          80,
+          24,
+          352,
+          470
         ]
       },
       {
         "file": "/assets/heroi-ortodoxo/characters/davi/combat/attack-sling/frame-05.png",
         "source_bbox": [
-          1736,
-          197,
-          2142,
-          654
+          3,
+          162,
+          297,
+          692
         ],
         "placed": [
-          77,
-          95,
-          358,
-          403
+          125,
+          22,
+          262,
+          472
         ]
       }
     ],

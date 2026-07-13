@@ -6,7 +6,7 @@
   "rarityColor": "#b9c0ca",
   "class": "support",
   "classLabel": "Suporte",
-  "weapon": "bolsa de cuidado",
+  "weapon": "copo de cuidado",
   "summonPack": "patriarcas",
   "style": "front portrait for roster/sheet; right-facing side sprites for battle",
   "anchors": {
@@ -32,39 +32,33 @@
   },
   "normalization": {
     "front": {
-      "canvas": [
-        512,
-        768
-      ],
       "source_bbox": [
-        48,
-        87,
-        245,
+        85,
+        30,
+        325,
         512
       ],
+      "scale": 1.5186721991701244,
       "placed": [
-        89,
-        38,
-        334,
-        720
+        74,
+        18,
+        364,
+        732
       ]
     },
     "sideIdle": {
-      "canvas": [
-        512,
-        512
-      ],
       "source_bbox": [
-        37,
+        89,
         0,
-        307,
-        441
+        384,
+        484
       ],
+      "scale": 0.9834710743801653,
       "placed": [
-        116,
-        43,
-        279,
-        455
+        111,
+        18,
+        290,
+        476
       ]
     }
   }

@@ -6,7 +6,7 @@
   "rarityColor": "#b9c0ca",
   "class": "support",
   "classLabel": "Suporte",
-  "weapon": "bolsa de cuidado",
+  "weapon": "cesta de ervas",
   "summonPack": "patriarcas",
   "style": "front portrait for roster/sheet; right-facing side sprites for battle",
   "anchors": {
@@ -32,39 +32,33 @@
   },
   "normalization": {
     "front": {
-      "canvas": [
-        512,
-        768
-      ],
       "source_bbox": [
-        59,
-        84,
-        247,
+        69,
+        20,
+        305,
         512
       ],
+      "scale": 1.4878048780487805,
       "placed": [
-        98,
-        38,
-        316,
-        720
+        80,
+        18,
+        351,
+        732
       ]
     },
     "sideIdle": {
-      "canvas": [
-        512,
-        512
-      ],
       "source_bbox": [
+        89,
         0,
-        68,
-        301,
-        420
+        304,
+        487
       ],
+      "scale": 0.9774127310061602,
       "placed": [
-        61,
-        43,
-        389,
-        455
+        151,
+        18,
+        210,
+        476
       ]
     }
   }

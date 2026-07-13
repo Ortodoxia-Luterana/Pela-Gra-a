@@ -6,7 +6,7 @@
   "rarityColor": "#a66cff",
   "class": "support",
   "classLabel": "Suporte",
-  "weapon": "cajado e incens?rio",
+  "weapon": "cajado e incensário",
   "summonPack": "exodo",
   "style": "front portrait for roster/sheet; right-facing side sprites for battle",
   "anchors": {
@@ -67,5 +67,56 @@
         455
       ]
     }
+  },
+  "animations": {
+    "attack": {
+      "fps": 12,
+      "loop": false,
+      "frames": [
+        "/assets/heroi-ortodoxo/characters/arao/combat/attack/frame-01.png",
+        "/assets/heroi-ortodoxo/characters/arao/combat/attack/frame-02.png",
+        "/assets/heroi-ortodoxo/characters/arao/combat/attack/frame-03.png",
+        "/assets/heroi-ortodoxo/characters/arao/combat/attack/frame-04.png",
+        "/assets/heroi-ortodoxo/characters/arao/combat/attack/frame-05.png"
+      ],
+      "strip": "/assets/heroi-ortodoxo/characters/arao/combat/attack/strip.png",
+      "hitFrame": 4,
+      "attackType": "support"
+    },
+    "skillCast": {
+      "fps": 12,
+      "loop": false,
+      "frames": [
+        "/assets/heroi-ortodoxo/characters/arao/combat/skill-cast/frame-01.png",
+        "/assets/heroi-ortodoxo/characters/arao/combat/skill-cast/frame-02.png",
+        "/assets/heroi-ortodoxo/characters/arao/combat/skill-cast/frame-03.png",
+        "/assets/heroi-ortodoxo/characters/arao/combat/skill-cast/frame-04.png",
+        "/assets/heroi-ortodoxo/characters/arao/combat/skill-cast/frame-05.png",
+        "/assets/heroi-ortodoxo/characters/arao/combat/skill-cast/frame-06.png"
+      ],
+      "strip": "/assets/heroi-ortodoxo/characters/arao/combat/skill-cast/strip.png",
+      "releaseFrame": 5,
+      "skillType": "support",
+      "effectColor": "#74e29a"
+    },
+    "hurt": {
+      "fps": 10,
+      "loop": false,
+      "frames": [
+        "/assets/heroi-ortodoxo/characters/arao/combat/hurt/frame-01.png",
+        "/assets/heroi-ortodoxo/characters/arao/combat/hurt/frame-02.png",
+        "/assets/heroi-ortodoxo/characters/arao/combat/hurt/frame-03.png",
+        "/assets/heroi-ortodoxo/characters/arao/combat/hurt/frame-04.png"
+      ],
+      "strip": "/assets/heroi-ortodoxo/characters/arao/combat/hurt/strip.png",
+      "impactFrame": 2,
+      "hurtType": "knockback"
+    }
+  },
+  "animationDefaults": {
+    "idle": "sideIdle",
+    "basicAttack": "attack",
+    "skill": "skillCast",
+    "damaged": "hurt"
   }
 }

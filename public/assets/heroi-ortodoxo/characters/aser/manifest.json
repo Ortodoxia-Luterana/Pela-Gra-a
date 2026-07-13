@@ -67,5 +67,56 @@
         455
       ]
     }
+  },
+  "animations": {
+    "attack": {
+      "fps": 12,
+      "loop": false,
+      "frames": [
+        "/assets/heroi-ortodoxo/characters/aser/combat/attack/frame-01.png",
+        "/assets/heroi-ortodoxo/characters/aser/combat/attack/frame-02.png",
+        "/assets/heroi-ortodoxo/characters/aser/combat/attack/frame-03.png",
+        "/assets/heroi-ortodoxo/characters/aser/combat/attack/frame-04.png",
+        "/assets/heroi-ortodoxo/characters/aser/combat/attack/frame-05.png"
+      ],
+      "strip": "/assets/heroi-ortodoxo/characters/aser/combat/attack/strip.png",
+      "hitFrame": 4,
+      "attackType": "melee"
+    },
+    "skillCast": {
+      "fps": 12,
+      "loop": false,
+      "frames": [
+        "/assets/heroi-ortodoxo/characters/aser/combat/skill-cast/frame-01.png",
+        "/assets/heroi-ortodoxo/characters/aser/combat/skill-cast/frame-02.png",
+        "/assets/heroi-ortodoxo/characters/aser/combat/skill-cast/frame-03.png",
+        "/assets/heroi-ortodoxo/characters/aser/combat/skill-cast/frame-04.png",
+        "/assets/heroi-ortodoxo/characters/aser/combat/skill-cast/frame-05.png",
+        "/assets/heroi-ortodoxo/characters/aser/combat/skill-cast/frame-06.png"
+      ],
+      "strip": "/assets/heroi-ortodoxo/characters/aser/combat/skill-cast/strip.png",
+      "releaseFrame": 5,
+      "skillType": "melee",
+      "effectColor": "#ffc44c"
+    },
+    "hurt": {
+      "fps": 10,
+      "loop": false,
+      "frames": [
+        "/assets/heroi-ortodoxo/characters/aser/combat/hurt/frame-01.png",
+        "/assets/heroi-ortodoxo/characters/aser/combat/hurt/frame-02.png",
+        "/assets/heroi-ortodoxo/characters/aser/combat/hurt/frame-03.png",
+        "/assets/heroi-ortodoxo/characters/aser/combat/hurt/frame-04.png"
+      ],
+      "strip": "/assets/heroi-ortodoxo/characters/aser/combat/hurt/strip.png",
+      "impactFrame": 2,
+      "hurtType": "knockback"
+    }
+  },
+  "animationDefaults": {
+    "idle": "sideIdle",
+    "basicAttack": "attack",
+    "skill": "skillCast",
+    "damaged": "hurt"
   }
 }

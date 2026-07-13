@@ -49,6 +49,55 @@
         "y": 220
       },
       "hitFrame": 4
+    },
+    "attack": {
+      "fps": 12,
+      "loop": false,
+      "frames": [
+        "/assets/heroi-ortodoxo/characters/davi/combat/attack/frame-01.png",
+        "/assets/heroi-ortodoxo/characters/davi/combat/attack/frame-02.png",
+        "/assets/heroi-ortodoxo/characters/davi/combat/attack/frame-03.png",
+        "/assets/heroi-ortodoxo/characters/davi/combat/attack/frame-04.png",
+        "/assets/heroi-ortodoxo/characters/davi/combat/attack/frame-05.png"
+      ],
+      "strip": "/assets/heroi-ortodoxo/characters/davi/combat/attack/strip.png",
+      "hitFrame": 4,
+      "attackType": "ranged",
+      "projectile": "stone",
+      "projectileSpawnFrame": 4,
+      "projectileSocket": {
+        "x": 392,
+        "y": 220
+      }
+    },
+    "skillCast": {
+      "fps": 12,
+      "loop": false,
+      "frames": [
+        "/assets/heroi-ortodoxo/characters/davi/combat/skill-cast/frame-01.png",
+        "/assets/heroi-ortodoxo/characters/davi/combat/skill-cast/frame-02.png",
+        "/assets/heroi-ortodoxo/characters/davi/combat/skill-cast/frame-03.png",
+        "/assets/heroi-ortodoxo/characters/davi/combat/skill-cast/frame-04.png",
+        "/assets/heroi-ortodoxo/characters/davi/combat/skill-cast/frame-05.png",
+        "/assets/heroi-ortodoxo/characters/davi/combat/skill-cast/frame-06.png"
+      ],
+      "strip": "/assets/heroi-ortodoxo/characters/davi/combat/skill-cast/strip.png",
+      "releaseFrame": 5,
+      "skillType": "ranged",
+      "effectColor": "#62beff"
+    },
+    "hurt": {
+      "fps": 10,
+      "loop": false,
+      "frames": [
+        "/assets/heroi-ortodoxo/characters/davi/combat/hurt/frame-01.png",
+        "/assets/heroi-ortodoxo/characters/davi/combat/hurt/frame-02.png",
+        "/assets/heroi-ortodoxo/characters/davi/combat/hurt/frame-03.png",
+        "/assets/heroi-ortodoxo/characters/davi/combat/hurt/frame-04.png"
+      ],
+      "strip": "/assets/heroi-ortodoxo/characters/davi/combat/hurt/strip.png",
+      "impactFrame": 2,
+      "hurtType": "knockback"
     }
   },
   "projectiles": {
@@ -194,5 +243,11 @@
         47
       ]
     }
+  },
+  "animationDefaults": {
+    "idle": "sideIdle",
+    "basicAttack": "attack",
+    "skill": "skillCast",
+    "damaged": "hurt"
   }
 }

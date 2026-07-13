@@ -6,7 +6,7 @@
   "rarityColor": "#4ba3ff",
   "class": "ranged",
   "classLabel": "Distância",
-  "weapon": "arco de art?fice",
+  "weapon": "arco de artífice",
   "summonPack": "exodo",
   "style": "front portrait for roster/sheet; right-facing side sprites for battle",
   "anchors": {
@@ -61,5 +61,62 @@
         476
       ]
     }
+  },
+  "animations": {
+    "attack": {
+      "fps": 12,
+      "loop": false,
+      "frames": [
+        "/assets/heroi-ortodoxo/characters/bezalel/combat/attack/frame-01.png",
+        "/assets/heroi-ortodoxo/characters/bezalel/combat/attack/frame-02.png",
+        "/assets/heroi-ortodoxo/characters/bezalel/combat/attack/frame-03.png",
+        "/assets/heroi-ortodoxo/characters/bezalel/combat/attack/frame-04.png",
+        "/assets/heroi-ortodoxo/characters/bezalel/combat/attack/frame-05.png"
+      ],
+      "strip": "/assets/heroi-ortodoxo/characters/bezalel/combat/attack/strip.png",
+      "hitFrame": 4,
+      "attackType": "ranged",
+      "projectile": "arrow",
+      "projectileSpawnFrame": 4,
+      "projectileSocket": {
+        "x": 392,
+        "y": 220
+      }
+    },
+    "skillCast": {
+      "fps": 12,
+      "loop": false,
+      "frames": [
+        "/assets/heroi-ortodoxo/characters/bezalel/combat/skill-cast/frame-01.png",
+        "/assets/heroi-ortodoxo/characters/bezalel/combat/skill-cast/frame-02.png",
+        "/assets/heroi-ortodoxo/characters/bezalel/combat/skill-cast/frame-03.png",
+        "/assets/heroi-ortodoxo/characters/bezalel/combat/skill-cast/frame-04.png",
+        "/assets/heroi-ortodoxo/characters/bezalel/combat/skill-cast/frame-05.png",
+        "/assets/heroi-ortodoxo/characters/bezalel/combat/skill-cast/frame-06.png"
+      ],
+      "strip": "/assets/heroi-ortodoxo/characters/bezalel/combat/skill-cast/strip.png",
+      "releaseFrame": 5,
+      "skillType": "ranged",
+      "effectColor": "#62beff"
+    },
+    "hurt": {
+      "fps": 10,
+      "loop": false,
+      "frames": [
+        "/assets/heroi-ortodoxo/characters/bezalel/combat/hurt/frame-01.png",
+        "/assets/heroi-ortodoxo/characters/bezalel/combat/hurt/frame-02.png",
+        "/assets/heroi-ortodoxo/characters/bezalel/combat/hurt/frame-03.png",
+        "/assets/heroi-ortodoxo/characters/bezalel/combat/hurt/frame-04.png"
+      ],
+      "strip": "/assets/heroi-ortodoxo/characters/bezalel/combat/hurt/strip.png",
+      "impactFrame": 2,
+      "hurtType": "knockback"
+    }
+  },
+  "animationDefaults": {
+    "idle": "sideIdle",
+    "basicAttack": "attack",
+    "skill": "skillCast",
+    "damaged": "hurt"
   }
 }

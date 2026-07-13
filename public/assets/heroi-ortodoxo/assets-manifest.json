@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "characters": {
     "abel": "/assets/heroi-ortodoxo/characters/abel/manifest.json",
     "abiu": "/assets/heroi-ortodoxo/characters/abiu/manifest.json",
@@ -72,5 +72,10 @@
     }
   },
   "roster": "/assets/heroi-ortodoxo/character-roster.json",
-  "summonPools": "/assets/heroi-ortodoxo/summon-pools.json"
+  "summonPools": "/assets/heroi-ortodoxo/summon-pools.json",
+  "animationPreviews": {
+    "attack": "/assets/heroi-ortodoxo/animation-preview-attack.jpg",
+    "skillCast": "/assets/heroi-ortodoxo/animation-preview-skill-cast.jpg",
+    "hurt": "/assets/heroi-ortodoxo/animation-preview-hurt.jpg"
+  }
 }

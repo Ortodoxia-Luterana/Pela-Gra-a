@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "characters": {
+    "davi": "/assets/heroi-ortodoxo/characters/davi/manifest.json"
+  },
+  "projectiles": {
+    "stone": {
+      "file": "/assets/heroi-ortodoxo/projectiles/stone.png",
+      "canvas": [
+        192,
+        96
+      ],
+      "flight": "right",
+      "anchor": {
+        "x": 96,
+        "y": 48
+      },
+      "speed": 720
+    },
+    "arrow": {
+      "file": "/assets/heroi-ortodoxo/projectiles/arrow.png",
+      "canvas": [
+        384,
+        96
+      ],
+      "flight": "right",
+      "anchor": {
+        "x": 192,
+        "y": 48
+      },
+      "speed": 920
+    }
+  }
+}

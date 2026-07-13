@@ -1,0 +1,194 @@
+{
+  "id": "davi",
+  "name": "Davi",
+  "rarity": "epic",
+  "class": "ranged",
+  "weapon": "sling",
+  "style": "front portrait for roster/sheet; right-facing side sprites for battle",
+  "anchors": {
+    "portrait": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        768
+      ]
+    },
+    "combat": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        512
+      ],
+      "feetY": 498
+    }
+  },
+  "views": {
+    "front": "/assets/heroi-ortodoxo/characters/davi/portraits/front.png",
+    "sideIdle": "/assets/heroi-ortodoxo/characters/davi/combat/side-idle.png"
+  },
+  "animations": {
+    "attackSling": {
+      "fps": 12,
+      "loop": false,
+      "frames": [
+        "/assets/heroi-ortodoxo/characters/davi/combat/attack-sling/frame-01.png",
+        "/assets/heroi-ortodoxo/characters/davi/combat/attack-sling/frame-02.png",
+        "/assets/heroi-ortodoxo/characters/davi/combat/attack-sling/frame-03.png",
+        "/assets/heroi-ortodoxo/characters/davi/combat/attack-sling/frame-04.png",
+        "/assets/heroi-ortodoxo/characters/davi/combat/attack-sling/frame-05.png"
+      ],
+      "strip": "/assets/heroi-ortodoxo/characters/davi/combat/attack-sling/strip.png",
+      "projectile": "stone",
+      "projectileSpawnFrame": 4,
+      "projectileSocket": {
+        "x": 392,
+        "y": 218
+      },
+      "hitFrame": 4
+    }
+  },
+  "projectiles": {
+    "stone": "/assets/heroi-ortodoxo/projectiles/stone.png",
+    "arrow": "/assets/heroi-ortodoxo/projectiles/arrow.png"
+  },
+  "normalization": {
+    "front": {
+      "source_bbox": [
+        116,
+        85,
+        787,
+        1560
+      ],
+      "scale": 0.488135593220339,
+      "placed": [
+        92,
+        38,
+        328,
+        720
+      ]
+    },
+    "sideIdle": {
+      "source_bbox": [
+        217,
+        53,
+        1088,
+        1039
+      ],
+      "scale": 0.4614604462474645,
+      "placed": [
+        55,
+        43,
+        402,
+        455
+      ]
+    },
+    "attackSharedScale": 0.882466281310212,
+    "attackFrames": [
+      {
+        "file": "/assets/heroi-ortodoxo/characters/davi/combat/attack-sling/frame-01.png",
+        "source_bbox": [
+          49,
+          134,
+          434,
+          653
+        ],
+        "placed": [
+          86,
+          40,
+          340,
+          458
+        ]
+      },
+      {
+        "file": "/assets/heroi-ortodoxo/characters/davi/combat/attack-sling/frame-02.png",
+        "source_bbox": [
+          434,
+          158,
+          865,
+          652
+        ],
+        "placed": [
+          66,
+          62,
+          380,
+          436
+        ]
+      },
+      {
+        "file": "/assets/heroi-ortodoxo/characters/davi/combat/attack-sling/frame-03.png",
+        "source_bbox": [
+          881,
+          149,
+          1302,
+          654
+        ],
+        "placed": [
+          70,
+          52,
+          372,
+          446
+        ]
+      },
+      {
+        "file": "/assets/heroi-ortodoxo/characters/davi/combat/attack-sling/frame-04.png",
+        "source_bbox": [
+          1302,
+          158,
+          1736,
+          655
+        ],
+        "placed": [
+          64,
+          59,
+          383,
+          439
+        ]
+      },
+      {
+        "file": "/assets/heroi-ortodoxo/characters/davi/combat/attack-sling/frame-05.png",
+        "source_bbox": [
+          1736,
+          197,
+          2142,
+          654
+        ],
+        "placed": [
+          77,
+          95,
+          358,
+          403
+        ]
+      }
+    ],
+    "stone": {
+      "source_bbox": [
+        141,
+        381,
+        1034,
+        805
+      ],
+      "scale": 0.1792452830188679,
+      "placed": [
+        16,
+        10,
+        160,
+        76
+      ]
+    },
+    "arrow": {
+      "source_bbox": [
+        149,
+        347,
+        1489,
+        521
+      ],
+      "scale": 0.26865671641791045,
+      "placed": [
+        12,
+        24,
+        360,
+        47
+      ]
+    }
+  }
+}

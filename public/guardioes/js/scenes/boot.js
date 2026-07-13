@@ -5,14 +5,16 @@
   // Assets reais (se existirem em /assets/guardioes/assets/) substituem a arte procedural
   // automaticamente - basta soltar um PNG com o mesmo nome, sem mexer em codigo.
   const ASSET_BASE = '/assets/guardioes/assets/';
-  const ASSET_VERSION = 'sola-torre-visuals-2026-07-10-1';
+  const ASSET_VERSION = 'sola-torre-tabs-2026-07-13-1';
   const HUB_BUILDINGS = ['build', 'collection', 'class', 'shop'];
+  const TAB_ASSET_IDS = ['home', 'build', 'collection', 'class', 'shop'];
   const ENEMY_ASSET_IDS = ['raider', 'runner', 'shield', 'flyer', 'healer', 'ram', 'boss'];
   const OVERRIDE_MANIFEST = [
     ['tex-menu-bg', 'menu-bg.jpg'],
     ['tex-menu-bg-desktop', 'menu-bg-desktop.jpg'],
     ['tex-guardian', 'guardian.png'],
     ...HUB_BUILDINGS.map(id => [`tex-building-${id}`, `building-${id}.png`]),
+    ...TAB_ASSET_IDS.map(id => [`tex-tab-${id}`, `tab-${id}.png`]),
     ...global.GuardioesData.LEVELS.map(l => [`tex-map-${l.id}`, `map-${l.id}.jpg`]),
     ...global.GuardioesData.LEVELS.map(l => [`tex-map-${l.id}-desktop`, `map-${l.id}-desktop.jpg`]),
     ...global.GuardioesData.DEFENSE_ORDER.map(id => [`tex-defense-${id}`, `defense-${id}.png`]),

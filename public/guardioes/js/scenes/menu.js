@@ -14,11 +14,11 @@
   ];
 
   const TABS = [
-    { id: 'home', label: 'Início', icon: '🏠' },
-    { id: 'build', label: 'Build', icon: 'tex-building-build', scene: 'BuildSetup' },
-    { id: 'collection', label: 'Coleção', icon: 'tex-building-collection', scene: 'Collection' },
-    { id: 'class', label: 'Classe', icon: 'tex-building-class', scene: 'ClassTree' },
-    { id: 'shop', label: 'Loja', icon: 'tex-building-shop', scene: 'Shop' }
+    { id: 'home', label: 'In\u00edcio', icon: 'tex-tab-home' },
+    { id: 'build', label: 'Build', icon: 'tex-tab-build', scene: 'BuildSetup' },
+    { id: 'collection', label: 'Cole\u00e7\u00e3o', icon: 'tex-tab-collection', scene: 'Collection' },
+    { id: 'class', label: 'Classe', icon: 'tex-tab-class', scene: 'ClassTree' },
+    { id: 'shop', label: 'Loja', icon: 'tex-tab-shop', scene: 'Shop' }
   ];
 
   class MenuScene extends Phaser.Scene {
@@ -232,30 +232,38 @@
 
     // ---------- barra de abas ----------
     buildBottomTabs(width, height) {
-      const barY = height - 44;
-      this.add.rectangle(width / 2, barY, width, 88, 0x120e0a, 0.92).setOrigin(0.5).setDepth(300);
+      const barH = this.isDesktopLayout() ? 108 : 92;
+      const barY = height - barH / 2;
+      this.add.rectangle(width / 2, barY, width, barH, 0x120e0a, 0.94).setOrigin(0.5).setDepth(300);
+      this.add.rectangle(width / 2, height - barH + 2, width, 3, 0x8a6a3a, 0.75).setOrigin(0.5).setDepth(301);
       const cols = TABS.length;
       const colW = width / cols;
       TABS.forEach((tab, i) => {
         const x = colW * i + colW / 2;
         const active = tab.id === 'home';
+        const unlocked = !tab.scene || D.isFeatureUnlocked(this.state, tab.id);
         const container = this.add.container(x, barY).setDepth(301);
-        if (tab.icon.startsWith('tex-')) {
-          const icon = this.add.image(0, -8, tab.icon).setScale(0.34);
-          if (!active) icon.setTint(0xaaaaaa);
-          container.add(icon);
-        } else {
-          container.add(this.add.text(0, -8, tab.icon, { fontSize: '22px' }).setOrigin(0.5));
-        }
+        const iconRadius = this.isDesktopLayout() ? 35 : 29;
+        const iconBg = this.add.circle(0, -14, iconRadius, active ? 0x3a2a1c : 0x1b1510, active ? 0.95 : 0.48)
+          .setStrokeStyle(active ? 3 : 1, active ? 0xe0c05a : 0x5a4528, active ? 1 : 0.55);
+        const icon = this.add.image(0, -14, tab.icon);
+        const targetSize = this.isDesktopLayout() ? 58 : 48;
+        const tex = this.textures.get(tab.icon).getSourceImage();
+        icon.setScale(targetSize / Math.max(tex.width, tex.height));
+        if (!active) icon.setAlpha(0.82);
+        if (!unlocked) icon.setTint(0x6f6a60).setAlpha(0.45);
+        container.add([iconBg, icon]);
         container.add(this.add.text(0, 20, tab.label, {
-          fontFamily: 'Georgia, serif', fontSize: '10px', color: active ? '#f2e2b8' : '#9a8a6a'
+          fontFamily: 'Georgia, serif',
+          fontSize: this.isDesktopLayout() ? '15px' : '10px',
+          color: active ? '#f2e2b8' : (unlocked ? '#b9a67a' : '#706654'),
+          fontStyle: active ? 'bold' : 'normal'
         }).setOrigin(0.5));
         if (tab.scene) {
-          container.setSize(colW, 80);
+          container.setSize(colW, barH);
           container.setInteractive({ useHandCursor: true });
           container.on('pointerdown', () => {
-            const feature = tab.id;
-            if (!D.isFeatureUnlocked(this.state, feature)) {
+            if (!unlocked) {
               global.GuardioesAudio.invalid();
               UI.floatingText(this, x, barY - 50, 'Bloqueado', '#e74c3c');
               return;

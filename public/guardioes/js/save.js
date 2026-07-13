@@ -65,6 +65,7 @@
     global.GuardioesData.CLASS_ORDER.forEach(id => {
       if (!state.profile.classes[id]) state.profile.classes[id] = { spent: 0, nodes: {} };
     });
+    if (!global.GuardioesData.CLASSES[state.profile.selectedClass]) state.profile.selectedClass = def.profile.selectedClass;
     if (!state.loadouts || !state.loadouts.length) state.loadouts = def.loadouts;
     if (typeof state.activeLoadout !== 'number') state.activeLoadout = 0;
     if (!state.progress) state.progress = { levels: {} };

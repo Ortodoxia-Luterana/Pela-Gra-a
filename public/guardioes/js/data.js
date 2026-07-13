@@ -30,28 +30,28 @@
   const DEFENSES = {
     archer: {
       id: 'archer', name: 'Arqueiro', rarity: 'comum', role: 'Dano rápido',
-      cost: 40, damage: 9, range: 190, rate: 550, projectileSpeed: 620,
+      cost: 40, damage: 12, range: 205, rate: 520, projectileSpeed: 680,
       onPath: false, color: 0x6b8f52, shape: 'archer',
       upgrades: ['damage', 'range', 'rate'],
       desc: 'Atira rápido em um único alvo. Base confiável de qualquer build.'
     },
     fire: {
       id: 'fire', name: 'Braseiro', rarity: 'rara', role: 'Dano em área contínua',
-      cost: 90, damage: 4, range: 130, rate: 900, aoeRadius: 70, dot: true,
+      cost: 90, damage: 5, range: 145, rate: 860, aoeRadius: 78, dot: true,
       onPath: false, color: 0xc65b2b, shape: 'fire',
       upgrades: ['damage', 'aoeRadius', 'rate'],
       desc: 'Queima uma área continuamente, ótimo contra grupos.'
     },
     trap: {
       id: 'trap', name: 'Armadilha', rarity: 'comum', role: 'Controle de velocidade',
-      cost: 35, damage: 6, range: 0, rate: 1200, slowFactor: 0.45, slowDuration: 1800,
+      cost: 35, damage: 8, range: 0, rate: 1100, slowFactor: 0.48, slowDuration: 1900,
       onPath: true, color: 0x5a4632, shape: 'trap',
       upgrades: ['slowDuration', 'damage', 'slowFactor'],
       desc: 'Só pode ser colocada sobre o caminho. Machuca e retarda quem passa.'
     },
     ballista: {
       id: 'ballista', name: 'Balista', rarity: 'epica', role: 'Dano pesado',
-      cost: 160, damage: 42, range: 260, rate: 1700, projectileSpeed: 820, pierce: 2,
+      cost: 160, damage: 50, range: 280, rate: 1600, projectileSpeed: 880, pierce: 2,
       onPath: false, color: 0x394456, shape: 'ballista',
       upgrades: ['damage', 'pierce', 'range'],
       desc: 'Tiro lento e pesado que atravessa vários inimigos na linha.'
@@ -65,7 +65,7 @@
     },
     relic: {
       id: 'relic', name: 'Obelisco Prismático', rarity: 'lendaria', role: 'Explosão em área',
-      cost: 320, damage: 70, range: 240, rate: 3200, aoeRadius: 150,
+      cost: 320, damage: 82, range: 260, rate: 3000, aoeRadius: 160,
       onPath: false, color: 0xe8c65a, shape: 'relic',
       upgrades: ['damage', 'aoeRadius', 'rate'],
       desc: 'Libera uma onda de energia em área a cada recarga. Rara de se conseguir, decisiva quando aparece.'
@@ -77,22 +77,22 @@
   // Bounties recalibrados: a economia antiga so dava para gerar 1 torre por
   // onda mesmo limpando tudo. Subiu ~35-45% em cada inimigo.
   const ENEMIES = {
-    raider: { id: 'raider', name: 'Saqueador', hp: 34, speed: 78, bounty: 9, color: 0x8a3a3a, shape: 'raider' },
-    runner: { id: 'runner', name: 'Batedor', hp: 20, speed: 135, bounty: 7, color: 0xb07a2a, shape: 'runner' },
-    shield: { id: 'shield', name: 'Escudeiro', hp: 70, speed: 60, bounty: 14, armor: 4, color: 0x6a6a78, shape: 'shield' },
+    raider: { id: 'raider', name: 'Saqueador', hp: 28, speed: 72, bounty: 10, color: 0x8a3a3a, shape: 'raider' },
+    runner: { id: 'runner', name: 'Batedor', hp: 18, speed: 128, bounty: 8, color: 0xb07a2a, shape: 'runner' },
+    shield: { id: 'shield', name: 'Escudeiro', hp: 58, speed: 56, bounty: 15, armor: 2, color: 0x6a6a78, shape: 'shield' },
     // Voadora: passa POR CIMA das armadilhas (imune a dano/lentidao delas) - forca
     // o jogador a ter dano de projetil na build, nao so controle de chao.
-    flyer: { id: 'flyer', name: 'Harpia', hp: 45, speed: 95, bounty: 13, flying: true, color: 0x6a4a8a, shape: 'flyer' },
+    flyer: { id: 'flyer', name: 'Harpia', hp: 40, speed: 90, bounty: 13, flying: true, color: 0x6a4a8a, shape: 'flyer' },
     // Curandeiro: cura inimigos proximos enquanto vivo - vira alvo prioritario
     // (o modo de mira "Mais Forte" e a Balista perfurante brilham contra ele).
-    healer: { id: 'healer', name: 'Curandeiro', hp: 55, speed: 55, bounty: 18, healRadius: 130, healAmount: 9, color: 0x3a7a4a, shape: 'healer' },
-    ram: { id: 'ram', name: 'Aríete', hp: 160, speed: 40, bounty: 25, armor: 2, color: 0x5a4632, shape: 'ram' },
-    boss: { id: 'boss', name: 'Chefe Saqueador', hp: 620, speed: 34, bounty: 110, armor: 6, color: 0x3a1f1f, shape: 'boss', isBoss: true }
+    healer: { id: 'healer', name: 'Curandeiro', hp: 52, speed: 52, bounty: 18, healRadius: 130, healAmount: 8, color: 0x3a7a4a, shape: 'healer' },
+    ram: { id: 'ram', name: 'Aríete', hp: 145, speed: 38, bounty: 27, armor: 2, color: 0x5a4632, shape: 'ram' },
+    boss: { id: 'boss', name: 'Chefe Saqueador', hp: 420, speed: 32, bounty: 110, armor: 4, color: 0x3a1f1f, shape: 'boss', isBoss: true }
   };
 
   // Escala geometrica de HP por onda: onda N usa hp * HP_GROWTH^(N-1).
   // Mantem pressao de upgrade sem trivializar o comeco (ref: skill tower-defense).
-  const HP_GROWTH = 1.13;
+  const HP_GROWTH = 1.09;
   // Bonus de suprimentos ao limpar cada onda (alem do bounty por abate). Cresce por
   // onda porque o custo de gerar torre tambem sobe ao longo da partida - sem isso o
   // jogador ficava sem suprimentos para gerar mais de uma torre por onda cedo demais.
@@ -113,11 +113,11 @@
         { x: 630, y: 790 }, { x: 620, y: 1000 }, { x: 340, y: 1040 }, { x: 340, y: 1360 }
       ],
       waves: [
-        { label: 'Onda 1', spawns: [{ enemy: 'raider', count: 6, interval: 700 }] },
-        { label: 'Onda 2', spawns: [{ enemy: 'raider', count: 8, interval: 550 }] },
-        { label: 'Onda 3', spawns: [{ enemy: 'raider', count: 6, interval: 600 }, { enemy: 'shield', count: 3, interval: 900, delay: 1500 }] },
-        { label: 'Onda 4', spawns: [{ enemy: 'shield', count: 5, interval: 750 }, { enemy: 'raider', count: 6, interval: 500, delay: 1200 }] },
-        { label: 'Onda 5 - Chefe', spawns: [{ enemy: 'raider', count: 8, interval: 500 }, { enemy: 'boss', count: 1, interval: 0, delay: 4000 }] }
+        { label: 'Onda 1', spawns: [{ enemy: 'raider', count: 4, interval: 850 }] },
+        { label: 'Onda 2', spawns: [{ enemy: 'raider', count: 6, interval: 760 }] },
+        { label: 'Onda 3', spawns: [{ enemy: 'raider', count: 5, interval: 720 }, { enemy: 'shield', count: 2, interval: 1100, delay: 1800 }] },
+        { label: 'Onda 4', spawns: [{ enemy: 'shield', count: 3, interval: 1050 }, { enemy: 'raider', count: 5, interval: 680, delay: 1600 }] },
+        { label: 'Onda 5 - Chefe', spawns: [{ enemy: 'raider', count: 5, interval: 700 }, { enemy: 'boss', count: 1, interval: 0, delay: 4600 }] }
       ]
     },
     {
@@ -190,80 +190,25 @@
     }
   ];
 
-  // Classes: cada ramo tem ate 4 nos lineares. Efeitos aplicados via applyClassEffects().
+  // Classes simples: uma escolha ativa, sem arvore interna.
   const CLASSES = {
     merchant: {
-      id: 'merchant', name: 'Comerciante', desc: 'Economia melhor: compras mais baratas e mais moedas por vitória.',
-      branches: {
-        precos: { id: 'precos', name: 'Preços Baixos', nodes: [
-          { id: 1, name: 'Barganha I', desc: '-4% custo de compra', effect: { buyCostMult: -0.04 } },
-          { id: 2, name: 'Barganha II', desc: '-4% custo de compra', effect: { buyCostMult: -0.04 } },
-          { id: 3, name: 'Barganha III', desc: '-5% custo de compra', effect: { buyCostMult: -0.05 } },
-          { id: 4, name: 'Monopólio', desc: '-8% custo de compra', effect: { buyCostMult: -0.08 } }
-        ] },
-        rendimento: { id: 'rendimento', name: 'Rendimento', nodes: [
-          { id: 1, name: 'Cofre I', desc: '+5% moedas por abate', effect: { bountyMult: 0.05 } },
-          { id: 2, name: 'Cofre II', desc: '+5% moedas por abate', effect: { bountyMult: 0.05 } },
-          { id: 3, name: 'Cofre III', desc: '+6% moedas por abate', effect: { bountyMult: 0.06 } },
-          { id: 4, name: 'Tesouro Real', desc: '+10% moedas por abate', effect: { bountyMult: 0.10 } }
-        ] },
-        recompensa: { id: 'recompensa', name: 'Recompensa de Vitória', nodes: [
-          { id: 1, name: 'Bônus I', desc: '+8% XP ao vencer', effect: { xpMult: 0.08 } },
-          { id: 2, name: 'Bônus II', desc: '+8% XP ao vencer', effect: { xpMult: 0.08 } },
-          { id: 3, name: 'Bônus III', desc: '+10% fragmentos ganhos', effect: { fragmentMult: 0.10 } },
-          { id: 4, name: 'Fortuna', desc: '+15% moedas ao vencer', effect: { winCoinMult: 0.15 } }
-        ] }
-      }
+      id: 'merchant',
+      name: 'Mercador',
+      short: 'Compra mais barato',
+      desc: 'Reduz o custo de gerar defesa e melhora a economia entre ondas.',
+      effect: { buyCostMult: -0.18, bountyMult: 0.10, winCoinMult: 0.10 }
     },
-    fortune: {
-      id: 'fortune', name: 'Sortudo', desc: 'Mais chance de raras, épicas e lendárias na compra.',
-      branches: {
-        sorte: { id: 'sorte', name: 'Sorte Bruta', nodes: [
-          { id: 1, name: 'Trevo I', desc: '+2% chance rara/épica/lendária', effect: { luckShift: 0.02 } },
-          { id: 2, name: 'Trevo II', desc: '+2% chance rara/épica/lendária', effect: { luckShift: 0.02 } },
-          { id: 3, name: 'Trevo III', desc: '+3% chance rara/épica/lendária', effect: { luckShift: 0.03 } },
-          { id: 4, name: 'Estrela da Sorte', desc: '+5% chance rara/épica/lendária', effect: { luckShift: 0.05 } }
-        ] },
-        raridade: { id: 'raridade', name: 'Caça a Raridades', nodes: [
-          { id: 1, name: 'Faro I', desc: '+3% chance épica/lendária', effect: { epicLuckShift: 0.03 } },
-          { id: 2, name: 'Faro II', desc: '+3% chance épica/lendária', effect: { epicLuckShift: 0.03 } },
-          { id: 3, name: 'Faro III', desc: '+4% chance épica/lendária', effect: { epicLuckShift: 0.04 } },
-          { id: 4, name: 'Bênção Rara', desc: '+6% chance épica/lendária', effect: { epicLuckShift: 0.06 } }
-        ] },
-        pacotes: { id: 'pacotes', name: 'Pacotes Generosos', nodes: [
-          { id: 1, name: 'Bônus de Loja I', desc: '+5% fragmentos em pacotes', effect: { packFragmentMult: 0.05 } },
-          { id: 2, name: 'Bônus de Loja II', desc: '+5% fragmentos em pacotes', effect: { packFragmentMult: 0.05 } },
-          { id: 3, name: 'Bônus de Loja III', desc: '+6% fragmentos em pacotes', effect: { packFragmentMult: 0.06 } },
-          { id: 4, name: 'Cofre Aberto', desc: '10% chance de pacote grátis', effect: { freePackChance: 0.10 } }
-        ] }
-      }
-    },
-    strategist: {
-      id: 'strategist', name: 'Estrategista', desc: 'Fusões melhores, upgrades mais fortes, posicionamento vantajoso.',
-      branches: {
-        fusao: { id: 'fusao', name: 'Domínio da Fusão', nodes: [
-          { id: 1, name: 'Sinergia I', desc: '+4% dano após fundir', effect: { fusionDamageMult: 0.04 } },
-          { id: 2, name: 'Sinergia II', desc: '+4% dano após fundir', effect: { fusionDamageMult: 0.04 } },
-          { id: 3, name: 'Sinergia III', desc: '+5% dano após fundir', effect: { fusionDamageMult: 0.05 } },
-          { id: 4, name: 'Fusão Suprema', desc: 'Permite nível 4 de fusão', effect: { maxFusionBonus: 1 } }
-        ] },
-        upgrades: { id: 'upgrades', name: 'Engenharia', nodes: [
-          { id: 1, name: 'Precisão I', desc: '+5% efeito dos upgrades de fragmento', effect: { upgradeEffectMult: 0.05 } },
-          { id: 2, name: 'Precisão II', desc: '+5% efeito dos upgrades de fragmento', effect: { upgradeEffectMult: 0.05 } },
-          { id: 3, name: 'Precisão III', desc: '+6% efeito dos upgrades de fragmento', effect: { upgradeEffectMult: 0.06 } },
-          { id: 4, name: 'Maestria', desc: '+10% efeito dos upgrades de fragmento', effect: { upgradeEffectMult: 0.10 } }
-        ] },
-        posicionamento: { id: 'posicionamento', name: 'Terreno', nodes: [
-          { id: 1, name: 'Alcance de Terreno I', desc: '+3% alcance de todas as torres', effect: { rangeMult: 0.03 } },
-          { id: 2, name: 'Alcance de Terreno II', desc: '+3% alcance de todas as torres', effect: { rangeMult: 0.03 } },
-          { id: 3, name: 'Alcance de Terreno III', desc: '+4% alcance de todas as torres', effect: { rangeMult: 0.04 } },
-          { id: 4, name: 'Visão Total', desc: '+6% alcance de todas as torres', effect: { rangeMult: 0.06 } }
-        ] }
-      }
+    diplomat: {
+      id: 'diplomat',
+      name: 'Diplomata',
+      short: 'Mais sorte no sorteio',
+      desc: 'Aumenta a chance de defesas raras, epicas e lendarias aparecerem na batalha.',
+      effect: { luckShift: 0.18, epicLuckShift: 0.08 }
     }
   };
 
-  const CLASS_ORDER = ['merchant', 'fortune', 'strategist'];
+  const CLASS_ORDER = ['merchant', 'diplomat'];
 
   function rarityWeights(luckShift, epicLuckShift) {
     const w = {};

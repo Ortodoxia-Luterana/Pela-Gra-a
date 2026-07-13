@@ -8,18 +8,18 @@
   const SAVE = global.GuardioesSave;
   const AUDIO = global.GuardioesAudio;
 
-  const BASE_START_HP = 20;
-  const BASE_START_MONEY = 140;
-  const BASE_BUY_COST = 40;
-  const BUY_COST_INCREMENT = 4;
+  const BASE_START_HP = 24;
+  const BASE_START_MONEY = 180;
+  const BASE_BUY_COST = 35;
+  const BUY_COST_INCREMENT = 3;
   const ARRIVAL_THRESHOLD = 12;
   const TEXT_POOL_SIZE = 28;
   const PROJECTILE_POOL_SIZE = 60;
   const SELL_REFUND = 0.7;
   const TARGETING_MODES = ['first', 'strong', 'close'];
   const TARGETING_LABELS = { first: 'Primeiro', strong: 'Mais Forte', close: 'Mais Perto' };
-  const TOWER_DISPLAY_SIZES = { archer: 92, fire: 94, trap: 104, banner: 104, ballista: 108, relic: 108 };
-  const ENEMY_DISPLAY_SIZES = { runner: 66, raider: 74, flyer: 72, shield: 82, healer: 80, ram: 92, boss: 116 };
+  const TOWER_DISPLAY_SIZES = { archer: 122, fire: 126, trap: 132, banner: 132, ballista: 142, relic: 146 };
+  const ENEMY_DISPLAY_SIZES = { runner: 86, raider: 96, flyer: 94, shield: 106, healer: 104, ram: 122, boss: 156 };
   const HEAL_TICK_MS = 1500;
   const HP_BAR_HEIGHT = 5;
   const TOP_HUD_SAFE_Y = 150;
@@ -141,18 +141,8 @@
     // ---------- classe / efeitos ----------
     computeClassEffects() {
       const state = this.registry.get('state') || this.state;
-      const classId = state.profile.selectedClass;
-      const cls = D.CLASSES[classId];
-      const nodesState = state.profile.classes[classId].nodes;
-      const eff = {};
-      Object.values(cls.branches).forEach(branch => {
-        branch.nodes.forEach(node => {
-          if (nodesState[`${branch.id}_${node.id}`]) {
-            Object.entries(node.effect).forEach(([k, v]) => { eff[k] = (eff[k] || 0) + v; });
-          }
-        });
-      });
-      return eff;
+      const classId = D.CLASSES[state.profile.selectedClass] ? state.profile.selectedClass : D.CLASS_ORDER[0];
+      return Object.assign({}, D.CLASSES[classId].effect);
     }
 
     // Upgrades de fragmento (Colecao) aplicados de verdade em batalha.
@@ -704,8 +694,10 @@
 
     cancelHeld() {
       if (!this.held || this.paused) return;
-      this.money += this.held.paidCost || 0;   // devolve o valor pago; o custo crescente nao volta
-      this.floatText(this.buyBtn.x, this.scale.height - 110, `+${this.held.paidCost} (cancelado)`, '#cbb98a');
+      if (!this.held.sourceTower) {
+        this.money += this.held.paidCost || 0;   // devolve o valor pago; o custo crescente nao volta
+        this.floatText(this.buyBtn.x, this.scale.height - 110, `+${this.held.paidCost} (cancelado)`, '#cbb98a');
+      }
       AUDIO.uiClick();
       this.clearHeld();
       this.updateHud();
@@ -786,7 +778,7 @@
     }
 
     towerTooClose(x, y, ignoreTower) {
-      const minGap = this.isDesktopLayout() ? 92 : D.MAP.towerMinGap;
+      const minGap = this.isDesktopLayout() ? 128 : 82;
       return this.towers.some(t => t !== ignoreTower && Math.hypot(t.x - x, t.y - y) < minGap);
     }
 
@@ -821,20 +813,21 @@
       const valid = this.isValidPlacement(targetX, targetY, this.held.defenseId, this.held.sourceTower);
       const previewSize = this.towerDisplaySize(this.held.defenseId, this.held.level);
       const fuseTarget = this.findFuseTarget(targetX, targetY);
-      this.previewMarker.setTexture((valid || fuseTarget) ? 'tex-valid-preview' : 'tex-invalid-preview').setPosition(targetX, targetY).setDisplaySize(80, 80).setVisible(true);
+      const canCommit = this.held.sourceTower ? Boolean(fuseTarget) : (valid || Boolean(fuseTarget));
+      this.previewMarker.setTexture(canCommit ? 'tex-valid-preview' : 'tex-invalid-preview').setPosition(targetX, targetY).setDisplaySize(96, 96).setVisible(true);
       if (this.held.sourceTower) {
         this.previewGhost.setVisible(false);
         this.held.sourceTower.sprite
           .setPosition(p.x, p.y)
-          .setAlpha((valid || fuseTarget) ? 0.9 : 0.62)
-          .setTint((valid || fuseTarget) ? 0xffffff : 0xff7777);
+          .setAlpha(fuseTarget ? 0.9 : 0.62)
+          .setTint(fuseTarget ? 0xffffff : 0xff7777);
       } else {
         this.previewGhost
           .setTexture(`tex-defense-${this.held.defenseId}`)
           .setPosition(targetX, targetY)
           .setDisplaySize(previewSize, previewSize)
-          .setAlpha((valid || fuseTarget) ? 0.86 : 0.58)
-          .setTint((valid || fuseTarget) ? 0xffffff : 0xff7777)
+          .setAlpha(canCommit ? 0.86 : 0.58)
+          .setTint(canCommit ? 0xffffff : 0xff7777)
           .setVisible(true);
       }
       const radius = def.auraRadius ? this.towerStat(this.held.defenseId, 'auraRadius') : (def.range ? this.towerStat(this.held.defenseId, 'range') * (1 + (this.effects.rangeMult || 0)) : 0);
@@ -855,17 +848,23 @@
     }
 
     towerAt(x, y) {
-      return this.towers.find(t => Math.hypot(t.x - x, t.y - y) < 46);
+      const radius = this.isDesktopLayout() ? 72 : 58;
+      return this.towers.find(t => Math.hypot(t.x - x, t.y - y) < radius);
     }
 
     findFuseTarget(x, y) {
       if (!this.held) return null;
+      const radius = this.isDesktopLayout() ? 82 : 66;
       return this.towers.find(t =>
         t !== this.held.sourceTower &&
-        Math.hypot(t.x - x, t.y - y) < 48 &&
+        Math.hypot(t.x - x, t.y - y) < radius &&
         t.defenseId === this.held.defenseId &&
         t.level === this.held.level
       );
+    }
+
+    hasFuseTargetForTower(tower) {
+      return this.towers.some(t => t !== tower && t.defenseId === tower.defenseId && t.level === tower.level);
     }
 
     onPointerDown(pointer, currentlyOver) {
@@ -908,6 +907,11 @@
 
     beginTowerMove(tower) {
       if (!tower || !this.towers.includes(tower) || this.held || this.paused) return;
+      if (!this.hasFuseTargetForTower(tower)) {
+        this.floatText(tower.x, tower.y - 60, 'Só move para fundir', '#e0a52a');
+        AUDIO.invalid();
+        return;
+      }
       this.closeTowerPanel();
       this.dragCandidate.started = true;
       tower.dragging = true;
@@ -918,7 +922,7 @@
       this.held = { defenseId: tower.defenseId, level: tower.level, paidCost: 0, sourceTower: tower };
       const heldIconSize = this.isDesktopLayout() ? 86 : 66;
       this.heldIcon.setTexture(`tex-defense-${tower.defenseId}`).setDisplaySize(heldIconSize, heldIconSize).setVisible(true);
-      this.heldLabel.setText(`${D.DEFENSES[tower.defenseId].name}\nNv ${tower.level}`).setColor('#f2e2b8').setVisible(true);
+      this.heldLabel.setText(`${D.DEFENSES[tower.defenseId].name}\nFundir Nv ${tower.level}`).setColor('#f2e2b8').setVisible(true);
       this.cancelBtn.setVisible(true);
     }
 
@@ -936,6 +940,14 @@
       if (!this.held) return;
       const fuseTarget = this.findFuseTarget(x, y);
       if (fuseTarget) { this.fuseTower(fuseTarget, this.held.sourceTower); return; }
+
+      if (this.held.sourceTower) {
+        this.floatText(x, y - 30, 'Solte em uma igual para fundir', '#e0a52a');
+        AUDIO.invalid();
+        this.restoreMovedTower();
+        this.clearHeld(false);
+        return;
+      }
 
       const snapped = this.snapPlacement(x, y, this.held.defenseId);
       if (!this.isValidPlacement(snapped.x, snapped.y, this.held.defenseId, this.held.sourceTower)) {

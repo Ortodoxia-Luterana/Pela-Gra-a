@@ -1,0 +1,67 @@
+{
+  "id": "zebulom",
+  "name": "Zebulom",
+  "rarity": "common",
+  "class": "ranged",
+  "weapon": "javelin",
+  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "anchors": {
+    "portrait": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        768
+      ]
+    },
+    "combat": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        512
+      ],
+      "feetY": 498
+    }
+  },
+  "views": {
+    "front": "/assets/heroi-ortodoxo/characters/zebulom/portraits/front.png",
+    "sideIdle": "/assets/heroi-ortodoxo/characters/zebulom/combat/side-idle.png"
+  },
+  "normalization": {
+    "front": {
+      "canvas": [
+        512,
+        768
+      ],
+      "source_bbox": [
+        59,
+        84,
+        307,
+        512
+      ],
+      "placed": [
+        47,
+        38,
+        417,
+        720
+      ]
+    },
+    "sideIdle": {
+      "canvas": [
+        512,
+        512
+      ],
+      "source_bbox": [
+        0,
+        0,
+        307,
+        442
+      ],
+      "placed": [
+        98,
+        43,
+        316,
+        455
+      ]
+    }
+  }
+}

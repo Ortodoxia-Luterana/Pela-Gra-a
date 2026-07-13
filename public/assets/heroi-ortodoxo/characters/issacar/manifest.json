@@ -1,0 +1,67 @@
+{
+  "id": "issacar",
+  "name": "Issacar",
+  "rarity": "common",
+  "class": "melee",
+  "weapon": "club",
+  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "anchors": {
+    "portrait": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        768
+      ]
+    },
+    "combat": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        512
+      ],
+      "feetY": 498
+    }
+  },
+  "views": {
+    "front": "/assets/heroi-ortodoxo/characters/issacar/portraits/front.png",
+    "sideIdle": "/assets/heroi-ortodoxo/characters/issacar/combat/side-idle.png"
+  },
+  "normalization": {
+    "front": {
+      "canvas": [
+        512,
+        768
+      ],
+      "source_bbox": [
+        22,
+        105,
+        290,
+        512
+      ],
+      "placed": [
+        21,
+        44,
+        470,
+        714
+      ]
+    },
+    "sideIdle": {
+      "canvas": [
+        512,
+        512
+      ],
+      "source_bbox": [
+        0,
+        0,
+        291,
+        446
+      ],
+      "placed": [
+        107,
+        43,
+        297,
+        455
+      ]
+    }
+  }
+}

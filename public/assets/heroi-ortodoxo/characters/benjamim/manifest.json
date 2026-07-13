@@ -1,0 +1,67 @@
+{
+  "id": "benjamim",
+  "name": "Benjamim",
+  "rarity": "uncommon",
+  "class": "ranged",
+  "weapon": "sling",
+  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "anchors": {
+    "portrait": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        768
+      ]
+    },
+    "combat": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        512
+      ],
+      "feetY": 498
+    }
+  },
+  "views": {
+    "front": "/assets/heroi-ortodoxo/characters/benjamim/portraits/front.png",
+    "sideIdle": "/assets/heroi-ortodoxo/characters/benjamim/combat/side-idle.png"
+  },
+  "normalization": {
+    "front": {
+      "canvas": [
+        512,
+        768
+      ],
+      "source_bbox": [
+        46,
+        50,
+        260,
+        490
+      ],
+      "placed": [
+        81,
+        38,
+        350,
+        720
+      ]
+    },
+    "sideIdle": {
+      "canvas": [
+        512,
+        512
+      ],
+      "source_bbox": [
+        0,
+        43,
+        307,
+        405
+      ],
+      "placed": [
+        63,
+        43,
+        386,
+        455
+      ]
+    }
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "id": "da",
+  "name": "D?",
+  "rarity": "common",
+  "class": "ranged",
+  "weapon": "throwing-knives",
+  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "anchors": {
+    "portrait": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        768
+      ]
+    },
+    "combat": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        512
+      ],
+      "feetY": 498
+    }
+  },
+  "views": {
+    "front": "/assets/heroi-ortodoxo/characters/da/portraits/front.png",
+    "sideIdle": "/assets/heroi-ortodoxo/characters/da/combat/side-idle.png"
+  },
+  "normalization": {
+    "front": {
+      "canvas": [
+        512,
+        768
+      ],
+      "source_bbox": [
+        27,
+        110,
+        261,
+        512
+      ],
+      "placed": [
+        46,
+        38,
+        419,
+        720
+      ]
+    },
+    "sideIdle": {
+      "canvas": [
+        512,
+        512
+      ],
+      "source_bbox": [
+        0,
+        0,
+        307,
+        440
+      ],
+      "placed": [
+        97,
+        43,
+        317,
+        455
+      ]
+    }
+  }
+}

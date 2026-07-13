@@ -1,0 +1,67 @@
+{
+  "id": "isaque",
+  "name": "Isaque",
+  "rarity": "epic",
+  "class": "ranged",
+  "weapon": "sling",
+  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "anchors": {
+    "portrait": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        768
+      ]
+    },
+    "combat": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        512
+      ],
+      "feetY": 498
+    }
+  },
+  "views": {
+    "front": "/assets/heroi-ortodoxo/characters/isaque/portraits/front.png",
+    "sideIdle": "/assets/heroi-ortodoxo/characters/isaque/combat/side-idle.png"
+  },
+  "normalization": {
+    "front": {
+      "canvas": [
+        512,
+        768
+      ],
+      "source_bbox": [
+        59,
+        59,
+        291,
+        512
+      ],
+      "placed": [
+        71,
+        38,
+        369,
+        720
+      ]
+    },
+    "sideIdle": {
+      "canvas": [
+        512,
+        512
+      ],
+      "source_bbox": [
+        8,
+        0,
+        307,
+        438
+      ],
+      "placed": [
+        100,
+        43,
+        311,
+        455
+      ]
+    }
+  }
+}

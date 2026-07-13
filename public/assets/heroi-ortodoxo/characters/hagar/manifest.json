@@ -1,0 +1,67 @@
+{
+  "id": "hagar",
+  "name": "Hagar",
+  "rarity": "common",
+  "class": "support",
+  "weapon": "water-skin",
+  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "anchors": {
+    "portrait": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        768
+      ]
+    },
+    "combat": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        512
+      ],
+      "feetY": 498
+    }
+  },
+  "views": {
+    "front": "/assets/heroi-ortodoxo/characters/hagar/portraits/front.png",
+    "sideIdle": "/assets/heroi-ortodoxo/characters/hagar/combat/side-idle.png"
+  },
+  "normalization": {
+    "front": {
+      "canvas": [
+        512,
+        768
+      ],
+      "source_bbox": [
+        0,
+        69,
+        307,
+        512
+      ],
+      "placed": [
+        21,
+        80,
+        470,
+        678
+      ]
+    },
+    "sideIdle": {
+      "canvas": [
+        512,
+        512
+      ],
+      "source_bbox": [
+        0,
+        47,
+        307,
+        420
+      ],
+      "placed": [
+        69,
+        43,
+        374,
+        455
+      ]
+    }
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "id": "jafe",
+  "name": "Jaf?",
+  "rarity": "uncommon",
+  "class": "ranged",
+  "weapon": "bow",
+  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "anchors": {
+    "portrait": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        768
+      ]
+    },
+    "combat": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        512
+      ],
+      "feetY": 498
+    }
+  },
+  "views": {
+    "front": "/assets/heroi-ortodoxo/characters/jafe/portraits/front.png",
+    "sideIdle": "/assets/heroi-ortodoxo/characters/jafe/combat/side-idle.png"
+  },
+  "normalization": {
+    "front": {
+      "canvas": [
+        512,
+        768
+      ],
+      "source_bbox": [
+        32,
+        64,
+        295,
+        512
+      ],
+      "placed": [
+        44,
+        38,
+        423,
+        720
+      ]
+    },
+    "sideIdle": {
+      "canvas": [
+        512,
+        512
+      ],
+      "source_bbox": [
+        7,
+        35,
+        307,
+        428
+      ],
+      "placed": [
+        82,
+        43,
+        347,
+        455
+      ]
+    }
+  }
+}

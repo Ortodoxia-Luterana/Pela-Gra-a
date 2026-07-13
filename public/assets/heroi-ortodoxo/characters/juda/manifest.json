@@ -1,0 +1,67 @@
+{
+  "id": "juda",
+  "name": "Jud?",
+  "rarity": "uncommon",
+  "class": "melee",
+  "weapon": "sword",
+  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "anchors": {
+    "portrait": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        768
+      ]
+    },
+    "combat": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        512
+      ],
+      "feetY": 498
+    }
+  },
+  "views": {
+    "front": "/assets/heroi-ortodoxo/characters/juda/portraits/front.png",
+    "sideIdle": "/assets/heroi-ortodoxo/characters/juda/combat/side-idle.png"
+  },
+  "normalization": {
+    "front": {
+      "canvas": [
+        512,
+        768
+      ],
+      "source_bbox": [
+        26,
+        14,
+        276,
+        491
+      ],
+      "placed": [
+        67,
+        38,
+        377,
+        720
+      ]
+    },
+    "sideIdle": {
+      "canvas": [
+        512,
+        512
+      ],
+      "source_bbox": [
+        4,
+        13,
+        307,
+        414
+      ],
+      "placed": [
+        84,
+        43,
+        344,
+        455
+      ]
+    }
+  }
+}

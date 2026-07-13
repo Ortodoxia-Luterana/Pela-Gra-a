@@ -1,0 +1,67 @@
+{
+  "id": "jaco",
+  "name": "Jac?",
+  "rarity": "epic",
+  "class": "melee",
+  "weapon": "fists",
+  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "anchors": {
+    "portrait": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        768
+      ]
+    },
+    "combat": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        512
+      ],
+      "feetY": 498
+    }
+  },
+  "views": {
+    "front": "/assets/heroi-ortodoxo/characters/jaco/portraits/front.png",
+    "sideIdle": "/assets/heroi-ortodoxo/characters/jaco/combat/side-idle.png"
+  },
+  "normalization": {
+    "front": {
+      "canvas": [
+        512,
+        768
+      ],
+      "source_bbox": [
+        14,
+        30,
+        354,
+        443
+      ],
+      "placed": [
+        21,
+        187,
+        470,
+        571
+      ]
+    },
+    "sideIdle": {
+      "canvas": [
+        512,
+        512
+      ],
+      "source_bbox": [
+        0,
+        38,
+        294,
+        388
+      ],
+      "placed": [
+        65,
+        43,
+        382,
+        455
+      ]
+    }
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "id": "servo-de-abraao",
+  "name": "Servo de Abra?o",
+  "rarity": "common",
+  "class": "support",
+  "weapon": "travel-staff",
+  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "anchors": {
+    "portrait": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        768
+      ]
+    },
+    "combat": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        512
+      ],
+      "feetY": 498
+    }
+  },
+  "views": {
+    "front": "/assets/heroi-ortodoxo/characters/servo-de-abraao/portraits/front.png",
+    "sideIdle": "/assets/heroi-ortodoxo/characters/servo-de-abraao/combat/side-idle.png"
+  },
+  "normalization": {
+    "front": {
+      "canvas": [
+        512,
+        768
+      ],
+      "source_bbox": [
+        39,
+        38,
+        307,
+        512
+      ],
+      "placed": [
+        52,
+        38,
+        407,
+        720
+      ]
+    },
+    "sideIdle": {
+      "canvas": [
+        512,
+        512
+      ],
+      "source_bbox": [
+        0,
+        40,
+        307,
+        418
+      ],
+      "placed": [
+        71,
+        43,
+        370,
+        455
+      ]
+    }
+  }
+}

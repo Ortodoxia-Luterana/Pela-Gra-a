@@ -1,0 +1,67 @@
+{
+  "id": "jose-do-egito",
+  "name": "Jos? do Egito",
+  "rarity": "legendary",
+  "class": "ranged",
+  "weapon": "staff-scroll",
+  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "anchors": {
+    "portrait": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        768
+      ]
+    },
+    "combat": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        512
+      ],
+      "feetY": 498
+    }
+  },
+  "views": {
+    "front": "/assets/heroi-ortodoxo/characters/jose-do-egito/portraits/front.png",
+    "sideIdle": "/assets/heroi-ortodoxo/characters/jose-do-egito/combat/side-idle.png"
+  },
+  "normalization": {
+    "front": {
+      "canvas": [
+        512,
+        768
+      ],
+      "source_bbox": [
+        13,
+        56,
+        307,
+        512
+      ],
+      "placed": [
+        24,
+        38,
+        464,
+        720
+      ]
+    },
+    "sideIdle": {
+      "canvas": [
+        512,
+        512
+      ],
+      "source_bbox": [
+        0,
+        0,
+        307,
+        439
+      ],
+      "placed": [
+        97,
+        43,
+        318,
+        455
+      ]
+    }
+  }
+}

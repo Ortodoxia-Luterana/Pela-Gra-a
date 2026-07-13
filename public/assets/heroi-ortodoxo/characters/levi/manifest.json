@@ -1,0 +1,67 @@
+{
+  "id": "levi",
+  "name": "Levi",
+  "rarity": "common",
+  "class": "melee",
+  "weapon": "staff-spear",
+  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "anchors": {
+    "portrait": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        768
+      ]
+    },
+    "combat": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        512
+      ],
+      "feetY": 498
+    }
+  },
+  "views": {
+    "front": "/assets/heroi-ortodoxo/characters/levi/portraits/front.png",
+    "sideIdle": "/assets/heroi-ortodoxo/characters/levi/combat/side-idle.png"
+  },
+  "normalization": {
+    "front": {
+      "canvas": [
+        512,
+        768
+      ],
+      "source_bbox": [
+        24,
+        34,
+        252,
+        512
+      ],
+      "placed": [
+        84,
+        38,
+        343,
+        720
+      ]
+    },
+    "sideIdle": {
+      "canvas": [
+        512,
+        512
+      ],
+      "source_bbox": [
+        0,
+        0,
+        307,
+        445
+      ],
+      "placed": [
+        99,
+        43,
+        314,
+        455
+      ]
+    }
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "id": "adao",
+  "name": "Ad?o",
+  "rarity": "epic",
+  "class": "melee",
+  "weapon": "club",
+  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "anchors": {
+    "portrait": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        768
+      ]
+    },
+    "combat": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        512
+      ],
+      "feetY": 498
+    }
+  },
+  "views": {
+    "front": "/assets/heroi-ortodoxo/characters/adao/portraits/front.png",
+    "sideIdle": "/assets/heroi-ortodoxo/characters/adao/combat/side-idle.png"
+  },
+  "normalization": {
+    "front": {
+      "canvas": [
+        512,
+        768
+      ],
+      "source_bbox": [
+        2,
+        21,
+        285,
+        443
+      ],
+      "placed": [
+        21,
+        57,
+        470,
+        701
+      ]
+    },
+    "sideIdle": {
+      "canvas": [
+        512,
+        512
+      ],
+      "source_bbox": [
+        38,
+        0,
+        301,
+        385
+      ],
+      "placed": [
+        100,
+        43,
+        311,
+        455
+      ]
+    }
+  }
+}

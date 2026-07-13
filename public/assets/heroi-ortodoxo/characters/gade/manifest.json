@@ -1,0 +1,67 @@
+{
+  "id": "gade",
+  "name": "Gade",
+  "rarity": "common",
+  "class": "melee",
+  "weapon": "mace",
+  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "anchors": {
+    "portrait": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        768
+      ]
+    },
+    "combat": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        512
+      ],
+      "feetY": 498
+    }
+  },
+  "views": {
+    "front": "/assets/heroi-ortodoxo/characters/gade/portraits/front.png",
+    "sideIdle": "/assets/heroi-ortodoxo/characters/gade/combat/side-idle.png"
+  },
+  "normalization": {
+    "front": {
+      "canvas": [
+        512,
+        768
+      ],
+      "source_bbox": [
+        5,
+        73,
+        292,
+        512
+      ],
+      "placed": [
+        21,
+        39,
+        470,
+        719
+      ]
+    },
+    "sideIdle": {
+      "canvas": [
+        512,
+        512
+      ],
+      "source_bbox": [
+        0,
+        0,
+        307,
+        447
+      ],
+      "placed": [
+        100,
+        43,
+        312,
+        455
+      ]
+    }
+  }
+}

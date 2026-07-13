@@ -1,0 +1,67 @@
+{
+  "id": "abraao",
+  "name": "Abra?o",
+  "rarity": "legendary",
+  "class": "melee",
+  "weapon": "sword",
+  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "anchors": {
+    "portrait": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        768
+      ]
+    },
+    "combat": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        512
+      ],
+      "feetY": 498
+    }
+  },
+  "views": {
+    "front": "/assets/heroi-ortodoxo/characters/abraao/portraits/front.png",
+    "sideIdle": "/assets/heroi-ortodoxo/characters/abraao/combat/side-idle.png"
+  },
+  "normalization": {
+    "front": {
+      "canvas": [
+        512,
+        768
+      ],
+      "source_bbox": [
+        9,
+        58,
+        274,
+        512
+      ],
+      "placed": [
+        46,
+        38,
+        420,
+        720
+      ]
+    },
+    "sideIdle": {
+      "canvas": [
+        512,
+        512
+      ],
+      "source_bbox": [
+        0,
+        0,
+        307,
+        439
+      ],
+      "placed": [
+        97,
+        43,
+        318,
+        455
+      ]
+    }
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "id": "rebeca",
+  "name": "Rebeca",
+  "rarity": "rare",
+  "class": "support",
+  "weapon": "water-jar",
+  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "anchors": {
+    "portrait": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        768
+      ]
+    },
+    "combat": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        512
+      ],
+      "feetY": 498
+    }
+  },
+  "views": {
+    "front": "/assets/heroi-ortodoxo/characters/rebeca/portraits/front.png",
+    "sideIdle": "/assets/heroi-ortodoxo/characters/rebeca/combat/side-idle.png"
+  },
+  "normalization": {
+    "front": {
+      "canvas": [
+        512,
+        768
+      ],
+      "source_bbox": [
+        32,
+        66,
+        277,
+        512
+      ],
+      "placed": [
+        58,
+        38,
+        396,
+        720
+      ]
+    },
+    "sideIdle": {
+      "canvas": [
+        512,
+        512
+      ],
+      "source_bbox": [
+        25,
+        0,
+        307,
+        466
+      ],
+      "placed": [
+        118,
+        43,
+        275,
+        455
+      ]
+    }
+  }
+}

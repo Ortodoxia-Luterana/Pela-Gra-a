@@ -1,0 +1,67 @@
+{
+  "id": "rubem",
+  "name": "Rubem",
+  "rarity": "common",
+  "class": "melee",
+  "weapon": "spear-shield",
+  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "anchors": {
+    "portrait": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        768
+      ]
+    },
+    "combat": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        512
+      ],
+      "feetY": 498
+    }
+  },
+  "views": {
+    "front": "/assets/heroi-ortodoxo/characters/rubem/portraits/front.png",
+    "sideIdle": "/assets/heroi-ortodoxo/characters/rubem/combat/side-idle.png"
+  },
+  "normalization": {
+    "front": {
+      "canvas": [
+        512,
+        768
+      ],
+      "source_bbox": [
+        8,
+        108,
+        296,
+        512
+      ],
+      "placed": [
+        21,
+        99,
+        470,
+        659
+      ]
+    },
+    "sideIdle": {
+      "canvas": [
+        512,
+        512
+      ],
+      "source_bbox": [
+        0,
+        0,
+        307,
+        442
+      ],
+      "placed": [
+        98,
+        43,
+        316,
+        455
+      ]
+    }
+  }
+}

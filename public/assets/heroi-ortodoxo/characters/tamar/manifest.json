@@ -1,0 +1,67 @@
+{
+  "id": "tamar",
+  "name": "Tamar",
+  "rarity": "rare",
+  "class": "ranged",
+  "weapon": "hidden-dagger",
+  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "anchors": {
+    "portrait": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        768
+      ]
+    },
+    "combat": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        512
+      ],
+      "feetY": 498
+    }
+  },
+  "views": {
+    "front": "/assets/heroi-ortodoxo/characters/tamar/portraits/front.png",
+    "sideIdle": "/assets/heroi-ortodoxo/characters/tamar/combat/side-idle.png"
+  },
+  "normalization": {
+    "front": {
+      "canvas": [
+        512,
+        768
+      ],
+      "source_bbox": [
+        18,
+        113,
+        285,
+        512
+      ],
+      "placed": [
+        21,
+        56,
+        470,
+        702
+      ]
+    },
+    "sideIdle": {
+      "canvas": [
+        512,
+        512
+      ],
+      "source_bbox": [
+        0,
+        0,
+        290,
+        464
+      ],
+      "placed": [
+        114,
+        43,
+        284,
+        455
+      ]
+    }
+  }
+}

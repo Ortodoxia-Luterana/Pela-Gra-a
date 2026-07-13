@@ -1,0 +1,67 @@
+{
+  "id": "cam",
+  "name": "Cam",
+  "rarity": "uncommon",
+  "class": "ranged",
+  "weapon": "throwing-spear",
+  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "anchors": {
+    "portrait": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        768
+      ]
+    },
+    "combat": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        512
+      ],
+      "feetY": 498
+    }
+  },
+  "views": {
+    "front": "/assets/heroi-ortodoxo/characters/cam/portraits/front.png",
+    "sideIdle": "/assets/heroi-ortodoxo/characters/cam/combat/side-idle.png"
+  },
+  "normalization": {
+    "front": {
+      "canvas": [
+        512,
+        768
+      ],
+      "source_bbox": [
+        13,
+        55,
+        288,
+        512
+      ],
+      "placed": [
+        39,
+        38,
+        433,
+        720
+      ]
+    },
+    "sideIdle": {
+      "canvas": [
+        512,
+        512
+      ],
+      "source_bbox": [
+        0,
+        0,
+        307,
+        428
+      ],
+      "placed": [
+        93,
+        43,
+        326,
+        455
+      ]
+    }
+  }
+}

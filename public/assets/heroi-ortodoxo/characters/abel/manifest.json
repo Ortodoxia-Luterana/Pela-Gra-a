@@ -1,0 +1,67 @@
+{
+  "id": "abel",
+  "name": "Abel",
+  "rarity": "uncommon",
+  "class": "support",
+  "weapon": "shepherd-staff",
+  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "anchors": {
+    "portrait": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        768
+      ]
+    },
+    "combat": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        512
+      ],
+      "feetY": 498
+    }
+  },
+  "views": {
+    "front": "/assets/heroi-ortodoxo/characters/abel/portraits/front.png",
+    "sideIdle": "/assets/heroi-ortodoxo/characters/abel/combat/side-idle.png"
+  },
+  "normalization": {
+    "front": {
+      "canvas": [
+        512,
+        768
+      ],
+      "source_bbox": [
+        0,
+        126,
+        227,
+        512
+      ],
+      "placed": [
+        44,
+        38,
+        423,
+        720
+      ]
+    },
+    "sideIdle": {
+      "canvas": [
+        512,
+        512
+      ],
+      "source_bbox": [
+        0,
+        0,
+        284,
+        438
+      ],
+      "placed": [
+        108,
+        43,
+        295,
+        455
+      ]
+    }
+  }
+}

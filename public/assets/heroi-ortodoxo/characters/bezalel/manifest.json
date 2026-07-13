@@ -1,0 +1,67 @@
+{
+  "id": "bezalel",
+  "name": "Bezalel",
+  "rarity": "rare",
+  "class": "ranged",
+  "weapon": "artifact-bow",
+  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "anchors": {
+    "portrait": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        768
+      ]
+    },
+    "combat": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        512
+      ],
+      "feetY": 498
+    }
+  },
+  "views": {
+    "front": "/assets/heroi-ortodoxo/characters/bezalel/portraits/front.png",
+    "sideIdle": "/assets/heroi-ortodoxo/characters/bezalel/combat/side-idle.png"
+  },
+  "normalization": {
+    "front": {
+      "canvas": [
+        512,
+        768
+      ],
+      "source_bbox": [
+        24,
+        22,
+        300,
+        443
+      ],
+      "placed": [
+        21,
+        41,
+        470,
+        717
+      ]
+    },
+    "sideIdle": {
+      "canvas": [
+        512,
+        512
+      ],
+      "source_bbox": [
+        15,
+        0,
+        344,
+        378
+      ],
+      "placed": [
+        58,
+        43,
+        396,
+        455
+      ]
+    }
+  }
+}

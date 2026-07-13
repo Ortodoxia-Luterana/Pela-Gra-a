@@ -1,0 +1,67 @@
+{
+  "id": "sete",
+  "name": "Sete",
+  "rarity": "uncommon",
+  "class": "support",
+  "weapon": "scroll",
+  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "anchors": {
+    "portrait": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        768
+      ]
+    },
+    "combat": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        512
+      ],
+      "feetY": 498
+    }
+  },
+  "views": {
+    "front": "/assets/heroi-ortodoxo/characters/sete/portraits/front.png",
+    "sideIdle": "/assets/heroi-ortodoxo/characters/sete/combat/side-idle.png"
+  },
+  "normalization": {
+    "front": {
+      "canvas": [
+        512,
+        768
+      ],
+      "source_bbox": [
+        32,
+        64,
+        268,
+        512
+      ],
+      "placed": [
+        66,
+        38,
+        379,
+        720
+      ]
+    },
+    "sideIdle": {
+      "canvas": [
+        512,
+        512
+      ],
+      "source_bbox": [
+        0,
+        0,
+        307,
+        412
+      ],
+      "placed": [
+        86,
+        43,
+        339,
+        455
+      ]
+    }
+  }
+}

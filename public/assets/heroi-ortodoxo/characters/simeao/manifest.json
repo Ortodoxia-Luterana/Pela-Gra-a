@@ -1,0 +1,67 @@
+{
+  "id": "simeao",
+  "name": "Sime?o",
+  "rarity": "common",
+  "class": "melee",
+  "weapon": "curved-sword",
+  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "anchors": {
+    "portrait": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        768
+      ]
+    },
+    "combat": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        512
+      ],
+      "feetY": 498
+    }
+  },
+  "views": {
+    "front": "/assets/heroi-ortodoxo/characters/simeao/portraits/front.png",
+    "sideIdle": "/assets/heroi-ortodoxo/characters/simeao/combat/side-idle.png"
+  },
+  "normalization": {
+    "front": {
+      "canvas": [
+        512,
+        768
+      ],
+      "source_bbox": [
+        13,
+        81,
+        283,
+        512
+      ],
+      "placed": [
+        30,
+        38,
+        451,
+        720
+      ]
+    },
+    "sideIdle": {
+      "canvas": [
+        512,
+        512
+      ],
+      "source_bbox": [
+        0,
+        0,
+        307,
+        446
+      ],
+      "placed": [
+        99,
+        43,
+        313,
+        455
+      ]
+    }
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "id": "sem",
+  "name": "Sem",
+  "rarity": "uncommon",
+  "class": "support",
+  "weapon": "blessing",
+  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "anchors": {
+    "portrait": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        768
+      ]
+    },
+    "combat": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        512
+      ],
+      "feetY": 498
+    }
+  },
+  "views": {
+    "front": "/assets/heroi-ortodoxo/characters/sem/portraits/front.png",
+    "sideIdle": "/assets/heroi-ortodoxo/characters/sem/combat/side-idle.png"
+  },
+  "normalization": {
+    "front": {
+      "canvas": [
+        512,
+        768
+      ],
+      "source_bbox": [
+        41,
+        61,
+        260,
+        512
+      ],
+      "placed": [
+        81,
+        38,
+        350,
+        720
+      ]
+    },
+    "sideIdle": {
+      "canvas": [
+        512,
+        512
+      ],
+      "source_bbox": [
+        0,
+        34,
+        307,
+        428
+      ],
+      "placed": [
+        78,
+        43,
+        355,
+        455
+      ]
+    }
+  }
+}

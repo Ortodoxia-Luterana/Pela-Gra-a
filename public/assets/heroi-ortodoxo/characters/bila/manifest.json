@@ -1,0 +1,67 @@
+{
+  "id": "bila",
+  "name": "Bila",
+  "rarity": "common",
+  "class": "support",
+  "weapon": "healer-pouch",
+  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "anchors": {
+    "portrait": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        768
+      ]
+    },
+    "combat": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        512
+      ],
+      "feetY": 498
+    }
+  },
+  "views": {
+    "front": "/assets/heroi-ortodoxo/characters/bila/portraits/front.png",
+    "sideIdle": "/assets/heroi-ortodoxo/characters/bila/combat/side-idle.png"
+  },
+  "normalization": {
+    "front": {
+      "canvas": [
+        512,
+        768
+      ],
+      "source_bbox": [
+        48,
+        87,
+        245,
+        512
+      ],
+      "placed": [
+        89,
+        38,
+        334,
+        720
+      ]
+    },
+    "sideIdle": {
+      "canvas": [
+        512,
+        512
+      ],
+      "source_bbox": [
+        37,
+        0,
+        307,
+        441
+      ],
+      "placed": [
+        116,
+        43,
+        279,
+        455
+      ]
+    }
+  }
+}

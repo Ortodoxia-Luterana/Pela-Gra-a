@@ -1,0 +1,67 @@
+{
+  "id": "josue",
+  "name": "Josu?",
+  "rarity": "rare",
+  "class": "melee",
+  "weapon": "sword-shield",
+  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "anchors": {
+    "portrait": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        768
+      ]
+    },
+    "combat": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        512
+      ],
+      "feetY": 498
+    }
+  },
+  "views": {
+    "front": "/assets/heroi-ortodoxo/characters/josue/portraits/front.png",
+    "sideIdle": "/assets/heroi-ortodoxo/characters/josue/combat/side-idle.png"
+  },
+  "normalization": {
+    "front": {
+      "canvas": [
+        512,
+        768
+      ],
+      "source_bbox": [
+        5,
+        81,
+        297,
+        512
+      ],
+      "placed": [
+        21,
+        64,
+        470,
+        694
+      ]
+    },
+    "sideIdle": {
+      "canvas": [
+        512,
+        512
+      ],
+      "source_bbox": [
+        0,
+        0,
+        307,
+        468
+      ],
+      "placed": [
+        107,
+        43,
+        298,
+        455
+      ]
+    }
+  }
+}

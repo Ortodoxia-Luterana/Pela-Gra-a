@@ -1,0 +1,67 @@
+{
+  "id": "zilpa",
+  "name": "Zilpa",
+  "rarity": "common",
+  "class": "support",
+  "weapon": "healer-pouch",
+  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "anchors": {
+    "portrait": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        768
+      ]
+    },
+    "combat": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        512
+      ],
+      "feetY": 498
+    }
+  },
+  "views": {
+    "front": "/assets/heroi-ortodoxo/characters/zilpa/portraits/front.png",
+    "sideIdle": "/assets/heroi-ortodoxo/characters/zilpa/combat/side-idle.png"
+  },
+  "normalization": {
+    "front": {
+      "canvas": [
+        512,
+        768
+      ],
+      "source_bbox": [
+        59,
+        84,
+        247,
+        512
+      ],
+      "placed": [
+        98,
+        38,
+        316,
+        720
+      ]
+    },
+    "sideIdle": {
+      "canvas": [
+        512,
+        512
+      ],
+      "source_bbox": [
+        0,
+        68,
+        301,
+        420
+      ],
+      "placed": [
+        61,
+        43,
+        389,
+        455
+      ]
+    }
+  }
+}

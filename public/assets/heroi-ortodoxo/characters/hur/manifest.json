@@ -1,0 +1,67 @@
+{
+  "id": "hur",
+  "name": "Hur",
+  "rarity": "uncommon",
+  "class": "melee",
+  "weapon": "shield-staff",
+  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "anchors": {
+    "portrait": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        768
+      ]
+    },
+    "combat": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        512
+      ],
+      "feetY": 498
+    }
+  },
+  "views": {
+    "front": "/assets/heroi-ortodoxo/characters/hur/portraits/front.png",
+    "sideIdle": "/assets/heroi-ortodoxo/characters/hur/combat/side-idle.png"
+  },
+  "normalization": {
+    "front": {
+      "canvas": [
+        512,
+        768
+      ],
+      "source_bbox": [
+        18,
+        29,
+        307,
+        489
+      ],
+      "placed": [
+        30,
+        38,
+        452,
+        720
+      ]
+    },
+    "sideIdle": {
+      "canvas": [
+        512,
+        512
+      ],
+      "source_bbox": [
+        0,
+        16,
+        307,
+        405
+      ],
+      "placed": [
+        76,
+        43,
+        359,
+        455
+      ]
+    }
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "id": "noe",
+  "name": "No?",
+  "rarity": "epic",
+  "class": "support",
+  "weapon": "hammer-staff",
+  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "anchors": {
+    "portrait": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        768
+      ]
+    },
+    "combat": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        512
+      ],
+      "feetY": 498
+    }
+  },
+  "views": {
+    "front": "/assets/heroi-ortodoxo/characters/noe/portraits/front.png",
+    "sideIdle": "/assets/heroi-ortodoxo/characters/noe/combat/side-idle.png"
+  },
+  "normalization": {
+    "front": {
+      "canvas": [
+        512,
+        768
+      ],
+      "source_bbox": [
+        0,
+        41,
+        270,
+        443
+      ],
+      "placed": [
+        21,
+        58,
+        470,
+        700
+      ]
+    },
+    "sideIdle": {
+      "canvas": [
+        512,
+        512
+      ],
+      "source_bbox": [
+        0,
+        60,
+        316,
+        381
+      ],
+      "placed": [
+        32,
+        43,
+        448,
+        455
+      ]
+    }
+  }
+}

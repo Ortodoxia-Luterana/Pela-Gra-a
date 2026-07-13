@@ -1,0 +1,67 @@
+{
+  "id": "ismael",
+  "name": "Ismael",
+  "rarity": "common",
+  "class": "ranged",
+  "weapon": "bow",
+  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "anchors": {
+    "portrait": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        768
+      ]
+    },
+    "combat": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        512
+      ],
+      "feetY": 498
+    }
+  },
+  "views": {
+    "front": "/assets/heroi-ortodoxo/characters/ismael/portraits/front.png",
+    "sideIdle": "/assets/heroi-ortodoxo/characters/ismael/combat/side-idle.png"
+  },
+  "normalization": {
+    "front": {
+      "canvas": [
+        512,
+        768
+      ],
+      "source_bbox": [
+        74,
+        61,
+        307,
+        512
+      ],
+      "placed": [
+        70,
+        38,
+        372,
+        720
+      ]
+    },
+    "sideIdle": {
+      "canvas": [
+        512,
+        512
+      ],
+      "source_bbox": [
+        0,
+        12,
+        307,
+        427
+      ],
+      "placed": [
+        87,
+        43,
+        337,
+        455
+      ]
+    }
+  }
+}

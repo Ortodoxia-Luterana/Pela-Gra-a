@@ -1,0 +1,67 @@
+{
+  "id": "nadabe",
+  "name": "Nadabe",
+  "rarity": "rare",
+  "class": "melee",
+  "weapon": "censer-blade",
+  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "anchors": {
+    "portrait": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        768
+      ]
+    },
+    "combat": {
+      "type": "bottom-center",
+      "canvas": [
+        512,
+        512
+      ],
+      "feetY": 498
+    }
+  },
+  "views": {
+    "front": "/assets/heroi-ortodoxo/characters/nadabe/portraits/front.png",
+    "sideIdle": "/assets/heroi-ortodoxo/characters/nadabe/combat/side-idle.png"
+  },
+  "normalization": {
+    "front": {
+      "canvas": [
+        512,
+        768
+      ],
+      "source_bbox": [
+        5,
+        72,
+        294,
+        512
+      ],
+      "placed": [
+        21,
+        42,
+        470,
+        716
+      ]
+    },
+    "sideIdle": {
+      "canvas": [
+        512,
+        512
+      ],
+      "source_bbox": [
+        0,
+        0,
+        307,
+        462
+      ],
+      "placed": [
+        105,
+        43,
+        302,
+        455
+      ]
+    }
+  }
+}

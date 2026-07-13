@@ -5,12 +5,14 @@
   // Assets reais (se existirem em /assets/guardioes/assets/) substituem a arte procedural
   // automaticamente - basta soltar um PNG com o mesmo nome, sem mexer em codigo.
   const ASSET_BASE = '/assets/guardioes/assets/';
-  const ASSET_VERSION = 'sola-torre-allies-illustrated-2026-07-13-1';
+  const ASSET_VERSION = 'sola-torre-enemy-walk-2026-07-13-1';
   const HUB_BUILDINGS = ['build', 'collection', 'class', 'shop'];
   const TAB_ASSET_IDS = ['home', 'build', 'collection', 'class', 'shop'];
   const DEFENSE_LEVEL_ASSET_IDS = global.GuardioesData.DEFENSE_ORDER;
   const DEFENSE_LEVELS = [1, 2, 3];
   const ENEMY_ASSET_IDS = ['raider', 'runner', 'shield', 'flyer', 'healer', 'ram', 'boss'];
+  const ENEMY_WALK_FRAMES = 6;
+  const ENEMY_FRAME_SIZE = 256;
   const OVERRIDE_MANIFEST = [
     ['tex-menu-bg', 'menu-bg.jpg'],
     ['tex-menu-bg-desktop', 'menu-bg-desktop.jpg'],
@@ -30,6 +32,12 @@
     preload() {
       this.load.on('loaderror', () => { /* arquivo ainda nao existe: segue com o procedural */ });
       OVERRIDE_MANIFEST.forEach(([key, file]) => this.load.image(key, `${ASSET_BASE}${file}?v=${ASSET_VERSION}`));
+      ENEMY_ASSET_IDS.forEach(id => {
+        this.load.spritesheet(`tex-enemy-${id}-walk`, `${ASSET_BASE}enemy-${id}-walk.png?v=${ASSET_VERSION}`, {
+          frameWidth: ENEMY_FRAME_SIZE,
+          frameHeight: ENEMY_FRAME_SIZE
+        });
+      });
     }
 
     hasOverride(key) { return this.textures.exists(key); }
@@ -39,12 +47,27 @@
       this.buildGroundTextures();
       this.buildDefenseTextures();
       this.buildEnemyTextures();
+      this.buildEnemyAnimations();
       this.buildEffectTextures();
       this.buildHubTextures();
       this.scene.start('Menu');
     }
 
     g() { return this.make.graphics({ x: 0, y: 0, add: false }); }
+
+    buildEnemyAnimations() {
+      ENEMY_ASSET_IDS.forEach(id => {
+        const texKey = `tex-enemy-${id}-walk`;
+        const animKey = `anim-enemy-${id}-walk`;
+        if (!this.textures.exists(texKey) || this.anims.exists(animKey)) return;
+        this.anims.create({
+          key: animKey,
+          frames: this.anims.generateFrameNumbers(texKey, { start: 0, end: ENEMY_WALK_FRAMES - 1 }),
+          frameRate: id === 'runner' ? 12 : (id === 'ram' || id === 'boss' ? 7 : 9),
+          repeat: -1
+        });
+      });
+    }
 
     // --- paineis / UI: pergaminho, madeira, pedra ---
     buildPanelTextures() {

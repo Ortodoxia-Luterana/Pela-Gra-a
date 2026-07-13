@@ -1166,9 +1166,13 @@
     spawnEnemy(enemyId) {
       const def = D.ENEMIES[enemyId];
       const start = this.arenaPath[0];
-      const sprite = this.physics.add.sprite(start.x, start.y, `tex-enemy-${enemyId}`);
+      const walkAnim = `anim-enemy-${enemyId}-walk`;
+      const walkTexture = `tex-enemy-${enemyId}-walk`;
+      const textureKey = this.anims.exists(walkAnim) && this.textures.exists(walkTexture) ? walkTexture : `tex-enemy-${enemyId}`;
+      const sprite = this.physics.add.sprite(start.x, start.y, textureKey);
       const displaySize = this.enemyDisplaySize(enemyId);
       sprite.setDepth(92).setDisplaySize(displaySize, displaySize);
+      if (this.anims.exists(walkAnim)) sprite.play(walkAnim);
       sprite.body.setAllowGravity(false);
       // IMPORTANTE: setCircle espera radius/offset em unidades NAO escaladas (o frame
       // nativo da textura) - o Phaser aplica o scale do sprite por cima sozinho. Usar
@@ -1187,7 +1191,7 @@
       const hpBar = this.add.rectangle(start.x, start.y - bar.yOffset, bar.width, HP_BAR_HEIGHT, 0x35d16f, 0.95).setDepth(105);
       const enemy = {
         id: enemyId, def, hp, maxHp: hp, sprite, hpBack, hpBar,
-        pathIndex: 1, slowUntil: 0, slowFactor: 1
+        pathIndex: 1, slowUntil: 0, slowFactor: 1, walkAnim
       };
       sprite.setData('ref', enemy);
       this.enemies.push(enemy);
@@ -1202,6 +1206,11 @@
       const dx = target.x - e.sprite.x, dy = target.y - e.sprite.y;
       const dist = Math.hypot(dx, dy) || 1;
       e.sprite.body.setVelocity((dx / dist) * speed, (dy / dist) * speed);
+      if (Math.abs(dx) > 6) e.sprite.setFlipX(dx < 0);
+      if (e.walkAnim && this.anims.exists(e.walkAnim)) {
+        if (!e.sprite.anims.isPlaying) e.sprite.play(e.walkAnim);
+        e.sprite.anims.timeScale = Phaser.Math.Clamp(speed / Math.max(1, e.def.speed), 0.55, 1.45);
+      }
     }
 
     checkWaveComplete() {

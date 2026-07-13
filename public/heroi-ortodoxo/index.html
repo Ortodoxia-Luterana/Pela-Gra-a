@@ -773,62 +773,26 @@
       }
 
       .class-icon {
-        width: 30px;
-        height: 30px;
-        border-radius: 11px;
+        width: 34px;
+        height: 34px;
+        border-radius: 12px;
         display: inline-grid;
         place-items: center;
         position: relative;
         flex: 0 0 auto;
-        background: linear-gradient(#fff4a8, #f6a63a);
+        overflow: hidden;
+        padding: 1px;
+        background: radial-gradient(circle at 35% 24%, #fff8bd, #f7b13c 72%);
         border: 2px solid rgba(82, 49, 16, 0.36);
         box-shadow: 0 3px 0 rgba(86, 48, 14, 0.2);
       }
 
-      .class-icon::before,
-      .class-icon::after {
-        content: "";
-        position: absolute;
-        background: #573214;
-      }
-
-      .class-icon.melee::before {
-        width: 18px;
-        height: 5px;
-        border-radius: 999px;
-        rotate: -38deg;
-      }
-
-      .class-icon.melee::after {
-        width: 14px;
-        height: 5px;
-        border-radius: 999px;
-        rotate: 38deg;
-      }
-
-      .class-icon.ranged::before {
-        width: 19px;
-        height: 4px;
-        border-radius: 999px;
-      }
-
-      .class-icon.ranged::after {
-        right: 6px;
-        width: 8px;
-        height: 8px;
-        clip-path: polygon(0 0, 100% 50%, 0 100%);
-      }
-
-      .class-icon.support::before {
-        width: 17px;
-        height: 5px;
-        border-radius: 999px;
-      }
-
-      .class-icon.support::after {
-        width: 5px;
-        height: 17px;
-        border-radius: 999px;
+      .class-icon img {
+        width: 142%;
+        height: 142%;
+        object-fit: contain;
+        pointer-events: none;
+        filter: drop-shadow(0 2px 1px rgba(70, 37, 9, 0.28));
       }
 
       .hero-detail {
@@ -1345,6 +1309,7 @@
     <script>
       (() => {
         const saveKey = "heroi-ortodoxo-save-v4";
+        const assetVersion = "v3.32.0";
         const boot = window.__HEROI_BOOT__ || {};
         const hubUser = boot.user || {};
         const maxEnergy = 60;
@@ -1354,9 +1319,9 @@
         const energyRegenMs = 10 * 60 * 1000;
         const checkinCooldownMs = 24 * 60 * 60 * 1000;
         const classes = {
-          melee: { name: "Corpo a corpo", icon: "melee" },
-          ranged: { name: "Distância", icon: "ranged" },
-          support: { name: "Suporte", icon: "support" }
+          melee: { name: "Corpo a corpo", icon: "melee", image: "/heroi-ortodoxo/assets/classes/class-melee.png" },
+          ranged: { name: "Distância", icon: "ranged", image: "/heroi-ortodoxo/assets/classes/class-ranged.png" },
+          support: { name: "Suporte", icon: "support", image: "/heroi-ortodoxo/assets/classes/class-support.png" }
         };
         const heroes = [
           { id: "davi", name: "Davi", role: "Funda precisa", classId: "ranged", color: "#4aa5db", tool: "#f2d35a", hp: 95, atk: 13, spd: 1.12, skill: "Disparo do Salmo: acerta o inimigo mais distante e aumenta o dano da próxima rodada." },
@@ -1719,12 +1684,12 @@
             const id = currentFormation()[index];
             if (!id) return `<button class="slot" type="button" data-add="${index}">Vazio</button>`;
             const hero = heroById(id);
-            return `<button class="slot filled" type="button" data-hero="${hero.id}"><span class="class-icon ${classIcon(hero)}" aria-hidden="true"></span><div class="hero-mini" style="--c:${hero.color};--t:${hero.tool}"><i class="face"></i><i class="robe"></i><i class="tool"></i></div><span>${hero.name}</span></button>`;
+            return `<button class="slot filled" type="button" data-hero="${hero.id}">${renderClassIcon(hero)}<div class="hero-mini" style="--c:${hero.color};--t:${hero.tool}"><i class="face"></i><i class="robe"></i><i class="tool"></i></div><span>${hero.name}</span></button>`;
           }).join("");
           const bench = state.owned.map(id => {
             const hero = heroById(id);
             return `<button class="roster-card" type="button" data-pick="${hero.id}" style="--c:${hero.color};--t:${hero.tool}">
-              <span class="class-icon ${classIcon(hero)}" aria-hidden="true"></span>
+              ${renderClassIcon(hero)}
               <div class="hero-mini"><i class="face"></i><i class="robe"></i><i class="tool"></i></div>
               <span>${hero.name}</span>
             </button>`;
@@ -1756,7 +1721,7 @@
               <div class="hero-detail-head">
                 <div class="hero-mini" style="--c:${hero.color};--t:${hero.tool}"><i class="face"></i><i class="robe"></i><i class="tool"></i></div>
                 <div>
-                  <div class="hero-line"><h3>${owned ? hero.name : "Bloqueado"}</h3><span class="class-icon ${classIcon(hero)}" aria-hidden="true"></span></div>
+                  <div class="hero-line"><h3>${owned ? hero.name : "Bloqueado"}</h3>${renderClassIcon(hero)}</div>
                   <p>${owned ? hero.role : "Invoque este personagem para revelar seus detalhes completos."}</p>
                 </div>
               </div>
@@ -1793,6 +1758,15 @@
 
         function classIcon(hero) {
           return classes[hero.classId]?.icon || "melee";
+        }
+
+        function classImage(hero) {
+          return classes[hero.classId]?.image || classes.melee.image;
+        }
+
+        function renderClassIcon(hero) {
+          const label = className(hero);
+          return `<span class="class-icon ${classIcon(hero)}" aria-label="${label}" title="${label}"><img src="${classImage(hero)}?v=${assetVersion}" alt=""></span>`;
         }
 
         function getStage(stageId) {

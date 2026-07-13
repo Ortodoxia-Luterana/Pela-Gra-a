@@ -792,18 +792,18 @@
         background: #573214;
       }
 
-      .class-icon.warrior::before {
+      .class-icon.melee::before {
         width: 18px;
         height: 5px;
         border-radius: 999px;
         rotate: -38deg;
       }
 
-      .class-icon.tank::before {
-        width: 17px;
-        height: 20px;
-        border-radius: 9px 9px 12px 12px;
-        clip-path: polygon(50% 0, 100% 18%, 88% 78%, 50% 100%, 12% 78%, 0 18%);
+      .class-icon.melee::after {
+        width: 14px;
+        height: 5px;
+        border-radius: 999px;
+        rotate: 38deg;
       }
 
       .class-icon.ranged::before {
@@ -829,15 +829,6 @@
         width: 5px;
         height: 17px;
         border-radius: 999px;
-      }
-
-      .class-icon.control::before {
-        width: 16px;
-        height: 16px;
-        border: 4px solid #573214;
-        border-right-color: transparent;
-        border-radius: 50%;
-        background: transparent;
       }
 
       .hero-detail {
@@ -1363,19 +1354,17 @@
         const energyRegenMs = 10 * 60 * 1000;
         const checkinCooldownMs = 24 * 60 * 60 * 1000;
         const classes = {
-          warrior: { name: "Guerreiro", icon: "warrior" },
-          tank: { name: "Tanque", icon: "tank" },
+          melee: { name: "Corpo a corpo", icon: "melee" },
           ranged: { name: "Distância", icon: "ranged" },
-          support: { name: "Suporte", icon: "support" },
-          control: { name: "Controle", icon: "control" }
+          support: { name: "Suporte", icon: "support" }
         };
         const heroes = [
           { id: "davi", name: "Davi", role: "Funda precisa", classId: "ranged", color: "#4aa5db", tool: "#f2d35a", hp: 95, atk: 13, spd: 1.12, skill: "Disparo do Salmo: acerta o inimigo mais distante e aumenta o dano da próxima rodada." },
           { id: "debora", name: "Débora", role: "Juízo e coragem", classId: "support", color: "#9b65d8", tool: "#ffdf69", hp: 80, atk: 16, spd: 1.18, skill: "Cântico de Débora: fortalece aliados próximos e acelera seus ataques por alguns segundos." },
-          { id: "gideao", name: "Gideão", role: "Escudo e trombeta", classId: "tank", color: "#e0684b", tool: "#f8c44b", hp: 118, atk: 11, spd: 0.95, skill: "Trombeta da Vigília: provoca inimigos e reduz o dano recebido pela equipe." },
+          { id: "gideao", name: "Gideão", role: "Escudo e trombeta", classId: "melee", color: "#e0684b", tool: "#f8c44b", hp: 118, atk: 11, spd: 0.95, skill: "Trombeta da Vigília: provoca inimigos e reduz o dano recebido pela equipe." },
           { id: "ester", name: "Ester", role: "Graça e proteção", classId: "support", color: "#ef6fb2", tool: "#69cbe9", hp: 86, atk: 12, spd: 1.25, skill: "Intercessão Real: cura o aliado mais ferido e concede proteção breve." },
-          { id: "moises", name: "Moisés", role: "Cajado e sinais", classId: "control", color: "#68b667", tool: "#d7aa65", hp: 104, atk: 15, spd: 0.98, skill: "Cajado dos Sinais: interrompe uma onda inimiga e atrasa seus ataques." },
-          { id: "josue", name: "Josué", role: "Frente de batalha", classId: "warrior", color: "#3f74d8", tool: "#e8c56d", hp: 110, atk: 15, spd: 1.02, skill: "Avanço de Josué: investe contra a linha inimiga causando dano extra ao primeiro alvo." }
+          { id: "moises", name: "Moisés", role: "Cajado e sinais", classId: "support", color: "#68b667", tool: "#d7aa65", hp: 104, atk: 15, spd: 0.98, skill: "Cajado dos Sinais: interrompe uma onda inimiga e atrasa seus ataques." },
+          { id: "josue", name: "Josué", role: "Frente de batalha", classId: "melee", color: "#3f74d8", tool: "#e8c56d", hp: 110, atk: 15, spd: 1.02, skill: "Avanço de Josué: investe contra a linha inimiga causando dano extra ao primeiro alvo." }
         ];
 
         const bibleBooks = [
@@ -1803,7 +1792,7 @@
         }
 
         function classIcon(hero) {
-          return classes[hero.classId]?.icon || "warrior";
+          return classes[hero.classId]?.icon || "melee";
         }
 
         function getStage(stageId) {

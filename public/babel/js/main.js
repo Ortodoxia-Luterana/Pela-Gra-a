@@ -1,0 +1,71 @@
+import { JourneyScene } from './game-scene.js';
+import { GameSimulation } from './simulation.js';
+import { GameUI } from './ui.js';
+
+const boot = window.__BABEL_BOOT__ || { user: { name: 'Aventureiro' }, state: null, offlineSeconds: 0 };
+const emit = (type, payload = {}) => window.dispatchEvent(new CustomEvent('babel:event', { detail: { type, payload } }));
+const simulation = new GameSimulation(boot.state, emit);
+const offlineReward = simulation.applyOffline(boot.offlineSeconds);
+
+const game = new window.Phaser.Game({
+  type: window.Phaser.AUTO,
+  parent: 'game-canvas',
+  transparent: false,
+  backgroundColor: '#071827',
+  render: { antialias: true, roundPixels: false, powerPreference: 'high-performance' },
+  scale: { mode: window.Phaser.Scale.RESIZE, autoCenter: window.Phaser.Scale.CENTER_BOTH, width: '100%', height: '100%' },
+  input: { activePointers: 3 },
+  physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false } },
+  scene: [new JourneyScene(simulation)]
+});
+
+const ui = new GameUI(simulation, boot);
+if (offlineReward) window.setTimeout(() => ui.showOffline(offlineReward), 500);
+
+let saveInFlight = null;
+let saveQueued = false;
+
+async function saveProgress() {
+  if (!simulation.state.profile.created) return;
+  if (saveInFlight) {
+    saveQueued = true;
+    return saveInFlight;
+  }
+  const payload = JSON.stringify({ state: simulation.snapshot() });
+  saveInFlight = fetch('/api/babel/save', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: payload,
+    credentials: 'same-origin',
+    keepalive: payload.length < 60_000
+  }).then(response => {
+    if (!response.ok) throw new Error(`save:${response.status}`);
+    return response.json();
+  }).catch(error => {
+    console.warn('Não foi possível sincronizar o save de Babel.', error);
+  }).finally(() => {
+    saveInFlight = null;
+    if (saveQueued) {
+      saveQueued = false;
+      saveProgress();
+    }
+  });
+  return saveInFlight;
+}
+
+const saveEvents = new Set(['journeyStarted', 'enemyDefeated', 'itemEquipped', 'levelUp', 'autoUnlocked', 'companionUnlocked', 'bossUnlocked', 'regionComplete', 'playerDefeated']);
+window.addEventListener('babel:event', event => { if (saveEvents.has(event.detail.type)) window.setTimeout(saveProgress, 180); });
+window.setInterval(saveProgress, 10_000);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    simulation.setPaused(true);
+    saveProgress();
+  }
+});
+window.addEventListener('pagehide', saveProgress);
+
+window.addEventListener('error', event => {
+  if (!String(event.message || '').includes('ResizeObserver')) ui.toast('A jornada encontrou uma falha visual. Recarregue a página se ela persistir.');
+});
+
+window.__BABEL_DEBUG__ = { game, simulation, saveProgress };

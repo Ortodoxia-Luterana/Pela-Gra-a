@@ -861,6 +861,10 @@ img.feed-avatar {
   background: linear-gradient(90deg, rgba(0,0,0,.08), rgba(0,0,0,.80)), url("/assets/guardioes-card.jpg") center/cover;
 }
 
+.ol-game-card.babel-cover {
+  background: linear-gradient(90deg, rgba(4, 12, 22, .04), rgba(4, 12, 22, .84)), url("/assets/babel/assets/environment/campos-fronteiras-map.png") center 78%/cover;
+}
+
 .ol-game-card.heroi-cover {
   background: linear-gradient(90deg, rgba(0, 0, 0, .02), rgba(0, 0, 0, .70)), url("/assets/heroi-ortodoxo-hub.png") center 48%/cover;
 }

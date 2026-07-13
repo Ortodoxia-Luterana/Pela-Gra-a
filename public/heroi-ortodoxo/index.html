@@ -659,6 +659,10 @@
         position: relative;
       }
 
+      .hero-card:disabled {
+        cursor: default;
+      }
+
       .hero-card.locked {
         filter: saturate(0.6);
         opacity: 0.74;
@@ -709,7 +713,7 @@
         font-size: 1.02rem;
       }
 
-      .hero-card small, .stat-pill, .tag {
+      .hero-card small, .tag {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -727,6 +731,143 @@
         align-items: center;
         justify-content: space-between;
         gap: 8px;
+      }
+
+      .roster-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 9px;
+      }
+
+      .roster-card {
+        min-height: 118px;
+        border-radius: 17px;
+        padding: 8px 6px;
+        display: grid;
+        justify-items: center;
+        align-content: center;
+        gap: 5px;
+        background: rgba(255,255,255,0.66);
+        border: 2px solid rgba(99, 65, 25, 0.17);
+        box-shadow: 0 5px 0 rgba(118, 72, 20, 0.12);
+        color: #33220f;
+        font-weight: 1000;
+      }
+
+      .roster-card.locked {
+        opacity: 0.55;
+        filter: grayscale(0.8);
+      }
+
+      .roster-card .hero-mini {
+        scale: 0.78;
+        margin: -8px auto -5px;
+      }
+
+      .roster-card span {
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 0.82rem;
+      }
+
+      .class-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 11px;
+        display: inline-grid;
+        place-items: center;
+        position: relative;
+        flex: 0 0 auto;
+        background: linear-gradient(#fff4a8, #f6a63a);
+        border: 2px solid rgba(82, 49, 16, 0.36);
+        box-shadow: 0 3px 0 rgba(86, 48, 14, 0.2);
+      }
+
+      .class-icon::before,
+      .class-icon::after {
+        content: "";
+        position: absolute;
+        background: #573214;
+      }
+
+      .class-icon.warrior::before {
+        width: 18px;
+        height: 5px;
+        border-radius: 999px;
+        rotate: -38deg;
+      }
+
+      .class-icon.tank::before {
+        width: 17px;
+        height: 20px;
+        border-radius: 9px 9px 12px 12px;
+        clip-path: polygon(50% 0, 100% 18%, 88% 78%, 50% 100%, 12% 78%, 0 18%);
+      }
+
+      .class-icon.ranged::before {
+        width: 19px;
+        height: 4px;
+        border-radius: 999px;
+      }
+
+      .class-icon.ranged::after {
+        right: 6px;
+        width: 8px;
+        height: 8px;
+        clip-path: polygon(0 0, 100% 50%, 0 100%);
+      }
+
+      .class-icon.support::before {
+        width: 17px;
+        height: 5px;
+        border-radius: 999px;
+      }
+
+      .class-icon.support::after {
+        width: 5px;
+        height: 17px;
+        border-radius: 999px;
+      }
+
+      .class-icon.control::before {
+        width: 16px;
+        height: 16px;
+        border: 4px solid #573214;
+        border-right-color: transparent;
+        border-radius: 50%;
+        background: transparent;
+      }
+
+      .hero-detail {
+        display: grid;
+        gap: 12px;
+      }
+
+      .hero-detail-head {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        align-items: center;
+        gap: 12px;
+      }
+
+      .hero-detail-stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .hero-detail-stats span {
+        min-height: 54px;
+        border-radius: 15px;
+        display: grid;
+        place-items: center;
+        text-align: center;
+        background: rgba(36, 39, 55, 0.9);
+        color: #fff4cd;
+        font-weight: 1000;
+        font-size: 0.78rem;
       }
 
       .summon-orb {
@@ -761,16 +902,31 @@
         border-radius: 20px;
         display: grid;
         place-items: center;
+        align-content: center;
+        gap: 2px;
         text-align: center;
         background: rgba(255,255,255,0.56);
         border: 3px dashed rgba(110, 73, 25, 0.35);
         color: #66471e;
         font-weight: 1000;
+        position: relative;
       }
 
       .slot.filled {
         border-style: solid;
         background: linear-gradient(160deg, #fff7cb, #ffc968);
+      }
+
+      .slot .hero-mini {
+        scale: 0.62;
+        margin: -14px auto -16px;
+      }
+
+      .slot .class-icon {
+        position: absolute;
+        right: -6px;
+        top: -7px;
+        scale: 0.82;
       }
 
       .campaign-list {
@@ -1206,13 +1362,20 @@
         const summonGemCost = 120;
         const energyRegenMs = 10 * 60 * 1000;
         const checkinCooldownMs = 24 * 60 * 60 * 1000;
+        const classes = {
+          warrior: { name: "Guerreiro", icon: "warrior" },
+          tank: { name: "Tanque", icon: "tank" },
+          ranged: { name: "Distância", icon: "ranged" },
+          support: { name: "Suporte", icon: "support" },
+          control: { name: "Controle", icon: "control" }
+        };
         const heroes = [
-          { id: "davi", name: "Davi", role: "Harpa e funda", color: "#4aa5db", tool: "#f2d35a", hp: 95, atk: 13, spd: 1.12, rarity: "Inicial" },
-          { id: "debora", name: "Débora", role: "Juízo e coragem", color: "#9b65d8", tool: "#ffdf69", hp: 80, atk: 16, spd: 1.18, rarity: "Rara" },
-          { id: "gideao", name: "Gideão", role: "Escudo e trombeta", color: "#e0684b", tool: "#f8c44b", hp: 118, atk: 11, spd: 0.95, rarity: "Raro" },
-          { id: "ester", name: "Ester", role: "Graça e proteção", color: "#ef6fb2", tool: "#69cbe9", hp: 86, atk: 12, spd: 1.25, rarity: "Especial" },
-          { id: "moises", name: "Moisés", role: "Cajado e sinais", color: "#68b667", tool: "#d7aa65", hp: 104, atk: 15, spd: 0.98, rarity: "Especial" },
-          { id: "josue", name: "Josué", role: "Frente de batalha", color: "#3f74d8", tool: "#e8c56d", hp: 110, atk: 15, spd: 1.02, rarity: "Raro" }
+          { id: "davi", name: "Davi", role: "Funda precisa", classId: "ranged", color: "#4aa5db", tool: "#f2d35a", hp: 95, atk: 13, spd: 1.12, skill: "Disparo do Salmo: acerta o inimigo mais distante e aumenta o dano da próxima rodada." },
+          { id: "debora", name: "Débora", role: "Juízo e coragem", classId: "support", color: "#9b65d8", tool: "#ffdf69", hp: 80, atk: 16, spd: 1.18, skill: "Cântico de Débora: fortalece aliados próximos e acelera seus ataques por alguns segundos." },
+          { id: "gideao", name: "Gideão", role: "Escudo e trombeta", classId: "tank", color: "#e0684b", tool: "#f8c44b", hp: 118, atk: 11, spd: 0.95, skill: "Trombeta da Vigília: provoca inimigos e reduz o dano recebido pela equipe." },
+          { id: "ester", name: "Ester", role: "Graça e proteção", classId: "support", color: "#ef6fb2", tool: "#69cbe9", hp: 86, atk: 12, spd: 1.25, skill: "Intercessão Real: cura o aliado mais ferido e concede proteção breve." },
+          { id: "moises", name: "Moisés", role: "Cajado e sinais", classId: "control", color: "#68b667", tool: "#d7aa65", hp: 104, atk: 15, spd: 0.98, skill: "Cajado dos Sinais: interrompe uma onda inimiga e atrasa seus ataques." },
+          { id: "josue", name: "Josué", role: "Frente de batalha", classId: "warrior", color: "#3f74d8", tool: "#e8c56d", hp: 110, atk: 15, spd: 1.02, skill: "Avanço de Josué: investe contra a linha inimiga causando dano extra ao primeiro alvo." }
         ];
 
         const bibleBooks = [
@@ -1543,8 +1706,7 @@
           sheet("Aliado chamado", `
             <div class="card hero-card" style="--c:${next.color};--t:${next.tool}">
               <div class="hero-mini"><i class="face"></i><i class="robe"></i><i class="tool"></i></div>
-              <div><h3>${next.name}</h3><p>${next.role}</p></div>
-              <span class="stat-pill">${next.rarity}</span>
+              <div><h3>${next.name}</h3><p>${className(next)} · ${next.role}</p></div>
             </div>
             <button class="primary-button" id="go-formation" type="button">Ver formação</button>
           `);
@@ -1554,14 +1716,13 @@
         function renderHeroes() {
           const cards = heroes.map(hero => {
             const owned = state.owned.includes(hero.id);
-            return `<article class="card hero-card ${owned ? "" : "locked"}" style="--c:${hero.color};--t:${hero.tool}">
+            return `<button class="roster-card ${owned ? "" : "locked"}" type="button" data-hero="${hero.id}" ${owned ? "" : "disabled"} style="--c:${hero.color};--t:${hero.tool}">
               <div class="hero-mini"><i class="face"></i><i class="robe"></i><i class="tool"></i></div>
-              <div class="hero-line"><h3>${hero.name}</h3><small>${owned ? "Obtido" : "Bloqueado"}</small></div>
-              <p>${hero.role}</p>
-              <span class="stat-pill">ATQ ${hero.atk} / VIDA ${hero.hp}</span>
-            </article>`;
+              <span>${owned ? hero.name : "Bloqueado"}</span>
+            </button>`;
           }).join("");
-          sheet("Heróis", `<p>Colecione aliados e escolha até cinco para entrar na campanha.</p><div class="grid">${cards}</div>`);
+          sheet("Heróis", `<div class="roster-grid">${cards}</div>`);
+          bindHeroCards();
         }
 
         function renderFormation() {
@@ -1569,26 +1730,22 @@
             const id = currentFormation()[index];
             if (!id) return `<button class="slot" type="button" data-add="${index}">Vazio</button>`;
             const hero = heroById(id);
-            return `<button class="slot filled" type="button" data-remove="${hero.id}"><div class="hero-mini" style="--c:${hero.color};--t:${hero.tool}"><i class="face"></i><i class="robe"></i><i class="tool"></i></div><span>${hero.name}</span></button>`;
+            return `<button class="slot filled" type="button" data-hero="${hero.id}"><span class="class-icon ${classIcon(hero)}" aria-hidden="true"></span><div class="hero-mini" style="--c:${hero.color};--t:${hero.tool}"><i class="face"></i><i class="robe"></i><i class="tool"></i></div><span>${hero.name}</span></button>`;
           }).join("");
           const bench = state.owned.map(id => {
             const hero = heroById(id);
-            return `<button class="card" type="button" data-pick="${hero.id}"><b>${hero.name}</b><p>${hero.role}</p></button>`;
+            return `<button class="roster-card" type="button" data-pick="${hero.id}" style="--c:${hero.color};--t:${hero.tool}">
+              <span class="class-icon ${classIcon(hero)}" aria-hidden="true"></span>
+              <div class="hero-mini"><i class="face"></i><i class="robe"></i><i class="tool"></i></div>
+              <span>${hero.name}</span>
+            </button>`;
           }).join("") || `<div class="card"><b>Nenhum herói ainda</b><p>Faça uma invocação para montar a equipe.</p></div>`;
           sheet("Formação", `
-            <p>Toque em um herói da reserva para colocá-lo na equipe. Toque no slot para remover.</p>
             <div class="formation-board">${slots}</div>
-            <h2>Reserva</h2>
-            <div class="grid">${bench}</div>
+            <h2>Personagens</h2>
+            <div class="roster-grid">${bench}</div>
           `);
-          els.sheet.querySelectorAll("[data-remove]").forEach(button => {
-            button.addEventListener("click", () => {
-              state.formation = state.formation.filter(id => id !== button.dataset.remove);
-              save();
-              render();
-              renderFormation();
-            });
-          });
+          bindHeroCards();
           els.sheet.querySelectorAll("[data-pick]").forEach(button => {
             button.addEventListener("click", () => {
               const id = button.dataset.pick;
@@ -1600,6 +1757,53 @@
               renderFormation();
             });
           });
+        }
+
+        function renderHeroDetail(heroId, returnView = "heroes") {
+          const hero = heroById(heroId);
+          const owned = state.owned.includes(hero.id);
+          sheet(hero.name, `
+            <div class="hero-detail">
+              <div class="hero-detail-head">
+                <div class="hero-mini" style="--c:${hero.color};--t:${hero.tool}"><i class="face"></i><i class="robe"></i><i class="tool"></i></div>
+                <div>
+                  <div class="hero-line"><h3>${owned ? hero.name : "Bloqueado"}</h3><span class="class-icon ${classIcon(hero)}" aria-hidden="true"></span></div>
+                  <p>${owned ? hero.role : "Invoque este personagem para revelar seus detalhes completos."}</p>
+                </div>
+              </div>
+              ${owned ? `<div class="hero-detail-stats">
+                <span>ATQ<br>${hero.atk}</span>
+                <span>HP<br>${hero.hp}</span>
+                <span>Classe<br>${className(hero)}</span>
+              </div>
+              <div class="card"><b>Habilidade especial</b><p>${hero.skill}</p></div>` : ""}
+              <button class="primary-button" id="hero-back" type="button">Voltar</button>
+            </div>
+          `);
+          document.getElementById("hero-back").addEventListener("click", () => {
+            if (returnView === "formation") renderFormation();
+            else renderHeroes();
+          });
+        }
+
+        function bindHeroCards() {
+          els.sheet.querySelectorAll(".roster-grid [data-hero]").forEach(button => {
+            button.addEventListener("click", () => renderHeroDetail(button.dataset.hero, "heroes"));
+          });
+          els.sheet.querySelectorAll(".formation-board [data-hero]").forEach(button => {
+            button.addEventListener("click", event => {
+              event.stopPropagation();
+              renderHeroDetail(button.dataset.hero, "formation");
+            });
+          });
+        }
+
+        function className(hero) {
+          return classes[hero.classId]?.name || "Herói";
+        }
+
+        function classIcon(hero) {
+          return classes[hero.classId]?.icon || "warrior";
         }
 
         function getStage(stageId) {

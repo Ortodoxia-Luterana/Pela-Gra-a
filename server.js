@@ -14,7 +14,7 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v3.32.1';
+const GAME_VERSION = 'v3.33.0';
 const GAME_ID = 'pela-graca-1904';
 const HEROI_GAME_ID = 'heroi-ortodoxo';
 const CRONICAS_GAME_ID = 'cronicas-do-levante';
@@ -23,6 +23,7 @@ const QUIZ_GAME_ID = 'quiz-ortodoxia';
 const CONCORDIUM_GAME_ID = 'concordium-first-age';
 const CONCORDIUM_EXPLORACAO_GAME_ID = 'concordium-exploracao';
 const GUARDIOES_GAME_ID = 'caminho-dos-guardioes';
+const BABEL_GAME_ID = 'a-queda-de-babel';
 const CONCORDIUM_ACCESS_COOKIE = 'concordium_access';
 const CONCORDIUM_ACCESS_PIN = process.env.CONCORDIUM_ACCESS_PIN || '5892';
 const CONCORDIUM_ROM_PATH = process.env.CONCORDIUM_ROM_PATH || path.join(PUBLIC_DIR, 'concordium.gba');
@@ -124,6 +125,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS cronicas_saves (user_id TEXT PRIMARY KEY, state_json TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS heroi_ortodoxo_saves (user_id TEXT PRIMARY KEY, state_json TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS guardioes_saves (user_id TEXT PRIMARY KEY, state_json TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
+  CREATE TABLE IF NOT EXISTS babel_saves (user_id TEXT PRIMARY KEY, state_json TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS concordium_profiles (user_id TEXT PRIMARY KEY, profile_json TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS concordium_gba_saves (user_id TEXT PRIMARY KEY, save_json TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS platform_presence (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, avatar_data TEXT, location TEXT NOT NULL, game_id TEXT NOT NULL, last_seen TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
@@ -210,6 +212,7 @@ const deleteLutherRankingForUser = db.prepare('DELETE FROM luther_match_rankings
 const deleteCronicasForUser = db.prepare('DELETE FROM cronicas_saves WHERE user_id = ?');
 const deleteHeroiForUser = db.prepare('DELETE FROM heroi_ortodoxo_saves WHERE user_id = ?');
 const deleteGuardioesForUser = db.prepare('DELETE FROM guardioes_saves WHERE user_id = ?');
+const deleteBabelForUser = db.prepare('DELETE FROM babel_saves WHERE user_id = ?');
 const deleteConcordiumForUser = db.prepare('DELETE FROM concordium_profiles WHERE user_id = ?');
 const deleteConcordiumGbaSaveForUser = db.prepare('DELETE FROM concordium_gba_saves WHERE user_id = ?');
 const deletePlatformPresenceForUser = db.prepare('DELETE FROM platform_presence WHERE user_id = ?');
@@ -240,6 +243,13 @@ const upsertGuardioesSave = db.prepare(`
   ON CONFLICT(user_id) DO UPDATE SET state_json = excluded.state_json, updated_at = excluded.updated_at
 `);
 const deleteGuardioesSave = db.prepare('DELETE FROM guardioes_saves WHERE user_id = ?');
+const getBabelSave = db.prepare('SELECT * FROM babel_saves WHERE user_id = ?');
+const upsertBabelSave = db.prepare(`
+  INSERT INTO babel_saves (user_id, state_json, created_at, updated_at)
+  VALUES (?, ?, ?, ?)
+  ON CONFLICT(user_id) DO UPDATE SET state_json = excluded.state_json, updated_at = excluded.updated_at
+`);
+const deleteBabelSave = db.prepare('DELETE FROM babel_saves WHERE user_id = ?');
 const getConcordiumProfile = db.prepare('SELECT * FROM concordium_profiles WHERE user_id = ?');
 const upsertConcordiumProfile = db.prepare(`
   INSERT INTO concordium_profiles (user_id, profile_json, created_at, updated_at)
@@ -347,6 +357,7 @@ function normalizeGamePresence(input) {
   if (value === HEROI_GAME_ID) return { gameId: HEROI_GAME_ID, location: 'Heroi Ortodoxo' };
   if (value === CONCORDIUM_EXPLORACAO_GAME_ID) return { gameId: CONCORDIUM_EXPLORACAO_GAME_ID, location: 'Concordium' };
   if (value === GUARDIOES_GAME_ID) return { gameId: GUARDIOES_GAME_ID, location: 'Sola Torre' };
+  if (value === BABEL_GAME_ID) return { gameId: BABEL_GAME_ID, location: 'A Queda de Babel' };
   if (value === GAME_ID) return { gameId: GAME_ID, location: 'Pela Graca 1904' };
   return { gameId: 'hub', location: 'Hub' };
 }
@@ -357,6 +368,7 @@ function presenceForPath(pathname) {
   if (pathname === '/heroi-ortodoxo' || pathname.startsWith('/api/heroi-ortodoxo')) return normalizeGamePresence(HEROI_GAME_ID);
   if (pathname === '/concordium-exploracao' || pathname.startsWith('/api/concordium')) return normalizeGamePresence(CONCORDIUM_EXPLORACAO_GAME_ID);
   if (pathname === '/caminho-dos-guardioes' || pathname.startsWith('/api/guardioes')) return normalizeGamePresence(GUARDIOES_GAME_ID);
+  if (pathname === '/a-queda-de-babel' || pathname.startsWith('/api/babel')) return normalizeGamePresence(BABEL_GAME_ID);
   if (pathname === '/play' || pathname === '/game' || pathname.startsWith('/api/saves')) return normalizeGamePresence(GAME_ID);
   return normalizeGamePresence('hub');
 }
@@ -571,6 +583,7 @@ function cleanupNonPlayerAccounts() {
       deleteCronicasForUser.run(user.id);
       deleteHeroiForUser.run(user.id);
       deleteGuardioesForUser.run(user.id);
+      deleteBabelForUser.run(user.id);
       deleteConcordiumForUser.run(user.id);
       deleteConcordiumGbaSaveForUser.run(user.id);
       deletePlatformPresenceForUser.run(user.id);
@@ -1315,6 +1328,13 @@ async function handleApi(req, res, url, user) {
           status: 'prototype',
           playUrl: '/caminho-dos-guardioes',
           rankingUrl: null
+        },
+        {
+          id: 'a-queda-de-babel',
+          title: 'A Queda de Babel',
+          status: 'playable',
+          playUrl: '/a-queda-de-babel',
+          rankingUrl: null
         }
       ]
     });
@@ -1671,6 +1691,43 @@ async function handleApi(req, res, url, user) {
     json(res, 405, { error: 'Método não permitido' });
     return;
   }
+  if (url.pathname === '/api/babel/save') {
+    const save = getBabelSave.get(user.id);
+    if (req.method === 'GET') {
+      const updatedAt = save?.updated_at || null;
+      const offlineSeconds = updatedAt ? Math.max(0, Math.min(12 * 60 * 60, Math.floor((Date.now() - Date.parse(updatedAt)) / 1000))) : 0;
+      json(res, 200, {
+        gameId: BABEL_GAME_ID,
+        user: { id: user.id, name: user.name, avatarData: user.avatar_data || null },
+        state: safeJsonParse(save?.state_json, null),
+        updatedAt,
+        serverNow: new Date().toISOString(),
+        offlineSeconds
+      });
+      return;
+    }
+    if (req.method === 'PUT' || req.method === 'POST') {
+      const payload = safeJsonParse(await readBody(req) || '{}', {});
+      const state = payload?.state && typeof payload.state === 'object' ? payload.state : null;
+      const serialized = JSON.stringify(state);
+      if (!state || serialized.length > 200000) {
+        json(res, 400, { error: 'Save inválido ou maior que o limite.' });
+        return;
+      }
+      const now = new Date().toISOString();
+      state.lastSeenServer = now;
+      upsertBabelSave.run(user.id, JSON.stringify(state), save?.created_at || now, now);
+      json(res, 200, { ok: true, updatedAt: now, serverNow: now });
+      return;
+    }
+    if (req.method === 'DELETE') {
+      deleteBabelSave.run(user.id);
+      json(res, 200, { ok: true });
+      return;
+    }
+    json(res, 405, { error: 'Método não permitido' });
+    return;
+  }
   const match = url.pathname.match(/^\/api\/saves\/([^/]+)$/);
   if (!match) { json(res, 404, { error: 'API não encontrada' }); return; }
   const id = match[1]; const save = getSave.get(id, user.id);
@@ -1723,6 +1780,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   const saves = new Map(getSavesByUser.all(user.id).map(save => [save.slot, save]));
   const mainSave = saves.get(1);
   const cronicasSave = getCronicasSave.get(user.id);
+  const babelSave = getBabelSave.get(user.id);
   const player = playerStatsFromSave(mainSave, user.id);
   const stats = player.stats;
   const cronicasState = safeJsonParse(cronicasSave?.state_json, null);
@@ -1780,6 +1838,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     <article class="ol-game-card match3-cover"><div><h4>Luther Metch</h4><p>Junte 3 ou mais peças iguais para cumprir objetivos e avançar de fase.</p></div><a href="/luther-metch">Jogar</a></article>
     <article class="ol-game-card quiz-cover"><div><h4>Quiz Ortodoxia</h4><p>Dispute perguntas de Bíblia, Reforma e luteranismo em modo solo, duelo online, convite ou competição geral.</p></div><a href="/quiz-ortodoxia">Jogar</a></article>
     <article class="ol-game-card guardioes-cover"><div><h4>Sola Torre</h4><p>Defenda a fortaleza com torres, estratégia e fé. Escolha sua formação, enfrente as ondas e avance pela campanha.</p></div><a href="/caminho-dos-guardioes">Jogar</a></article>
+    <article class="ol-game-card babel-cover"><div><span>NOVO RPG IDLE</span><h4>A Queda de Babel</h4><p>Explore a Grande Estrada em quatro direções, monte sua build e enfrente o Senhor das Estacas em um mundo contínuo.</p></div><a href="/a-queda-de-babel">Jogar</a></article>
   </section>`;
   const rankCard = `<aside class="ol-panel ol-rank"><p>Seu rank geral</p><img class="rank-badge" src="${rank.current.file}?v=${GAME_VERSION}" alt="${escapeHtml(rank.current.title)}"><div class="rank-xp"><strong>${xp} XP</strong><span>${rank.next ? `${Math.max(0, rank.next.xp - rank.currentXp)} XP para ${escapeHtml(rank.next.title)}` : 'Rank maximo alcancado'}</span><div class="rank-bar"><span style="width:${Math.round(rank.progress)}%"></span></div></div><a href="/?section=ranking">Ver ranking geral</a><div class="hub-online-panel"><div class="panel-head"><h3>Online agora</h3></div><div id="hub-online-list" class="hub-online-list">${renderOnlinePlayers(onlinePlayers)}</div></div></aside>`;
   const chatWidget = `<section class="hub-chat" id="hub-chat" aria-label="Chat geral"><div class="hub-chat-head"><strong>Chat geral</strong><button type="button" id="hub-chat-toggle" aria-label="Minimizar chat">-</button></div><div class="hub-chat-messages" id="hub-chat-messages"></div><form id="hub-chat-form" class="hub-chat-form"><input id="hub-chat-input" name="message" maxlength="${CHAT_MAX_LENGTH}" autocomplete="off" placeholder="Mensagem"><button type="submit">Enviar</button></form></section>`;
@@ -1790,7 +1849,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     medalhas: `<section class="ol-panel" id="medalhas"><div class="panel-head"><h3>Medalhas</h3><span>${unlockedMedals}/${medals.length}</span></div><div class="medal-grid">${medals.map(medal => `<article class="${medal.unlocked ? '' : 'locked'}">${renderAchievementIcon(medal)}<span>${escapeHtml(medal.title)}</span><p>${escapeHtml(medal.description)}</p><small>+${medal.xp} XP · +${medal.points} pontos</small></article>`).join('')}</div></section>`,
     album: `<section class="ol-panel" id="album"><div class="panel-head"><h3>Álbum</h3><span>0/0 figurinhas</span></div><p>Nenhuma figurinha foi criada ainda.</p></section>`,
     loja: `<section class="ol-panel" id="loja"><div class="panel-head"><h3>Loja</h3></div><div class="shop-grid"><article><h4>Pacote Comum</h4><p>100 pontos</p><small>Maior chance de figurinhas comuns.</small><button disabled>Comprar em breve</button></article><article><h4>Pacote Raro</h4><p>250 pontos</p><small>Chance melhor de raras e especiais.</small><button disabled>Comprar em breve</button></article><article><h4>Pacote Lendario</h4><p>600 pontos</p><small>Chance alta de figurinhas raras e lendarias.</small><button disabled>Comprar em breve</button></article></div><div class="daily-wheel"><h4>Roleta diaria</h4><p>A cada 24h, o jogador podera tentar ganhar um pacote comum, raro ou lendario de graca.</p><button disabled>Disponivel em breve</button></div></section>`,
-    configuracoes: `<section class="ol-panel ol-settings" id="configuracoes"><div class="panel-head"><h3>Configurações</h3></div><form method="POST" action="/profile" class="profile-edit"><div class="profile-box">${renderAvatar(user, 'profile-avatar')}<div><label>Nome público<input name="name" maxlength="40" value="${escapeHtml(user.name)}" required></label><label>Foto do perfil<input id="avatar-file" type="file" accept="image/png,image/jpeg,image/webp"></label><input id="avatar-data" type="hidden" name="avatar_data" value="${escapeHtml(user.avatar_data || '')}"><button type="submit">Salvar perfil</button></div></div></form><hr><div class="saved-games-head"><h4>Campanhas por jogo</h4><p>Medalhas, campanhas e saves principais ficam salvos na conta.</p></div><div class="saved-game-list"><article class="saved-game-row"><div><span>Pela Graça 1904</span><strong>${mainSave ? escapeHtml(mainSave.name) : 'Nenhuma campanha atual'}</strong><small>${mainSave ? 'Apaga só esta campanha atual.' : 'Crie uma campanha para jogar novamente.'}</small></div>${mainSave ? `<form method="POST" action="/saves/${encodeURIComponent(mainSave.id)}/delete" onsubmit="return confirm('Apagar a campanha atual de Pela Graça 1904? Medalhas e melhor ranking serão mantidos.')"><button>Apagar campanha</button></form>` : '<a href="/play">Criar campanha</a>'}</article><article class="saved-game-row"><div><span>Crônicas do Levante</span><strong>${cronicasSave ? 'Campanha em andamento' : 'Nenhuma campanha atual'}</strong><small>${cronicasSave ? 'Apaga só o progresso narrativo. Medalhas futuras serão mantidas.' : 'Comece uma jornada para criar o save automático.'}</small></div>${cronicasSave ? `<form method="POST" action="/cronicas-do-levante/delete" onsubmit="return confirm('Apagar a campanha atual de Crônicas do Levante? Medalhas futuras serão mantidas.')"><button>Apagar campanha</button></form>` : '<a href="/cronicas-do-levante">Criar campanha</a>'}</article><article class="saved-game-row"><div><span>Herói Ortodoxo</span><strong>Save automático na conta</strong><small>Heróis, campanha, check-in e invocações acompanham seu perfil do hub.</small></div><a href="/heroi-ortodoxo">Abrir</a></article><article class="saved-game-row"><div><span>Luther Metch</span><strong>Save local automático</strong><small>Fase, objetivos, pontos e tabuleiro ficam salvos neste navegador.</small></div><a href="/luther-metch">Abrir</a></article><article class="saved-game-row"><div><span>Quiz Ortodoxia</span><strong>Multiplayer online</strong><small>Duelo, convite e competição geral rodam com pareamento pelo servidor.</small></div><a href="/quiz-ortodoxia">Abrir</a></article></div></section>`
+    configuracoes: `<section class="ol-panel ol-settings" id="configuracoes"><div class="panel-head"><h3>Configurações</h3></div><form method="POST" action="/profile" class="profile-edit"><div class="profile-box">${renderAvatar(user, 'profile-avatar')}<div><label>Nome público<input name="name" maxlength="40" value="${escapeHtml(user.name)}" required></label><label>Foto do perfil<input id="avatar-file" type="file" accept="image/png,image/jpeg,image/webp"></label><input id="avatar-data" type="hidden" name="avatar_data" value="${escapeHtml(user.avatar_data || '')}"><button type="submit">Salvar perfil</button></div></div></form><hr><div class="saved-games-head"><h4>Campanhas por jogo</h4><p>Medalhas, campanhas e saves principais ficam salvos na conta.</p></div><div class="saved-game-list"><article class="saved-game-row"><div><span>Pela Graça 1904</span><strong>${mainSave ? escapeHtml(mainSave.name) : 'Nenhuma campanha atual'}</strong><small>${mainSave ? 'Apaga só esta campanha atual.' : 'Crie uma campanha para jogar novamente.'}</small></div>${mainSave ? `<form method="POST" action="/saves/${encodeURIComponent(mainSave.id)}/delete" onsubmit="return confirm('Apagar a campanha atual de Pela Graça 1904? Medalhas e melhor ranking serão mantidos.')"><button>Apagar campanha</button></form>` : '<a href="/play">Criar campanha</a>'}</article><article class="saved-game-row"><div><span>Crônicas do Levante</span><strong>${cronicasSave ? 'Campanha em andamento' : 'Nenhuma campanha atual'}</strong><small>${cronicasSave ? 'Apaga só o progresso narrativo. Medalhas futuras serão mantidas.' : 'Comece uma jornada para criar o save automático.'}</small></div>${cronicasSave ? `<form method="POST" action="/cronicas-do-levante/delete" onsubmit="return confirm('Apagar a campanha atual de Crônicas do Levante? Medalhas futuras serão mantidas.')"><button>Apagar campanha</button></form>` : '<a href="/cronicas-do-levante">Criar campanha</a>'}</article><article class="saved-game-row"><div><span>Herói Ortodoxo</span><strong>Save automático na conta</strong><small>Heróis, campanha, check-in e invocações acompanham seu perfil do hub.</small></div><a href="/heroi-ortodoxo">Abrir</a></article><article class="saved-game-row"><div><span>Luther Metch</span><strong>Save local automático</strong><small>Fase, objetivos, pontos e tabuleiro ficam salvos neste navegador.</small></div><a href="/luther-metch">Abrir</a></article><article class="saved-game-row"><div><span>Quiz Ortodoxia</span><strong>Multiplayer online</strong><small>Duelo, convite e competição geral rodam com pareamento pelo servidor.</small></div><a href="/quiz-ortodoxia">Abrir</a></article><article class="saved-game-row"><div><span>A Queda de Babel</span><strong>${babelSave ? 'Jornada em andamento' : 'Nenhuma jornada atual'}</strong><small>Herói, equipamento, pet e progresso da região acompanham seu perfil do hub.</small></div>${babelSave ? `<form method="POST" action="/a-queda-de-babel/delete" onsubmit="return confirm('Apagar a jornada atual de A Queda de Babel?')"><button>Apagar jornada</button></form>` : '<a href="/a-queda-de-babel">Criar jornada</a>'}</article></div></section>`
   };
   return pageShell('Ortodoxia Luterana Gaming', `
 <main class="ol-hub">
@@ -1986,8 +2045,30 @@ const server = http.createServer(async (req, res) => {
       res.end(body);
       return;
     }
+    if (req.method === 'GET' && url.pathname === '/a-queda-de-babel') {
+      const save = getBabelSave.get(user.id);
+      const updatedAt = save?.updated_at || null;
+      const offlineSeconds = updatedAt ? Math.max(0, Math.min(12 * 60 * 60, Math.floor((Date.now() - Date.parse(updatedAt)) / 1000))) : 0;
+      const boot = {
+        user: { id: user.id, name: user.name, avatarData: user.avatar_data || null },
+        state: safeJsonParse(save?.state_json, null),
+        updatedAt,
+        serverNow: new Date().toISOString(),
+        offlineSeconds
+      };
+      const body = fs.readFileSync(path.join(PUBLIC_DIR, 'babel', 'index.html'), 'utf8')
+        .replace('</head>', `<script>window.__BABEL_BOOT__=${scriptJson(boot)};</script></head>`);
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store, max-age=0' });
+      res.end(body);
+      return;
+    }
     if (req.method === 'POST' && url.pathname === '/caminho-dos-guardioes/delete') {
       deleteGuardioesSave.run(user.id);
+      redirect(res, '/?section=configuracoes');
+      return;
+    }
+    if (req.method === 'POST' && url.pathname === '/a-queda-de-babel/delete') {
+      deleteBabelSave.run(user.id);
       redirect(res, '/?section=configuracoes');
       return;
     }

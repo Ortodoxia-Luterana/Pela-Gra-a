@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#071a2d">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>A Queda de Babel</title>
+  <link rel="stylesheet" href="/assets/babel/game.css?v=1.0.0">
+</head>
+<body>
+  <main id="game-shell" aria-label="A Queda de Babel">
+    <div id="game-canvas" aria-label="Mundo explorável dos Campos das Fronteiras"></div>
+
+    <header class="game-hud" aria-label="Estado do aventureiro">
+      <button class="profile-chip" id="profile-chip" type="button" aria-label="Abrir perfil do aventureiro">
+        <span id="profile-avatar" class="profile-avatar"></span>
+        <span class="profile-copy"><strong id="profile-name">Aventureiro</strong><small>Nível <b id="level-value">1</b> · <span id="power-value">118</span> poder</small></span>
+        <span class="hp-track" aria-label="Vida"><i id="hp-fill"></i></span>
+      </button>
+
+      <section class="region-chip" aria-live="polite">
+        <small>Campos das Fronteiras</small>
+        <strong id="region-status">Acampamento do Sul</strong>
+        <span class="region-track"><i id="region-fill"></i></span>
+      </section>
+
+      <div class="journey-controls">
+        <button id="auto-button" type="button" aria-pressed="false"><span>✦</span><small>AUTO</small></button>
+        <button id="speed-button" type="button"><span id="speed-value">1×</span><small>RITMO</small></button>
+        <button id="pause-button" type="button" aria-label="Pausar">Ⅱ</button>
+      </div>
+    </header>
+
+    <section id="loot-feed" class="loot-feed" aria-live="polite"></section>
+
+    <div id="joystick" class="joystick" aria-label="Controle de movimento">
+      <span class="joystick-runes">N<br><i>O&nbsp;&nbsp;&nbsp;L</i><br>S</span>
+      <i id="joystick-knob"></i>
+    </div>
+
+    <section class="combat-bar" aria-label="Habilidades">
+      <button class="skill skill-blue" data-skill="guard" type="button"><i>✦</i><span>Guarda</span><em></em></button>
+      <button class="skill skill-green" data-skill="cleave" type="button"><i>↯</i><span>Varredura</span><em></em></button>
+      <button class="skill skill-gold" data-skill="rend" type="button"><i>⚔</i><span>Ruptura</span><em></em></button>
+      <button class="skill skill-violet" data-skill="shard" type="button"><i>◆</i><span>Estilhaço</span><em></em></button>
+      <button class="ultimate" id="ultimate-button" type="button"><i>✹</i><span>Ímpeto</span><b id="ultimate-value">0%</b></button>
+    </section>
+
+    <nav class="game-nav" aria-label="Sistemas do jogo">
+      <button class="active" data-panel="journey" type="button"><i>⌁</i><span>Jornada</span></button>
+      <button data-panel="equipment" type="button"><i>⚔</i><span>Equip.</span><b id="inventory-badge" hidden>!</b></button>
+      <button data-panel="skills" type="button"><i>✦</i><span>Skills</span></button>
+      <button data-panel="companion" type="button"><i>♞</i><span>Comp.</span></button>
+      <button data-panel="guild" type="button"><i>♜</i><span>Companhia</span><small>em breve</small></button>
+    </nav>
+
+    <section id="drawer" class="drawer" hidden aria-modal="true" role="dialog">
+      <div class="drawer-backdrop" data-close-drawer></div>
+      <article class="drawer-card">
+        <header><div><small id="drawer-kicker">ACAMPAMENTO</small><h2 id="drawer-title">Jornada</h2></div><button type="button" data-close-drawer aria-label="Fechar">×</button></header>
+        <div id="drawer-content" class="drawer-content"></div>
+      </article>
+    </section>
+
+    <section id="intro" class="intro" hidden aria-modal="true" role="dialog">
+      <div class="intro-mist"></div>
+      <article>
+        <small>PRÓLOGO · A GRANDE ESTRADA</small>
+        <h1>A Queda de Babel</h1>
+        <p>As pedras da torre não morreram. Escolha quem despertará na fronteira e siga os rastros de sua reconstrução.</p>
+        <h2>Seu avatar de jornada</h2>
+        <div class="hero-choice">
+          <button type="button" data-body="male"><span class="hero-preview male"></span><strong>Viajante</strong></button>
+          <button type="button" data-body="female"><span class="hero-preview female"></span><strong>Viajante</strong></button>
+        </div>
+        <h2>Arma inicial</h2>
+        <div class="weapon-choice">
+          <button type="button" data-weapon="sword"><i>⚔</i><span>Espada</span></button>
+          <button type="button" data-weapon="bow"><i>➶</i><span>Arco</span></button>
+          <button type="button" data-weapon="staff"><i>✦</i><span>Cajado</span></button>
+          <button type="button" data-weapon="spear"><i>↟</i><span>Lança</span></button>
+        </div>
+        <button id="start-journey" class="primary-action" type="button" disabled>Iniciar jornada</button>
+      </article>
+    </section>
+
+    <section id="modal" class="modal" hidden aria-modal="true" role="dialog">
+      <div class="modal-backdrop"></div>
+      <article><div id="modal-icon" class="modal-icon">✦</div><small id="modal-kicker">MARCO DA JORNADA</small><h2 id="modal-title"></h2><div id="modal-body"></div><button id="modal-action" class="primary-action" type="button">Continuar</button></article>
+    </section>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </main>
+
+  <script src="/assets/guardioes/vendor/phaser.min.js"></script>
+  <script type="module" src="/assets/babel/js/main.js?v=1.0.0"></script>
+</body>
+</html>

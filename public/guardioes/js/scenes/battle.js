@@ -600,7 +600,7 @@
       const heldTitle = this.add.text(0, -46, 'TORRE SORTEADA', {
         fontFamily: 'Georgia, serif', fontSize: '12px', color: '#f2e2b8', fontStyle: 'bold'
       }).setOrigin(0.5);
-      this.heldIcon = this.add.image(0, -10, 'tex-defense-archer').setVisible(false);
+      this.heldIcon = this.add.image(0, -10, this.defenseTextureKey('archer', 1)).setVisible(false);
       this.heldLabel = this.add.text(0, 38, 'vazio', {
         fontFamily: 'Georgia, serif', fontSize: '12px', color: '#8a9ab0', align: 'center',
         wordWrap: { width: 122 }
@@ -615,7 +615,7 @@
       if (this.waveIndex > 0 && this.waveIndex < this.level.waves.length) this.waveBtn.list[1].setText(`INICIAR\n${this.waveIndex + 1}`);
 
       this.previewMarker = this.add.image(0, 0, 'tex-valid-preview').setVisible(false).setDepth(84).setAlpha(0.6);
-      this.previewGhost = this.add.image(0, 0, 'tex-defense-archer').setVisible(false).setDepth(86).setAlpha(0.82);
+      this.previewGhost = this.add.image(0, 0, this.defenseTextureKey('archer', 1)).setVisible(false).setDepth(86).setAlpha(0.82);
       this.rangeRing = this.add.image(0, 0, 'tex-range-ring').setVisible(false).setDepth(49).setAlpha(0.5);
 
       this.input.on('pointermove', p => this.updateHeldPreview(p));
@@ -630,7 +630,7 @@
       const heldTitle = this.add.text(-44, -24, 'TORRE', {
         fontFamily: 'Georgia, serif', fontSize: '15px', color: '#f2e2b8', fontStyle: 'bold'
       }).setOrigin(0.5);
-      this.heldIcon = this.add.image(-78, 13, 'tex-defense-archer').setVisible(false);
+      this.heldIcon = this.add.image(-78, 13, this.defenseTextureKey('archer', 1)).setVisible(false);
       this.heldLabel = this.add.text(48, 12, 'vazio', {
         fontFamily: 'Georgia, serif', fontSize: '16px', color: '#8a9ab0', align: 'left',
         wordWrap: { width: 158 }
@@ -645,7 +645,7 @@
       if (this.waveIndex > 0 && this.waveIndex < this.level.waves.length) this.waveBtn.list[1].setText(`INICIAR\n${this.waveIndex + 1}`);
 
       this.previewMarker = this.add.image(0, 0, 'tex-valid-preview').setVisible(false).setDepth(84).setAlpha(0.6);
-      this.previewGhost = this.add.image(0, 0, 'tex-defense-archer').setVisible(false).setDepth(86).setAlpha(0.82);
+      this.previewGhost = this.add.image(0, 0, this.defenseTextureKey('archer', 1)).setVisible(false).setDepth(86).setAlpha(0.82);
       this.rangeRing = this.add.image(0, 0, 'tex-range-ring').setVisible(false).setDepth(49).setAlpha(0.5);
 
       this.input.on('pointermove', p => this.updateHeldPreview(p));
@@ -677,7 +677,7 @@
       this.held = { defenseId: pick, level: 1, paidCost: paid, sourceTower: null };
       this.closeTowerPanel();
 
-      this.heldIcon.setTexture(`tex-defense-${pick}`).setVisible(true);
+      this.heldIcon.setTexture(this.defenseTextureKey(pick, 1)).setVisible(true);
       const heldIconSize = this.isDesktopLayout() ? 86 : 66;
       this.heldIcon.setDisplaySize(heldIconSize, heldIconSize);
       this.heldLabel.setText(`${D.DEFENSES[pick].name}\nNv 1`).setColor('#f2e2b8').setVisible(true);
@@ -724,8 +724,15 @@
       return Math.round(base * (1 + (level - 1) * 0.13));
     }
 
+    defenseTextureKey(defenseId, level) {
+      const lvl = Phaser.Math.Clamp(level || 1, 1, D.MAX_FUSION_LEVEL);
+      const key = `tex-defense-${defenseId}-lv${lvl}`;
+      return this.textures.exists(key) ? key : `tex-defense-${defenseId}`;
+    }
+
     applyTowerDisplay(tower, stretchX, stretchY) {
       const size = this.towerDisplaySize(tower.defenseId, tower.level);
+      tower.sprite.setTexture(this.defenseTextureKey(tower.defenseId, tower.level));
       tower.sprite.setDisplaySize(size, size);
       const normalScaleX = tower.sprite.scaleX;
       const normalScaleY = tower.sprite.scaleY;
@@ -823,7 +830,7 @@
           .setTint(fuseTarget ? 0xffffff : 0xff7777);
       } else {
         this.previewGhost
-          .setTexture(`tex-defense-${this.held.defenseId}`)
+          .setTexture(this.defenseTextureKey(this.held.defenseId, this.held.level))
           .setPosition(targetX, targetY)
           .setDisplaySize(previewSize, previewSize)
           .setAlpha(canCommit ? 0.86 : 0.58)
@@ -921,7 +928,7 @@
       if (tower.auraRing) tower.auraRing.setAlpha(0.25);
       this.held = { defenseId: tower.defenseId, level: tower.level, paidCost: 0, sourceTower: tower };
       const heldIconSize = this.isDesktopLayout() ? 86 : 66;
-      this.heldIcon.setTexture(`tex-defense-${tower.defenseId}`).setDisplaySize(heldIconSize, heldIconSize).setVisible(true);
+      this.heldIcon.setTexture(this.defenseTextureKey(tower.defenseId, tower.level)).setDisplaySize(heldIconSize, heldIconSize).setVisible(true);
       this.heldLabel.setText(`${D.DEFENSES[tower.defenseId].name}\nFundir Nv ${tower.level}`).setColor('#f2e2b8').setVisible(true);
       this.cancelBtn.setVisible(true);
     }
@@ -979,7 +986,7 @@
 
     placeTower(defenseId, level, x, y, silent, targeting) {
       const def = D.DEFENSES[defenseId];
-      const sprite = this.add.image(x, y, `tex-defense-${defenseId}`);
+      const sprite = this.add.image(x, y, this.defenseTextureKey(defenseId, level));
       const tower = { defenseId, level, x, y, sprite, lastFire: 0, targetCooldowns: new Map(), targeting: targeting || 'first', auraRing: null };
       sprite.setDepth(88);
       const normal = this.applyTowerDisplay(tower);

@@ -2,9 +2,13 @@
   "id": "eva",
   "name": "Eva",
   "rarity": "rare",
+  "rarityLabel": "Raro",
+  "rarityColor": "#4ba3ff",
   "class": "support",
-  "weapon": "garden-bowl",
-  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "classLabel": "Suporte",
+  "weapon": "flores do jardim",
+  "summonPack": "genesis",
+  "style": "front portrait for roster/sheet; right-facing side sprites for battle",
   "anchors": {
     "portrait": {
       "type": "bottom-center",

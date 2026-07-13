@@ -2,8 +2,12 @@
   "id": "davi",
   "name": "Davi",
   "rarity": "epic",
+  "rarityLabel": "Épico",
+  "rarityColor": "#a66cff",
   "class": "ranged",
-  "weapon": "sling",
+  "classLabel": "Distância",
+  "weapon": "funda",
+  "summonPack": "futuros-reis",
   "style": "front portrait for roster/sheet; right-facing side sprites for battle",
   "anchors": {
     "portrait": {

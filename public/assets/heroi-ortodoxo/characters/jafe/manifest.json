@@ -1,10 +1,14 @@
 {
   "id": "jafe",
-  "name": "Jaf?",
+  "name": "Jafé",
   "rarity": "uncommon",
+  "rarityLabel": "Incomum",
+  "rarityColor": "#65c36f",
   "class": "ranged",
-  "weapon": "bow",
-  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "classLabel": "Distância",
+  "weapon": "arco costeiro",
+  "summonPack": "genesis",
+  "style": "front portrait for roster/sheet; right-facing side sprites for battle",
   "anchors": {
     "portrait": {
       "type": "bottom-center",

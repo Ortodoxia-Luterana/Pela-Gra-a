@@ -2,9 +2,13 @@
   "id": "rebeca",
   "name": "Rebeca",
   "rarity": "rare",
+  "rarityLabel": "Raro",
+  "rarityColor": "#4ba3ff",
   "class": "support",
-  "weapon": "water-jar",
-  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "classLabel": "Suporte",
+  "weapon": "jarro de ?gua",
+  "summonPack": "patriarcas",
+  "style": "front portrait for roster/sheet; right-facing side sprites for battle",
   "anchors": {
     "portrait": {
       "type": "bottom-center",

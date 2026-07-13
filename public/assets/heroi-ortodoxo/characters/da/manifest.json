@@ -1,10 +1,14 @@
 {
   "id": "da",
-  "name": "D?",
+  "name": "Dã",
   "rarity": "common",
+  "rarityLabel": "Comum",
+  "rarityColor": "#b9c0ca",
   "class": "ranged",
-  "weapon": "throwing-knives",
-  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "classLabel": "Distância",
+  "weapon": "lan?as curtas",
+  "summonPack": "tribos",
+  "style": "front portrait for roster/sheet; right-facing side sprites for battle",
   "anchors": {
     "portrait": {
       "type": "bottom-center",

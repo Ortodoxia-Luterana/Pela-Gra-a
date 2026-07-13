@@ -1,10 +1,14 @@
 {
   "id": "moises",
-  "name": "Mois?s",
+  "name": "Moisés",
   "rarity": "legendary",
+  "rarityLabel": "Lendário",
+  "rarityColor": "#f2b84b",
   "class": "support",
-  "weapon": "prophet-staff",
-  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "classLabel": "Suporte",
+  "weapon": "cajado prof?tico",
+  "summonPack": "exodo",
+  "style": "front portrait for roster/sheet; right-facing side sprites for battle",
   "anchors": {
     "portrait": {
       "type": "bottom-center",

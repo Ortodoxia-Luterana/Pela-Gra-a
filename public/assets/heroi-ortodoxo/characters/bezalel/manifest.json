@@ -2,9 +2,13 @@
   "id": "bezalel",
   "name": "Bezalel",
   "rarity": "rare",
+  "rarityLabel": "Raro",
+  "rarityColor": "#4ba3ff",
   "class": "ranged",
-  "weapon": "artifact-bow",
-  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "classLabel": "Distância",
+  "weapon": "arco de art?fice",
+  "summonPack": "exodo",
+  "style": "front portrait for roster/sheet; right-facing side sprites for battle",
   "anchors": {
     "portrait": {
       "type": "bottom-center",

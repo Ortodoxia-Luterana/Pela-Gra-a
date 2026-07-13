@@ -1,10 +1,14 @@
 {
   "id": "noe",
-  "name": "No?",
+  "name": "Noé",
   "rarity": "epic",
+  "rarityLabel": "Épico",
+  "rarityColor": "#a66cff",
   "class": "support",
-  "weapon": "hammer-staff",
-  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "classLabel": "Suporte",
+  "weapon": "martelo de construtor",
+  "summonPack": "genesis",
+  "style": "front portrait for roster/sheet; right-facing side sprites for battle",
   "anchors": {
     "portrait": {
       "type": "bottom-center",

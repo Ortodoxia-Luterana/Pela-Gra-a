@@ -2,9 +2,13 @@
   "id": "isaque",
   "name": "Isaque",
   "rarity": "epic",
+  "rarityLabel": "Épico",
+  "rarityColor": "#a66cff",
   "class": "ranged",
-  "weapon": "sling",
-  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "classLabel": "Distância",
+  "weapon": "arco nobre",
+  "summonPack": "patriarcas",
+  "style": "front portrait for roster/sheet; right-facing side sprites for battle",
   "anchors": {
     "portrait": {
       "type": "bottom-center",

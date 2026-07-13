@@ -2,9 +2,13 @@
   "id": "nadabe",
   "name": "Nadabe",
   "rarity": "rare",
+  "rarityLabel": "Raro",
+  "rarityColor": "#4ba3ff",
   "class": "melee",
-  "weapon": "censer-blade",
-  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "classLabel": "Corpo a corpo",
+  "weapon": "machado e incens?rio",
+  "summonPack": "exodo",
+  "style": "front portrait for roster/sheet; right-facing side sprites for battle",
   "anchors": {
     "portrait": {
       "type": "bottom-center",

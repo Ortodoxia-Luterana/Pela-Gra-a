@@ -2,9 +2,13 @@
   "id": "bila",
   "name": "Bila",
   "rarity": "common",
+  "rarityLabel": "Comum",
+  "rarityColor": "#b9c0ca",
   "class": "support",
-  "weapon": "healer-pouch",
-  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "classLabel": "Suporte",
+  "weapon": "bolsa de cuidado",
+  "summonPack": "patriarcas",
+  "style": "front portrait for roster/sheet; right-facing side sprites for battle",
   "anchors": {
     "portrait": {
       "type": "bottom-center",

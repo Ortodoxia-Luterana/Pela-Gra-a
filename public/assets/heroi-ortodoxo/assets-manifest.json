@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "characters": {
     "abel": "/assets/heroi-ortodoxo/characters/abel/manifest.json",
     "abiu": "/assets/heroi-ortodoxo/characters/abiu/manifest.json",
@@ -70,5 +70,7 @@
       },
       "speed": 920
     }
-  }
+  },
+  "roster": "/assets/heroi-ortodoxo/character-roster.json",
+  "summonPools": "/assets/heroi-ortodoxo/summon-pools.json"
 }

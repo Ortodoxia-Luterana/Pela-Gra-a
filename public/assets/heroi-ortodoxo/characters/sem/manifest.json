@@ -2,9 +2,13 @@
   "id": "sem",
   "name": "Sem",
   "rarity": "uncommon",
+  "rarityLabel": "Incomum",
+  "rarityColor": "#65c36f",
   "class": "support",
-  "weapon": "blessing",
-  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "classLabel": "Suporte",
+  "weapon": "b?n??o e cajado",
+  "summonPack": "genesis",
+  "style": "front portrait for roster/sheet; right-facing side sprites for battle",
   "anchors": {
     "portrait": {
       "type": "bottom-center",

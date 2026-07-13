@@ -1,10 +1,14 @@
 {
   "id": "arao",
-  "name": "Ar?o",
+  "name": "Arão",
   "rarity": "epic",
-  "class": "melee",
-  "weapon": "staff-censer",
-  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "rarityLabel": "Épico",
+  "rarityColor": "#a66cff",
+  "class": "support",
+  "classLabel": "Suporte",
+  "weapon": "cajado e incens?rio",
+  "summonPack": "exodo",
+  "style": "front portrait for roster/sheet; right-facing side sprites for battle",
   "anchors": {
     "portrait": {
       "type": "bottom-center",

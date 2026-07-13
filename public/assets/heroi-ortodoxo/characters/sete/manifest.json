@@ -2,9 +2,13 @@
   "id": "sete",
   "name": "Sete",
   "rarity": "uncommon",
+  "rarityLabel": "Incomum",
+  "rarityColor": "#65c36f",
   "class": "support",
-  "weapon": "scroll",
-  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "classLabel": "Suporte",
+  "weapon": "cajado simples",
+  "summonPack": "genesis",
+  "style": "front portrait for roster/sheet; right-facing side sprites for battle",
   "anchors": {
     "portrait": {
       "type": "bottom-center",

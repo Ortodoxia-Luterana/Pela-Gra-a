@@ -2,9 +2,13 @@
   "id": "hagar",
   "name": "Hagar",
   "rarity": "common",
+  "rarityLabel": "Comum",
+  "rarityColor": "#b9c0ca",
   "class": "support",
-  "weapon": "water-skin",
-  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "classLabel": "Suporte",
+  "weapon": "odre de ?gua",
+  "summonPack": "patriarcas",
+  "style": "front portrait for roster/sheet; right-facing side sprites for battle",
   "anchors": {
     "portrait": {
       "type": "bottom-center",

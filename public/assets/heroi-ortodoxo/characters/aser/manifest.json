@@ -2,9 +2,13 @@
   "id": "aser",
   "name": "Aser",
   "rarity": "common",
-  "class": "ranged",
-  "weapon": "sling",
-  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "rarityLabel": "Comum",
+  "rarityColor": "#b9c0ca",
+  "class": "melee",
+  "classLabel": "Corpo a corpo",
+  "weapon": "l?minas g?meas",
+  "summonPack": "tribos",
+  "style": "front portrait for roster/sheet; right-facing side sprites for battle",
   "anchors": {
     "portrait": {
       "type": "bottom-center",

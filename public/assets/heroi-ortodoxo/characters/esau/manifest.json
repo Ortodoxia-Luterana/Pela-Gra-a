@@ -1,10 +1,14 @@
 {
   "id": "esau",
-  "name": "Esa?",
+  "name": "Esaú",
   "rarity": "uncommon",
+  "rarityLabel": "Incomum",
+  "rarityColor": "#65c36f",
   "class": "melee",
-  "weapon": "hunter-blade",
-  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "classLabel": "Corpo a corpo",
+  "weapon": "arco e faca de ca?a",
+  "summonPack": "patriarcas",
+  "style": "front portrait for roster/sheet; right-facing side sprites for battle",
   "anchors": {
     "portrait": {
       "type": "bottom-center",

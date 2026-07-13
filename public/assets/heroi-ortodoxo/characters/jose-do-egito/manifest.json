@@ -1,10 +1,14 @@
 {
   "id": "jose-do-egito",
-  "name": "Jos? do Egito",
+  "name": "José do Egito",
   "rarity": "legendary",
-  "class": "ranged",
-  "weapon": "staff-scroll",
-  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "rarityLabel": "Lendário",
+  "rarityColor": "#f2b84b",
+  "class": "support",
+  "classLabel": "Suporte",
+  "weapon": "cetro e sabedoria",
+  "summonPack": "patriarcas",
+  "style": "front portrait for roster/sheet; right-facing side sprites for battle",
   "anchors": {
     "portrait": {
       "type": "bottom-center",

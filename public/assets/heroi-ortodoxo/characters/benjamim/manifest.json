@@ -2,9 +2,13 @@
   "id": "benjamim",
   "name": "Benjamim",
   "rarity": "uncommon",
+  "rarityLabel": "Incomum",
+  "rarityColor": "#65c36f",
   "class": "ranged",
-  "weapon": "sling",
-  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "classLabel": "Distância",
+  "weapon": "funda e broquel",
+  "summonPack": "tribos",
+  "style": "front portrait for roster/sheet; right-facing side sprites for battle",
   "anchors": {
     "portrait": {
       "type": "bottom-center",

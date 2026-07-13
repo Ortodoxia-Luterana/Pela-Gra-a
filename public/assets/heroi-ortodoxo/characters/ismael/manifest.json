@@ -2,9 +2,13 @@
   "id": "ismael",
   "name": "Ismael",
   "rarity": "common",
+  "rarityLabel": "Comum",
+  "rarityColor": "#b9c0ca",
   "class": "ranged",
-  "weapon": "bow",
-  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "classLabel": "Distância",
+  "weapon": "arco do deserto",
+  "summonPack": "patriarcas",
+  "style": "front portrait for roster/sheet; right-facing side sprites for battle",
   "anchors": {
     "portrait": {
       "type": "bottom-center",

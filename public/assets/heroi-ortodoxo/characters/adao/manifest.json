@@ -1,10 +1,14 @@
 {
   "id": "adao",
-  "name": "Ad?o",
+  "name": "Adão",
   "rarity": "epic",
+  "rarityLabel": "Épico",
+  "rarityColor": "#a66cff",
   "class": "melee",
-  "weapon": "club",
-  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "classLabel": "Corpo a corpo",
+  "weapon": "clava",
+  "summonPack": "genesis",
+  "style": "front portrait for roster/sheet; right-facing side sprites for battle",
   "anchors": {
     "portrait": {
       "type": "bottom-center",

@@ -2,9 +2,13 @@
   "id": "gade",
   "name": "Gade",
   "rarity": "common",
+  "rarityLabel": "Comum",
+  "rarityColor": "#b9c0ca",
   "class": "melee",
-  "weapon": "mace",
-  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "classLabel": "Corpo a corpo",
+  "weapon": "ma?a pesada",
+  "summonPack": "tribos",
+  "style": "front portrait for roster/sheet; right-facing side sprites for battle",
   "anchors": {
     "portrait": {
       "type": "bottom-center",

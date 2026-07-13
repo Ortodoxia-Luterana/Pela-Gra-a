@@ -2,9 +2,13 @@
   "id": "zebulom",
   "name": "Zebulom",
   "rarity": "common",
+  "rarityLabel": "Comum",
+  "rarityColor": "#b9c0ca",
   "class": "ranged",
-  "weapon": "javelin",
-  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "classLabel": "Distância",
+  "weapon": "lan?a costeira",
+  "summonPack": "tribos",
+  "style": "front portrait for roster/sheet; right-facing side sprites for battle",
   "anchors": {
     "portrait": {
       "type": "bottom-center",

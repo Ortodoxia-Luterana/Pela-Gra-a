@@ -1,0 +1,146 @@
+{
+  "version": 1,
+  "description": "Pools iniciais para futuras invoca??es. Pesos podem ser balanceados depois sem mudar os assets.",
+  "rarityWeights": {
+    "common": 72,
+    "uncommon": 18,
+    "rare": 7,
+    "epic": 2.5,
+    "legendary": 0.5
+  },
+  "pity": {
+    "rareOrBetterEvery": 10,
+    "epicOrBetterEvery": 40
+  },
+  "packs": [
+    {
+      "id": "alianca-inicial",
+      "name": "Alian?a Inicial",
+      "description": "Pacote base com personagens de G?nesis e ?xodo para a primeira fase do jogo.",
+      "characters": [
+        "abel",
+        "abiu",
+        "abraao",
+        "adao",
+        "arao",
+        "aser",
+        "benjamim",
+        "bezalel",
+        "bila",
+        "cam",
+        "da",
+        "eleazar",
+        "esau",
+        "eva",
+        "gade",
+        "hagar",
+        "hur",
+        "isaque",
+        "ismael",
+        "issacar",
+        "jaco",
+        "jafe",
+        "jose-do-egito",
+        "juda",
+        "levi",
+        "lo",
+        "miria",
+        "moises",
+        "nadabe",
+        "noe",
+        "rebeca",
+        "rubem",
+        "sem",
+        "servo-de-abraao",
+        "sete",
+        "simeao",
+        "tamar",
+        "zebulom",
+        "zilpa"
+      ]
+    },
+    {
+      "id": "patriarcas",
+      "name": "Patriarcas",
+      "description": "Personagens ligados ?s hist?rias dos patriarcas.",
+      "characters": [
+        "abel",
+        "abraao",
+        "bila",
+        "esau",
+        "hagar",
+        "isaque",
+        "ismael",
+        "jaco",
+        "jose-do-egito",
+        "lo",
+        "rebeca",
+        "servo-de-abraao",
+        "tamar",
+        "zilpa"
+      ]
+    },
+    {
+      "id": "exodo",
+      "name": "Êxodo",
+      "description": "Personagens ligados ? sa?da do Egito, sacerd?cio e tabern?culo.",
+      "characters": [
+        "abiu",
+        "arao",
+        "bezalel",
+        "eleazar",
+        "hur",
+        "miria",
+        "moises",
+        "nadabe"
+      ]
+    },
+    {
+      "id": "tribos",
+      "name": "Tribos de Israel",
+      "description": "Personagens ligados aos filhos de Jac? e suas tribos.",
+      "characters": [
+        "aser",
+        "benjamim",
+        "da",
+        "gade",
+        "issacar",
+        "juda",
+        "levi",
+        "rubem",
+        "simeao",
+        "zebulom"
+      ]
+    },
+    {
+      "id": "genesis",
+      "name": "Gênesis",
+      "description": "Primeiros personagens da cria??o, dil?vio e fam?lias antigas.",
+      "characters": [
+        "adao",
+        "cam",
+        "eva",
+        "jafe",
+        "noe",
+        "sem",
+        "sete"
+      ]
+    },
+    {
+      "id": "conquista",
+      "name": "Conquista",
+      "description": "Reservado para a expans?o de Josu?.",
+      "characters": [
+        "josue"
+      ]
+    },
+    {
+      "id": "futuros-reis",
+      "name": "Futuros Reis",
+      "description": "Reservado para personagens que entram quando o jogo avan?ar para livros posteriores.",
+      "characters": [
+        "davi"
+      ]
+    }
+  ]
+}

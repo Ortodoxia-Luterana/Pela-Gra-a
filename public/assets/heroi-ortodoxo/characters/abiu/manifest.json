@@ -1,10 +1,14 @@
 {
   "id": "abiu",
-  "name": "Abi?",
+  "name": "Abiú",
   "rarity": "rare",
+  "rarityLabel": "Raro",
+  "rarityColor": "#4ba3ff",
   "class": "melee",
-  "weapon": "curved-blade",
-  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "classLabel": "Corpo a corpo",
+  "weapon": "l?mina curva",
+  "summonPack": "exodo",
+  "style": "front portrait for roster/sheet; right-facing side sprites for battle",
   "anchors": {
     "portrait": {
       "type": "bottom-center",

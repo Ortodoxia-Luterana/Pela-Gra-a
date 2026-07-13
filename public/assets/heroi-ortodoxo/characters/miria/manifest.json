@@ -1,10 +1,14 @@
 {
   "id": "miria",
-  "name": "Miri?",
+  "name": "Miriã",
   "rarity": "rare",
-  "class": "ranged",
-  "weapon": "tambourine",
-  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "rarityLabel": "Raro",
+  "rarityColor": "#4ba3ff",
+  "class": "support",
+  "classLabel": "Suporte",
+  "weapon": "tamborim",
+  "summonPack": "exodo",
+  "style": "front portrait for roster/sheet; right-facing side sprites for battle",
   "anchors": {
     "portrait": {
       "type": "bottom-center",

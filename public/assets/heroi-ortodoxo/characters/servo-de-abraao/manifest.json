@@ -1,10 +1,14 @@
 {
   "id": "servo-de-abraao",
-  "name": "Servo de Abra?o",
+  "name": "Servo de Abraão",
   "rarity": "common",
+  "rarityLabel": "Comum",
+  "rarityColor": "#b9c0ca",
   "class": "support",
-  "weapon": "travel-staff",
-  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "classLabel": "Suporte",
+  "weapon": "cajado de viagem",
+  "summonPack": "patriarcas",
+  "style": "front portrait for roster/sheet; right-facing side sprites for battle",
   "anchors": {
     "portrait": {
       "type": "bottom-center",

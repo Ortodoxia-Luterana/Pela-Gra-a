@@ -1,10 +1,14 @@
 {
   "id": "abraao",
-  "name": "Abra?o",
+  "name": "Abraão",
   "rarity": "legendary",
+  "rarityLabel": "Lendário",
+  "rarityColor": "#f2b84b",
   "class": "melee",
-  "weapon": "sword",
-  "style": "front portrait for roster/sheet; right-facing side idle for battle",
+  "classLabel": "Corpo a corpo",
+  "weapon": "espada patriarcal",
+  "summonPack": "patriarcas",
+  "style": "front portrait for roster/sheet; right-facing side sprites for battle",
   "anchors": {
     "portrait": {
       "type": "bottom-center",

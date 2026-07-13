@@ -1,4 +1,5 @@
 import { JourneyScene } from './game-scene.js';
+import { BabelRealtime } from './multiplayer.js';
 import { GameSimulation } from './simulation.js';
 import { GameUI } from './ui.js';
 
@@ -6,6 +7,7 @@ const boot = window.__BABEL_BOOT__ || { user: { name: 'Aventureiro' }, state: nu
 const emit = (type, payload = {}) => window.dispatchEvent(new CustomEvent('babel:event', { detail: { type, payload } }));
 const simulation = new GameSimulation(boot.state, emit);
 const offlineReward = simulation.applyOffline(boot.offlineSeconds);
+const realtime = new BabelRealtime(simulation);
 
 const game = new window.Phaser.Game({
   type: window.Phaser.AUTO,
@@ -16,10 +18,17 @@ const game = new window.Phaser.Game({
   scale: { mode: window.Phaser.Scale.RESIZE, autoCenter: window.Phaser.Scale.CENTER_BOTH, width: '100%', height: '100%' },
   input: { activePointers: 3 },
   physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false } },
-  scene: [new JourneyScene(simulation)]
+  scene: [new JourneyScene(simulation, realtime)]
 });
 
 const ui = new GameUI(simulation, boot);
+realtime.on('joined', ({ player }) => ui.toast(`${player.name} entrou nos Campos das Fronteiras.`));
+realtime.on('left', ({ player }) => { if (player?.name) ui.toast(`${player.name} deixou a região.`); });
+realtime.on('replaced', payload => ui.toast(payload?.message || 'Esta jornada foi aberta em outra aba.'));
+realtime.on('error', payload => {
+  if (payload?.code === 'authentication_required') ui.toast('Sua sessão expirou. Entre novamente pelo Game Hub.');
+});
+realtime.start();
 if (offlineReward) window.setTimeout(() => ui.showOffline(offlineReward), 500);
 
 let saveInFlight = null;
@@ -62,10 +71,13 @@ document.addEventListener('visibilitychange', () => {
     saveProgress();
   }
 });
-window.addEventListener('pagehide', saveProgress);
+window.addEventListener('pagehide', () => {
+  saveProgress();
+  realtime.destroy();
+}, { once: true });
 
 window.addEventListener('error', event => {
   if (!String(event.message || '').includes('ResizeObserver')) ui.toast('A jornada encontrou uma falha visual. Recarregue a página se ela persistir.');
 });
 
-window.__BABEL_DEBUG__ = { game, simulation, saveProgress };
+window.__BABEL_DEBUG__ = { game, simulation, realtime, saveProgress };

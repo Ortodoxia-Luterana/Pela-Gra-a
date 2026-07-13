@@ -5,9 +5,13 @@
   "type": "commonjs",
   "scripts": {
     "start": "node --no-warnings start.js",
-    "dev": "node --no-warnings start.js"
+    "dev": "node --no-warnings start.js",
+    "test:babel-realtime": "node --no-warnings tests/babel-realtime.cjs"
   },
   "dependencies": {
     "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "socket.io-client": "4.8.3"
   }
 }

@@ -1,1 +1,1 @@
-Game hub update: add A Queda de Babel mobile RPG vertical slice.
+Game hub update: add A Queda de Babel realtime shared map.

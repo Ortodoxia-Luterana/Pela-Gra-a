@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#171411">
+  <title>A Confissão — Caminhos da Reforma</title>
+  <link rel="stylesheet" href="game.css">
+</head>
+<body>
+  <main class="game-shell" id="game-shell">
+    <header class="topbar">
+      <a class="icon-button" href="/" aria-label="Voltar ao Game Hub">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+      </a>
+      <div class="title-lockup">
+        <strong>A CONFISSÃO</strong>
+        <span>Caminhos da Reforma</span>
+      </div>
+      <button class="icon-button" id="open-codex" type="button" aria-label="Abrir códice histórico">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 016.5 3H11v17H6.5A2.5 2.5 0 004 22V5.5zm16 0A2.5 2.5 0 0017.5 3H13v17h4.5A2.5 2.5 0 0120 22V5.5z"/></svg>
+      </button>
+    </header>
+
+    <section class="chapter-rail" aria-label="Progresso histórico">
+      <div class="chapter-copy"><span id="chapter-name">O jovem Martinho</span><b id="year-label">1483</b></div>
+      <div class="timeline"><span id="timeline-fill"></span></div>
+    </section>
+
+    <section class="witness-marks" aria-label="Marcos da jornada">
+      <div><span class="seal scripture">S</span><p>Escritura<b id="scripture-count">0</b></p></div>
+      <div><span class="seal confession">C</span><p>Confissão<b id="confession-count">0</b></p></div>
+      <div><span class="seal witness">T</span><p>Testemunho<b id="witness-count">0</b></p></div>
+    </section>
+
+    <section class="table-stage" id="table-stage">
+      <div class="choice-preview choice-left" id="choice-left" aria-hidden="true"><span></span></div>
+      <div class="choice-preview choice-right" id="choice-right" aria-hidden="true"><span></span></div>
+      <article class="decision-card" id="decision-card" tabindex="0" aria-live="polite">
+        <div class="card-image" id="card-image"><span class="chapter-stamp" id="card-stamp"></span></div>
+        <div class="card-copy">
+          <p class="speaker" id="speaker"></p>
+          <h1 id="prompt"></h1>
+          <p class="context" id="context"></p>
+        </div>
+        <div class="drag-edge drag-edge-left"></div>
+        <div class="drag-edge drag-edge-right"></div>
+      </article>
+    </section>
+
+    <section class="tap-choices" aria-label="Escolhas">
+      <button id="tap-left" type="button"><small>ESQUERDA</small><span></span></button>
+      <button id="tap-right" type="button"><small>DIREITA</small><span></span></button>
+    </section>
+
+    <footer class="game-footer">
+      <button id="open-route" type="button">Caminho percorrido <b id="choice-count">0</b></button>
+      <p id="gesture-hint"><span>↔</span> Arraste para escolher</p>
+      <span class="save-status" id="save-status">Conectando ao perfil…</span>
+    </footer>
+  </main>
+
+  <section class="intro-screen" id="intro-screen">
+    <div class="intro-art"></div>
+    <div class="intro-copy">
+      <span class="intro-date">1483 — 1648</span>
+      <h1>A CONFISSÃO</h1>
+      <p class="intro-subtitle">Caminhos da Reforma</p>
+      <p>Uma decisão pode calar uma tese, mudar uma cidade ou preservar uma confissão por gerações. Aqui, vencer não é equilibrar poder: é atravessar a história como ela aconteceu.</p>
+      <button id="start-game" type="button">Iniciar a jornada</button>
+      <small>Arraste as cartas. Descubra os desvios. Preserve a verdade.</small>
+    </div>
+  </section>
+
+  <dialog class="panel-dialog" id="codex-dialog">
+    <div class="dialog-head"><div><span>ARQUIVO HISTÓRICO</span><h2>Códice da Reforma</h2></div><button data-close="codex-dialog" aria-label="Fechar">×</button></div>
+    <nav class="codex-tabs" id="codex-tabs"></nav>
+    <div class="codex-content" id="codex-content"></div>
+  </dialog>
+
+  <dialog class="panel-dialog route-dialog" id="route-dialog">
+    <div class="dialog-head"><div><span>MEMÓRIA DA CAMPANHA</span><h2>Caminho percorrido</h2></div><button data-close="route-dialog" aria-label="Fechar">×</button></div>
+    <div class="route-list" id="route-list"></div>
+  </dialog>
+
+  <dialog class="ending-dialog" id="ending-dialog">
+    <div class="ending-art" id="ending-art"></div>
+    <div class="ending-copy">
+      <span id="ending-kicker"></span>
+      <h2 id="ending-title"></h2>
+      <p id="ending-body"></p>
+      <div class="ending-fact" id="ending-fact"></div>
+      <button id="restart-game" type="button">Recomeçar em 1483</button>
+      <a href="/">Voltar ao Game Hub</a>
+    </div>
+  </dialog>
+
+  <script src="game.js"></script>
+</body>
+</html>

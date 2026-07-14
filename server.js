@@ -14,10 +14,11 @@ const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v3.34.0';
+const GAME_VERSION = 'v3.35.0';
 const GAME_ID = 'pela-graca-1904';
 const HEROI_GAME_ID = 'heroi-ortodoxo';
 const CRONICAS_GAME_ID = 'cronicas-do-levante';
+const REFORMA_GAME_ID = 'a-confissao';
 const LUTHER_MATCH_GAME_ID = 'luther-metch';
 const QUIZ_GAME_ID = 'quiz-ortodoxia';
 const CONCORDIUM_GAME_ID = 'concordium-first-age';
@@ -41,6 +42,7 @@ const CHAT_MESSAGE_LIMIT = 50;
 const CHAT_MAX_LENGTH = 180;
 const RAW_PUBLIC_URL = 'https://cdn.jsdelivr.net/gh/Ortodoxia-Luterana/Pela-Gra-a@main/public';
 const CRONICAS_SAVE_NAME = 'Crônicas do Levante';
+const REFORMA_SAVE_NAME = 'A Confissão — Caminhos da Reforma';
 const STATE_NAMES = {
   AC: 'Acre', AL: 'Alagoas', AP: 'Amapa', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceara', DF: 'Distrito Federal', ES: 'Espirito Santo', GO: 'Goias',
   MA: 'Maranhao', MT: 'Mato Grosso', MS: 'Mato Grosso do Sul', MG: 'Minas Gerais', PA: 'Para', PB: 'Paraiba', PR: 'Parana', PE: 'Pernambuco',
@@ -99,6 +101,15 @@ const CRONICAS_ACHIEVEMENTS = [
   { id: 'cronicas-final-sombra-dos-rios', title: 'À Sombra dos Rios', description: 'Alcançou o final À Sombra dos Rios em Crônicas do Levante.', xp: 120, points: 25, file: '/assets/achievements/cronicas-sombra-dos-rios-v1.png' },
   { id: 'cronicas-final-cedros-futuro', title: 'Cedros para o Futuro', description: 'Alcançou o final Cedros para o Futuro em Crônicas do Levante.', xp: 120, points: 25, file: '/assets/achievements/cronicas-cedros-futuro-v1.png' }
 ];
+const REFORMA_ACHIEVEMENTS = [
+  { id: 'confissao-primeira-jornada', title: 'À Porta da História', description: 'Iniciou a primeira jornada em A Confissão.', xp: 25, points: 5, file: '/a-confissao/assets/chapter-luther.webp' },
+  { id: 'confissao-95-teses', title: 'Noventa e Cinco', description: 'Tornou públicas as 95 Teses em 1517.', xp: 70, points: 15, file: '/a-confissao/assets/chapter-luther.webp' },
+  { id: 'confissao-worms', title: 'Aqui Permaneço', description: 'Recusou a retratação na Dieta de Worms.', xp: 100, points: 20, file: '/a-confissao/assets/chapter-worms.webp' },
+  { id: 'confissao-wartburg', title: 'Cavaleiro Jorge', description: 'Chegou a Wartburg e iniciou a tradução do Novo Testamento.', xp: 85, points: 15, file: '/a-confissao/assets/chapter-worms.webp' },
+  { id: 'confissao-livro-concordia', title: 'Concórdia de 1580', description: 'Publicou o Livro de Concórdia na linha histórica.', xp: 220, points: 45, file: '/a-confissao/assets/chapter-concord.webp' },
+  { id: 'confissao-exilio', title: 'Livros na Estrada', description: 'Preservou a confissão no exílio após a Montanha Branca.', xp: 180, points: 35, file: '/a-confissao/assets/chapter-exile.webp' },
+  { id: 'confissao-vitoria', title: 'A Confissão Permanece', description: 'Concluiu a jornada histórica de 1483 a 1648.', xp: 350, points: 70, file: '/a-confissao/assets/chapter-exile.webp' }
+];
 const LUTHER_MATCH_ACHIEVEMENTS = [
   { id: 'luther-match-primeiro-acesso', title: 'Primeiro Match', description: 'Entrou pela primeira vez em Luther Metch.', xp: 20, points: 5, file: `${RAW_PUBLIC_URL}/achievements/luther-match-primeiro-acesso-v2.png`, condition: stats => Boolean(stats.entered) },
   { id: 'luther-match-nivel-10', title: 'Dez Teses', description: 'Completou o nivel 10 em Luther Metch.', xp: 45, points: 10, file: `${RAW_PUBLIC_URL}/achievements/luther-match-nivel-10-v2.png`, condition: stats => stats.completedLevels >= 10 },
@@ -123,6 +134,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS game_rankings (user_id TEXT NOT NULL, game_id TEXT NOT NULL, user_name TEXT NOT NULL, save_name TEXT NOT NULL, year INTEGER NOT NULL, month INTEGER NOT NULL, total_churches INTEGER NOT NULL, total_members REAL NOT NULL, doctrine_correct INTEGER NOT NULL, reached_final INTEGER NOT NULL, state_churches_json TEXT NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY (user_id, game_id), FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS luther_match_rankings (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, level INTEGER NOT NULL, best_level INTEGER NOT NULL, completed_levels INTEGER NOT NULL, score INTEGER NOT NULL, max_combo INTEGER NOT NULL DEFAULT 0, luther_pair_used INTEGER NOT NULL DEFAULT 0, solas_pair_used INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS cronicas_saves (user_id TEXT PRIMARY KEY, state_json TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
+  CREATE TABLE IF NOT EXISTS reforma_saves (user_id TEXT PRIMARY KEY, state_json TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS heroi_ortodoxo_saves (user_id TEXT PRIMARY KEY, state_json TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS guardioes_saves (user_id TEXT PRIMARY KEY, state_json TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS babel_saves (user_id TEXT PRIMARY KEY, state_json TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
@@ -210,6 +222,7 @@ const deleteGameRankingsForUser = db.prepare('DELETE FROM game_rankings WHERE us
 const deleteAchievementsForUser = db.prepare('DELETE FROM user_achievements WHERE user_id = ?');
 const deleteLutherRankingForUser = db.prepare('DELETE FROM luther_match_rankings WHERE user_id = ?');
 const deleteCronicasForUser = db.prepare('DELETE FROM cronicas_saves WHERE user_id = ?');
+const deleteReformaForUser = db.prepare('DELETE FROM reforma_saves WHERE user_id = ?');
 const deleteHeroiForUser = db.prepare('DELETE FROM heroi_ortodoxo_saves WHERE user_id = ?');
 const deleteGuardioesForUser = db.prepare('DELETE FROM guardioes_saves WHERE user_id = ?');
 const deleteBabelForUser = db.prepare('DELETE FROM babel_saves WHERE user_id = ?');
@@ -229,6 +242,13 @@ const upsertCronicasSave = db.prepare(`
   ON CONFLICT(user_id) DO UPDATE SET state_json = excluded.state_json, updated_at = excluded.updated_at
 `);
 const deleteCronicasSave = db.prepare('DELETE FROM cronicas_saves WHERE user_id = ?');
+const getReformaSave = db.prepare('SELECT * FROM reforma_saves WHERE user_id = ?');
+const upsertReformaSave = db.prepare(`
+  INSERT INTO reforma_saves (user_id, state_json, created_at, updated_at)
+  VALUES (?, ?, ?, ?)
+  ON CONFLICT(user_id) DO UPDATE SET state_json = excluded.state_json, updated_at = excluded.updated_at
+`);
+const deleteReformaSave = db.prepare('DELETE FROM reforma_saves WHERE user_id = ?');
 const getHeroiSave = db.prepare('SELECT * FROM heroi_ortodoxo_saves WHERE user_id = ?');
 const upsertHeroiSave = db.prepare(`
   INSERT INTO heroi_ortodoxo_saves (user_id, state_json, created_at, updated_at)
@@ -354,6 +374,7 @@ function normalizeGamePresence(input) {
   if (value === LUTHER_MATCH_GAME_ID) return { gameId: LUTHER_MATCH_GAME_ID, location: 'Luther Metch' };
   if (value === QUIZ_GAME_ID) return { gameId: QUIZ_GAME_ID, location: 'Quiz Ortodoxia' };
   if (value === CRONICAS_GAME_ID) return { gameId: CRONICAS_GAME_ID, location: 'Cronicas do Levante' };
+  if (value === REFORMA_GAME_ID) return { gameId: REFORMA_GAME_ID, location: 'A Confissão' };
   if (value === HEROI_GAME_ID) return { gameId: HEROI_GAME_ID, location: 'Heroi Ortodoxo' };
   if (value === CONCORDIUM_EXPLORACAO_GAME_ID) return { gameId: CONCORDIUM_EXPLORACAO_GAME_ID, location: 'Concordium' };
   if (value === GUARDIOES_GAME_ID) return { gameId: GUARDIOES_GAME_ID, location: 'Sola Torre' };
@@ -365,6 +386,7 @@ function presenceForPath(pathname) {
   if (pathname === '/luther-metch' || pathname === '/match3-luterano' || pathname.startsWith('/api/luther-metch')) return normalizeGamePresence(LUTHER_MATCH_GAME_ID);
   if (pathname === '/quiz-ortodoxia' || pathname.startsWith('/api/quiz')) return normalizeGamePresence(QUIZ_GAME_ID);
   if (pathname === '/cronicas-do-levante' || pathname.startsWith('/api/cronicas')) return normalizeGamePresence(CRONICAS_GAME_ID);
+  if (pathname === '/a-confissao' || pathname.startsWith('/api/a-confissao')) return normalizeGamePresence(REFORMA_GAME_ID);
   if (pathname === '/heroi-ortodoxo' || pathname.startsWith('/api/heroi-ortodoxo')) return normalizeGamePresence(HEROI_GAME_ID);
   if (pathname === '/concordium-exploracao' || pathname.startsWith('/api/concordium')) return normalizeGamePresence(CONCORDIUM_EXPLORACAO_GAME_ID);
   if (pathname === '/caminho-dos-guardioes' || pathname.startsWith('/api/guardioes')) return normalizeGamePresence(GUARDIOES_GAME_ID);
@@ -581,6 +603,7 @@ function cleanupNonPlayerAccounts() {
       deleteAchievementsForUser.run(user.id);
       deleteLutherRankingForUser.run(user.id);
       deleteCronicasForUser.run(user.id);
+      deleteReformaForUser.run(user.id);
       deleteHeroiForUser.run(user.id);
       deleteGuardioesForUser.run(user.id);
       deleteBabelForUser.run(user.id);
@@ -1016,6 +1039,15 @@ function persistCronicasAchievements(userId, achievements = [], now = new Date()
     insertUserAchievement.run(userId, CRONICAS_GAME_ID, id, item?.unlockedAt || now, CRONICAS_SAVE_NAME);
   });
 }
+function persistReformaAchievements(userId, achievements = [], now = new Date().toISOString()) {
+  if (!userId || !REFORMA_ACHIEVEMENTS.length) return;
+  const known = new Set(REFORMA_ACHIEVEMENTS.map(medal => medal.id));
+  achievements.forEach(item => {
+    const id = typeof item === 'string' ? item : item?.id;
+    if (!known.has(id)) return;
+    insertUserAchievement.run(userId, REFORMA_GAME_ID, id, item?.unlockedAt || now, REFORMA_SAVE_NAME);
+  });
+}
 function updateRankingForSave(save, userName, state) {
   if (!state) { deleteRanking.run(save.id); return; }
   const stats = extractRankingStats(state);
@@ -1199,7 +1231,7 @@ function serveAsset(req, res) {
     res.writeHead(404); res.end('Not found'); return;
   }
   const ext = path.extname(filePath).toLowerCase();
-  const type = ext === '.css' ? 'text/css; charset=utf-8' : ext === '.js' ? 'text/javascript; charset=utf-8' : ext === '.html' ? 'text/html; charset=utf-8' : ext === '.svg' ? 'image/svg+xml; charset=utf-8' : ext === '.png' ? 'image/png' : ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : ext === '.mp3' ? 'audio/mpeg' : ext === '.ogg' ? 'audio/ogg' : ext === '.wav' ? 'audio/wav' : 'application/octet-stream';
+  const type = ext === '.css' ? 'text/css; charset=utf-8' : ext === '.js' ? 'text/javascript; charset=utf-8' : ext === '.html' ? 'text/html; charset=utf-8' : ext === '.svg' ? 'image/svg+xml; charset=utf-8' : ext === '.png' ? 'image/png' : ext === '.webp' ? 'image/webp' : ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : ext === '.mp3' ? 'audio/mpeg' : ext === '.ogg' ? 'audio/ogg' : ext === '.wav' ? 'audio/wav' : 'application/octet-stream';
   const headers = { 'Content-Type': type };
   if (['.css', '.js', '.html'].includes(ext)) headers['Cache-Control'] = 'no-store, max-age=0';
   res.writeHead(200, headers);
@@ -1265,9 +1297,13 @@ async function handleApi(req, res, url, user) {
     const lutherMatch = getLutherMatchRanking.get(user.id);
     const lutherStats = lutherMatchStats(lutherMatch || {});
     const lutherMedals = achievementsForState({}, lutherStats, user.id, LUTHER_MATCH_GAME_ID, LUTHER_MATCH_ACHIEVEMENTS);
+    const cronicasState = safeJsonParse(getCronicasSave.get(user.id)?.state_json, null);
+    const cronicasMedals = achievementsForState(cronicasState, {}, user.id, CRONICAS_GAME_ID, CRONICAS_ACHIEVEMENTS);
+    const reformaState = safeJsonParse(getReformaSave.get(user.id)?.state_json, null);
+    const reformaMedals = achievementsForState(reformaState, {}, user.id, REFORMA_GAME_ID, REFORMA_ACHIEVEMENTS);
     const lutherChest = lutherMatchChestRewards(lutherStats.completedLevels);
     const quizReward = quizRewards(getQuizRanking.get(user.id));
-    const medals = [...summary.medals, ...lutherMedals];
+    const medals = [...summary.medals, ...cronicasMedals, ...reformaMedals, ...lutherMedals];
     const xp = achievementXp(medals) + lutherChest.xp + quizReward.xp;
     const rank = titleProgress(xp);
     const points = achievementPoints(medals) + rankPointBonus(rank) + lutherChest.points + quizReward.points;
@@ -1299,6 +1335,13 @@ async function handleApi(req, res, url, user) {
           title: 'Cronicas do Levante',
           status: 'prototype',
           playUrl: '/cronicas-do-levante',
+          rankingUrl: null
+        },
+        {
+          id: 'a-confissao',
+          title: 'A Confissão',
+          status: 'playable',
+          playUrl: '/a-confissao',
           rankingUrl: null
         },
         {
@@ -1638,6 +1681,35 @@ async function handleApi(req, res, url, user) {
       return;
     }
   }
+  if (url.pathname === '/api/a-confissao/save') {
+    const save = getReformaSave.get(user.id);
+    const savedState = safeJsonParse(save?.state_json, null);
+    if (req.method === 'GET') {
+      json(res, 200, {
+        gameId: REFORMA_GAME_ID,
+        name: REFORMA_SAVE_NAME,
+        user: { id: user.id, name: user.name, avatarData: user.avatar_data || null },
+        state: savedState,
+        updatedAt: save?.updated_at || null,
+        medals: achievementsForState(savedState, {}, user.id, REFORMA_GAME_ID, REFORMA_ACHIEVEMENTS)
+      });
+      return;
+    }
+    if (req.method === 'PUT' || req.method === 'POST') {
+      const payload = safeJsonParse(await readBody(req) || '{}', {});
+      const state = payload?.state || null;
+      const now = new Date().toISOString();
+      upsertReformaSave.run(user.id, JSON.stringify(state), save?.created_at || now, now);
+      persistReformaAchievements(user.id, payload?.achievements || state?.achievements || [], now);
+      json(res, 200, { ok: true, updatedAt: now });
+      return;
+    }
+    if (req.method === 'DELETE') {
+      deleteReformaSave.run(user.id);
+      json(res, 200, { ok: true });
+      return;
+    }
+  }
   if (url.pathname === '/api/heroi-ortodoxo/save') {
     const save = getHeroiSave.get(user.id);
     if (req.method === 'GET') {
@@ -1780,14 +1852,17 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   const saves = new Map(getSavesByUser.all(user.id).map(save => [save.slot, save]));
   const mainSave = saves.get(1);
   const cronicasSave = getCronicasSave.get(user.id);
+  const reformaSave = getReformaSave.get(user.id);
   const babelSave = getBabelSave.get(user.id);
   const player = playerStatsFromSave(mainSave, user.id);
   const stats = player.stats;
   const cronicasState = safeJsonParse(cronicasSave?.state_json, null);
   const cronicasMedals = achievementsForState(cronicasState, {}, user.id, CRONICAS_GAME_ID, CRONICAS_ACHIEVEMENTS);
+  const reformaState = safeJsonParse(reformaSave?.state_json, null);
+  const reformaMedals = achievementsForState(reformaState, {}, user.id, REFORMA_GAME_ID, REFORMA_ACHIEVEMENTS);
   const lutherMatchRow = getLutherMatchRanking.get(user.id);
   const lutherMatchMedals = achievementsForState({}, lutherMatchStats(lutherMatchRow || {}), user.id, LUTHER_MATCH_GAME_ID, LUTHER_MATCH_ACHIEVEMENTS);
-  const medals = [...player.medals, ...cronicasMedals, ...lutherMatchMedals];
+  const medals = [...player.medals, ...cronicasMedals, ...reformaMedals, ...lutherMatchMedals];
   const lutherChest = lutherMatchChestRewards(lutherMatchStats(lutherMatchRow || {}).completedLevels);
   const quizReward = quizRewards(getQuizRanking.get(user.id));
   const xp = achievementXp(medals) + lutherChest.xp + quizReward.xp;
@@ -1803,10 +1878,14 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     const userSummary = playerStatsFromSave(userSave, rankUser.id);
     const lutherMatch = getLutherMatchRanking.get(rankUser.id);
     const lutherMedals = achievementsForState({}, lutherMatchStats(lutherMatch || {}), rankUser.id, LUTHER_MATCH_GAME_ID, LUTHER_MATCH_ACHIEVEMENTS).filter(medal => medal.unlocked).length;
+    const cronicasUserState = safeJsonParse(getCronicasSave.get(rankUser.id)?.state_json, null);
+    const cronicasUserMedals = achievementsForState(cronicasUserState, {}, rankUser.id, CRONICAS_GAME_ID, CRONICAS_ACHIEVEMENTS).filter(medal => medal.unlocked).length;
+    const reformaUserState = safeJsonParse(getReformaSave.get(rankUser.id)?.state_json, null);
+    const reformaUserMedals = achievementsForState(reformaUserState, {}, rankUser.id, REFORMA_GAME_ID, REFORMA_ACHIEVEMENTS).filter(medal => medal.unlocked).length;
     return {
       user: rankUser,
       summary: userSummary,
-      medals: userSummary.medals.filter(medal => medal.unlocked).length + lutherMedals
+      medals: userSummary.medals.filter(medal => medal.unlocked).length + lutherMedals + cronicasUserMedals + reformaUserMedals
     };
   }).sort((a, b) => b.medals - a.medals || a.user.name.localeCompare(b.user.name)).map((item, index) => {
     const userRank = item.summary.rank.current;
@@ -1833,6 +1912,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   ].map(([key, label, href, icon]) => `<a class="${activeSection === key ? 'active' : ''}" href="${href}"><img class="nav-icon" src="/assets/nav-icons/nav-${icon}.png?v=${GAME_VERSION}" alt="">${label}</a>`).join('');
   const gameCard = `<section class="ol-panel ol-games">
     <article class="ol-game-card pela-cover"><div><h4>Pela Graça 1904</h4><p>Gerencie igrejas, forme pastores, responda perguntas doutrinárias e acompanhe a história da IELB no Brasil.</p></div><a href="/play">Jogar</a></article>
+    <article class="ol-game-card reforma-cover"><div><h4>A Confissão</h4><p>Conduza a Reforma de 1483 a 1648 por decisões históricas, da vida de Lutero ao Livro de Concórdia e ao exílio boêmio.</p></div><a href="/a-confissao">${reformaSave ? 'Continuar' : 'Jogar'}</a></article>
     <article class="ol-game-card cronicas-cover"><div><h4>Crônicas do Levante</h4><p>Uma narrativa bíblica interativa nos dias do rei Davi, com escolhas, descobertas, relações e consequências pelo caminho.</p></div><a href="/cronicas-do-levante">${cronicasSave ? 'Continuar' : 'Jogar'}</a></article>
     <article class="ol-game-card heroi-cover"><div><h4>Herói Ortodoxo</h4><p>Monte uma equipe de heróis bíblicos, explore capítulos curtos e escolha bênçãos para vencer arenas cheias de recompensas.</p></div><a href="/heroi-ortodoxo">Jogar</a></article>
     <article class="ol-game-card match3-cover"><div><h4>Luther Metch</h4><p>Junte 3 ou mais peças iguais para cumprir objetivos e avançar de fase.</p></div><a href="/luther-metch">Jogar</a></article>
@@ -1851,6 +1931,8 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     loja: `<section class="ol-panel" id="loja"><div class="panel-head"><h3>Loja</h3></div><div class="shop-grid"><article><h4>Pacote Comum</h4><p>100 pontos</p><small>Maior chance de figurinhas comuns.</small><button disabled>Comprar em breve</button></article><article><h4>Pacote Raro</h4><p>250 pontos</p><small>Chance melhor de raras e especiais.</small><button disabled>Comprar em breve</button></article><article><h4>Pacote Lendario</h4><p>600 pontos</p><small>Chance alta de figurinhas raras e lendarias.</small><button disabled>Comprar em breve</button></article></div><div class="daily-wheel"><h4>Roleta diaria</h4><p>A cada 24h, o jogador podera tentar ganhar um pacote comum, raro ou lendario de graca.</p><button disabled>Disponivel em breve</button></div></section>`,
     configuracoes: `<section class="ol-panel ol-settings" id="configuracoes"><div class="panel-head"><h3>Configurações</h3></div><form method="POST" action="/profile" class="profile-edit"><div class="profile-box">${renderAvatar(user, 'profile-avatar')}<div><label>Nome público<input name="name" maxlength="40" value="${escapeHtml(user.name)}" required></label><label>Foto do perfil<input id="avatar-file" type="file" accept="image/png,image/jpeg,image/webp"></label><input id="avatar-data" type="hidden" name="avatar_data" value="${escapeHtml(user.avatar_data || '')}"><button type="submit">Salvar perfil</button></div></div></form><hr><div class="saved-games-head"><h4>Campanhas por jogo</h4><p>Medalhas, campanhas e saves principais ficam salvos na conta.</p></div><div class="saved-game-list"><article class="saved-game-row"><div><span>Pela Graça 1904</span><strong>${mainSave ? escapeHtml(mainSave.name) : 'Nenhuma campanha atual'}</strong><small>${mainSave ? 'Apaga só esta campanha atual.' : 'Crie uma campanha para jogar novamente.'}</small></div>${mainSave ? `<form method="POST" action="/saves/${encodeURIComponent(mainSave.id)}/delete" onsubmit="return confirm('Apagar a campanha atual de Pela Graça 1904? Medalhas e melhor ranking serão mantidos.')"><button>Apagar campanha</button></form>` : '<a href="/play">Criar campanha</a>'}</article><article class="saved-game-row"><div><span>Crônicas do Levante</span><strong>${cronicasSave ? 'Campanha em andamento' : 'Nenhuma campanha atual'}</strong><small>${cronicasSave ? 'Apaga só o progresso narrativo. Medalhas futuras serão mantidas.' : 'Comece uma jornada para criar o save automático.'}</small></div>${cronicasSave ? `<form method="POST" action="/cronicas-do-levante/delete" onsubmit="return confirm('Apagar a campanha atual de Crônicas do Levante? Medalhas futuras serão mantidas.')"><button>Apagar campanha</button></form>` : '<a href="/cronicas-do-levante">Criar campanha</a>'}</article><article class="saved-game-row"><div><span>Herói Ortodoxo</span><strong>Save automático na conta</strong><small>Heróis, campanha, check-in e invocações acompanham seu perfil do hub.</small></div><a href="/heroi-ortodoxo">Abrir</a></article><article class="saved-game-row"><div><span>Luther Metch</span><strong>Save local automático</strong><small>Fase, objetivos, pontos e tabuleiro ficam salvos neste navegador.</small></div><a href="/luther-metch">Abrir</a></article><article class="saved-game-row"><div><span>Quiz Ortodoxia</span><strong>Multiplayer online</strong><small>Duelo, convite e competição geral rodam com pareamento pelo servidor.</small></div><a href="/quiz-ortodoxia">Abrir</a></article><article class="saved-game-row"><div><span>A Queda de Babel</span><strong>${babelSave ? 'Jornada em andamento' : 'Nenhuma jornada atual'}</strong><small>Herói, equipamento, pet e progresso da região acompanham seu perfil do hub.</small></div>${babelSave ? `<form method="POST" action="/a-queda-de-babel/delete" onsubmit="return confirm('Apagar a jornada atual de A Queda de Babel?')"><button>Apagar jornada</button></form>` : '<a href="/a-queda-de-babel">Criar jornada</a>'}</article></div></section>`
   };
+  const reformaSettingsRow = `<article class="saved-game-row"><div><span>A Confissão</span><strong>${reformaSave ? 'Jornada em andamento' : 'Nenhuma jornada atual'}</strong><small>Decisões, finais, códice e medalhas acompanham seu perfil.</small></div>${reformaSave ? `<form method="POST" action="/a-confissao/delete" onsubmit="return confirm('Apagar a jornada atual de A Confissão? As medalhas serão mantidas.')"><button>Apagar jornada</button></form>` : '<a href="/a-confissao">Criar jornada</a>'}</article>`;
+  sections.configuracoes = sections.configuracoes.replace('<div class="saved-game-list">', `<div class="saved-game-list">${reformaSettingsRow}`);
   return pageShell('Ortodoxia Luterana Gaming', `
 <main class="ol-hub">
   <aside class="ol-sidebar">
@@ -2004,6 +2086,12 @@ const server = http.createServer(async (req, res) => {
       res.end(body);
       return;
     }
+    if (req.method === 'GET' && url.pathname === '/a-confissao') {
+      const body = fs.readFileSync(path.join(PUBLIC_DIR, 'a-confissao', 'index.html'), 'utf8');
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(body);
+      return;
+    }
     if (req.method === 'GET' && url.pathname === '/heroi-ortodoxo') {
       const save = getHeroiSave.get(user.id);
       const boot = {
@@ -2123,6 +2211,11 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method === 'POST' && url.pathname === '/cronicas-do-levante/delete') {
       deleteCronicasSave.run(user.id);
+      redirect(res, '/?section=configuracoes');
+      return;
+    }
+    if (req.method === 'POST' && url.pathname === '/a-confissao/delete') {
+      deleteReformaSave.run(user.id);
       redirect(res, '/?section=configuracoes');
       return;
     }

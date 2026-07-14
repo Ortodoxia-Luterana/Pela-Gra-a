@@ -1,0 +1,32 @@
+# A Confissão — Caminhos da Reforma
+
+Jogo narrativo mobile-first de decisões binárias por arraste, integrado ao login e ao sistema de medalhas do Game Hub.
+
+## Princípio de jogo
+
+- O gesto de arrastar revela as duas respostas antes de confirmar.
+- Não há equilíbrio artificial entre facções. `Escritura`, `Confissão` e `Testemunho` registram o que o jogador aprendeu.
+- A vitória exige atravessar a linha histórica principal; desvios abrem finais alternativos e registros no códice.
+- A campanha muda de protagonista coletivo depois da morte de Lutero em 1546. A segunda geração acompanha o Interim, as controvérsias, a Fórmula e o Livro de Concórdia; o epílogo chega à Boêmia e a 1648.
+
+## Integração
+
+- Rota: `/a-confissao`
+- Persistência: `/api/a-confissao/save`
+- Tabela SQLite: `reforma_saves`
+- Identificador: `a-confissao`
+- O arquivo `game.js` funciona em modo de prévia via `file://`, usando `localStorage`; no host, usa exclusivamente o perfil autenticado.
+
+## Fontes históricas consultadas
+
+- [Luther.de — infância e juventude](https://www.luther.de/en/geburt.html)
+- [Cidade de Worms — biografia de Lutero](https://www.worms.de/en/web/luther/Worms_1521/Reichstag/Biografie_Luther.php)
+- [Luther House, Wittenberg](https://www.wittenberg.de/portal/seiten/lutherhaus-i-luther-house-900000260-36670.html)
+- [The Book of Concord — história do Livro de Concórdia](https://thebookofconcord.org/introductory-materials/historical-introductions/the-book-of-concord/)
+- [LCMS — como surgiu a Fórmula de Concórdia](https://resources.lcms.org/reading-study/how-the-formula-of-concord-came-to-be/)
+- [LCMS — o Interim de Augsburgo](https://resources.lcms.org/history/the-augsburg-interim/)
+- [Oxford Academic — repressão e exílio após a Montanha Branca](https://academic.oup.com/ehr/article-abstract/CXXV/513/434/525519)
+
+## Arte
+
+As quatro ilustrações de capítulo foram produzidas por geração de imagem especificamente para o jogo, em direção de gravura renascentista colorizada. Texto, controles, HUD e opções permanecem em HTML/CSS para preservar leitura e acessibilidade.

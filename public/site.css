@@ -844,6 +844,10 @@ img.feed-avatar {
   background: linear-gradient(90deg, rgba(0, 0, 0, .06), rgba(0, 0, 0, .78)), url("/assets/cronicas-do-levante-card.png") center/cover;
 }
 
+.ol-game-card.reforma-cover {
+  background: linear-gradient(90deg, rgba(0, 0, 0, .05), rgba(0, 0, 0, .82)), url("/a-confissao/assets/chapter-concord.webp") center 44%/cover;
+}
+
 .ol-game-card.match3-cover {
   background: linear-gradient(90deg, rgba(0, 0, 0, .08), rgba(0, 0, 0, .78)), url("/assets/luther-metch-bg.png") center 54%/cover;
 }
@@ -1923,6 +1927,10 @@ img.feed-avatar {
 
 .ol-game-card.cronicas-cover{
   background:linear-gradient(90deg, rgba(0,0,0,.06), rgba(0,0,0,.78)), url("/assets/cronicas-do-levante-card.png?v=cards-20260611") center/cover !important;
+}
+
+.ol-game-card.reforma-cover{
+  background:linear-gradient(90deg, rgba(0,0,0,.05), rgba(0,0,0,.82)), url("/a-confissao/assets/chapter-concord.webp?v=cards-20260714") center 44%/cover !important;
 }
 
 .ol-game-card.match3-cover{

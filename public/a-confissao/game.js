@@ -146,8 +146,6 @@
     $('#card-image').style.backgroundImage = `url('${artFor(node)}')`;
     leftPreview.querySelector('span').textContent = node.left.label;
     rightPreview.querySelector('span').textContent = node.right.label;
-    $('#tap-left span').textContent = node.left.label;
-    $('#tap-right span').textContent = node.right.label;
     cardEl.classList.remove('is-entering'); void cardEl.offsetWidth; cardEl.classList.add('is-entering');
     renderCodex();
   }
@@ -216,8 +214,6 @@
   cardEl.addEventListener('pointerup', () => { if(!dragging)return; dragging=false; releaseCard(); });
   cardEl.addEventListener('pointercancel', () => { dragging=false; currentX=0; releaseCard(); });
   document.addEventListener('keydown', e => { if($('dialog[open]'))return; if(e.key==='ArrowLeft'||e.key.toLowerCase()==='a')choose('left'); if(e.key==='ArrowRight'||e.key.toLowerCase()==='d')choose('right'); });
-  $('#tap-left').addEventListener('click',()=>choose('left'));
-  $('#tap-right').addEventListener('click',()=>choose('right'));
 
   function renderCodex(){
     const groups=[...new Set(codex.map(x=>x.group))];

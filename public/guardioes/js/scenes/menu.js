@@ -110,7 +110,8 @@
         const y = top + usableH * b.y;
         const unlocked = D.isFeatureUnlocked(this.state, b.feature);
         const container = this.add.container(x, y);
-        const icon = this.add.image(0, 0, `tex-building-${b.id}`).setScale(0.86);
+        const icon = this.add.image(0, 0, `tex-building-${b.id}`);
+        icon.setDisplaySize(this.isDesktopLayout() ? 116 : 92, this.isDesktopLayout() ? 116 : 92);
         const label = this.add.text(0, 46, b.label, {
           fontFamily: 'Georgia, serif', fontSize: '13px', color: '#f2e2b8', fontStyle: 'bold'
         }).setOrigin(0.5).setShadow(0, 2, '#000', 3, true, true);

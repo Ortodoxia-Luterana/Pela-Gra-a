@@ -117,7 +117,7 @@
         wordWrap: { width: this.scale.width - 80 }
       }).setOrigin(0.5).setDepth(650);
       this.tweens.add({ targets: this.tutorialText, alpha: 0.72, duration: 600, yoyo: true, repeat: -1 });
-      this.setTutorialHint('Toque em "GERAR TORRE" pra receber uma torre aleatoria da sua build');
+      this.setTutorialHint('Toque em "GERAR ALIADO" pra receber uma unidade aleatoria da sua build');
     }
 
     setTutorialHint(msg) {
@@ -457,7 +457,7 @@
       }).setOrigin(0.5).setDepth(401);
 
       if (this.sys.game.device.os.desktop) {
-        this.add.text(width / 2, this.scale.height - 148, 'Espaco: gerar torre | W: onda | X: cancelar | 1/2: velocidade | Esc: pausa', {
+        this.add.text(width / 2, this.scale.height - 148, 'Espaco: gerar aliado | W: onda | X: cancelar | 1/2: velocidade | Esc: pausa', {
           fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8a7a5a'
         }).setOrigin(0.5).setDepth(401);
       }
@@ -589,7 +589,11 @@
       this.scene.start('Menu');
     }
 
-    // ---------- gerar torre / torre na mao ----------
+    // ---------- gerar aliado / unidade na mao ----------
+    buyButtonLabel() {
+      return `GERAR ALIADO\nCusto: ${this.buyCost} suprimentos`;
+    }
+
     buildBuyArea() {
       if (this.isDesktopLayout()) {
         this.buildDesktopBuyArea();
@@ -601,7 +605,7 @@
 
       this.heldPreview = this.add.container(84, height - 76).setDepth(401);
       const heldBg = this.add.image(0, 0, 'tex-stone-panel').setDisplaySize(146, 116);
-      const heldTitle = this.add.text(0, -46, 'TORRE SORTEADA', {
+      const heldTitle = this.add.text(0, -46, 'ALIADO SORTEADO', {
         fontFamily: 'Georgia, serif', fontSize: '12px', color: '#f2e2b8', fontStyle: 'bold'
       }).setOrigin(0.5);
       this.heldIcon = this.add.image(0, -10, this.defenseTextureKey('archer', 1)).setVisible(false);
@@ -614,7 +618,7 @@
       this.cancelBtn.on('pointerdown', () => this.cancelHeld());
       this.heldPreview.add([heldBg, heldTitle, this.heldIcon, this.heldLabel, this.cancelBtn]);
 
-      this.buyBtn = UI.makeButton(this, width / 2 - 18, height - 70, `GERAR TORRE\n${this.buyCost}`, () => this.generateTower(), { width: 320, height: 92, fontSize: 25 }).setDepth(401);
+      this.buyBtn = UI.makeButton(this, width / 2 - 18, height - 70, this.buyButtonLabel(), () => this.generateTower(), { width: 336, height: 92, fontSize: 21 }).setDepth(401);
       this.waveBtn = UI.makeButton(this, width - 92, height - 70, 'INICIAR\nONDA', () => this.startNextWave(), { width: 160, height: 92, fontSize: 23 }).setDepth(401);
       if (this.waveIndex > 0 && this.waveIndex < this.level.waves.length) this.waveBtn.list[1].setText(`INICIAR\n${this.waveIndex + 1}`);
 
@@ -631,7 +635,7 @@
 
       this.heldPreview = this.add.container(170, height - 72).setDepth(401);
       const heldBg = this.add.image(0, 0, 'tex-stone-panel').setDisplaySize(300, 104);
-      const heldTitle = this.add.text(-44, -24, 'TORRE', {
+      const heldTitle = this.add.text(-44, -24, 'ALIADO', {
         fontFamily: 'Georgia, serif', fontSize: '15px', color: '#f2e2b8', fontStyle: 'bold'
       }).setOrigin(0.5);
       this.heldIcon = this.add.image(-78, 13, this.defenseTextureKey('archer', 1)).setVisible(false);
@@ -644,7 +648,7 @@
       this.cancelBtn.on('pointerdown', () => this.cancelHeld());
       this.heldPreview.add([heldBg, heldTitle, this.heldIcon, this.heldLabel, this.cancelBtn]);
 
-      this.buyBtn = UI.makeButton(this, width / 2 - 170, height - 72, `GERAR TORRE\n${this.buyCost}`, () => this.generateTower(), { width: 410, height: 92, fontSize: 29 }).setDepth(401);
+      this.buyBtn = UI.makeButton(this, width / 2 - 170, height - 72, this.buyButtonLabel(), () => this.generateTower(), { width: 430, height: 92, fontSize: 24 }).setDepth(401);
       this.waveBtn = UI.makeButton(this, width - 220, height - 72, 'INICIAR\nONDA', () => this.startNextWave(), { width: 320, height: 92, fontSize: 29 }).setDepth(401);
       if (this.waveIndex > 0 && this.waveIndex < this.level.waves.length) this.waveBtn.list[1].setText(`INICIAR\n${this.waveIndex + 1}`);
 
@@ -657,7 +661,7 @@
 
     generateTower() {
       if (this.paused || this.runEnded) return;
-      if (this.held) { this.floatText(this.buyBtn.x, this.scale.height - 142, 'Posicione a torre na mao primeiro', '#e74c3c'); return; }
+      if (this.held) { this.floatText(this.buyBtn.x, this.scale.height - 142, 'Posicione o aliado primeiro', '#e74c3c'); return; }
       if (this.money < this.buyCost) { this.floatText(this.buyBtn.x, this.scale.height - 142, 'Suprimentos insuficientes', '#e74c3c'); return; }
       const luckShift = this.effects.luckShift || 0;
       const epicLuckShift = this.effects.epicLuckShift || 0;
@@ -686,7 +690,7 @@
       this.heldIcon.setDisplaySize(heldIconSize, heldIconSize);
       this.heldLabel.setText(`${D.DEFENSES[pick].name}\nNv 1`).setColor('#f2e2b8').setVisible(true);
       this.cancelBtn.setVisible(true);
-      this.buyBtn.list[1].setText(`GERAR TORRE\n${this.buyCost}`);
+      this.buyBtn.list[1].setText(this.buyButtonLabel());
       AUDIO.buy();
       this.floatText(this.buyBtn.x, this.scale.height - 142, `${D.DEFENSES[pick].name}!`, this.rarityColorHex(D.DEFENSES[pick].rarity));
       this.advanceTutorial(1);
@@ -1232,7 +1236,7 @@
           // gerar de novo depois de algumas ondas mesmo limpando tudo.
           this.buyCount = Math.floor(this.buyCount * 0.5);
           this.buyCost = Math.round((BASE_BUY_COST + this.buyCount * BUY_COST_INCREMENT) * (1 + (this.effects.buyCostMult || 0)));
-          this.buyBtn.list[1].setText(`GERAR TORRE\n${this.buyCost}`);
+          this.buyBtn.list[1].setText(this.buyButtonLabel());
           this.floatText(this.scale.width / 2, 180, `Onda vencida! +${bonus}`, '#2ecc71');
           this.waveBtn.setAlpha(1);
           this.waveBtn.list[1].setText(`INICIAR\n${this.waveIndex + 1}`);

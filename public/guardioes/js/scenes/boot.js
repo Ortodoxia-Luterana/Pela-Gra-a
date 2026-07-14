@@ -5,7 +5,7 @@
   // Assets reais (se existirem em /assets/guardioes/assets/) substituem a arte procedural
   // automaticamente - basta soltar um PNG com o mesmo nome, sem mexer em codigo.
   const ASSET_BASE = '/assets/guardioes/assets/';
-  const ASSET_VERSION = 'sola-torre-enemy-walk-2026-07-13-1';
+  const ASSET_VERSION = 'sola-torre-painted-world-2026-07-14-1';
   const HUB_BUILDINGS = ['build', 'collection', 'class', 'shop'];
   const TAB_ASSET_IDS = ['home', 'build', 'collection', 'class', 'shop'];
   const DEFENSE_LEVEL_ASSET_IDS = global.GuardioesData.DEFENSE_ORDER;

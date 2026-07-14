@@ -127,7 +127,21 @@
     Object.entries(sceneArt).forEach(([id, art]) => { cards[id].art = art; });
   }
 
-  const defaultState = () => ({ current:'birth', started:false, completed:false, choices:[], visited:['birth'], codex:['eisleben'], marks:{scripture:0,confession:0,witness:0}, achievements:[], endings:[] });
+  function randomSide(){
+    if(globalThis.crypto?.getRandomValues){
+      const value = new Uint32Array(1);
+      globalThis.crypto.getRandomValues(value);
+      return Boolean(value[0] & 1);
+    }
+    return Math.random() < .5;
+  }
+  function createSideMap(){ return Object.fromEntries(Object.keys(cards).map(id => [id, randomSide()])); }
+  function normalizeSideMap(raw){
+    const result = createSideMap();
+    if(raw && typeof raw === 'object') Object.keys(result).forEach(id => { if(typeof raw[id] === 'boolean') result[id] = raw[id]; });
+    return result;
+  }
+  const defaultState = () => ({ current:'birth', started:false, completed:false, choices:[], visited:['birth'], codex:['eisleben'], marks:{scripture:0,confession:0,witness:0}, achievements:[], endings:[], sideMap:createSideMap() });
   let state = defaultState();
   let dragging = false, choosing = false, startX = 0, currentX = 0, saveTimer = null, lessonTimer = null, loaded = false;
   const $ = sel => document.querySelector(sel);
@@ -143,6 +157,9 @@
   function updateStatus(text, bad=false){ const el=$('#save-status'); el.textContent=text; el.style.color=bad?'#bc655b':''; }
   function render(){
     const node = currentCard();
+    const swapped = Boolean(state.sideMap[state.current]);
+    const visibleLeft = swapped ? node.right : node.left;
+    const visibleRight = swapped ? node.left : node.right;
     $('#chapter-name').textContent = node.place || chapters[node.chapter];
     $('#year-label').textContent = node.year;
     $('#timeline-fill').style.width = `${progress()}%`;
@@ -155,8 +172,8 @@
     $('#context').textContent = node.context;
     $('#card-stamp').textContent = `${node.place || chapters[node.chapter]} · ${node.year}`;
     $('#card-image').style.backgroundImage = `url('${artFor(node)}')`;
-    leftPreview.querySelector('span').textContent = node.left.label;
-    rightPreview.querySelector('span').textContent = node.right.label;
+    leftPreview.querySelector('span').textContent = visibleLeft.label;
+    rightPreview.querySelector('span').textContent = visibleRight.label;
     cardEl.classList.remove('is-entering'); void cardEl.offsetWidth; cardEl.classList.add('is-entering');
     renderCodex();
   }
@@ -166,7 +183,8 @@
     choosing = true;
     if(dragging) dragging=false;
     const node = currentCard();
-    const option = node[side];
+    const swapped = Boolean(state.sideMap[state.current]);
+    const option = node[swapped ? (side === 'left' ? 'right' : 'left') : side];
     state.choices.push({ node:state.current, year:node.year, place:node.place || chapters[node.chapter], prompt:node.prompt, side, label:option.label });
     if(option.mark) state.marks[option.mark] = (state.marks[option.mark] || 0) + 1;
     if(option.codex) uniquePush(state.codex, option.codex);
@@ -264,7 +282,8 @@
 
   function validState(raw){
     if(!raw || typeof raw!=='object' || !cards[raw.current]) return null;
-    return {...defaultState(),...raw,marks:{...defaultState().marks,...raw.marks},choices:Array.isArray(raw.choices)?raw.choices:[],visited:Array.isArray(raw.visited)?raw.visited:['birth'],codex:Array.isArray(raw.codex)?raw.codex:['eisleben'],achievements:Array.isArray(raw.achievements)?raw.achievements:[],endings:Array.isArray(raw.endings)?raw.endings:[]};
+    const base = defaultState();
+    return {...base,...raw,marks:{...base.marks,...raw.marks},choices:Array.isArray(raw.choices)?raw.choices:[],visited:Array.isArray(raw.visited)?raw.visited:['birth'],codex:Array.isArray(raw.codex)?raw.codex:['eisleben'],achievements:Array.isArray(raw.achievements)?raw.achievements:[],endings:Array.isArray(raw.endings)?raw.endings:[],sideMap:normalizeSideMap(raw.sideMap)};
   }
   async function saveNow(){
     if(!loaded)return;

@@ -5,7 +5,8 @@ Jogo narrativo mobile-first de decisões binárias por arraste, integrado ao log
 ## Princípio de jogo
 
 - O gesto de arrastar revela as duas respostas antes de confirmar.
-- Cada carta parte de uma cidade ou lugar concreto, e uma nota curta explica o que aconteceu depois da escolha.
+- Cada carta parte de uma cidade ou lugar concreto, apresenta quem está ali, o que acabou de acontecer e o que está em risco antes de fazer a pergunta.
+- Depois da escolha, uma nota curta explica o que aconteceu historicamente.
 - O lado da resposta histórica é sorteado de novo em cada jornada e permanece salvo durante aquela partida, sem sequência fixa ou alternância previsível.
 - Não há equilíbrio artificial entre facções. `Escritura`, `Confissão` e `Testemunho` registram o que o jogador aprendeu.
 - A vitória exige atravessar a linha histórica principal; desvios abrem finais alternativos e registros no códice.

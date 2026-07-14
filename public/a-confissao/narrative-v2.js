@@ -107,4 +107,307 @@
       westphalia:{place:'Münster e Osnabrück',speaker:'Os sinos anunciam a paz',prompt:'Depois de trinta anos de guerra, o que os exilados conseguiram levar até 1648?',context:'A casa antiga foi perdida, mas filhos e netos ainda conhecem as palavras carregadas na estrada.',lesson:'A Paz de Vestfália encerrou a guerra e confirmou uma ordem com mais de uma confissão cristã no Império.',left:{label:'Palavra, confissão e memória',end:'victory',mark:'witness',codex:'westphalia',achievement:'confissao-vitoria'},right:{label:'Apenas a derrota',end:'conversion'}}
     }
   };
+
+  const detailedCards = {
+    birth: {
+      speaker:'Uma família entre Eisleben e Mansfeld',
+      context:'Martinho nasce em Eisleben em 1483 e logo é levado para Mansfeld, onde o pai trabalha com cobre. Hans conhece a dureza das minas e acredita que muitos anos de estudo podem dar ao filho uma vida mais segura e respeitada.',
+      prompt:'A família pagará seus estudos ou o mandará cedo para o trabalho?',
+      left:{label:'Colocá-lo cedo nas minas'}, right:{label:'Pagar seus estudos'}
+    },
+    magdeburgSchool: {
+      speaker:'Martinho chega sozinho a Magdeburgo',
+      context:'Em 1497, com cerca de treze anos, Martinho deixa a casa dos pais para estudar latim em Magdeburgo. O dinheiro é curto, a disciplina é severa e ele canta diante das casas para conseguir comida. Voltar significaria interromper a formação planejada pelo pai.',
+      prompt:'Ele suporta mais um ano longe de casa?',
+      left:{label:'Continuar os estudos'}, right:{label:'Voltar para Mansfeld'}
+    },
+    erfurt: {
+      speaker:'Os portões da Universidade de Erfurt',
+      context:'Depois de estudar em Eisenach, Martinho chega a Erfurt em 1501. Seu pai paga uma universidade conhecida e espera que ele se torne advogado, profissão capaz de elevar toda a família. Entrar significa anos de latim, lógica, livros e despesas.',
+      prompt:'Martinho entra na universidade?',
+      left:{label:'Trabalhar com o pai'}, right:{label:'Matricular-se em Erfurt'}
+    },
+    storm: {
+      speaker:'A estrada de Stotternheim, 2 de julho de 1505',
+      context:'Martinho já é mestre e começou o curso de Direito desejado pelo pai. Voltando de uma visita à família, uma tempestade o derruba no caminho. Convencido de que morrerá, grita: “Santa Ana, ajude-me! Eu me tornarei monge.”',
+      prompt:'Quando o céu se abre, ele cumpre o que prometeu?',
+      left:{label:'Entrar no mosteiro'}, right:{label:'Retomar o curso de Direito'}
+    },
+    firstmass: {
+      speaker:'A primeira missa no mosteiro de Erfurt',
+      context:'Em 1507, depois de ser ordenado padre, Martinho celebra sua primeira missa diante dos monges e de seu pai. Ao pronunciar as palavras do altar, sente que um pecador está falando com o Deus santo. O medo quase o faz abandonar a cerimônia no meio.',
+      prompt:'Ele foge do altar ou termina a missa?',
+      left:{label:'Abandonar a cerimônia'}, right:{label:'Terminar a missa'}
+    },
+    rome: {
+      speaker:'Um monge alemão chega a Roma',
+      context:'A ordem agostiniana envia Martinho a Roma em 1510 ou 1511 para tratar de seus assuntos. Ele chega como peregrino, visita igrejas e relíquias, mas também encontra missas ditas às pressas e devoção misturada a dinheiro. A viagem aumenta perguntas que ele ainda não sabe responder.',
+      prompt:'Ele esconde a decepção ou investiga o que viu?',
+      left:{label:'Guardar e investigar'}, right:{label:'Fingir que nada viu'}
+    },
+    wittenberg: {
+      speaker:'Staupitz aponta para uma universidade nova',
+      context:'Johann von Staupitz, responsável pela ordem, percebe a angústia de Martinho e o envia para Wittenberg. A pequena cidade tem ruas de barro e uma universidade fundada há poucos anos. Staupitz acredita que ensinar a Bíblia obrigará o jovem monge a procurar respostas no texto.',
+      prompt:'Martinho aceita trocar o silêncio do mosteiro pela sala de aula?',
+      left:{label:'Ensinar em Wittenberg'}, right:{label:'Permanecer escondido'}
+    },
+    doctorate: {
+      speaker:'Um juramento diante da Universidade de Wittenberg',
+      context:'Em 1512, Martinho pode receber o doutorado em teologia. O título não é apenas uma honra: o juramento o obriga a estudar, explicar e defender publicamente a Bíblia. Salmos, Romanos e Gálatas passarão a ser seu trabalho diário.',
+      prompt:'Ele assume publicamente essa responsabilidade?',
+      left:{label:'Recusar o doutorado'}, right:{label:'Jurar ensinar a Bíblia'}
+    },
+    romans: {
+      speaker:'Romanos permanece aberto sob a lamparina',
+      context:'Preparando aulas, Martinho volta muitas vezes à frase “o justo viverá por fé”. Ele sempre ouviu “justiça de Deus” como a medida que condena o culpado. Agora percebe que Paulo também fala da justiça que Deus oferece a quem confia em Cristo.',
+      prompt:'Onde o pecador encontrará segurança diante de Deus?',
+      left:{label:'No presente recebido pela fé'}, right:{label:'Nos méritos acumulados'}
+    },
+    tetzel: {
+      speaker:'Tetzel prega na praça de Jüterbog',
+      context:'O vendedor de indulgências Johann Tetzel não pode atuar na Saxônia, mas moradores de Wittenberg atravessam a fronteira para ouvi-lo. Eles voltam com certificados que prometem reduzir penas por pecados para vivos e mortos. Lutero teme que o papel substitua arrependimento, fé e cuidado pastoral.',
+      prompt:'O professor se cala ou chama a universidade para discutir isso?',
+      left:{label:'Evitar o conflito'}, right:{label:'Preparar um debate público'}
+    },
+    theses: {
+      speaker:'Noventa e cinco pontos sobre a mesa',
+      context:'Lutero escreve em latim 95 pontos para um debate acadêmico sobre arrependimento e indulgências. Em 31 de outubro de 1517, pode enviá-los ao arcebispo Alberto de Mainz e divulgá-los em Wittenberg. Impressores poderão copiar o texto sem esperar sua permissão.',
+      prompt:'Ele envia as teses e abre o debate?',
+      left:{label:'Enviar e divulgar as teses'}, right:{label:'Guardar tudo na gaveta'}
+    },
+    cajetan: {
+      speaker:'Três encontros tensos em Augsburgo',
+      context:'Em 1518, o cardeal Caetano recebe Lutero como representante do papa. Em vez do debate bíblico esperado, exige que ele diga uma palavra: “revogo”. Lutero pede que apontem seu erro nas Escrituras. Amigos avisam que uma prisão pode acontecer antes que ele deixe a cidade.',
+      prompt:'Ele volta atrás sem explicação ou exige prova?',
+      left:{label:'Exigir prova nas Escrituras'}, right:{label:'Revogar sem explicação'}
+    },
+    leipzig: {
+      speaker:'Johann Eck conduz o debate de Leipzig',
+      context:'Em 1519, Eck leva a discussão para além das indulgências. Pergunta se papas e concílios podem errar e lembra Jan Hus, queimado como herege um século antes. Concordar com Hus em qualquer ponto pode fazer Lutero parecer inimigo de toda a Igreja.',
+      prompt:'Lutero evita o risco ou responde sobre a autoridade final?',
+      left:{label:'Fugir da pergunta'}, right:{label:'Colocar a Bíblia acima de todos'}
+    },
+    treatises: {
+      speaker:'Três manuscritos chegam à prensa',
+      context:'Em 1520, a discussão alcançou o poder do papa, os sacramentos e a liberdade cristã. Lutero prepara três livros: um chama governantes à reforma, outro critica o sistema sacramental e o terceiro explica a liberdade que serve ao próximo. Publicá-los ampliará muito o conflito.',
+      prompt:'Ele limita a disputa ou publica os três livros?',
+      left:{label:'Publicar os três livros'}, right:{label:'Falar apenas das indulgências'}
+    },
+    bull: {
+      speaker:'A bula Exsurge Domine chega de Roma',
+      context:'O documento condena 41 afirmações ligadas a Lutero e concede sessenta dias para que ele volte atrás. Se obedecer, deve rejeitar seus próprios livros. Se queimar a bula diante de professores e estudantes, mostrará publicamente que não aceita o julgamento de Roma.',
+      prompt:'Qual texto será entregue ao fogo?',
+      left:{label:'Queimar os livros de Lutero'}, right:{label:'Queimar a bula papal'}
+    },
+    worms: {
+      speaker:'O salão do bispo está cheio em Worms',
+      context:'Em abril de 1521, Lutero comparece diante do jovem imperador Carlos V com promessa de salvo-conduto. Seus livros estã empilhados sobre uma mesa. Ele admite que os escreveu, pede uma noite para pensar e sabe que recusar a retratação poderá transformá-lo em criminoso do Império.',
+      prompt:'Na segunda audiência, ele retira seus livros?',
+      left:{label:'Manter o que escreveu'}, right:{label:'Revogar todos os livros'}
+    },
+    road: {
+      speaker:'Cavaleiros mascarados fecham a estrada',
+      context:'Depois de Worms, o imperador proíbe os livros de Lutero e ordena que ninguém lhe dê abrigo. O eleitor Frederico, que o protege sem apoiar tudo o que ele diz, organiza um falso sequestro no caminho de volta. Os cavaleiros devem fazê-lo desaparecer antes que agentes imperiais o encontrem.',
+      prompt:'Lutero aceita o esconderijo preparado por seus aliados?',
+      left:{label:'Seguir sozinho para Wittenberg'}, right:{label:'Aceitar a proteção secreta'}
+    },
+    wartburg: {
+      speaker:'O “Cavaleiro Jorge” fecha a porta de Wartburg',
+      context:'No castelo, Lutero deixa crescer a barba e usa outro nome. Quase ninguém sabe onde ele está. Em vez de apenas esperar, recebe um Novo Testamento grego e decide traduzir o texto para um alemão que comerciantes, artesãos e famílias possam compreender.',
+      prompt:'Ele usa o esconderijo para traduzir ou apenas espera?',
+      left:{label:'Traduzir o Novo Testamento'}, right:{label:'Esperar sem escrever'}
+    },
+    invocavit: {
+      speaker:'Notícias inquietantes chegam de Wittenberg',
+      context:'Durante o esconderijo, reformadores da cidade aceleram mudanças no culto. Imagens são quebradas, altares removidos e pessoas pressionadas a agir antes de entender. Voltar significa deixar a segurança de Wartburg mesmo sendo um homem fora da lei.',
+      prompt:'Lutero arrisca a prisão para acalmar a cidade?',
+      left:{label:'Voltar e pregar por oito dias'}, right:{label:'Apoiar a imposição pela força'}
+    },
+    hymns: {
+      speaker:'Uma canção atravessa a oficina',
+      context:'Livros ainda são caros e muita gente não sabe ler. Uma melodia, porém, passa de boca em boca nas casas, escolas e mercados. Escrever hinos em alemão permitirá que crianças e trabalhadores aprendam a fé cantando, não apenas ouvindo o padre.',
+      prompt:'O ensino ficará nos livros ou também ganhará voz?',
+      left:{label:'Deixar o povo apenas ouvir'}, right:{label:'Escrever hinos em alemão'}
+    },
+    peasants: {
+      speaker:'A revolta cobre a Turíngia de fumaça',
+      context:'Em 1524 e 1525, camponeses apresentam queixas reais contra impostos e abusos, mas parte da revolta passa a saquear mosteiros e castelos. Exércitos dos príncipes respondem com massacre. Usar a liberdade cristã para chamar qualquer lado de santo transformará o Evangelho em arma.',
+      prompt:'Lutero abençoa a revolta ou rejeita opressão e massacre?',
+      left:{label:'Chamar a revolta de santa'}, right:{label:'Rejeitar opressão e massacre'}
+    },
+    marriage: {
+      speaker:'Katharina von Bora permanece em Wittenberg',
+      context:'Katharina fugiu do convento com outras freiras e não pode voltar para a família. Depois que as companheiras encontram novos lares, ela diz que aceitaria casar com Lutero. A união de um ex-monge com uma ex-freira causará escândalo e mostrará que o casamento também é vocação cristã.',
+      prompt:'Lutero forma uma casa com Katharina?',
+      left:{label:'Manter a antiga aparência'}, right:{label:'Casar-se com Katharina'}
+    },
+    visitations: {
+      speaker:'Visitadores entram nas vilas da Saxônia',
+      context:'Entre 1527 e 1528, equipes examinam igrejas e escolas. Encontram pastores mal preparados e famílias que não conseguem explicar o Pai-Nosso, o Credo ou os Mandamentos. A Reforma circulou nas universidades, mas ainda não chegou claramente à mesa de muita gente.',
+      prompt:'A falta de conhecimento será punida ou ensinada?',
+      left:{label:'Punir quem não sabe'}, right:{label:'Preparar ensino simples'}
+    },
+    catechisms: {
+      speaker:'Uma família se reúne ao redor da mesa',
+      context:'Lutero prepara um catecismo curto, em perguntas e respostas, para pais ensinarem filhos e empregados. Também escreve uma explicação maior para pastores e professores. O objetivo é ligar casa e igreja com as mesmas palavras sobre Mandamentos, Credo, oração, Batismo e Ceia.',
+      prompt:'Quem receberá esse ensino básico?',
+      left:{label:'Casas, escolas e igrejas'}, right:{label:'Somente padres e doutores'}
+    },
+    marburg: {
+      speaker:'Lutero escreve uma frase na mesa de Marburgo',
+      context:'Em 1529, o príncipe Filipe de Hesse quer unir luteranos e seguidores de Zwinglio contra inimigos comuns. Os teólogos concordam em quatorze pontos, mas divergem sobre as palavras de Cristo na Ceia: “Isto é o meu corpo.” Um texto vago facilitaria a aliança militar.',
+      prompt:'Eles escondem a diferença para conseguir a aliança?',
+      left:{label:'Assinar uma frase vaga'}, right:{label:'Confessar a diferença claramente'}
+    },
+    augsburg: {
+      speaker:'Mensageiros ligam Coburgo a Augsburgo',
+      context:'Lutero continua proibido pelo Império e não pode comparecer à Dieta de Augsburgo. Protegido na fortaleza de Coburgo, troca cartas com Melanchthon, que prepara uma exposição pública da fé luterana para o imperador. O texto precisa mostrar acordo e responder acusações.',
+      prompt:'Lutero apoia Melanchthon à distância?',
+      left:{label:'Aconselhar por cartas'}, right:{label:'Impedir a apresentação'}
+    },
+    bible: {
+      speaker:'Hebraico, grego e alemão cobrem a mesa',
+      context:'Depois do Novo Testamento, ainda falta traduzir grande parte da Bíblia. Lutero trabalha com Melanchthon e outros especialistas, compara palavras antigas e escuta como o povo fala. Uma tradução feita por uma equipe será mais lenta, mas poderá ser mais clara e precisa.',
+      prompt:'Ele aceita revisar cada livro com outros estudiosos?',
+      left:{label:'Traduzir e revisar em equipe'}, right:{label:'Trabalhar completamente sozinho'}
+    },
+    smalcald: {
+      speaker:'O eleitor pede uma confissão para o concílio',
+      context:'Em 1536, um concílio da Igreja parece próximo. O eleitor João Frederico pede que Lutero registre os ensinamentos que os luteranos podem discutir e os pontos que não podem abandonar. A saúde do reformador piora, e talvez ele nem consiga comparecer pessoalmente.',
+      prompt:'Lutero deixa por escrito o que considera inegociável?',
+      left:{label:'Deixar tudo indefinido'}, right:{label:'Escrever os Artigos'}
+    },
+    magdalena: {
+      speaker:'O quarto de Magdalena fica em silêncio',
+      context:'Em 1542, Magdalena, filha de Lutero e Katharina, adoece gravemente aos treze anos. Os pais permanecem ao lado da cama até ela morrer nos braços do pai. Não existe decisão capaz de evitar a perda; resta escolher como falar da dor dentro da própria casa.',
+      prompt:'A família esconde o choro ou o atravessa com esperança?',
+      left:{label:'Chorar e falar da esperança'}, right:{label:'Fingir que não há dor'}
+    },
+    mansfeld: {
+      speaker:'Uma carta chama Lutero de volta a Mansfeld',
+      context:'No inverno de 1546, os condes de Mansfeld discutem direitos, terras e rendas das minas. Pedem ao velho professor, criado naquela região, que ajude na negociação. Lutero está cansado, sofre com a saúde e sabe que a viagem gelada pode ser sua última estrada.',
+      prompt:'Ele viaja para tentar reconciliar os condes?',
+      left:{label:'Recusar a mediação'}, right:{label:'Viajar para negociar a paz'}
+    },
+    death: {
+      speaker:'A jornada de Lutero termina em Eisleben',
+      context:'Lutero ajuda a encaminhar o acordo em Mansfeld, mas morre em 18 de fevereiro de 1546 na cidade onde nasceu. Seu corpo voltará a Wittenberg; suas decisões, porém, não podem responder a todas as crises futuras. A campanha agora passa para pastores, professores, famílias e cidades.',
+      prompt:'A nova geração seguirá uma relíquia ou o ensino confessado?',
+      left:{label:'Transformá-lo em relíquia'}, right:{label:'Voltar aos textos e à Bíblia'}
+    },
+    war: {
+      speaker:'A Liga de Esmalcalda é derrotada em Mühlberg',
+      context:'Príncipes e cidades luteranas formaram uma liga defensiva, mas o exército de Carlos V vence a batalha em 1547. O eleitor João Frederico é capturado e perde suas terras. Com a resistência militar quebrada, o imperador acredita que também pode determinar a religião dos territórios vencidos.',
+      prompt:'A vitória militar decide o que as igrejas devem crer?',
+      left:{label:'Separar espada e doutrina'}, right:{label:'Deixar o vencedor escolher a fé'}
+    },
+    interim: {
+      speaker:'O Interim de Augsburgo chega com selo imperial',
+      context:'Em 1548, Carlos V impõe regras temporárias enquanto o concílio de Trento continua. Elas restauram grande parte das práticas antigas e permitem aos luteranos poucas concessões. Pastores recebem poucos dias para aceitar; quem recusar pode perder igreja, salário, casa e liberdade.',
+      prompt:'Eles assinam para ficar ou recusam mesmo diante do exílio?',
+      left:{label:'Assinar para conservar o cargo'}, right:{label:'Recusar e perder a segurança'}
+    },
+    magdeburg: {
+      speaker:'Magdeburgo resiste atrás das muralhas',
+      context:'Enquanto muitos territórios cedem ao Interim, Magdeburgo abriga pastores expulsos e se torna centro de resistência. Durante o cerco de 1550 e 1551, impressores trabalham entre o som dos canhões. Fechar as oficinas pode aliviar a pressão; mantê-las espalhará a resposta pela Alemanha.',
+      prompt:'As prensas continuam funcionando durante o cerco?',
+      left:{label:'Manter as prensas trabalhando'}, right:{label:'Fechar as oficinas'}
+    },
+    osiander: {
+      speaker:'Uma disputa em Königsberg chega ao confessionário',
+      context:'Andreas Osiander ensina que a pessoa é aceita por Deus por causa da justiça divina que passa a habitar nela. Seus adversários respondem que o perdão descansa na vida e obediência de Cristo, recebidas pela fé. Para uma consciência assustada, isso muda onde procurar certeza.',
+      prompt:'A certeza estará dentro da pessoa ou no que Cristo fez?',
+      left:{label:'Procurar a prova dentro de si'}, right:{label:'Confiar no que Cristo fez'}
+    },
+    major: {
+      speaker:'A expressão “boas obras” divide Wittenberg',
+      context:'George Major quer impedir que a fé vire desculpa para uma vida sem amor e afirma que boas obras são necessárias para a salvação. Outros temem que essa frase transforme ajuda ao próximo em pagamento exigido por Deus. A discussão precisa preservar tanto a graça quanto seus frutos.',
+      prompt:'As obras compram a salvação ou nascem da fé?',
+      left:{label:'Tratá-las como pagamento'}, right:{label:'Confessá-las como fruto da fé'}
+    },
+    augsburgpeace: {
+      speaker:'Príncipes assinam a Paz de Augsburgo',
+      context:'Em 1555, o acordo interrompe a guerra e reconhece territórios católicos e luteranos. Cada governante escolherá a confissão oficial de suas terras, e moradores que não a aceitarem poderão partir. A paz política não resolve as muitas disputas que dividem os próprios luteranos.',
+      prompt:'A nova paz encerra o trabalho de esclarecimento?',
+      left:{label:'Usar a paz para buscar acordo'}, right:{label:'Declarar todos os problemas resolvidos'}
+    },
+    synergy: {
+      speaker:'Uma pergunta sobre o primeiro instante da fé',
+      context:'Alguns professores dizem que o Espírito inicia a conversão, mas a vontade humana precisa colaborar com uma capacidade própria. Outros afirmam que a própria vontade está ferida e que o Espírito cria a fé pela Palavra. A diferença decide se a graça apenas ajuda ou realmente dá o começo.',
+      prompt:'Quem dá o primeiro passo na conversão?',
+      left:{label:'A vontade humana coopera primeiro'}, right:{label:'O Espírito cria a fé'}
+    },
+    flacius: {
+      speaker:'A discussão sobre o pecado chega a Weimar',
+      context:'Matthias Flacius quer afirmar que o pecado original corrompe toda a pessoa, não apenas uma parte. Na disputa, passa a chamá-lo de substância do ser humano. Seus antigos aliados respondem que isso confunde a criatura feita por Deus com a corrupção que a destrói.',
+      prompt:'Pecado e natureza criada são a mesma coisa?',
+      left:{label:'Distinguir criatura e corrupção'}, right:{label:'Chamar a natureza de pecado'}
+    },
+    crypto: {
+      speaker:'Cartas secretas são descobertas em Dresden',
+      context:'Teólogos da corte assinam textos luteranos, mas em particular ensinam outra explicação para a Ceia e para a pessoa de Cristo. Quando documentos secretos aparecem em 1574, pastores e famílias percebem que recebiam duas mensagens. A crise agora envolve doutrina e confiança pública.',
+      prompt:'A igreja tolera uma assinatura e um ensino secreto?',
+      left:{label:'Exigir uma confissão honesta'}, right:{label:'Manter as duas mensagens'}
+    },
+    torgau: {
+      speaker:'Seis teólogos cercam uma mesa em Torgau',
+      context:'Em 1576, Andreae, Chemnitz, Selnecker e outros recebem documentos produzidos por grupos luteranos diferentes. Precisam reunir o que concorda, enfrentar os pontos de disputa e preparar um rascunho comum. O texto não será final: cópias seguirão para outros territórios julgarem cada artigo.',
+      prompt:'Eles impõem uma facção ou enviam o rascunho para exame?',
+      left:{label:'Impor o texto de um grupo'}, right:{label:'Redigir e pedir pareceres'}
+    },
+    bergen: {
+      speaker:'Caixas de pareceres chegam ao mosteiro de Bergen',
+      context:'Cerca de vinte e cinco respostas ao Livro de Torgau trazem apoio, críticas e pedidos de clareza. Em 1577, os autores se reúnem perto de Magdeburgo para revisar palavras ambíguas. Do trabalho sairão um resumo curto, a Epítome, e uma explicação longa, a Declaração Sólida.',
+      prompt:'Eles corrigem o texto com os pareceres recebidos?',
+      left:{label:'Revisar artigo por artigo'}, right:{label:'Ignorar todas as críticas'}
+    },
+    subscriptions: {
+      speaker:'Cópias da Fórmula percorrem os territórios',
+      context:'A Fórmula pronta é enviada a príncipes, cidades, igrejas e escolas. O plano é circular o texto, permitir discussão e recolher assinaturas conscientes, não surpreender pessoas com um decreto. Aproximadamente oito mil pastores e professores acabarão registrando concordância.',
+      prompt:'A unidade virá da explicação ou da força?',
+      left:{label:'Forçar assinaturas sem leitura'}, right:{label:'Ler, explicar e então assinar'}
+    },
+    book: {
+      speaker:'Dresden prepara a edição de 1580',
+      context:'Cinquenta anos depois da Confissão de Augsburgo, uma coleção reúne os credos antigos, a Confissão e sua defesa, os Catecismos, os Artigos de Esmalcalda e a nova Fórmula. Não é uma nova Bíblia, mas um registro comum do que essas igrejas ensinam a partir dela.',
+      prompt:'O Livro de Concórdia finalmente entra na prensa?',
+      left:{label:'Adiar outra vez'}, right:{label:'Publicar o Livro de Concórdia'}
+    },
+    prague: {
+      speaker:'A revolta começa no castelo de Praga',
+      context:'Em 1618, nobres protestantes lançam dois governadores reais e um secretário pela janela; os três sobrevivem. Os estados da Boêmia rompem com o rei Habsburgo, escolhem outro rei e formam um exército. O conflito local agora pode atrair as grandes potências do Império.',
+      prompt:'A revolta segue o caminho histórico até a guerra?',
+      left:{label:'Seguir a revolta até a guerra',next:'whiteMountain',mark:'witness',codex:'bohemia'},
+      right:{label:'Recuar e buscar um acordo',end:'praguePeace'}
+    },
+    whiteMountain: {
+      speaker:'A derrota chega às portas de Praga',
+      context:'Em novembro de 1620, o exército dos estados da Boêmia é derrotado na Montanha Branca. No ano seguinte, 27 líderes são executados na Praça da Cidade Velha. Pastores são expulsos, propriedades confiscadas e famílias pressionadas a aceitar a religião dos Habsburgos ou deixar o país.',
+      prompt:'A família muda de fé para ficar ou parte com seus livros?',
+      left:{label:'Mudar de fé e conservar a casa'}, right:{label:'Partir e levar a confissão'}
+    },
+    westphalia: {
+      speaker:'Mensageiros anunciam a paz em Münster e Osnabrück',
+      context:'Em 1648, tratados encerram trinta anos de guerra e reconhecem católicos, luteranos e reformados dentro da ordem imperial. A paz não devolve automaticamente as casas dos exilados nem restaura a antiga liberdade na Boêmia. Ainda assim, filhos e netos preservaram Bíblias, hinos e confissões levados pela estrada.',
+      prompt:'Depois de tantas perdas, o que realmente atravessou as fronteiras?',
+      left:{label:'Palavra, confissão e memória'}, right:{label:'Nada além da derrota'}
+    }
+  };
+
+  const narrative = window.A_CONFISSAO_NARRATIVE_V2;
+  Object.entries(detailedCards).forEach(([id, copy]) => {
+    const card = narrative.cards[id];
+    if(!card) return;
+    const originalLeft = card.left;
+    const originalRight = card.right;
+    Object.assign(card, copy);
+    if(copy.left) card.left = {...originalLeft, ...copy.left};
+    if(copy.right) card.right = {...originalRight, ...copy.right};
+  });
+  narrative.endings.praguePeace = ending(
+    'A guerra que não começou',
+    'Os estados da Boêmia recuam, aceitam negociar e a revolta termina antes da Montanha Branca. Esta linha evita a guerra, mas também abandona a sequência histórica que o jogo procura reconstruir.',
+    'Na história real, os rebeldes depuseram Fernando II, escolheram Frederico V como rei e foram derrotados na Montanha Branca em 1620.',
+    'exile'
+  );
 })();

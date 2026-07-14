@@ -1070,28 +1070,39 @@
         position: absolute;
         width: clamp(112px, 28vw, 170px);
         height: clamp(150px, 40vw, 220px);
-        display: grid;
-        justify-items: center;
-        align-content: end;
-        gap: 3px;
-        transition: left 0.24s ease, top 0.24s ease, transform 0.18s ease;
+        transition: left 0.42s ease, top 0.42s ease;
         translate: -50% -50%;
+        transform-origin: center bottom;
+        will-change: transform;
       }
 
-      .fighter.hit { transform: translateY(-5px) scale(1.05); }
+      .fighter.enemy {
+        width: clamp(104px, 25vw, 156px);
+        height: clamp(138px, 35vw, 194px);
+      }
 
       .unit-sprite {
+        position: absolute;
+        inset: 0 0 34px;
         width: 100%;
-        height: calc(100% - 32px);
+        height: calc(100% - 34px);
         display: block;
         object-fit: contain;
         object-position: center bottom;
         filter: drop-shadow(0 8px 3px rgba(43, 28, 18, 0.28));
+        transition: filter 0.16s ease, opacity 0.12s ease;
         pointer-events: none;
       }
 
       .fighter.attacking .unit-sprite { filter: drop-shadow(0 8px 3px rgba(43, 28, 18, 0.28)) brightness(1.08); }
       .fighter.hurt .unit-sprite { filter: drop-shadow(0 8px 3px rgba(43, 28, 18, 0.28)) saturate(0.72); }
+
+      .fighter.hero.melee.attacking { animation: hero-melee-strike 820ms cubic-bezier(0.22, 0.72, 0.24, 1) both; }
+      .fighter.hero.ranged.attacking { animation: hero-ranged-release 860ms cubic-bezier(0.22, 0.72, 0.24, 1) both; }
+      .fighter.hero.support.attacking { animation: hero-support-cast 900ms cubic-bezier(0.22, 0.72, 0.24, 1) both; }
+      .fighter.enemy.attacking { animation: enemy-strike 840ms cubic-bezier(0.22, 0.72, 0.24, 1) both; }
+      .fighter.hero.hurt { animation: hero-hurt 560ms ease-out both; }
+      .fighter.enemy.hurt { animation: enemy-hurt 560ms ease-out both; }
 
       .token {
         width: 58px;
@@ -1123,9 +1134,9 @@
       }
 
       .unit-name {
-        max-width: 112px;
-        min-height: 22px;
-        padding: 3px 6px;
+        max-width: 136px;
+        min-height: 18px;
+        padding: 3px 7px;
         border-radius: 999px;
         color: #fff8d5;
         background: rgba(34, 37, 51, 0.82);
@@ -1133,8 +1144,21 @@
         font-size: 0.62rem;
         font-weight: 1000;
         text-align: center;
-        line-height: 1.05;
+        line-height: 1;
         overflow-wrap: anywhere;
+      }
+
+      .unit-meta {
+        position: absolute;
+        left: 50%;
+        bottom: 0;
+        z-index: 4;
+        width: min(140px, 100%);
+        translate: -50% 0;
+        display: grid;
+        justify-items: center;
+        gap: 3px;
+        pointer-events: none;
       }
 
       .hp {
@@ -1172,7 +1196,7 @@
         width: 46px;
         height: 24px;
         pointer-events: none;
-        animation: projectile-flight 420ms cubic-bezier(0.22, 0.74, 0.3, 1) forwards;
+        animation: projectile-flight 620ms cubic-bezier(0.18, 0.72, 0.24, 1) forwards;
       }
 
       .projectile.stone { width: 24px; height: 24px; }
@@ -1205,9 +1229,55 @@
       .reward-pill img { width: 34px; height: 34px; object-fit: contain; }
 
       @keyframes projectile-flight {
-        0% { left: var(--from-x); top: var(--from-y); scale: 0.8; }
-        45% { top: calc(var(--to-y) - 22px); scale: 1; }
-        100% { left: var(--to-x); top: var(--to-y); scale: 0.9; }
+        0% { left: var(--from-x); top: var(--from-y); scale: 0.76; rotate: -8deg; }
+        46% { top: calc(var(--to-y) - 28px); scale: 1; }
+        100% { left: var(--to-x); top: var(--to-y); scale: 0.9; rotate: 8deg; }
+      }
+
+      @keyframes hero-melee-strike {
+        0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+        18% { transform: translate3d(-9px, 2px, 0) scale(0.98); }
+        42% { transform: translate3d(13px, -2px, 0) scale(1.02); }
+        55% { transform: translate3d(34px, -3px, 0) scale(1.05); }
+        72% { transform: translate3d(13px, 0, 0) scale(1.01); }
+      }
+
+      @keyframes hero-ranged-release {
+        0%, 100% { transform: translate3d(0, 0, 0) rotate(0) scale(1); }
+        22% { transform: translate3d(-7px, 2px, 0) rotate(-1.5deg) scale(0.99); }
+        48% { transform: translate3d(2px, -3px, 0) rotate(0.5deg) scale(1.02); }
+        62% { transform: translate3d(10px, -2px, 0) rotate(1deg) scale(1.03); }
+        80% { transform: translate3d(3px, 0, 0) rotate(0) scale(1.01); }
+      }
+
+      @keyframes hero-support-cast {
+        0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+        24% { transform: translate3d(-3px, 3px, 0) scale(0.98); }
+        52% { transform: translate3d(0, -10px, 0) scale(1.04); }
+        68% { transform: translate3d(4px, -5px, 0) scale(1.02); }
+        84% { transform: translate3d(0, 1px, 0) scale(1); }
+      }
+
+      @keyframes enemy-strike {
+        0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+        18% { transform: translate3d(9px, 2px, 0) scale(0.98); }
+        44% { transform: translate3d(-12px, -2px, 0) scale(1.02); }
+        57% { transform: translate3d(-34px, -3px, 0) scale(1.05); }
+        74% { transform: translate3d(-11px, 0, 0) scale(1.01); }
+      }
+
+      @keyframes hero-hurt {
+        0%, 100% { transform: translate3d(0, 0, 0) rotate(0); }
+        18% { transform: translate3d(-13px, -2px, 0) rotate(-2deg); }
+        38% { transform: translate3d(-7px, 2px, 0) rotate(1deg); }
+        62% { transform: translate3d(-3px, 0, 0) rotate(-0.5deg); }
+      }
+
+      @keyframes enemy-hurt {
+        0%, 100% { transform: translate3d(0, 0, 0) rotate(0); }
+        18% { transform: translate3d(13px, -2px, 0) rotate(2deg); }
+        38% { transform: translate3d(7px, 2px, 0) rotate(-1deg); }
+        62% { transform: translate3d(3px, 0, 0) rotate(0.5deg); }
       }
 
       .choices, .result-layer {
@@ -1558,6 +1628,7 @@
 
         let battle = null;
         let timer = null;
+        let visualTimer = null;
         let checkinTimer = null;
 
         document.querySelectorAll("[data-view]").forEach(button => {
@@ -1940,12 +2011,15 @@
           els.result.classList.add("hidden");
           els.choices.classList.add("hidden");
           els.battleTitle.textContent = `${stage.book} ${stage.level}`;
+          els.arena.querySelectorAll(".fighter, .projectile").forEach(node => node.remove());
           save();
           render();
           drawBattle();
           log("A arena começou. Seus heróis atacam automaticamente.");
           clearInterval(timer);
+          clearInterval(visualTimer);
           timer = setInterval(tick, 120);
+          visualTimer = setInterval(drawBattle, 50);
         }
 
         function makeHero(hero, index) {
@@ -1985,8 +2059,8 @@
               hp,
               atk: 2 + stage.level + Math.floor(stage.campaign / 2) + wave,
               spd: 0.65 + stage.level * 0.04 + stage.campaign * 0.02,
-              x: 72 + index * 7,
-              y: [32, 51, 69][index] || 51,
+              x: [72, 79, 72][index] || 72,
+              y: [18, 50, 82][index] || 50,
               cd: 0.55 + index * 0.32,
               attackCount: 0,
               animation: null
@@ -2007,7 +2081,6 @@
           });
           battle.enemies = battle.enemies.filter(unit => unit.hp > 0);
           battle.party = battle.party.filter(unit => unit.hp > 0);
-          drawBattle();
 
           if (!battle.party.length) {
             finish(false);
@@ -2029,21 +2102,43 @@
           unit.attackCount += 1;
           const special = unit.side === "hero" && unit.attackCount % 4 === 0;
           unit.animation = { kind: special && unit.classId === "support" ? "skill" : "attack", startedAt: Date.now() };
+          const activeBattle = battle;
 
           if (special && unit.classId === "support") {
-            const ally = battle.party.slice().sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp))[0];
             const healing = Math.max(12, Math.round(unit.atk * 1.7));
-            ally.hp = Math.min(ally.maxHp, ally.hp + healing);
-            log(`${unit.name} restaurou ${healing} de vida.`);
+            setTimeout(() => {
+              if (battle !== activeBattle || battle.paused) return;
+              const attacker = battle.party.find(item => item.id === unit.id && item.hp > 0);
+              if (!attacker) return;
+              const ally = battle.party.filter(item => item.hp > 0).sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp))[0];
+              if (!ally) return;
+              ally.hp = Math.min(ally.maxHp, ally.hp + healing);
+              log(`${unit.name} restaurou ${healing} de vida.`);
+            }, 520);
             return;
           }
 
           const multiplier = special ? 1.55 : 1;
           const damage = Math.max(3, Math.round(unit.atk * multiplier * (unit.side === "hero" ? 1 + battle.bonusAtk : 1)));
-          target.hp -= damage;
-          target.animation = { kind: "hurt", startedAt: Date.now() };
-          if (unit.side === "hero" && unit.projectile) launchProjectile(unit, target);
-          log(`${unit.name} causou ${damage} de dano${special ? " crítico" : ""}.`);
+          if (unit.side === "hero" && unit.projectile) {
+            setTimeout(() => {
+              if (battle !== activeBattle || battle.paused) return;
+              const attacker = battle.party.find(item => item.id === unit.id && item.hp > 0);
+              if (attacker) launchProjectile(unit, target);
+            }, 220);
+          }
+          const impactDelay = unit.projectile ? 800 : (unit.side === "enemy" ? 470 : 450);
+          setTimeout(() => {
+            if (battle !== activeBattle || battle.paused) return;
+            const attackers = unit.side === "hero" ? battle.party : battle.enemies;
+            if (!attackers.some(item => item.id === unit.id && item.hp > 0)) return;
+            const liveTargets = unit.side === "hero" ? battle.enemies : battle.party;
+            const liveTarget = liveTargets.find(item => item.id === target.id && item.hp > 0) || liveTargets.find(item => item.hp > 0);
+            if (!liveTarget) return;
+            liveTarget.hp -= damage;
+            liveTarget.animation = { kind: "hurt", startedAt: Date.now() };
+            log(`${unit.name} causou ${damage} de dano${special ? " crítico" : ""}.`);
+          }, impactDelay);
         }
 
         function launchProjectile(unit, target) {
@@ -2056,7 +2151,7 @@
           node.style.setProperty("--to-y", `${target.y}%`);
           node.innerHTML = `<img src="/assets/heroi-ortodoxo/projectiles/${type}.png?v=${assetVersion}" alt="">`;
           els.arena.appendChild(node);
-          setTimeout(() => node.remove(), 460);
+          setTimeout(() => node.remove(), 660);
         }
 
         function unitSprite(unit, now) {
@@ -2064,20 +2159,24 @@
           const age = animation ? now - animation.startedAt : Number.POSITIVE_INFINITY;
           if (unit.side === "enemy") {
             const root = `/assets/heroi-ortodoxo/enemies/${unit.themeId}/${unit.assetId}`;
-            if (animation?.kind === "hurt" && age < 420) return `${root}/frames/frame-04.png`;
-            if (animation?.kind === "attack" && age < 420) return `${root}/frames/frame-${age < 190 ? "02" : "03"}.png`;
+            if (animation?.kind === "hurt" && age < 560) return `${root}/frames/frame-04.png`;
+            if (animation?.kind === "attack" && age < 840) {
+              if (age < 280) return `${root}/frames/frame-02.png`;
+              if (age < 650) return `${root}/frames/frame-03.png`;
+            }
             return `${root}/side-idle.png`;
           }
 
           const root = `/assets/heroi-ortodoxo/characters/${unit.assetId}/combat`;
-          if (animation?.kind === "hurt" && age < 420) {
-            const frame = Math.min(4, Math.floor(age / 105) + 1);
+          if (animation?.kind === "hurt" && age < 560) {
+            const frame = Math.min(4, Math.floor(age / 140) + 1);
             return `${root}/hurt/frame-${String(frame).padStart(2, "0")}.png`;
           }
-          if ((animation?.kind === "attack" || animation?.kind === "skill") && age < 500) {
+          const motionDuration = animation?.kind === "skill" ? 900 : 860;
+          if ((animation?.kind === "attack" || animation?.kind === "skill") && age < motionDuration) {
             const folder = animation.kind === "skill" ? "skill-cast" : (unit.assetId === "davi" ? "attack-sling" : "attack");
             const count = animation.kind === "skill" ? 6 : 5;
-            const frame = Math.min(count, Math.floor(age / (500 / count)) + 1);
+            const frame = Math.min(count, Math.floor(age / (motionDuration / count)) + 1);
             return `${root}/${folder}/frame-${String(frame).padStart(2, "0")}.png`;
           }
           return `${root}/side-idle.png`;
@@ -2087,16 +2186,46 @@
           if (!battle) return;
           els.battleWave.textContent = `Campanha ${battle.stage.campaign} · Nível ${battle.stage.level} · Onda ${battle.wave}`;
           const now = Date.now();
-          const units = [...battle.party, ...battle.enemies].map(unit => {
+          const units = [...battle.party, ...battle.enemies];
+          const activeIds = new Set(units.map(unit => unit.id));
+          els.arena.querySelectorAll(".fighter").forEach(node => {
+            if (!activeIds.has(node.dataset.unit)) node.remove();
+          });
+
+          units.forEach(unit => {
             const hp = Math.max(0, Math.round((unit.hp / unit.maxHp) * 100));
             const age = unit.animation ? now - unit.animation.startedAt : Number.POSITIVE_INFINITY;
-            const actionClass = age < 500 ? (unit.animation.kind === "hurt" ? "hurt" : "attacking") : "";
-            return `<div class="fighter ${unit.side} ${actionClass}" data-unit="${unit.id}" style="left:${unit.x}%;top:${unit.y}%">
-              <span class="unit-name">${unit.name}</span><img class="unit-sprite" src="${unitSprite(unit, now)}?v=${assetVersion}" alt=""><div class="hp" style="--hp:${hp}%"><span></span></div>
-            </div>`;
-          }).join("");
-          els.arena.querySelectorAll(".fighter").forEach(node => node.remove());
-          els.arena.insertAdjacentHTML("beforeend", units);
+            const actionDuration = unit.animation?.kind === "hurt" ? 560 : (unit.animation?.kind === "skill" ? 900 : 860);
+            const actionClass = age < actionDuration ? (unit.animation.kind === "hurt" ? "hurt" : "attacking") : "";
+            let node = Array.from(els.arena.querySelectorAll(".fighter")).find(item => item.dataset.unit === unit.id);
+            if (!node) {
+              node = document.createElement("div");
+              node.className = `fighter ${unit.side} ${unit.classId || "melee"}`;
+              node.dataset.unit = unit.id;
+              node.innerHTML = `<img class="unit-sprite" alt=""><div class="unit-meta"><span class="unit-name"></span><div class="hp"><span></span></div></div>`;
+              node.querySelector(".unit-name").textContent = unit.name;
+              els.arena.appendChild(node);
+            }
+            node.style.left = `${unit.x}%`;
+            node.style.top = `${unit.y}%`;
+            node.style.zIndex = String(Math.round(unit.y));
+            const actionKey = actionClass ? `${unit.animation.kind}-${unit.animation.startedAt}` : "idle";
+            if (node.dataset.actionKey !== actionKey) {
+              node.classList.remove("attacking", "hurt");
+              if (actionClass) {
+                void node.offsetWidth;
+                node.classList.add(actionClass);
+              }
+              node.dataset.actionKey = actionKey;
+            }
+            const sprite = `${unitSprite(unit, now)}?v=${assetVersion}`;
+            const image = node.querySelector(".unit-sprite");
+            if (image.dataset.sprite !== sprite) {
+              image.src = sprite;
+              image.dataset.sprite = sprite;
+            }
+            node.querySelector(".hp").style.setProperty("--hp", `${hp}%`);
+          });
         }
 
         function showChoices() {
@@ -2126,7 +2255,9 @@
 
         function finish(win) {
           clearInterval(timer);
+          clearInterval(visualTimer);
           timer = null;
+          visualTimer = null;
           if (win) {
             const firstClear = battle.stage.id > state.completedStage;
             const rewards = stageRewards(battle.stage, firstClear);
@@ -2164,8 +2295,11 @@
 
         function endBattle() {
           clearInterval(timer);
+          clearInterval(visualTimer);
           timer = null;
+          visualTimer = null;
           battle = null;
+          els.arena.querySelectorAll(".fighter, .projectile").forEach(node => node.remove());
           els.app.classList.remove("battle-active");
           els.battle.classList.add("hidden");
           els.result.classList.add("hidden");

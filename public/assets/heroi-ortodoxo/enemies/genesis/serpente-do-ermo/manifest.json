@@ -1,0 +1,30 @@
+{
+  "id": "serpente-do-ermo",
+  "name": "Serpente do Ermo",
+  "book": "genesis",
+  "facing": "left",
+  "anchor": {
+    "type": "bottom-center",
+    "canvas": [
+      512,
+      512
+    ]
+  },
+  "idle": "/assets/heroi-ortodoxo/enemies/genesis/serpente-do-ermo/side-idle.png",
+  "animation": {
+    "fps": 10,
+    "frames": [
+      "/assets/heroi-ortodoxo/enemies/genesis/serpente-do-ermo/frames/frame-01.png",
+      "/assets/heroi-ortodoxo/enemies/genesis/serpente-do-ermo/frames/frame-02.png",
+      "/assets/heroi-ortodoxo/enemies/genesis/serpente-do-ermo/frames/frame-03.png",
+      "/assets/heroi-ortodoxo/enemies/genesis/serpente-do-ermo/frames/frame-04.png"
+    ],
+    "strip": "/assets/heroi-ortodoxo/enemies/genesis/serpente-do-ermo/strip.png",
+    "poses": [
+      "idle",
+      "windup",
+      "impact",
+      "hurt"
+    ]
+  }
+}

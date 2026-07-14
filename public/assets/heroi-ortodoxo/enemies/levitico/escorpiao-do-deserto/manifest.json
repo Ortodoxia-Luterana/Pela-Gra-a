@@ -1,0 +1,30 @@
+{
+  "id": "escorpiao-do-deserto",
+  "name": "Escorpião do Deserto",
+  "book": "levitico",
+  "facing": "left",
+  "anchor": {
+    "type": "bottom-center",
+    "canvas": [
+      512,
+      512
+    ]
+  },
+  "idle": "/assets/heroi-ortodoxo/enemies/levitico/escorpiao-do-deserto/side-idle.png",
+  "animation": {
+    "fps": 10,
+    "frames": [
+      "/assets/heroi-ortodoxo/enemies/levitico/escorpiao-do-deserto/frames/frame-01.png",
+      "/assets/heroi-ortodoxo/enemies/levitico/escorpiao-do-deserto/frames/frame-02.png",
+      "/assets/heroi-ortodoxo/enemies/levitico/escorpiao-do-deserto/frames/frame-03.png",
+      "/assets/heroi-ortodoxo/enemies/levitico/escorpiao-do-deserto/frames/frame-04.png"
+    ],
+    "strip": "/assets/heroi-ortodoxo/enemies/levitico/escorpiao-do-deserto/strip.png",
+    "poses": [
+      "idle",
+      "windup",
+      "impact",
+      "hurt"
+    ]
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "id": "feitor-egipcio",
+  "name": "Feitor Egípcio",
+  "book": "exodo",
+  "facing": "left",
+  "anchor": {
+    "type": "bottom-center",
+    "canvas": [
+      512,
+      512
+    ]
+  },
+  "idle": "/assets/heroi-ortodoxo/enemies/exodo/feitor-egipcio/side-idle.png",
+  "animation": {
+    "fps": 10,
+    "frames": [
+      "/assets/heroi-ortodoxo/enemies/exodo/feitor-egipcio/frames/frame-01.png",
+      "/assets/heroi-ortodoxo/enemies/exodo/feitor-egipcio/frames/frame-02.png",
+      "/assets/heroi-ortodoxo/enemies/exodo/feitor-egipcio/frames/frame-03.png",
+      "/assets/heroi-ortodoxo/enemies/exodo/feitor-egipcio/frames/frame-04.png"
+    ],
+    "strip": "/assets/heroi-ortodoxo/enemies/exodo/feitor-egipcio/strip.png",
+    "poses": [
+      "idle",
+      "windup",
+      "impact",
+      "hurt"
+    ]
+  }
+}

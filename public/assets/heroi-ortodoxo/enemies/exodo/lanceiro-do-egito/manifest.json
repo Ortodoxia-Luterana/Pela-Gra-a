@@ -1,0 +1,30 @@
+{
+  "id": "lanceiro-do-egito",
+  "name": "Lanceiro do Egito",
+  "book": "exodo",
+  "facing": "left",
+  "anchor": {
+    "type": "bottom-center",
+    "canvas": [
+      512,
+      512
+    ]
+  },
+  "idle": "/assets/heroi-ortodoxo/enemies/exodo/lanceiro-do-egito/side-idle.png",
+  "animation": {
+    "fps": 10,
+    "frames": [
+      "/assets/heroi-ortodoxo/enemies/exodo/lanceiro-do-egito/frames/frame-01.png",
+      "/assets/heroi-ortodoxo/enemies/exodo/lanceiro-do-egito/frames/frame-02.png",
+      "/assets/heroi-ortodoxo/enemies/exodo/lanceiro-do-egito/frames/frame-03.png",
+      "/assets/heroi-ortodoxo/enemies/exodo/lanceiro-do-egito/frames/frame-04.png"
+    ],
+    "strip": "/assets/heroi-ortodoxo/enemies/exodo/lanceiro-do-egito/strip.png",
+    "poses": [
+      "idle",
+      "windup",
+      "impact",
+      "hurt"
+    ]
+  }
+}

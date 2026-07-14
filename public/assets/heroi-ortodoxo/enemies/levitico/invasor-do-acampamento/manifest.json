@@ -1,0 +1,30 @@
+{
+  "id": "invasor-do-acampamento",
+  "name": "Invasor do Acampamento",
+  "book": "levitico",
+  "facing": "left",
+  "anchor": {
+    "type": "bottom-center",
+    "canvas": [
+      512,
+      512
+    ]
+  },
+  "idle": "/assets/heroi-ortodoxo/enemies/levitico/invasor-do-acampamento/side-idle.png",
+  "animation": {
+    "fps": 10,
+    "frames": [
+      "/assets/heroi-ortodoxo/enemies/levitico/invasor-do-acampamento/frames/frame-01.png",
+      "/assets/heroi-ortodoxo/enemies/levitico/invasor-do-acampamento/frames/frame-02.png",
+      "/assets/heroi-ortodoxo/enemies/levitico/invasor-do-acampamento/frames/frame-03.png",
+      "/assets/heroi-ortodoxo/enemies/levitico/invasor-do-acampamento/frames/frame-04.png"
+    ],
+    "strip": "/assets/heroi-ortodoxo/enemies/levitico/invasor-do-acampamento/strip.png",
+    "poses": [
+      "idle",
+      "windup",
+      "impact",
+      "hurt"
+    ]
+  }
+}

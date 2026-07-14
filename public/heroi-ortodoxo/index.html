@@ -328,7 +328,7 @@
       .party-yard {
         position: absolute;
         left: 50%;
-        top: clamp(472px, 62svh, 560px);
+        top: clamp(225px, 32svh, 300px);
         translate: -50% 0;
         width: min(82%, 390px);
         height: 110px;
@@ -336,10 +336,18 @@
 
       .chibi {
         position: absolute;
-        width: 58px;
-        height: 76px;
+        width: 74px;
+        height: 92px;
         animation: bob 2.5s ease-in-out infinite;
         filter: drop-shadow(0 7px 0 rgba(72, 40, 16, 0.16));
+      }
+
+      .chibi img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        object-position: center bottom;
+        pointer-events: none;
       }
 
       .chibi:nth-child(2) { animation-delay: -0.8s; }
@@ -669,10 +677,19 @@
       }
 
       .hero-mini {
-        width: 64px;
-        height: 76px;
+        width: 72px;
+        height: 86px;
         margin: 0 auto;
         position: relative;
+        overflow: hidden;
+      }
+
+      .hero-mini > img {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: contain;
+        object-position: center bottom;
       }
 
       .hero-mini .face {
@@ -740,7 +757,7 @@
       }
 
       .roster-card {
-        min-height: 118px;
+        min-height: 144px;
         border-radius: 17px;
         padding: 8px 6px;
         display: grid;
@@ -759,9 +776,15 @@
         filter: grayscale(0.8);
       }
 
+      .roster-card.locked .hero-mini > img {
+        filter: brightness(0.1) saturate(0);
+      }
+
       .roster-card .hero-mini {
-        scale: 0.78;
-        margin: -8px auto -5px;
+        width: 96px;
+        height: 108px;
+        scale: 1;
+        margin: -5px auto -4px;
       }
 
       .roster-card span {
@@ -890,14 +913,11 @@
       }
 
       .checkin-summary {
-        display: grid;
-        grid-template-columns: 1fr auto;
+        display: flex;
         align-items: center;
+        justify-content: space-between;
         gap: 10px;
-        padding: 12px;
-        border-radius: 18px;
-        background: linear-gradient(145deg, rgba(255, 231, 139, 0.86), rgba(255, 247, 218, 0.72));
-        border: 2px solid rgba(99, 65, 25, 0.18);
+        padding: 4px 2px 2px;
       }
 
       .checkin-summary strong {
@@ -905,14 +925,13 @@
         font-size: 1.1rem;
       }
 
-      .checkin-timer {
-        min-width: 112px;
-        padding: 8px 10px;
-        border-radius: 14px;
-        color: #fff8db;
-        background: rgba(34, 37, 51, 0.9);
-        text-align: center;
+      .checkin-status {
+        padding: 6px 10px;
+        border-radius: 999px;
+        color: #3a2914;
+        background: rgba(255, 227, 128, 0.72);
         font-weight: 1000;
+        font-size: 0.78rem;
       }
 
       .checkin-grid {
@@ -1049,16 +1068,30 @@
 
       .fighter {
         position: absolute;
-        width: 62px;
-        min-height: 104px;
+        width: clamp(112px, 28vw, 170px);
+        height: clamp(150px, 40vw, 220px);
         display: grid;
         justify-items: center;
         align-content: end;
         gap: 3px;
         transition: left 0.24s ease, top 0.24s ease, transform 0.18s ease;
+        translate: -50% -50%;
       }
 
       .fighter.hit { transform: translateY(-5px) scale(1.05); }
+
+      .unit-sprite {
+        width: 100%;
+        height: calc(100% - 32px);
+        display: block;
+        object-fit: contain;
+        object-position: center bottom;
+        filter: drop-shadow(0 8px 3px rgba(43, 28, 18, 0.28));
+        pointer-events: none;
+      }
+
+      .fighter.attacking .unit-sprite { filter: drop-shadow(0 8px 3px rgba(43, 28, 18, 0.28)) brightness(1.08); }
+      .fighter.hurt .unit-sprite { filter: drop-shadow(0 8px 3px rgba(43, 28, 18, 0.28)) saturate(0.72); }
 
       .token {
         width: 58px;
@@ -1090,7 +1123,7 @@
       }
 
       .unit-name {
-        max-width: 92px;
+        max-width: 112px;
         min-height: 22px;
         padding: 3px 6px;
         border-radius: 999px;
@@ -1105,7 +1138,7 @@
       }
 
       .hp {
-        width: 58px;
+        width: min(76px, 90%);
         height: 9px;
         border-radius: 999px;
         overflow: hidden;
@@ -1122,13 +1155,59 @@
       }
 
       .battle-log {
-        min-height: 68px;
-        padding: 10px 12px;
+        min-height: 44px;
+        padding: 8px 12px;
         border-radius: 17px;
         background: rgba(34, 37, 51, 0.9);
         border: 2px solid rgba(255, 247, 206, 0.2);
         color: #fff7dc;
         font-weight: 900;
+      }
+
+      .projectile {
+        position: absolute;
+        z-index: 9;
+        left: var(--from-x);
+        top: var(--from-y);
+        width: 46px;
+        height: 24px;
+        pointer-events: none;
+        animation: projectile-flight 420ms cubic-bezier(0.22, 0.74, 0.3, 1) forwards;
+      }
+
+      .projectile.stone { width: 24px; height: 24px; }
+
+      .projectile img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+
+      .reward-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin: 12px 0 16px;
+      }
+
+      .reward-pill {
+        min-width: 0;
+        display: grid;
+        justify-items: center;
+        gap: 3px;
+        padding: 8px 5px;
+        border-radius: 14px;
+        background: rgba(255,255,255,0.66);
+        color: #3a2713;
+        font-weight: 1000;
+      }
+
+      .reward-pill img { width: 34px; height: 34px; object-fit: contain; }
+
+      @keyframes projectile-flight {
+        0% { left: var(--from-x); top: var(--from-y); scale: 0.8; }
+        45% { top: calc(var(--to-y) - 22px); scale: 1; }
+        100% { left: var(--to-x); top: var(--to-y); scale: 0.9; }
       }
 
       .choices, .result-layer {
@@ -1309,7 +1388,7 @@
     <script>
       (() => {
         const saveKey = "heroi-ortodoxo-save-v4";
-        const assetVersion = "v3.32.1";
+        const assetVersion = "v4.0.0";
         const boot = window.__HEROI_BOOT__ || {};
         const hubUser = boot.user || {};
         const maxEnergy = 60;
@@ -1323,48 +1402,60 @@
           ranged: { name: "Distância", icon: "ranged", image: "/assets/heroi-ortodoxo/classes/class-ranged.png" },
           support: { name: "Suporte", icon: "support", image: "/assets/heroi-ortodoxo/classes/class-support.png" }
         };
+        const rarities = {
+          common: { name: "Comum", color: "#8d9aa3" },
+          uncommon: { name: "Incomum", color: "#58ad68" },
+          rare: { name: "Raro", color: "#4b8fe2" },
+          epic: { name: "Épico", color: "#9b62dc" },
+          legendary: { name: "Lendário", color: "#e8a72d" }
+        };
         const heroes = [
-          { id: "davi", name: "Davi", role: "Funda precisa", classId: "ranged", color: "#4aa5db", tool: "#f2d35a", hp: 95, atk: 13, spd: 1.12, skill: "Disparo do Salmo: acerta o inimigo mais distante e aumenta o dano da próxima rodada." },
-          { id: "debora", name: "Débora", role: "Juízo e coragem", classId: "support", color: "#9b65d8", tool: "#ffdf69", hp: 80, atk: 16, spd: 1.18, skill: "Cântico de Débora: fortalece aliados próximos e acelera seus ataques por alguns segundos." },
-          { id: "gideao", name: "Gideão", role: "Escudo e trombeta", classId: "melee", color: "#e0684b", tool: "#f8c44b", hp: 118, atk: 11, spd: 0.95, skill: "Trombeta da Vigília: provoca inimigos e reduz o dano recebido pela equipe." },
-          { id: "ester", name: "Ester", role: "Graça e proteção", classId: "support", color: "#ef6fb2", tool: "#69cbe9", hp: 86, atk: 12, spd: 1.25, skill: "Intercessão Real: cura o aliado mais ferido e concede proteção breve." },
-          { id: "moises", name: "Moisés", role: "Cajado e sinais", classId: "support", color: "#68b667", tool: "#d7aa65", hp: 104, atk: 15, spd: 0.98, skill: "Cajado dos Sinais: interrompe uma onda inimiga e atrasa seus ataques." },
-          { id: "josue", name: "Josué", role: "Frente de batalha", classId: "melee", color: "#3f74d8", tool: "#e8c56d", hp: 110, atk: 15, spd: 1.02, skill: "Avanço de Josué: investe contra a linha inimiga causando dano extra ao primeiro alvo." }
+          { id: "davi", name: "Davi", rarity: "epic", role: "Funda precisa", classId: "ranged", hp: 100, atk: 15, spd: 1.15, projectile: "stone", skill: "Pedra do Salmo: a cada quarto ataque, lança uma pedra certeira com dano ampliado." },
+          { id: "adao", name: "Adão", rarity: "epic", role: "Guardião do jardim", classId: "melee", hp: 145, atk: 14, spd: 0.92, skill: "Força da Terra: o quarto golpe causa dano ampliado." },
+          { id: "eva", name: "Eva", rarity: "rare", role: "Cuidado do jardim", classId: "support", hp: 100, atk: 9, spd: 1.02, skill: "Fruto Restaurador: a cada quarto turno, cura o aliado mais ferido." },
+          { id: "noe", name: "Noé", rarity: "epic", role: "Construtor da arca", classId: "support", hp: 132, atk: 10, spd: 0.90, skill: "Madeira Reforçada: restaura a vida do aliado mais ferido." },
+          { id: "abraao", name: "Abraão", rarity: "legendary", role: "Patriarca peregrino", classId: "melee", hp: 150, atk: 17, spd: 0.96, skill: "Passo da Promessa: o quarto golpe causa dano ampliado." },
+          { id: "isaque", name: "Isaque", rarity: "epic", role: "Arco nobre", classId: "ranged", hp: 105, atk: 15, spd: 1.04, projectile: "arrow", skill: "Flecha da Aliança: o quarto disparo causa dano ampliado." },
+          { id: "ismael", name: "Ismael", rarity: "common", role: "Arqueiro do deserto", classId: "ranged", hp: 92, atk: 12, spd: 1.08, projectile: "arrow", skill: "Tiro do Ermo: o quarto disparo causa dano ampliado." },
+          { id: "jose-do-egito", name: "José do Egito", rarity: "legendary", role: "Sabedoria e provisão", classId: "support", hp: 118, atk: 12, spd: 1.00, skill: "Celeiros de Provisão: cura o aliado mais ferido." },
+          { id: "moises", name: "Moisés", rarity: "legendary", role: "Cajado e sinais", classId: "support", hp: 120, atk: 13, spd: 0.95, skill: "Cajado dos Sinais: cura o aliado mais ferido e acelera o próximo turno." },
+          { id: "arao", name: "Arão", rarity: "epic", role: "Sacerdote de Israel", classId: "support", hp: 115, atk: 11, spd: 0.98, skill: "Bênção Sacerdotal: restaura a vida do aliado mais ferido." },
+          { id: "miria", name: "Miriã", rarity: "rare", role: "Cântico de coragem", classId: "support", hp: 98, atk: 10, spd: 1.12, skill: "Cântico da Travessia: cura o aliado mais ferido." },
+          { id: "bezalel", name: "Bezalel", rarity: "rare", role: "Arco de artífice", classId: "ranged", hp: 94, atk: 14, spd: 1.10, projectile: "arrow", skill: "Disparo Trabalhado: o quarto disparo causa dano ampliado." },
+          { id: "hur", name: "Hur", rarity: "uncommon", role: "Escudo e cajado", classId: "melee", hp: 138, atk: 12, spd: 0.90, skill: "Postura Firme: o quarto golpe causa dano ampliado." },
+          { id: "nadabe", name: "Nadabe", rarity: "rare", role: "Machado cerimonial", classId: "melee", hp: 120, atk: 15, spd: 1.00, skill: "Golpe Cerimonial: o quarto golpe causa dano ampliado." },
+          { id: "abiu", name: "Abiú", rarity: "rare", role: "Lâmina curva", classId: "melee", hp: 118, atk: 15, spd: 1.02, skill: "Lâmina Ardente: o quarto golpe causa dano ampliado." },
+          { id: "eleazar", name: "Eleazar", rarity: "uncommon", role: "Lança cerimonial", classId: "melee", hp: 128, atk: 13, spd: 0.97, skill: "Lança Consagrada: o quarto golpe causa dano ampliado." }
         ];
 
-        const bibleBooks = [
-          "Gênesis", "Êxodo", "Levítico", "Números", "Deuteronômio", "Josué", "Juízes", "Rute", "1 Samuel", "2 Samuel",
-          "1 Reis", "2 Reis", "1 Crônicas", "2 Crônicas", "Esdras", "Neemias", "Ester", "Jó", "Salmos", "Provérbios",
-          "Eclesiastes", "Cantares", "Isaías", "Jeremias", "Lamentações", "Ezequiel", "Daniel", "Oseias", "Joel", "Amós",
-          "Obadias", "Jonas", "Miqueias", "Naum", "Habacuque", "Sofonias", "Ageu", "Zacarias", "Malaquias", "Mateus",
-          "Marcos", "Lucas", "João", "Atos", "Romanos", "1 Coríntios", "2 Coríntios", "Gálatas", "Efésios", "Filipenses",
-          "Colossenses", "1 Tessalonicenses", "2 Tessalonicenses", "1 Timóteo", "2 Timóteo", "Tito", "Filemom", "Hebreus",
-          "Tiago", "1 Pedro", "2 Pedro", "1 João", "2 João", "3 João", "Judas", "Apocalipse"
-        ];
+        const bibleBooks = ["Gênesis", "Êxodo", "Levítico"];
         const levelNames = ["Porta de Entrada", "Travessia", "Cerco", "Provação", "Conquista"];
         const arenaThemes = [
           {
+            id: "genesis",
             arena: "heroi-arena-genesis.png",
             enemyPool: [
-              { name: "Serpente do Ermo", colors: ["#7fc35d", "#356b39"] },
-              { name: "Espinheiro Bravo", colors: ["#c28d3e", "#6c3f24"] },
-              { name: "Fera do Campo", colors: ["#d97745", "#88422e"] }
+              { id: "serpente-do-ermo", name: "Serpente do Ermo" },
+              { id: "espinheiro-bravo", name: "Espinheiro Bravo" },
+              { id: "fera-do-campo", name: "Fera do Campo" }
             ]
           },
           {
+            id: "exodo",
             arena: "heroi-arena-exodo.png",
             enemyPool: [
-              { name: "Feitor Egípcio", colors: ["#d15f45", "#79352d"] },
-              { name: "Cocheiro do Faraó", colors: ["#c99b35", "#765225"] },
-              { name: "Lança do Egito", colors: ["#8c79c9", "#463b7d"] }
+              { id: "feitor-egipcio", name: "Feitor Egípcio" },
+              { id: "cocheiro-do-farao", name: "Cocheiro do Faraó" },
+              { id: "lanceiro-do-egito", name: "Lanceiro do Egito" }
             ]
           },
           {
-            arena: "heroi-arena-josue.png",
+            id: "levitico",
+            arena: "heroi-arena-levitico.png",
             enemyPool: [
-              { name: "Vigia da Muralha", colors: ["#9b6b47", "#52352b"] },
-              { name: "Lanceiro de Canaã", colors: ["#b94b52", "#682f38"] },
-              { name: "Capitão da Porta", colors: ["#5d83bc", "#2c456d"] }
+              { id: "escorpiao-do-deserto", name: "Escorpião do Deserto" },
+              { id: "fera-impura", name: "Fera Impura" },
+              { id: "invasor-do-acampamento", name: "Invasor do Acampamento" }
             ]
           }
         ];
@@ -1381,8 +1472,9 @@
               title: `${book} ${levelIndex + 1}`,
               tip: `Campanha ${bookIndex + 1}: ${book}, nível ${levelIndex + 1} de 5.`,
               cost: arenaEnergyCost,
-              enemies: Math.min(8, 2 + levelIndex + Math.floor(bookIndex / 8)),
+              enemies: Math.min(4, [1, 2, 2, 3, 3][levelIndex] + Math.floor(bookIndex / 2)),
               arena: theme.arena,
+              themeId: theme.id,
               enemyPool: theme.enemyPool
             };
           });
@@ -1518,6 +1610,7 @@
             completedStage: 0,
             owned: [],
             formation: [],
+            heroLevels: {},
             summons: 0,
             checkinDay: 0,
             lastCheckinAt: 0,
@@ -1534,6 +1627,7 @@
           merged.highestStage = Math.min(stages.length, Math.max(1, Number(merged.highestStage || merged.stage || 1)));
           merged.selectedStage = Math.min(Math.max(1, Number(merged.selectedStage || merged.stage || merged.highestStage || 1)), merged.highestStage);
           merged.completedStage = Math.max(0, Number(merged.completedStage || Math.max(0, merged.highestStage - 1)));
+          merged.heroLevels = merged.heroLevels && typeof merged.heroLevels === "object" ? merged.heroLevels : {};
           merged.formation = Array.from(new Set((merged.formation || []).filter(id => (merged.owned || []).includes(id)))).slice(0, maxFormation);
           merged.owned = Array.from(new Set(merged.owned || []));
           return merged;
@@ -1589,9 +1683,7 @@
             const hero = heroById(id);
             const left = [10, 28, 46, 64, 82][index] || 46;
             const top = [24, 4, 22, 4, 24][index] || 22;
-            return `<div class="chibi" style="left:${left}%;top:${top}px;--robe:${hero.color};--tool:${hero.tool}">
-              <i class="head"></i><i class="body"></i>
-            </div>`;
+            return `<div class="chibi" style="left:${left}%;top:${top}px"><img src="${heroAsset(hero, "side-idle")}?v=${assetVersion}" alt="${hero.name}"></div>`;
           }).join("");
         }
 
@@ -1604,6 +1696,22 @@
 
         function heroById(id) {
           return heroes.find(hero => hero.id === id) || heroes[0];
+        }
+
+        function heroAsset(hero, file) {
+          return `/assets/heroi-ortodoxo/characters/${hero.id}/${file === "portrait" ? "portraits/front.png" : `combat/${file}.png`}`;
+        }
+
+        function heroPortrait(hero) {
+          return `<div class="hero-mini"><img src="${heroAsset(hero, "portrait")}?v=${assetVersion}" alt=""></div>`;
+        }
+
+        function heroLevel(heroId) {
+          return Math.max(1, Number(state.heroLevels[heroId] || 1));
+        }
+
+        function trainingCost(heroId) {
+          return heroLevel(heroId) * 100;
         }
 
         function openView(view) {
@@ -1658,9 +1766,9 @@
           save();
           render();
           sheet("Aliado chamado", `
-            <div class="card hero-card" style="--c:${next.color};--t:${next.tool}">
-              <div class="hero-mini"><i class="face"></i><i class="robe"></i><i class="tool"></i></div>
-              <div><h3>${next.name}</h3><p>${className(next)} · ${next.role}</p></div>
+            <div class="card hero-card">
+              ${heroPortrait(next)}
+              <div><h3>${next.name}</h3><p>${rarities[next.rarity].name} · ${className(next)}</p></div>
             </div>
             <button class="primary-button" id="go-formation" type="button">Ver formação</button>
           `);
@@ -1670,8 +1778,8 @@
         function renderHeroes() {
           const cards = heroes.map(hero => {
             const owned = state.owned.includes(hero.id);
-            return `<button class="roster-card ${owned ? "" : "locked"}" type="button" data-hero="${hero.id}" ${owned ? "" : "disabled"} style="--c:${hero.color};--t:${hero.tool}">
-              <div class="hero-mini"><i class="face"></i><i class="robe"></i><i class="tool"></i></div>
+            return `<button class="roster-card ${owned ? "" : "locked"}" type="button" data-hero="${hero.id}" ${owned ? "" : "disabled"}>
+              ${heroPortrait(hero)}
               <span>${owned ? hero.name : "Bloqueado"}</span>
             </button>`;
           }).join("");
@@ -1684,13 +1792,13 @@
             const id = currentFormation()[index];
             if (!id) return `<button class="slot" type="button" data-add="${index}">Vazio</button>`;
             const hero = heroById(id);
-            return `<button class="slot filled" type="button" data-hero="${hero.id}">${renderClassIcon(hero)}<div class="hero-mini" style="--c:${hero.color};--t:${hero.tool}"><i class="face"></i><i class="robe"></i><i class="tool"></i></div><span>${hero.name}</span></button>`;
+            return `<button class="slot filled" type="button" data-hero="${hero.id}">${renderClassIcon(hero)}${heroPortrait(hero)}<span>${hero.name}</span></button>`;
           }).join("");
           const bench = state.owned.map(id => {
             const hero = heroById(id);
-            return `<button class="roster-card" type="button" data-pick="${hero.id}" style="--c:${hero.color};--t:${hero.tool}">
+            return `<button class="roster-card" type="button" data-pick="${hero.id}">
               ${renderClassIcon(hero)}
-              <div class="hero-mini"><i class="face"></i><i class="robe"></i><i class="tool"></i></div>
+              ${heroPortrait(hero)}
               <span>${hero.name}</span>
             </button>`;
           }).join("") || `<div class="card"><b>Nenhum herói ainda</b><p>Faça uma invocação para montar a equipe.</p></div>`;
@@ -1716,28 +1824,46 @@
         function renderHeroDetail(heroId, returnView = "heroes") {
           const hero = heroById(heroId);
           const owned = state.owned.includes(hero.id);
+          const level = heroLevel(hero.id);
+          const cost = trainingCost(hero.id);
           sheet(hero.name, `
             <div class="hero-detail">
               <div class="hero-detail-head">
-                <div class="hero-mini" style="--c:${hero.color};--t:${hero.tool}"><i class="face"></i><i class="robe"></i><i class="tool"></i></div>
+                ${heroPortrait(hero)}
                 <div>
                   <div class="hero-line"><h3>${owned ? hero.name : "Bloqueado"}</h3>${renderClassIcon(hero)}</div>
-                  <p>${owned ? hero.role : "Invoque este personagem para revelar seus detalhes completos."}</p>
+                  <p>${owned ? `${rarities[hero.rarity].name} · Nível ${level}` : "Invoque este personagem para revelar seus detalhes completos."}</p>
                 </div>
               </div>
               ${owned ? `<div class="hero-detail-stats">
-                <span>ATQ<br>${hero.atk}</span>
-                <span>HP<br>${hero.hp}</span>
+                <span>ATQ<br>${hero.atk + (level - 1) * 2}</span>
+                <span>HP<br>${hero.hp + (level - 1) * 10}</span>
                 <span>Classe<br>${className(hero)}</span>
               </div>
-              <div class="card"><b>Habilidade especial</b><p>${hero.skill}</p></div>` : ""}
+              <div class="card"><b>Habilidade especial</b><p>${hero.skill}</p></div>
+              <button class="primary-button" id="train-hero" type="button" ${state.coins < cost ? "disabled" : ""}>Treinar · ${cost} moedas</button>` : ""}
               <button class="primary-button" id="hero-back" type="button">Voltar</button>
             </div>
           `);
+          document.getElementById("train-hero")?.addEventListener("click", () => trainHero(hero.id, returnView));
           document.getElementById("hero-back").addEventListener("click", () => {
             if (returnView === "formation") renderFormation();
             else renderHeroes();
           });
+        }
+
+        function trainHero(heroId, returnView) {
+          const cost = trainingCost(heroId);
+          if (state.coins < cost) {
+            toast("Moedas insuficientes.");
+            return;
+          }
+          state.coins -= cost;
+          state.heroLevels[heroId] = heroLevel(heroId) + 1;
+          save();
+          render();
+          renderHeroDetail(heroId, returnView);
+          toast("Treinamento concluído.");
         }
 
         function bindHeroCards() {
@@ -1819,56 +1945,64 @@
           drawBattle();
           log("A arena começou. Seus heróis atacam automaticamente.");
           clearInterval(timer);
-          timer = setInterval(tick, 500);
+          timer = setInterval(tick, 120);
         }
 
         function makeHero(hero, index) {
-            const hp = hero.hp + (state.level - 1) * 8;
+          const level = heroLevel(hero.id);
+          const hp = hero.hp + (level - 1) * 10 + (state.level - 1) * 6;
           return {
             side: "hero",
             id: hero.id,
             name: hero.name,
-            color: hero.color,
+            assetId: hero.id,
+            classId: hero.classId,
+            projectile: hero.projectile || "",
             maxHp: hp,
             hp,
-            atk: hero.atk + Math.floor(state.level / 2),
+            atk: hero.atk + (level - 1) * 2 + Math.floor(state.level / 2),
             spd: hero.spd,
             x: 18,
             y: [23, 36, 50, 64, 77][index] || 50,
-            cd: 0
+            cd: index * 0.12,
+            attackCount: 0,
+            animation: null
           };
         }
 
         function makeEnemies(stage, wave) {
-          const count = Math.max(0, Math.min(3, stage.enemies - (wave - 1) * 2));
+          const count = Math.max(1, Math.min(3, stage.enemies - (wave - 1)));
           return Array.from({ length: count }, (_, index) => {
             const template = stage.enemyPool[(index + wave - 1) % stage.enemyPool.length];
-            const hp = 30 + stage.campaign * 3 + stage.level * 7 + wave * 5;
+            const hp = 22 + stage.campaign * 3 + stage.level * 5 + wave * 3;
             return {
               side: "enemy",
               id: `enemy-${stage.id}-${wave}-${index}`,
               name: template.name,
-              colors: template.colors,
+              assetId: template.id,
+              themeId: stage.themeId,
               maxHp: hp,
               hp,
-              atk: 4 + stage.level * 2 + Math.floor(stage.campaign / 6) + wave,
-              spd: 0.92 + stage.level * 0.04,
-              x: 74 + index * 5,
+              atk: 2 + stage.level + Math.floor(stage.campaign / 2) + wave,
+              spd: 0.65 + stage.level * 0.04 + stage.campaign * 0.02,
+              x: 72 + index * 7,
               y: [32, 51, 69][index] || 51,
-              cd: index
+              cd: 0.55 + index * 0.32,
+              attackCount: 0,
+              animation: null
             };
           });
         }
 
         function tick() {
           if (!battle || battle.paused) return;
-          battle.time += 0.5;
+          battle.time += 0.12;
           [...battle.party, ...battle.enemies].forEach(unit => {
             if (unit.hp <= 0) return;
-            unit.cd -= (unit.spd + battle.bonusSpeed) * 0.5;
+            unit.cd -= (unit.spd + battle.bonusSpeed) * 0.12;
             if (unit.cd <= 0) {
               attack(unit);
-              unit.cd = 1.2;
+              unit.cd = unit.side === "hero" ? 1.18 : 1.35;
             }
           });
           battle.enemies = battle.enemies.filter(unit => unit.hp > 0);
@@ -1890,21 +2024,75 @@
 
         function attack(unit) {
           const targets = unit.side === "hero" ? battle.enemies : battle.party;
-          const target = targets[0];
+          const target = targets.find(item => item.hp > 0);
           if (!target) return;
-          const damage = Math.max(3, Math.round(unit.atk * (unit.side === "hero" ? 1 + battle.bonusAtk : 1)));
+          unit.attackCount += 1;
+          const special = unit.side === "hero" && unit.attackCount % 4 === 0;
+          unit.animation = { kind: special && unit.classId === "support" ? "skill" : "attack", startedAt: Date.now() };
+
+          if (special && unit.classId === "support") {
+            const ally = battle.party.slice().sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp))[0];
+            const healing = Math.max(12, Math.round(unit.atk * 1.7));
+            ally.hp = Math.min(ally.maxHp, ally.hp + healing);
+            log(`${unit.name} restaurou ${healing} de vida.`);
+            return;
+          }
+
+          const multiplier = special ? 1.55 : 1;
+          const damage = Math.max(3, Math.round(unit.atk * multiplier * (unit.side === "hero" ? 1 + battle.bonusAtk : 1)));
           target.hp -= damage;
-          log(`${unit.side === "hero" ? "Aliado" : "Inimigo"} ${unit.name} causou ${damage} de dano.`);
+          target.animation = { kind: "hurt", startedAt: Date.now() };
+          if (unit.side === "hero" && unit.projectile) launchProjectile(unit, target);
+          log(`${unit.name} causou ${damage} de dano${special ? " crítico" : ""}.`);
+        }
+
+        function launchProjectile(unit, target) {
+          const type = unit.projectile === "stone" ? "stone" : "arrow";
+          const node = document.createElement("span");
+          node.className = `projectile ${type}`;
+          node.style.setProperty("--from-x", `${unit.x + 3}%`);
+          node.style.setProperty("--from-y", `${unit.y}%`);
+          node.style.setProperty("--to-x", `${target.x - 3}%`);
+          node.style.setProperty("--to-y", `${target.y}%`);
+          node.innerHTML = `<img src="/assets/heroi-ortodoxo/projectiles/${type}.png?v=${assetVersion}" alt="">`;
+          els.arena.appendChild(node);
+          setTimeout(() => node.remove(), 460);
+        }
+
+        function unitSprite(unit, now) {
+          const animation = unit.animation;
+          const age = animation ? now - animation.startedAt : Number.POSITIVE_INFINITY;
+          if (unit.side === "enemy") {
+            const root = `/assets/heroi-ortodoxo/enemies/${unit.themeId}/${unit.assetId}`;
+            if (animation?.kind === "hurt" && age < 420) return `${root}/frames/frame-04.png`;
+            if (animation?.kind === "attack" && age < 420) return `${root}/frames/frame-${age < 190 ? "02" : "03"}.png`;
+            return `${root}/side-idle.png`;
+          }
+
+          const root = `/assets/heroi-ortodoxo/characters/${unit.assetId}/combat`;
+          if (animation?.kind === "hurt" && age < 420) {
+            const frame = Math.min(4, Math.floor(age / 105) + 1);
+            return `${root}/hurt/frame-${String(frame).padStart(2, "0")}.png`;
+          }
+          if ((animation?.kind === "attack" || animation?.kind === "skill") && age < 500) {
+            const folder = animation.kind === "skill" ? "skill-cast" : (unit.assetId === "davi" ? "attack-sling" : "attack");
+            const count = animation.kind === "skill" ? 6 : 5;
+            const frame = Math.min(count, Math.floor(age / (500 / count)) + 1);
+            return `${root}/${folder}/frame-${String(frame).padStart(2, "0")}.png`;
+          }
+          return `${root}/side-idle.png`;
         }
 
         function drawBattle() {
           if (!battle) return;
           els.battleWave.textContent = `Campanha ${battle.stage.campaign} · Nível ${battle.stage.level} · Onda ${battle.wave}`;
+          const now = Date.now();
           const units = [...battle.party, ...battle.enemies].map(unit => {
             const hp = Math.max(0, Math.round((unit.hp / unit.maxHp) * 100));
-            const enemyColors = unit.colors || ["#d85e49", "#7e4030"];
-            return `<div class="fighter ${unit.side}" style="left:${unit.x}%;top:${unit.y}%;--c:${unit.color || "#d85e49"};--enemy-a:${enemyColors[0]};--enemy-b:${enemyColors[1]}">
-              <span class="unit-name">${unit.side === "hero" ? "Aliado " : ""}${unit.name}</span><i class="token"></i><div class="hp" style="--hp:${hp}%"><span></span></div>
+            const age = unit.animation ? now - unit.animation.startedAt : Number.POSITIVE_INFINITY;
+            const actionClass = age < 500 ? (unit.animation.kind === "hurt" ? "hurt" : "attacking") : "";
+            return `<div class="fighter ${unit.side} ${actionClass}" data-unit="${unit.id}" style="left:${unit.x}%;top:${unit.y}%">
+              <span class="unit-name">${unit.name}</span><img class="unit-sprite" src="${unitSprite(unit, now)}?v=${assetVersion}" alt=""><div class="hp" style="--hp:${hp}%"><span></span></div>
             </div>`;
           }).join("");
           els.arena.querySelectorAll(".fighter").forEach(node => node.remove());
@@ -1940,10 +2128,11 @@
           clearInterval(timer);
           timer = null;
           if (win) {
-            const reward = 90 + battle.stage.level * 35 + battle.stage.campaign * 8;
-            state.coins += reward;
-            state.gems += 12 + battle.stage.level * 3;
-            state.xp += 45 + battle.stage.level * 12 + battle.stage.campaign;
+            const firstClear = battle.stage.id > state.completedStage;
+            const rewards = stageRewards(battle.stage, firstClear);
+            state.coins += rewards.coins;
+            state.gems += rewards.gems;
+            state.xp += rewards.xp;
             state.completedStage = Math.max(state.completedStage, battle.stage.id);
             state.highestStage = Math.max(state.highestStage, Math.min(stages.length, battle.stage.id + 1));
             state.selectedStage = Math.min(stages.length, battle.stage.id + 1);
@@ -1951,14 +2140,26 @@
             levelCheck();
             save();
             render();
-            els.result.innerHTML = `<article class="result-card"><h2>Vitória!</h2><p>Você recebeu ${reward} moedas, gemas e experiência.</p><button class="primary-button" id="result-close" type="button">Voltar ao acampamento</button></article>`;
+            els.result.innerHTML = `<article class="result-card"><h2>Vitória!</h2><div class="reward-row">
+              <span class="reward-pill"><img src="/assets/heroi-icon-coins.png?v=20260710h" alt=""><b>+${rewards.coins}</b></span>
+              <span class="reward-pill"><img src="/assets/heroi-icon-gems.png?v=20260710h" alt=""><b>+${rewards.gems}</b></span>
+              <span class="reward-pill"><b>XP</b><strong>+${rewards.xp}</strong></span>
+            </div><button class="primary-button" id="result-close" type="button">Voltar ao acampamento</button></article>`;
           } else {
             save();
             render();
-            els.result.innerHTML = `<article class="result-card"><h2>Derrota</h2><p>Melhore a formação, invoque mais aliados e tente de novo.</p><button class="primary-button" id="result-close" type="button">Voltar ao acampamento</button></article>`;
+            els.result.innerHTML = `<article class="result-card"><h2>Derrota</h2><button class="primary-button" id="result-close" type="button">Voltar ao acampamento</button></article>`;
           }
           els.result.classList.remove("hidden");
           document.getElementById("result-close").addEventListener("click", endBattle);
+        }
+
+        function stageRewards(stage, firstClear) {
+          return {
+            coins: 70 + stage.level * 25 + stage.campaign * 20,
+            gems: firstClear ? 12 + stage.level * 4 + stage.campaign * 2 : 2 + stage.campaign,
+            xp: 35 + stage.level * 12 + stage.campaign * 4
+          };
         }
 
         function endBattle() {
@@ -1981,9 +2182,9 @@
           clearCheckinTimer();
           const currentDay = Math.min(state.checkinDay, checkinRewards.length - 1);
           const claimable = canCheckin() && state.checkinDay < checkinRewards.length;
-          const nextText = state.checkinDay >= checkinRewards.length
-            ? "Ciclo completo"
-            : (claimable ? "Liberado agora" : formatDuration(nextCheckinIn()));
+          const statusChip = state.checkinDay >= checkinRewards.length
+            ? `<span class="checkin-status">Completo</span>`
+            : (claimable ? "" : `<span class="checkin-status" id="checkin-countdown">${formatDuration(nextCheckinIn())}</span>`);
           const cards = checkinRewards.map((reward, index) => {
             const claimed = index < state.checkinDay;
             const current = index === state.checkinDay && state.checkinDay < checkinRewards.length;
@@ -1998,13 +2199,10 @@
 
           sheet("Check-in diário", `
             <div class="checkin-summary">
-              <div>
-                <strong>${isTutorial ? "Comece por aqui" : `Dia ${Math.min(state.checkinDay + 1, 30)} de 30`}</strong>
-                <p>${isTutorial ? "Colete o primeiro prêmio para ganhar gemas e fazer sua primeira invocação." : "Colete uma recompensa por dia e acompanhe quando o próximo prêmio libera."}</p>
-              </div>
-              <div class="checkin-timer"><small>Próximo</small><span id="checkin-countdown">${nextText}</span></div>
+              <strong>Dia ${Math.min(state.checkinDay + 1, 30)} de 30</strong>
+              ${statusChip}
             </div>
-            <button class="primary-button" id="claim-checkin" type="button" ${claimable ? "" : "disabled"}>${claimable ? "Coletar check-in" : "Aguardar próximo"}</button>
+            <button class="primary-button" id="claim-checkin" type="button" ${claimable ? "" : "disabled"}>${claimable ? "Coletar" : "Aguardar"}</button>
             <div class="checkin-grid">${cards}</div>
           `);
 
@@ -2068,13 +2266,15 @@
         function updateCheckinCountdown() {
           const countdown = document.getElementById("checkin-countdown");
           const button = document.getElementById("claim-checkin");
-          if (!countdown || !button) return;
+          if (!button) return;
           const claimable = canCheckin() && state.checkinDay < checkinRewards.length;
-          countdown.textContent = state.checkinDay >= checkinRewards.length
-            ? "Ciclo completo"
-            : (claimable ? "Liberado agora" : formatDuration(nextCheckinIn()));
+          if (countdown) {
+            countdown.textContent = state.checkinDay >= checkinRewards.length
+              ? "Completo"
+              : formatDuration(nextCheckinIn());
+          }
           button.disabled = !claimable;
-          button.textContent = claimable ? "Coletar check-in" : "Aguardar próximo";
+          button.textContent = claimable ? "Coletar" : "Aguardar";
         }
 
         function clearCheckinTimer() {

@@ -1,0 +1,30 @@
+{
+  "id": "fera-do-campo",
+  "name": "Fera do Campo",
+  "book": "genesis",
+  "facing": "left",
+  "anchor": {
+    "type": "bottom-center",
+    "canvas": [
+      512,
+      512
+    ]
+  },
+  "idle": "/assets/heroi-ortodoxo/enemies/genesis/fera-do-campo/side-idle.png",
+  "animation": {
+    "fps": 10,
+    "frames": [
+      "/assets/heroi-ortodoxo/enemies/genesis/fera-do-campo/frames/frame-01.png",
+      "/assets/heroi-ortodoxo/enemies/genesis/fera-do-campo/frames/frame-02.png",
+      "/assets/heroi-ortodoxo/enemies/genesis/fera-do-campo/frames/frame-03.png",
+      "/assets/heroi-ortodoxo/enemies/genesis/fera-do-campo/frames/frame-04.png"
+    ],
+    "strip": "/assets/heroi-ortodoxo/enemies/genesis/fera-do-campo/strip.png",
+    "poses": [
+      "idle",
+      "windup",
+      "impact",
+      "hurt"
+    ]
+  }
+}

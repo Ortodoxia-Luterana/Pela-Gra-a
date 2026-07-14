@@ -1,0 +1,282 @@
+{
+  "version": 1,
+  "frameSize": 512,
+  "books": {
+    "genesis": [
+      {
+        "id": "serpente-do-ermo",
+        "name": "Serpente do Ermo",
+        "book": "genesis",
+        "facing": "left",
+        "anchor": {
+          "type": "bottom-center",
+          "canvas": [
+            512,
+            512
+          ]
+        },
+        "idle": "/assets/heroi-ortodoxo/enemies/genesis/serpente-do-ermo/side-idle.png",
+        "animation": {
+          "fps": 10,
+          "frames": [
+            "/assets/heroi-ortodoxo/enemies/genesis/serpente-do-ermo/frames/frame-01.png",
+            "/assets/heroi-ortodoxo/enemies/genesis/serpente-do-ermo/frames/frame-02.png",
+            "/assets/heroi-ortodoxo/enemies/genesis/serpente-do-ermo/frames/frame-03.png",
+            "/assets/heroi-ortodoxo/enemies/genesis/serpente-do-ermo/frames/frame-04.png"
+          ],
+          "strip": "/assets/heroi-ortodoxo/enemies/genesis/serpente-do-ermo/strip.png",
+          "poses": [
+            "idle",
+            "windup",
+            "impact",
+            "hurt"
+          ]
+        }
+      },
+      {
+        "id": "espinheiro-bravo",
+        "name": "Espinheiro Bravo",
+        "book": "genesis",
+        "facing": "left",
+        "anchor": {
+          "type": "bottom-center",
+          "canvas": [
+            512,
+            512
+          ]
+        },
+        "idle": "/assets/heroi-ortodoxo/enemies/genesis/espinheiro-bravo/side-idle.png",
+        "animation": {
+          "fps": 10,
+          "frames": [
+            "/assets/heroi-ortodoxo/enemies/genesis/espinheiro-bravo/frames/frame-01.png",
+            "/assets/heroi-ortodoxo/enemies/genesis/espinheiro-bravo/frames/frame-02.png",
+            "/assets/heroi-ortodoxo/enemies/genesis/espinheiro-bravo/frames/frame-03.png",
+            "/assets/heroi-ortodoxo/enemies/genesis/espinheiro-bravo/frames/frame-04.png"
+          ],
+          "strip": "/assets/heroi-ortodoxo/enemies/genesis/espinheiro-bravo/strip.png",
+          "poses": [
+            "idle",
+            "windup",
+            "impact",
+            "hurt"
+          ]
+        }
+      },
+      {
+        "id": "fera-do-campo",
+        "name": "Fera do Campo",
+        "book": "genesis",
+        "facing": "left",
+        "anchor": {
+          "type": "bottom-center",
+          "canvas": [
+            512,
+            512
+          ]
+        },
+        "idle": "/assets/heroi-ortodoxo/enemies/genesis/fera-do-campo/side-idle.png",
+        "animation": {
+          "fps": 10,
+          "frames": [
+            "/assets/heroi-ortodoxo/enemies/genesis/fera-do-campo/frames/frame-01.png",
+            "/assets/heroi-ortodoxo/enemies/genesis/fera-do-campo/frames/frame-02.png",
+            "/assets/heroi-ortodoxo/enemies/genesis/fera-do-campo/frames/frame-03.png",
+            "/assets/heroi-ortodoxo/enemies/genesis/fera-do-campo/frames/frame-04.png"
+          ],
+          "strip": "/assets/heroi-ortodoxo/enemies/genesis/fera-do-campo/strip.png",
+          "poses": [
+            "idle",
+            "windup",
+            "impact",
+            "hurt"
+          ]
+        }
+      }
+    ],
+    "exodo": [
+      {
+        "id": "feitor-egipcio",
+        "name": "Feitor Egípcio",
+        "book": "exodo",
+        "facing": "left",
+        "anchor": {
+          "type": "bottom-center",
+          "canvas": [
+            512,
+            512
+          ]
+        },
+        "idle": "/assets/heroi-ortodoxo/enemies/exodo/feitor-egipcio/side-idle.png",
+        "animation": {
+          "fps": 10,
+          "frames": [
+            "/assets/heroi-ortodoxo/enemies/exodo/feitor-egipcio/frames/frame-01.png",
+            "/assets/heroi-ortodoxo/enemies/exodo/feitor-egipcio/frames/frame-02.png",
+            "/assets/heroi-ortodoxo/enemies/exodo/feitor-egipcio/frames/frame-03.png",
+            "/assets/heroi-ortodoxo/enemies/exodo/feitor-egipcio/frames/frame-04.png"
+          ],
+          "strip": "/assets/heroi-ortodoxo/enemies/exodo/feitor-egipcio/strip.png",
+          "poses": [
+            "idle",
+            "windup",
+            "impact",
+            "hurt"
+          ]
+        }
+      },
+      {
+        "id": "cocheiro-do-farao",
+        "name": "Cocheiro do Faraó",
+        "book": "exodo",
+        "facing": "left",
+        "anchor": {
+          "type": "bottom-center",
+          "canvas": [
+            512,
+            512
+          ]
+        },
+        "idle": "/assets/heroi-ortodoxo/enemies/exodo/cocheiro-do-farao/side-idle.png",
+        "animation": {
+          "fps": 10,
+          "frames": [
+            "/assets/heroi-ortodoxo/enemies/exodo/cocheiro-do-farao/frames/frame-01.png",
+            "/assets/heroi-ortodoxo/enemies/exodo/cocheiro-do-farao/frames/frame-02.png",
+            "/assets/heroi-ortodoxo/enemies/exodo/cocheiro-do-farao/frames/frame-03.png",
+            "/assets/heroi-ortodoxo/enemies/exodo/cocheiro-do-farao/frames/frame-04.png"
+          ],
+          "strip": "/assets/heroi-ortodoxo/enemies/exodo/cocheiro-do-farao/strip.png",
+          "poses": [
+            "idle",
+            "windup",
+            "impact",
+            "hurt"
+          ]
+        }
+      },
+      {
+        "id": "lanceiro-do-egito",
+        "name": "Lanceiro do Egito",
+        "book": "exodo",
+        "facing": "left",
+        "anchor": {
+          "type": "bottom-center",
+          "canvas": [
+            512,
+            512
+          ]
+        },
+        "idle": "/assets/heroi-ortodoxo/enemies/exodo/lanceiro-do-egito/side-idle.png",
+        "animation": {
+          "fps": 10,
+          "frames": [
+            "/assets/heroi-ortodoxo/enemies/exodo/lanceiro-do-egito/frames/frame-01.png",
+            "/assets/heroi-ortodoxo/enemies/exodo/lanceiro-do-egito/frames/frame-02.png",
+            "/assets/heroi-ortodoxo/enemies/exodo/lanceiro-do-egito/frames/frame-03.png",
+            "/assets/heroi-ortodoxo/enemies/exodo/lanceiro-do-egito/frames/frame-04.png"
+          ],
+          "strip": "/assets/heroi-ortodoxo/enemies/exodo/lanceiro-do-egito/strip.png",
+          "poses": [
+            "idle",
+            "windup",
+            "impact",
+            "hurt"
+          ]
+        }
+      }
+    ],
+    "levitico": [
+      {
+        "id": "escorpiao-do-deserto",
+        "name": "Escorpião do Deserto",
+        "book": "levitico",
+        "facing": "left",
+        "anchor": {
+          "type": "bottom-center",
+          "canvas": [
+            512,
+            512
+          ]
+        },
+        "idle": "/assets/heroi-ortodoxo/enemies/levitico/escorpiao-do-deserto/side-idle.png",
+        "animation": {
+          "fps": 10,
+          "frames": [
+            "/assets/heroi-ortodoxo/enemies/levitico/escorpiao-do-deserto/frames/frame-01.png",
+            "/assets/heroi-ortodoxo/enemies/levitico/escorpiao-do-deserto/frames/frame-02.png",
+            "/assets/heroi-ortodoxo/enemies/levitico/escorpiao-do-deserto/frames/frame-03.png",
+            "/assets/heroi-ortodoxo/enemies/levitico/escorpiao-do-deserto/frames/frame-04.png"
+          ],
+          "strip": "/assets/heroi-ortodoxo/enemies/levitico/escorpiao-do-deserto/strip.png",
+          "poses": [
+            "idle",
+            "windup",
+            "impact",
+            "hurt"
+          ]
+        }
+      },
+      {
+        "id": "fera-impura",
+        "name": "Fera Impura",
+        "book": "levitico",
+        "facing": "left",
+        "anchor": {
+          "type": "bottom-center",
+          "canvas": [
+            512,
+            512
+          ]
+        },
+        "idle": "/assets/heroi-ortodoxo/enemies/levitico/fera-impura/side-idle.png",
+        "animation": {
+          "fps": 10,
+          "frames": [
+            "/assets/heroi-ortodoxo/enemies/levitico/fera-impura/frames/frame-01.png",
+            "/assets/heroi-ortodoxo/enemies/levitico/fera-impura/frames/frame-02.png",
+            "/assets/heroi-ortodoxo/enemies/levitico/fera-impura/frames/frame-03.png",
+            "/assets/heroi-ortodoxo/enemies/levitico/fera-impura/frames/frame-04.png"
+          ],
+          "strip": "/assets/heroi-ortodoxo/enemies/levitico/fera-impura/strip.png",
+          "poses": [
+            "idle",
+            "windup",
+            "impact",
+            "hurt"
+          ]
+        }
+      },
+      {
+        "id": "invasor-do-acampamento",
+        "name": "Invasor do Acampamento",
+        "book": "levitico",
+        "facing": "left",
+        "anchor": {
+          "type": "bottom-center",
+          "canvas": [
+            512,
+            512
+          ]
+        },
+        "idle": "/assets/heroi-ortodoxo/enemies/levitico/invasor-do-acampamento/side-idle.png",
+        "animation": {
+          "fps": 10,
+          "frames": [
+            "/assets/heroi-ortodoxo/enemies/levitico/invasor-do-acampamento/frames/frame-01.png",
+            "/assets/heroi-ortodoxo/enemies/levitico/invasor-do-acampamento/frames/frame-02.png",
+            "/assets/heroi-ortodoxo/enemies/levitico/invasor-do-acampamento/frames/frame-03.png",
+            "/assets/heroi-ortodoxo/enemies/levitico/invasor-do-acampamento/frames/frame-04.png"
+          ],
+          "strip": "/assets/heroi-ortodoxo/enemies/levitico/invasor-do-acampamento/strip.png",
+          "poses": [
+            "idle",
+            "windup",
+            "impact",
+            "hurt"
+          ]
+        }
+      }
+    ]
+  }
+}

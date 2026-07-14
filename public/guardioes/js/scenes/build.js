@@ -15,26 +15,35 @@
 
     create() {
       const { width, height } = this.scale;
+      const desktop = Boolean(global.GuardioesRuntime && global.GuardioesRuntime.isDesktop);
       const state = this.registry.get('state');
       this.state = state;
       this.selected = new Set(state.loadouts[state.activeLoadout].defenseIds);
 
-      this.add.rectangle(0, 0, width, height, 0x181410).setOrigin(0);
+      const bgKey = desktop && this.textures.exists('tex-menu-bg-desktop') ? 'tex-menu-bg-desktop' : 'tex-menu-bg';
+      if (this.textures.exists(bgKey)) {
+        const bg = this.add.image(width / 2, height / 2, bgKey);
+        const source = this.textures.get(bgKey).getSourceImage();
+        bg.setScale(Math.max(width / source.width, height / source.height)).setTint(0x51493f);
+      }
+      this.add.rectangle(0, 0, width, height, 0x0b0907, 0.68).setOrigin(0);
       const level = D.LEVELS[this.levelIndex];
-      UI.topBar(this, `Build · ${level.name}`, () => this.scene.start('Menu'));
+      UI.topBar(this, `Formação · ${level.name}`, () => this.scene.start('Menu'));
 
-      this.add.text(width / 2, 92, 'Escolha ate 5 torres para entrarem no sorteio da partida', {
-        fontFamily: 'Georgia, serif', fontSize: '16px', color: '#cbb98a'
+      this.add.text(width / 2, desktop ? 112 : 92, 'Escolha até 5 aliados para o sorteio da batalha', {
+        fontFamily: 'Georgia, serif', fontSize: desktop ? '22px' : '16px', color: '#f1dfad', fontStyle: 'bold'
       }).setOrigin(0.5);
 
       this.cardNodes = {};
       const owned = D.DEFENSE_ORDER.filter(id => state.collection[id].owned);
-      const cardW = 170, cardH = 188, gap = 20;
+      const cardW = desktop ? 250 : 170;
+      const cardH = desktop ? 286 : 188;
+      const gap = desktop ? 32 : 20;
       const maxCols = Math.max(1, Math.floor((width - 30) / (cardW + gap)));
       const cols = Math.min(3, owned.length, maxCols);
       const totalW = cols * cardW + (cols - 1) * gap;
       const startX = width / 2 - totalW / 2 + cardW / 2;
-      const startY = 210;
+      const startY = desktop ? 320 : 210;
 
       owned.forEach((id, i) => {
         const col = i % cols, row = Math.floor(i / cols);
@@ -43,21 +52,25 @@
         this.buildCard(id, x, y, cardW, cardH);
       });
 
-      this.startBtn = UI.makeButton(this, width / 2, height - 70, 'Iniciar Partida', () => this.startRun(), { width: 280, height: 66, fontSize: 24 });
+      this.startBtn = UI.makeButton(this, width / 2, height - (desktop ? 88 : 70), 'Jogar agora', () => this.startRun(), {
+        width: desktop ? 360 : 280, height: desktop ? 78 : 66, fontSize: desktop ? 28 : 24
+      });
       this.updateStartState();
     }
 
     buildCard(id, x, y, w, h) {
       const def = D.DEFENSES[id];
+      const desktop = Boolean(global.GuardioesRuntime && global.GuardioesRuntime.isDesktop);
       const container = this.add.container(x, y);
       const bg = UI.makePanel(this, 0, 0, w, h);
-      const sprite = this.add.image(0, -48, `tex-defense-${id}`).setDisplaySize(86, 86);
-      const name = this.add.text(0, 22, def.name, {
-        fontFamily: 'Georgia, serif', fontSize: '14px', color: '#3a2c1a', fontStyle: 'bold',
+      const spriteSize = desktop ? 144 : 86;
+      const sprite = this.add.image(0, desktop ? -62 : -48, `tex-defense-${id}`).setDisplaySize(spriteSize, spriteSize);
+      const name = this.add.text(0, desktop ? 46 : 22, def.name, {
+        fontFamily: 'Georgia, serif', fontSize: desktop ? '20px' : '14px', color: '#3a2c1a', fontStyle: 'bold',
         align: 'center', wordWrap: { width: w - 22 }
       }).setOrigin(0.5);
-      const role = this.add.text(0, 54, def.role, {
-        fontFamily: 'Georgia, serif', fontSize: '10px', color: '#5a4a32', align: 'center',
+      const role = this.add.text(0, desktop ? 90 : 54, def.role, {
+        fontFamily: 'Georgia, serif', fontSize: desktop ? '13px' : '10px', color: '#5a4a32', align: 'center',
         wordWrap: { width: w - 24 }
       }).setOrigin(0.5);
       const seal = UI.makeRaritySeal(this, -w / 2 + 22, -h / 2 + 22, def.rarity, 0.5);

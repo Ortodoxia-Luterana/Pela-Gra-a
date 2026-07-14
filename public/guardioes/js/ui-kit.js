@@ -8,7 +8,8 @@
     const height = opts.height || 72;
     const fontSize = opts.fontSize || 24;
     const container = scene.add.container(x, y);
-    const img = scene.add.image(0, 0, 'tex-wood-button').setDisplaySize(width, height);
+    const texture = scene.textures.exists('tex-ui-button-primary') ? 'tex-ui-button-primary' : 'tex-wood-button';
+    const img = scene.add.image(0, 0, texture).setDisplaySize(width, height);
     const text = scene.add.text(0, 0, label, {
       fontFamily: 'Georgia, serif', fontSize: `${fontSize}px`, color: '#f2e2b8', fontStyle: 'bold'
     }).setOrigin(0.5);
@@ -25,12 +26,14 @@
   }
 
   function makePanel(scene, x, y, width, height) {
-    const img = scene.add.image(x, y, 'tex-parchment').setDisplaySize(width, height);
+    const texture = scene.textures.exists('tex-ui-stage-plaque') ? 'tex-ui-stage-plaque' : 'tex-parchment';
+    const img = scene.add.image(x, y, texture).setDisplaySize(width, height);
     return img;
   }
 
   function makeStonePanel(scene, x, y, width, height) {
-    const img = scene.add.image(x, y, 'tex-stone-panel').setDisplaySize(width, height);
+    const texture = scene.textures.exists('tex-ui-hud-frame') ? 'tex-ui-hud-frame' : 'tex-stone-panel';
+    const img = scene.add.image(x, y, texture).setDisplaySize(width, height);
     return img;
   }
 
@@ -40,14 +43,17 @@
 
   function topBar(scene, title, onBack) {
     const width = scene.scale.width;
+    const desktop = Boolean(global.GuardioesRuntime && global.GuardioesRuntime.isDesktop);
     const bar = scene.add.container(0, 0);
     const bg = scene.add.rectangle(width / 2, 34, width, 68, 0x1c1712, 0.85).setOrigin(0.5);
     const label = scene.add.text(width / 2, 34, title, {
-      fontFamily: 'Georgia, serif', fontSize: '28px', color: '#f2e2b8', fontStyle: 'bold'
+      fontFamily: 'Georgia, serif', fontSize: desktop ? '28px' : '22px', color: '#f2e2b8', fontStyle: 'bold'
     }).setOrigin(0.5);
     bar.add([bg, label]);
     if (onBack) {
-      const back = makeButton(scene, 90, 34, '< Voltar', onBack, { width: 150, height: 52, fontSize: 18 });
+      const back = makeButton(scene, desktop ? 90 : 58, 34, '< Voltar', onBack, {
+        width: desktop ? 150 : 96, height: desktop ? 52 : 44, fontSize: desktop ? 18 : 14
+      });
       bar.add(back);
     }
     return bar;

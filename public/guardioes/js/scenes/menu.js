@@ -7,7 +7,7 @@
   const D = global.GuardioesData;
 
   const BUILDINGS = [
-    { id: 'build', feature: 'build', label: 'Build', scene: 'BuildSetup', x: 0.72, y: 0.30 },
+    { id: 'build', feature: 'build', label: 'Forma\u00e7\u00e3o', scene: 'BuildSetup', x: 0.72, y: 0.30 },
     { id: 'collection', feature: 'collection', label: 'Coleção', scene: 'Collection', x: 0.24, y: 0.42 },
     { id: 'class', feature: 'class', label: 'Classe', scene: 'ClassTree', x: 0.76, y: 0.52 },
     { id: 'shop', feature: 'shop', label: 'Loja', scene: 'Shop', x: 0.30, y: 0.62 }
@@ -15,7 +15,7 @@
 
   const TABS = [
     { id: 'home', label: 'In\u00edcio', icon: 'tex-tab-home' },
-    { id: 'build', label: 'Build', icon: 'tex-tab-build', scene: 'BuildSetup' },
+    { id: 'build', label: 'Forma\u00e7\u00e3o', icon: 'tex-tab-build', scene: 'BuildSetup' },
     { id: 'collection', label: 'Cole\u00e7\u00e3o', icon: 'tex-tab-collection', scene: 'Collection' },
     { id: 'class', label: 'Classe', icon: 'tex-tab-class', scene: 'ClassTree' },
     { id: 'shop', label: 'Loja', icon: 'tex-tab-shop', scene: 'Shop' }
@@ -70,10 +70,6 @@
         this.add.rectangle(0, top, width, bottom - top, 0x241d16).setOrigin(0, 0);
         this.drawSkyline(width, bottom);
       }
-      // guardiao parado no centro-baixo do vilarejo
-      const g = this.add.image(width * 0.5, bottom - 40, 'tex-guardian');
-      g.setDisplaySize(120, 228);
-      this.tweens.add({ targets: g, y: g.y - 6, duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
     }
 
     isDesktopLayout() {
@@ -111,9 +107,9 @@
         const unlocked = D.isFeatureUnlocked(this.state, b.feature);
         const container = this.add.container(x, y);
         const icon = this.add.image(0, 0, `tex-building-${b.id}`);
-        icon.setDisplaySize(this.isDesktopLayout() ? 116 : 92, this.isDesktopLayout() ? 116 : 92);
-        const label = this.add.text(0, 46, b.label, {
-          fontFamily: 'Georgia, serif', fontSize: '13px', color: '#f2e2b8', fontStyle: 'bold'
+        icon.setDisplaySize(this.isDesktopLayout() ? 150 : 112, this.isDesktopLayout() ? 150 : 112);
+        const label = this.add.text(0, this.isDesktopLayout() ? 72 : 54, b.label, {
+          fontFamily: 'Georgia, serif', fontSize: this.isDesktopLayout() ? '16px' : '13px', color: '#fff0c8', fontStyle: 'bold'
         }).setOrigin(0.5).setShadow(0, 2, '#000', 3, true, true);
         container.add([icon, label]);
         if (!unlocked) {
@@ -170,7 +166,8 @@
 
     // ---------- navegador de fase + botao Comecar ----------
     buildLevelBrowser(width, height) {
-      const y = this.isDesktopLayout() ? height - 235 : height - 195;
+      const barH = this.isDesktopLayout() ? 104 : 92;
+      const y = height - barH - (this.isDesktopLayout() ? 142 : 154);
       const level = D.LEVELS[this.selectedLevelIndex];
       const highest = this.highestUnlockedIndex();
 
@@ -184,9 +181,9 @@
       this.leftArrow.on('pointerdown', () => this.changeLevel(-1));
       this.rightArrow.on('pointerdown', () => this.changeLevel(1));
 
-      UI.makeButton(this, width / 2, height - 110, 'Começar', () => {
+      UI.makeButton(this, width / 2, height - barH - (this.isDesktopLayout() ? 54 : 62), 'Começar', () => {
         this.scene.start('BuildSetup', { levelIndex: this.selectedLevelIndex });
-      }, { width: 300, height: 70, fontSize: 26 }).setDepth(311);
+      }, { width: this.isDesktopLayout() ? 350 : 300, height: this.isDesktopLayout() ? 72 : 70, fontSize: 26 }).setDepth(311);
     }
 
     changeLevel(dir) {
@@ -196,7 +193,8 @@
       global.GuardioesAudio.uiClick();
       this.selectedLevelIndex = next;
       const width = this.scale.width;
-      const y = this.isDesktopLayout() ? this.scale.height - 235 : this.scale.height - 195;
+      const barH = this.isDesktopLayout() ? 104 : 92;
+      const y = this.scale.height - barH - (this.isDesktopLayout() ? 142 : 154);
       this.renderLevelBrowser(width, y, D.LEVELS[next], highest);
     }
 
@@ -233,7 +231,7 @@
 
     // ---------- barra de abas ----------
     buildBottomTabs(width, height) {
-      const barH = this.isDesktopLayout() ? 108 : 92;
+      const barH = this.isDesktopLayout() ? 104 : 92;
       const barY = height - barH / 2;
       this.add.rectangle(width / 2, barY, width, barH, 0x120e0a, 0.94).setOrigin(0.5).setDepth(300);
       this.add.rectangle(width / 2, height - barH + 2, width, 3, 0x8a6a3a, 0.75).setOrigin(0.5).setDepth(301);
@@ -244,17 +242,13 @@
         const active = tab.id === 'home';
         const unlocked = !tab.scene || D.isFeatureUnlocked(this.state, tab.id);
         const container = this.add.container(x, barY).setDepth(301);
-        const iconRadius = this.isDesktopLayout() ? 35 : 29;
-        const iconBg = this.add.circle(0, -14, iconRadius, active ? 0x3a2a1c : 0x1b1510, active ? 0.95 : 0.48)
-          .setStrokeStyle(active ? 3 : 1, active ? 0xe0c05a : 0x5a4528, active ? 1 : 0.55);
         const icon = this.add.image(0, -14, tab.icon);
-        const targetSize = this.isDesktopLayout() ? 58 : 48;
-        const tex = this.textures.get(tab.icon).getSourceImage();
-        icon.setScale(targetSize / Math.max(tex.width, tex.height));
+        const targetSize = this.isDesktopLayout() ? (active ? 78 : 68) : (active ? 60 : 54);
+        icon.setDisplaySize(targetSize, targetSize);
         if (!active) icon.setAlpha(0.82);
         if (!unlocked) icon.setTint(0x6f6a60).setAlpha(0.45);
-        container.add([iconBg, icon]);
-        container.add(this.add.text(0, 20, tab.label, {
+        container.add(icon);
+        container.add(this.add.text(0, this.isDesktopLayout() ? 34 : 25, tab.label, {
           fontFamily: 'Georgia, serif',
           fontSize: this.isDesktopLayout() ? '15px' : '10px',
           color: active ? '#f2e2b8' : (unlocked ? '#b9a67a' : '#706654'),

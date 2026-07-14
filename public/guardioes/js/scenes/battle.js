@@ -84,6 +84,7 @@
       this.held = null;
       this.towers = [];
       this.enemies = [];
+      this.enemySpawnSerial = 0;
       this.waveActive = false;
       this.spawnTimers = [];
 
@@ -111,13 +112,15 @@
     // ---------- tutorial da primeira partida ----------
     startTutorial() {
       this.tutorialStep = 1;
-      this.tutorialText = this.add.text(this.scale.width / 2, this.scale.height - 160, '', {
+      const y = this.scale.height - (this.isDesktopLayout() ? 166 : 174);
+      this.tutorialPanel = this.add.image(this.scale.width / 2, y, this.textures.exists('tex-ui-hud-frame') ? 'tex-ui-hud-frame' : 'tex-stone-panel')
+        .setDisplaySize(this.isDesktopLayout() ? 660 : 570, 68).setDepth(649);
+      this.tutorialText = this.add.text(this.scale.width / 2, y, '', {
         fontFamily: 'Georgia, serif', fontSize: '17px', color: '#ffe9a8', fontStyle: 'bold',
-        backgroundColor: '#1c1712dd', padding: { x: 14, y: 8 }, align: 'center',
-        wordWrap: { width: this.scale.width - 80 }
+        align: 'center', wordWrap: { width: this.isDesktopLayout() ? 570 : 500 }
       }).setOrigin(0.5).setDepth(650);
       this.tweens.add({ targets: this.tutorialText, alpha: 0.72, duration: 600, yoyo: true, repeat: -1 });
-      this.setTutorialHint('Toque em "GERAR ALIADO" pra receber uma unidade aleatoria da sua build');
+      this.setTutorialHint('GERAR ALIADO sorteia uma unidade da sua formação');
     }
 
     setTutorialHint(msg) {
@@ -136,6 +139,7 @@
         this.setTutorialHint('Defesa no lugar! Toque em "Iniciar Onda" pra começar o ataque');
       } else {
         if (this.tutorialText) { this.tutorialText.destroy(); this.tutorialText = null; }
+        if (this.tutorialPanel) { this.tutorialPanel.destroy(); this.tutorialPanel = null; }
         this.tutorialStep = 0;
         this.state.stats.tutorialDone = true;
         SAVE.save(this.state);
@@ -194,15 +198,16 @@
       if (!this.paused) this.physics.world.timeScale = 1 / speed;  // Arcade: >1 = mais lento
       this.time.timeScale = speed;                                  // timers de spawn
       this.tweens.timeScale = speed;                                 // efeitos acompanham
-      if (this.speedBtn) this.speedBtn.setText(speed === 1 ? '1x' : '2x');
+      if (this.speedBtn) (this.speedBtn.list ? this.speedBtn.list[1] : this.speedBtn).setText(speed === 1 ? '1x' : '2x');
     }
 
     toggleGameSpeed() { this.setGameSpeed(this.gameSpeed === 1 ? 2 : 1); }
 
     toggleAutoWave() {
       this.autoWave = !this.autoWave;
-      this.autoBtn.setText(this.autoWave ? 'Auto ON' : 'Auto OFF');
-      this.autoBtn.setColor(this.autoWave ? '#5ae08a' : '#9a8a6a');
+      const label = this.autoBtn.list ? this.autoBtn.list[1] : this.autoBtn;
+      label.setText(this.autoWave ? 'Auto ON' : 'Auto OFF');
+      label.setColor(this.autoWave ? '#8ff0ad' : '#d6c38f');
       if (this.autoWave && !this.waveActive && !this.runEnded) this.startNextWave();
     }
 
@@ -257,19 +262,14 @@
       return { top: TOP_HUD_SAFE_Y, bottom: BOTTOM_COMMAND_SAFE_Y, left: 20, right: width - 20, commandY: height - 74 };
     }
 
-    mapPointToArena(point) {
-      if (!this.isDesktopLayout()) return { x: point.x, y: point.y };
-      const base = D.BASE_MAP || { width: 720, height: 1280 };
-      const { width, height } = this.scale;
-      const arena = { left: 78, top: 108, width: width - 156, height: height - 228 };
-      return {
-        x: arena.left + (point.y / base.height) * arena.width,
-        y: arena.top + (point.x / base.width) * arena.height
-      };
-    }
-
     buildArenaPath() {
-      return this.level.path.map(point => this.mapPointToArena(point));
+      const { width, height } = this.scale;
+      const source = this.isDesktopLayout() && this.level.desktopPath ? this.level.desktopPath : this.level.path;
+      const points = source.map(point => this.isDesktopLayout()
+        ? new Phaser.Math.Vector2(point.x * width / 1920, point.y * height / 1080)
+        : new Phaser.Math.Vector2(point.x, point.y));
+      const spline = new Phaser.Curves.Spline(points);
+      return spline.getSpacedPoints(this.isDesktopLayout() ? 180 : 130).map(point => ({ x: point.x, y: point.y }));
     }
 
     // ---------- mapa ----------
@@ -432,31 +432,17 @@
       this.moneyText = this.add.text(0, 15, '', { fontFamily: 'Georgia, serif', fontSize: '27px', color: '#f3f7ff', fontStyle: 'bold' }).setOrigin(0.5);
       this.moneyPanel.add(this.moneyText);
 
-      this.menuBtn = this.add.text(width - 102, 112, 'Ⅱ', {
-        fontFamily: 'Arial, sans-serif', fontSize: '34px', color: '#f2e2b8', fontStyle: 'bold',
-        backgroundColor: '#142238', padding: { x: 18, y: 8 }
-      }).setOrigin(0.5).setDepth(401).setInteractive({ useHandCursor: true });
-      this.menuBtn.on('pointerdown', () => this.openPauseMenu());
+      this.menuBtn = UI.makeButton(this, width - 102, 112, 'II', () => this.openPauseMenu(), { width: 68, height: 50, fontSize: 22 }).setDepth(401);
       this.muteBtn = UI.muteButton(this, width - 28, 112).setDepth(401);
 
-      this.speedBtn = this.add.text(width - 180, 112, '1x', {
-        fontFamily: 'Georgia, serif', fontSize: '26px', color: '#f2e2b8', fontStyle: 'bold',
-        backgroundColor: '#142238', padding: { x: 18, y: 9 }
-      }).setOrigin(0.5).setDepth(401).setInteractive({ useHandCursor: true });
-      this.speedBtn.on('pointerdown', () => { AUDIO.uiClick(); this.toggleGameSpeed(); });
+      this.speedBtn = UI.makeButton(this, width - 180, 112, '1x', () => this.toggleGameSpeed(), { width: 72, height: 50, fontSize: 20 }).setDepth(401);
 
       this.autoWave = false;
-      this.autoBtn = this.add.text(72, 112, 'Auto OFF', {
-        fontFamily: 'Georgia, serif', fontSize: '14px', color: '#9a8a6a', fontStyle: 'bold',
-        backgroundColor: '#142238', padding: { x: 10, y: 7 }
-      }).setOrigin(0.5).setDepth(401).setInteractive({ useHandCursor: true });
-      this.autoBtn.on('pointerdown', () => { AUDIO.uiClick(); this.toggleAutoWave(); });
+      this.autoBtn = UI.makeButton(this, 72, 112, 'Auto OFF', () => this.toggleAutoWave(), { width: 120, height: 46, fontSize: 14 }).setDepth(401);
 
-      this.previewText = this.add.text(width / 2, 136, '', {
-        fontFamily: 'Georgia, serif', fontSize: '13px', color: '#cbb98a'
-      }).setOrigin(0.5).setDepth(401);
+      this.previewText = null;
 
-      if (this.sys.game.device.os.desktop) {
+      if (this.isDesktopLayout()) {
         this.add.text(width / 2, this.scale.height - 148, 'Espaco: gerar aliado | W: onda | X: cancelar | 1/2: velocidade | Esc: pausa', {
           fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8a7a5a'
         }).setOrigin(0.5).setDepth(401);
@@ -491,40 +477,26 @@
       this.moneyPanel.add(this.moneyText);
 
       this.autoWave = false;
-      this.autoBtn = this.add.text(390, 48, 'Auto OFF', {
-        fontFamily: 'Georgia, serif', fontSize: '18px', color: '#9a8a6a', fontStyle: 'bold',
-        backgroundColor: '#142238', padding: { x: 16, y: 10 }
-      }).setOrigin(0.5).setDepth(401).setInteractive({ useHandCursor: true });
-      this.autoBtn.on('pointerdown', () => { AUDIO.uiClick(); this.toggleAutoWave(); });
+      this.autoBtn = UI.makeButton(this, 382, 48, 'Auto OFF', () => this.toggleAutoWave(), { width: 142, height: 52, fontSize: 17 }).setDepth(401);
 
-      this.speedBtn = this.add.text(width - 520, 48, '1x', {
-        fontFamily: 'Georgia, serif', fontSize: '26px', color: '#f2e2b8', fontStyle: 'bold',
-        backgroundColor: '#142238', padding: { x: 20, y: 11 }
-      }).setOrigin(0.5).setDepth(401).setInteractive({ useHandCursor: true });
-      this.speedBtn.on('pointerdown', () => { AUDIO.uiClick(); this.toggleGameSpeed(); });
+      this.speedBtn = UI.makeButton(this, width - 520, 48, '1x', () => this.toggleGameSpeed(), { width: 78, height: 54, fontSize: 21 }).setDepth(401);
 
-      this.menuBtn = this.add.text(width - 438, 48, 'II', {
-        fontFamily: 'Arial, sans-serif', fontSize: '25px', color: '#f2e2b8', fontStyle: 'bold',
-        backgroundColor: '#142238', padding: { x: 18, y: 10 }
-      }).setOrigin(0.5).setDepth(401).setInteractive({ useHandCursor: true });
-      this.menuBtn.on('pointerdown', () => this.openPauseMenu());
+      this.menuBtn = UI.makeButton(this, width - 430, 48, 'II', () => this.openPauseMenu(), { width: 70, height: 54, fontSize: 20 }).setDepth(401);
       this.muteBtn = UI.muteButton(this, width - 360, 48).setDepth(401);
 
-      this.previewText = this.add.text(width / 2, 101, '', {
-        fontFamily: 'Georgia, serif', fontSize: '16px', color: '#cbb98a'
-      }).setOrigin(0.5).setDepth(401);
+      this.previewText = null;
 
       this.updateHud();
       this.updateWavePreview();
     }
 
     buildHudPanel(container, width, height, title) {
-      const bg = this.add.image(0, 0, 'tex-stone-panel').setDisplaySize(width, height);
-      const rim = this.add.rectangle(0, 0, width - 6, height - 6, 0x000000, 0).setStrokeStyle(3, 0xd7a83d, 0.9);
+      const texture = this.textures.exists('tex-ui-hud-frame') ? 'tex-ui-hud-frame' : 'tex-stone-panel';
+      const bg = this.add.image(0, 0, texture).setDisplaySize(width, height);
       const label = this.add.text(0, -24, title, {
         fontFamily: 'Georgia, serif', fontSize: '14px', color: '#d9e2ef', fontStyle: 'bold'
       }).setOrigin(0.5);
-      container.add([bg, rim, label]);
+      container.add([bg, label]);
     }
 
     updateHud() {
@@ -539,12 +511,12 @@
     }
 
     updateWavePreview() {
-      if (this.waveActive || this.waveIndex >= this.level.waves.length) { this.previewText.setText(''); return; }
+      if (this.waveActive || this.waveIndex >= this.level.waves.length) return;
       const wave = this.level.waves[this.waveIndex];
       const counts = {};
       wave.spawns.forEach(s => { counts[s.enemy] = (counts[s.enemy] || 0) + s.count; });
-      const parts = Object.entries(counts).map(([id, n]) => `${n}× ${D.ENEMIES[id].name}`);
-      this.previewText.setText(`A caminho: ${parts.join(' · ')}`);
+      const parts = Object.entries(counts).map(([id, n]) => `${n}x ${D.ENEMIES[id].name}`);
+      this.enemyCountText.setText(parts.join(' / '));
     }
 
     // ---------- pausa ----------
@@ -604,7 +576,7 @@
       this.add.rectangle(width / 2, height - 74, width, 148, 0x07101b, 0.9).setDepth(398);
 
       this.heldPreview = this.add.container(84, height - 76).setDepth(401);
-      const heldBg = this.add.image(0, 0, 'tex-stone-panel').setDisplaySize(146, 116);
+      const heldBg = this.add.image(0, 0, this.textures.exists('tex-ui-hud-frame') ? 'tex-ui-hud-frame' : 'tex-stone-panel').setDisplaySize(146, 116);
       const heldTitle = this.add.text(0, -46, 'ALIADO SORTEADO', {
         fontFamily: 'Georgia, serif', fontSize: '12px', color: '#f2e2b8', fontStyle: 'bold'
       }).setOrigin(0.5);
@@ -634,7 +606,7 @@
       this.add.rectangle(width / 2, height - 72, width, 144, 0x07101b, 0.92).setDepth(398);
 
       this.heldPreview = this.add.container(170, height - 72).setDepth(401);
-      const heldBg = this.add.image(0, 0, 'tex-stone-panel').setDisplaySize(300, 104);
+      const heldBg = this.add.image(0, 0, this.textures.exists('tex-ui-hud-frame') ? 'tex-ui-hud-frame' : 'tex-stone-panel').setDisplaySize(300, 104);
       const heldTitle = this.add.text(-44, -24, 'ALIADO', {
         fontFamily: 'Georgia, serif', fontSize: '15px', color: '#f2e2b8', fontStyle: 'bold'
       }).setOrigin(0.5);
@@ -1195,7 +1167,8 @@
       const hpBar = this.add.rectangle(start.x, start.y - bar.yOffset, bar.width, HP_BAR_HEIGHT, 0x35d16f, 0.95).setDepth(105);
       const enemy = {
         id: enemyId, def, hp, maxHp: hp, sprite, hpBack, hpBar,
-        pathIndex: 1, slowUntil: 0, slowFactor: 1, walkAnim
+        pathIndex: 1, slowUntil: 0, slowFactor: 1, walkAnim,
+        laneOffset: [0, -18, 18, -34, 34][this.enemySpawnSerial++ % 5]
       };
       sprite.setData('ref', enemy);
       this.enemies.push(enemy);
@@ -1207,7 +1180,14 @@
       const target = path[e.pathIndex];
       if (!target) return;
       const speed = e.def.speed * ((this.battleTime < e.slowUntil) ? e.slowFactor : 1);
-      const dx = target.x - e.sprite.x, dy = target.y - e.sprite.y;
+      const previous = path[Math.max(0, e.pathIndex - 1)] || target;
+      const tangentX = target.x - previous.x;
+      const tangentY = target.y - previous.y;
+      const tangentLength = Math.hypot(tangentX, tangentY) || 1;
+      const laneX = target.x + (-tangentY / tangentLength) * e.laneOffset;
+      const laneY = target.y + (tangentX / tangentLength) * e.laneOffset;
+      e.currentTarget = { x: laneX, y: laneY };
+      const dx = laneX - e.sprite.x, dy = laneY - e.sprite.y;
       const dist = Math.hypot(dx, dy) || 1;
       e.sprite.body.setVelocity((dx / dist) * speed, (dy / dist) * speed);
       if (Math.abs(dx) > 6) e.sprite.setFlipX(dx < 0);
@@ -1263,7 +1243,8 @@
         const e = this.enemies[i];
         const target = path[e.pathIndex];
         if (!target) { this.enemyReachedEnd(e, i); continue; }
-        const distToTarget = Math.hypot(target.x - e.sprite.x, target.y - e.sprite.y);
+        const activeTarget = e.currentTarget || target;
+        const distToTarget = Math.hypot(activeTarget.x - e.sprite.x, activeTarget.y - e.sprite.y);
         if (distToTarget < ARRIVAL_THRESHOLD) {
           e.pathIndex += 1;
           if (!path[e.pathIndex]) { this.enemyReachedEnd(e, i); continue; }

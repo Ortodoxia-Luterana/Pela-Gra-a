@@ -5,6 +5,8 @@ Jogo narrativo mobile-first de decisões binárias por arraste, integrado ao log
 ## Princípio de jogo
 
 - O gesto de arrastar revela as duas respostas antes de confirmar.
+- Cada carta parte de uma cidade ou lugar concreto, e uma nota curta explica o que aconteceu depois da escolha.
+- A rota histórica mistura 23 decisões à esquerda e 24 à direita, sem transformar um lado em sinônimo de resposta certa.
 - Não há equilíbrio artificial entre facções. `Escritura`, `Confissão` e `Testemunho` registram o que o jogador aprendeu.
 - A vitória exige atravessar a linha histórica principal; desvios abrem finais alternativos e registros no códice.
 - A campanha muda de protagonista coletivo depois da morte de Lutero em 1546. A segunda geração acompanha o Interim, as controvérsias, a Fórmula e o Livro de Concórdia; o epílogo chega à Boêmia e a 1648.
@@ -29,4 +31,4 @@ Jogo narrativo mobile-first de decisões binárias por arraste, integrado ao log
 
 ## Arte
 
-As quatro ilustrações de capítulo foram produzidas por geração de imagem especificamente para o jogo, em direção de gravura renascentista colorizada. Texto, controles, HUD e opções permanecem em HTML/CSS para preservar leitura e acessibilidade.
+As seis ilustrações históricas foram produzidas por geração de imagem especificamente para o jogo, em direção de gravura renascentista colorizada. A juventude e o período no mosteiro têm cenas próprias para acompanhar a idade de Lutero. Texto, controles, HUD e opções permanecem em HTML/CSS para preservar leitura e acessibilidade.

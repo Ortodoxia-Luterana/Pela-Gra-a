@@ -4,6 +4,8 @@
   const TOTAL_CORE_CARDS = 47;
   const ART = {
     youth: 'assets/chapter-luther.webp',
+    student: 'assets/scene-student-v2.webp',
+    monk: 'assets/scene-monk-v2.webp',
     reform: 'assets/chapter-worms.webp',
     concord: 'assets/chapter-concord.webp',
     exile: 'assets/chapter-exile.webp'
@@ -116,9 +118,18 @@
     westphalia:{year:1648,chapter:'exile',speaker:'Paz de Vestfália',prompt:'A guerra termina. O que os exilados conservaram através das fronteiras?',context:'A casa foi perdida; a confissão atravessou a estrada.',left:{label:'Somente a derrota',end:'conversion'},right:{label:'Palavra, confissão e testemunho',end:'victory',mark:'witness',codex:'westphalia',achievement:'confissao-vitoria'}},
   };
 
+  const narrativeV2 = window.A_CONFISSAO_NARRATIVE_V2;
+  if(narrativeV2){
+    codex.splice(0, codex.length, ...narrativeV2.codex);
+    Object.assign(endings, narrativeV2.endings);
+    Object.entries(narrativeV2.cards).forEach(([id, copy]) => { if(cards[id]) cards[id] = {...cards[id], ...copy}; });
+    const sceneArt = { birth:'student', magdeburgSchool:'student', erfurt:'student', storm:'monk', firstmass:'monk', rome:'monk', wittenberg:'monk', doctorate:'monk', romans:'monk' };
+    Object.entries(sceneArt).forEach(([id, art]) => { cards[id].art = art; });
+  }
+
   const defaultState = () => ({ current:'birth', started:false, completed:false, choices:[], visited:['birth'], codex:['eisleben'], marks:{scripture:0,confession:0,witness:0}, achievements:[], endings:[] });
   let state = defaultState();
-  let dragging = false, choosing = false, startX = 0, currentX = 0, saveTimer = null, loaded = false;
+  let dragging = false, choosing = false, startX = 0, currentX = 0, saveTimer = null, lessonTimer = null, loaded = false;
   const $ = sel => document.querySelector(sel);
   const cardEl = $('#decision-card');
   const leftPreview = $('#choice-left');
@@ -126,13 +137,13 @@
 
   function uniquePush(list, value){ if(value && !list.includes(value)) list.push(value); }
   function currentCard(){ return cards[state.current] || cards.birth; }
-  function artFor(node){ return ART[node.chapter === 'youth' ? 'youth' : node.chapter === 'reform' || node.chapter === 'confession' ? 'reform' : node.chapter === 'concord' ? 'concord' : 'exile']; }
+  function artFor(node){ if(node.art && ART[node.art]) return ART[node.art]; return ART[node.chapter === 'youth' ? 'youth' : node.chapter === 'reform' || node.chapter === 'confession' ? 'reform' : node.chapter === 'concord' ? 'concord' : 'exile']; }
   function progress(){ return Math.min(100, (state.choices.length / TOTAL_CORE_CARDS) * 100); }
   function markAchievement(id){ if(!id || state.achievements.some(item => (typeof item==='string'?item:item?.id)===id)) return; state.achievements.push({id, unlockedAt:new Date().toISOString()}); }
   function updateStatus(text, bad=false){ const el=$('#save-status'); el.textContent=text; el.style.color=bad?'#bc655b':''; }
   function render(){
     const node = currentCard();
-    $('#chapter-name').textContent = chapters[node.chapter];
+    $('#chapter-name').textContent = node.place || chapters[node.chapter];
     $('#year-label').textContent = node.year;
     $('#timeline-fill').style.width = `${progress()}%`;
     $('#scripture-count').textContent = state.marks.scripture;
@@ -142,7 +153,7 @@
     $('#speaker').textContent = node.speaker;
     $('#prompt').textContent = node.prompt;
     $('#context').textContent = node.context;
-    $('#card-stamp').textContent = `${chapters[node.chapter]} · ${node.year}`;
+    $('#card-stamp').textContent = `${node.place || chapters[node.chapter]} · ${node.year}`;
     $('#card-image').style.backgroundImage = `url('${artFor(node)}')`;
     leftPreview.querySelector('span').textContent = node.left.label;
     rightPreview.querySelector('span').textContent = node.right.label;
@@ -156,7 +167,7 @@
     if(dragging) dragging=false;
     const node = currentCard();
     const option = node[side];
-    state.choices.push({ node:state.current, year:node.year, prompt:node.prompt, side, label:option.label });
+    state.choices.push({ node:state.current, year:node.year, place:node.place || chapters[node.chapter], prompt:node.prompt, side, label:option.label });
     if(option.mark) state.marks[option.mark] = (state.marks[option.mark] || 0) + 1;
     if(option.codex) uniquePush(state.codex, option.codex);
     if(option.achievement) markAchievement(option.achievement);
@@ -171,11 +182,26 @@
       if(option.end){ showEnding(option.end); return; }
       state.current = option.next;
       uniquePush(state.visited, option.next);
-      render(); scheduleSave();
+      render(); showLesson(node); scheduleSave();
     }, 285);
   }
 
+  function hideLesson(){
+    clearTimeout(lessonTimer);
+    $('#lesson-toast').classList.remove('visible');
+  }
+  function showLesson(node){
+    if(!node?.lesson) return;
+    const toast = $('#lesson-toast');
+    $('#lesson-place').textContent = `${node.place || chapters[node.chapter]} · ${node.year}`;
+    $('#lesson-text').textContent = node.lesson;
+    toast.classList.add('visible');
+    clearTimeout(lessonTimer);
+    lessonTimer = setTimeout(() => toast.classList.remove('visible'), 3200);
+  }
+
   function showEnding(id){
+    hideLesson();
     const ending = endings[id];
     uniquePush(state.endings, id);
     state.completed = Boolean(ending.win);
@@ -189,6 +215,7 @@
   }
 
   function reset(){
+    hideLesson();
     choosing = false; dragging = false;
     state = defaultState(); state.started=true; markAchievement('confissao-primeira-jornada');
     $('#ending-dialog').close(); render(); scheduleSave(true);
@@ -228,7 +255,7 @@
   $('#codex-tabs').addEventListener('click',e=>{const b=e.target.closest('[data-group]');if(!b)return;$('#codex-tabs').dataset.active=b.dataset.group;renderCodex();});
   $('#open-codex').addEventListener('click',()=>{renderCodex();$('#codex-dialog').showModal();});
   $('#open-route').addEventListener('click',()=>{
-    $('#route-list').innerHTML=state.choices.length?state.choices.slice().reverse().map(x=>`<article><b>${x.year}</b><div><strong>${x.label}</strong><p>${x.prompt}</p></div></article>`).join(''):'<p>Nenhuma decisão registrada ainda.</p>';
+    $('#route-list').innerHTML=state.choices.length?state.choices.slice().reverse().map(x=>`<article><b>${x.year}</b><div><strong>${x.place ? `${x.place} — ` : ''}${x.label}</strong><p>${x.prompt}</p></div></article>`).join(''):'<p>Nenhuma decisão registrada ainda.</p>';
     $('#route-dialog').showModal();
   });
   document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>document.getElementById(b.dataset.close).close()));

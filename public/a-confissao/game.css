@@ -84,6 +84,11 @@ body::before {
 .game-footer p span { font-size: 18px; vertical-align: -2px; }
 .save-status { justify-self: end; text-align: right; color: #7f7569; font-size: 9px; }
 
+.lesson-toast { position: fixed; left: 50%; bottom: max(22px, env(safe-area-inset-bottom)); width: min(calc(100% - 28px), 470px); transform: translate(-50%, 24px); opacity: 0; z-index: 12; pointer-events: none; padding: 12px 16px 13px; border: 1px solid rgba(169,133,69,.48); border-left: 4px solid var(--gold); background: rgba(23,20,17,.96); box-shadow: 0 18px 55px rgba(0,0,0,.48); transition: opacity .2s ease, transform .2s ease; }
+.lesson-toast.visible { opacity: 1; transform: translate(-50%, 0); }
+.lesson-toast span { display: block; color: var(--paper-deep); font-size: 9px; letter-spacing: .16em; text-transform: uppercase; }
+.lesson-toast p { margin: 4px 0 0; color: var(--ivory); font: 600 16px/1.22 'Cormorant Garamond', Georgia, serif; }
+
 .intro-screen { position: fixed; inset: 0; z-index: 20; background: var(--coal); display: grid; grid-template-rows: 47% 1fr; transition: opacity .5s ease, visibility .5s ease; }
 .intro-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
 .intro-art { background: #392b21 url('assets/chapter-luther.webp') center 32%/cover no-repeat; position: relative; }
@@ -152,6 +157,8 @@ dialog::backdrop { background: rgba(5,4,3,.83); backdrop-filter: blur(4px); }
   .intro-copy h1 { font-size: clamp(64px, 8vw, 112px); }
   .ending-dialog[open] { grid-template-columns: 46% 54%; grid-template-rows: min(78svh, 680px); }
   .ending-copy { align-self: center; }
+  .lesson-toast { left: auto; right: 28px; bottom: 28px; transform: translateY(24px); }
+  .lesson-toast.visible { transform: translateY(0); }
 }
 
 @media (max-width: 430px) and (max-height: 780px) {

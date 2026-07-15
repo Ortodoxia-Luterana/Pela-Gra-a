@@ -32,6 +32,7 @@ Thumbs.db
 *.sublime-workspace
 
 .cache/
+.tmp/
 .parcel-cache/
 .next/
 out/

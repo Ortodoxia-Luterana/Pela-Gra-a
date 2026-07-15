@@ -6,89 +6,90 @@
   <meta name="theme-color" content="#071a2d">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
   <title>A Queda de Babel</title>
-  <link rel="stylesheet" href="/assets/babel/game.css?v=1.1.0">
+  <link rel="stylesheet" href="/assets/babel/game.css?v=2.2.0">
+  <link rel="preload" as="image" href="/assets/babel/assets/intro/01-torre-em-construcao.webp">
+  <link rel="preload" as="image" href="/assets/babel/assets/intro/02-queda-e-fragmentos.webp">
+  <link rel="preload" as="image" href="/assets/babel/assets/intro/03-grande-estrada.webp">
 </head>
 <body>
   <main id="game-shell" aria-label="A Queda de Babel">
-    <div id="game-canvas" aria-label="Mundo explorável dos Campos das Fronteiras"></div>
+    <div id="game-canvas" aria-label="Mundo explorável de A Queda de Babel"></div>
 
     <header class="game-hud" aria-label="Estado do aventureiro">
-      <button class="profile-chip" id="profile-chip" type="button" aria-label="Abrir perfil do aventureiro">
+      <button class="profile-chip" id="profile-chip" type="button" aria-label="Abrir treinamento do aventureiro">
         <span id="profile-avatar" class="profile-avatar"></span>
-        <span class="profile-copy"><strong id="profile-name">Aventureiro</strong><small>Nível <b id="level-value">1</b> · <span id="power-value">118</span> poder</small></span>
-        <span class="hp-track" aria-label="Vida"><i id="hp-fill"></i></span>
+        <span class="profile-copy">
+          <span class="profile-title"><strong id="profile-name">Aventureiro</strong><em id="online-count">Conectando…</em></span>
+          <small>Nv. <b id="level-value">1</b> · <span id="power-value">118</span> poder · <span id="region-status">Campos das Fronteiras</span></small>
+          <span class="vital-line hp-line"><b>PV</b><span class="hp-track"><i id="hp-fill"></i></span><em id="hp-value">128/128</em></span>
+          <span class="vital-line xp-line"><b>XP</b><span class="xp-track"><i id="xp-fill"></i></span><em id="xp-value">0/100</em></span>
+        </span>
       </button>
 
-      <section class="region-chip" aria-live="polite">
-        <div class="region-heading"><small>Campos das Fronteiras</small><span id="online-count">Conectando…</span></div>
-        <strong id="region-status">Acampamento do Sul</strong>
-        <span class="region-track"><i id="region-fill"></i></span>
-      </section>
-
       <div class="journey-controls">
-        <button id="auto-button" type="button" aria-pressed="false"><span>✦</span><small>AUTO</small></button>
-        <button id="speed-button" type="button"><span id="speed-value">1×</span><small>RITMO</small></button>
-        <button id="pause-button" type="button" aria-label="Pausar">Ⅱ</button>
+        <button id="auto-button" type="button" aria-pressed="false"><strong>AUTO</strong><small>Nv. 10</small></button>
+      </div>
+      <div class="currency-hud" aria-label="Recursos">
+        <span><img src="/assets/babel/assets/ui/currency/coin-v2.png" alt=""><b id="gold-value">0</b></span>
+        <span><img src="/assets/babel/assets/ui/currency/gem-v2.png" alt=""><b id="gem-value">0</b></span>
       </div>
     </header>
 
     <section id="loot-feed" class="loot-feed" aria-live="polite"></section>
 
-    <div id="joystick" class="joystick" aria-label="Controle de movimento">
-      <span class="joystick-runes">N<br><i>O&nbsp;&nbsp;&nbsp;L</i><br>S</span>
-      <i id="joystick-knob"></i>
-    </div>
+    <div id="joystick" class="joystick" aria-label="Controle de movimento"><i id="joystick-knob"></i></div>
+    <button id="attack-button" class="attack-control" type="button" aria-label="Atacar"><img src="/assets/babel/assets/ui/combat/attack-v2.png" alt=""></button>
 
-    <section class="combat-bar" aria-label="Habilidades">
-      <button class="skill skill-blue" data-skill="guard" type="button"><i>✦</i><span>Guarda</span><em></em></button>
-      <button class="skill skill-green" data-skill="cleave" type="button"><i>↯</i><span>Varredura</span><em></em></button>
-      <button class="skill skill-gold" data-skill="rend" type="button"><i>⚔</i><span>Ruptura</span><em></em></button>
-      <button class="skill skill-violet" data-skill="shard" type="button"><i>◆</i><span>Estilhaço</span><em></em></button>
-      <button class="ultimate" id="ultimate-button" type="button"><i>✹</i><span>Ímpeto</span><b id="ultimate-value">0%</b></button>
-    </section>
+    <button id="ability-slot" class="ability-slot" type="button" hidden aria-label="Habilidade ativa">
+      <img id="ability-image" alt=""><i></i><small></small>
+    </button>
 
     <nav class="game-nav" aria-label="Sistemas do jogo">
-      <button class="active" data-panel="journey" type="button"><i>⌁</i><span>Jornada</span></button>
-      <button data-panel="equipment" type="button"><i>⚔</i><span>Equip.</span><b id="inventory-badge" hidden>!</b></button>
-      <button data-panel="skills" type="button"><i>✦</i><span>Skills</span></button>
-      <button data-panel="companion" type="button"><i>♞</i><span>Comp.</span></button>
-      <button data-panel="guild" type="button"><i>♜</i><span>Companhia</span><small>online</small></button>
+      <button data-panel="training" type="button" aria-label="Treinamento" title="Treinamento"><img src="/assets/babel/assets/ui/nav/nav-training-v2.png" alt=""><span class="sr-only">Treinamento</span></button>
+      <button data-panel="equipment" type="button" aria-label="Equipamentos" title="Equipamentos"><img src="/assets/babel/assets/ui/nav/nav-equipment-v2.png" alt=""><span class="sr-only">Equipamentos</span><b id="inventory-badge" hidden>!</b></button>
+      <button data-panel="summon" type="button" aria-label="Invocação" title="Invocação"><img src="/assets/babel/assets/ui/nav/nav-summon-v2.png" alt=""><span class="sr-only">Invocação</span></button>
+      <button data-panel="missions" type="button" aria-label="Missões" title="Missões"><img src="/assets/babel/assets/ui/nav/nav-missions-v2.png" alt=""><span class="sr-only">Missões</span></button>
+      <button data-panel="guild" type="button" aria-label="Companhia" title="Companhia"><img src="/assets/babel/assets/ui/nav/nav-guild-v2.png" alt=""><span class="sr-only">Companhia</span></button>
     </nav>
 
     <section id="drawer" class="drawer" hidden aria-modal="true" role="dialog">
       <div class="drawer-backdrop" data-close-drawer></div>
       <article class="drawer-card">
-        <header><div><small id="drawer-kicker">ACAMPAMENTO</small><h2 id="drawer-title">Jornada</h2></div><button type="button" data-close-drawer aria-label="Fechar">×</button></header>
+        <header><div><small id="drawer-kicker">JORNADA</small><h2 id="drawer-title">Treinamento</h2></div><button type="button" data-close-drawer aria-label="Fechar">×</button></header>
         <div id="drawer-content" class="drawer-content"></div>
       </article>
     </section>
 
     <section id="intro" class="intro" hidden aria-modal="true" role="dialog">
-      <div class="intro-mist"></div>
-      <article>
-        <small>PRÓLOGO · A GRANDE ESTRADA</small>
-        <h1>A Queda de Babel</h1>
-        <p>As pedras da torre não morreram. Escolha quem despertará na fronteira e siga os rastros de sua reconstrução.</p>
-        <h2>Seu avatar de jornada</h2>
-        <div class="hero-choice">
-          <button type="button" data-body="male"><span class="hero-preview male"></span><strong>Viajante</strong></button>
-          <button type="button" data-body="female"><span class="hero-preview female"></span><strong>Viajante</strong></button>
-        </div>
-        <h2>Arma inicial</h2>
-        <div class="weapon-choice">
-          <button type="button" data-weapon="sword"><i>⚔</i><span>Espada</span></button>
-          <button type="button" data-weapon="bow"><i>➶</i><span>Arco</span></button>
-          <button type="button" data-weapon="staff"><i>✦</i><span>Cajado</span></button>
-          <button type="button" data-weapon="spear"><i>↟</i><span>Lança</span></button>
-        </div>
-        <button id="start-journey" class="primary-action" type="button" disabled>Iniciar jornada</button>
+      <article class="intro-book">
+        <button id="intro-skip" class="intro-skip" type="button">Pular história</button>
+        <section class="intro-slide story-slide" data-intro-step="0" style="--story-image:url('/assets/babel/assets/intro/01-torre-em-construcao.webp')">
+          <div class="story-copy"><small>PRÓLOGO · I</small><h1>A ambição dos povos</h1><p>Povos rivais encerraram suas guerras para erguer uma torre capaz de alcançar a <strong>Coroa do Céu</strong>. Reis, magos e artesãos entregaram poder demais a uma obra maior que qualquer cidade.</p></div>
+        </section>
+        <section class="intro-slide story-slide" data-intro-step="1" hidden style="--story-image:url('/assets/babel/assets/intro/02-queda-e-fragmentos.webp')">
+          <div class="story-copy"><small>PRÓLOGO · II</small><h1>A queda de Babel</h1><p>A Torre caiu, mas não morreu. Pedras, metais, artefatos e criaturas foram lançados pelo continente. Florestas se moveram, animais viraram monstros e montanhas deixaram o chão.</p></div>
+        </section>
+        <section class="intro-slide story-slide" data-intro-step="2" hidden style="--story-image:url('/assets/babel/assets/intro/03-grande-estrada.webp')">
+          <div class="story-copy"><small>PRÓLOGO · III</small><h1>A Grande Estrada</h1><p>Séculos depois, você encontra provas de que alguém reúne os fragmentos para <strong>reconstruir Babel nas sombras</strong>. A jornada começa numa fronteira esquecida.</p></div>
+        </section>
+        <section class="intro-slide creator-slide" data-intro-step="3" hidden>
+          <div class="creator-heading"><small>SEU AVENTUREIRO</small><h1>Quem seguirá pela estrada?</h1></div>
+          <h2>Personagem</h2>
+          <div class="hero-choice">
+            <button type="button" data-body="male"><span class="hero-preview male"></span><strong>Masculino</strong></button>
+            <button type="button" data-body="female"><span class="hero-preview female"></span><strong>Feminino</strong></button>
+          </div>
+          <button id="start-journey" class="primary-action" type="button" disabled>Iniciar jornada</button>
+        </section>
+        <footer class="intro-controls"><button id="intro-back" type="button" disabled>Voltar</button><div id="intro-dots" class="intro-dots" aria-label="Progresso da introdução"></div><button id="intro-next" type="button">Continuar</button></footer>
       </article>
     </section>
 
     <section id="modal" class="modal" hidden aria-modal="true" role="dialog">
       <div class="modal-backdrop"></div>
-      <article><div id="modal-icon" class="modal-icon">✦</div><small id="modal-kicker">MARCO DA JORNADA</small><h2 id="modal-title"></h2><div id="modal-body"></div><button id="modal-action" class="primary-action" type="button">Continuar</button></article>
+      <article><div id="modal-icon" class="modal-icon"><img src="/assets/babel/assets/items/artifacts/tower-idol.png" alt=""></div><small id="modal-kicker">MARCO DA JORNADA</small><h2 id="modal-title"></h2><div id="modal-body"></div><button id="modal-action" class="primary-action" type="button">Continuar</button></article>
     </section>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
@@ -96,6 +97,6 @@
 
   <script src="/assets/guardioes/vendor/phaser.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
-  <script type="module" src="/assets/babel/js/main.js?v=1.1.0"></script>
+  <script type="module" src="/assets/babel/js/main.js?v=2.2.0"></script>
 </body>
 </html>

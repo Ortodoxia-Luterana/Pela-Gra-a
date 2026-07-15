@@ -1786,6 +1786,10 @@ async function handleApi(req, res, url, user) {
         json(res, 400, { error: 'Save inválido ou maior que o limite.' });
         return;
       }
+      if (Number(state.version) < 5) {
+        json(res, 409, { error: 'Cliente desatualizado. Recarregue o jogo.' });
+        return;
+      }
       const now = new Date().toISOString();
       state.lastSeenServer = now;
       upsertBabelSave.run(user.id, JSON.stringify(state), save?.created_at || now, now);
@@ -2255,7 +2259,7 @@ function initRealtimeMultiplayer(httpServer) {
   const babelPlayers = new Map();
   const babelSocketByUser = new Map();
   const babelRegions = new Set(['campos-fronteiras']);
-  const babelBounds = { minX: 35, minY: 55, maxX: 1365, maxY: 2200 };
+  const babelBounds = { minX: 35, minY: 55, maxX: 1765, maxY: 67160 };
   const mapBounds = { minX: 70, minY: 80, maxX: 1430, maxY: 920 };
   const dummy = { id: 'training-dummy', x: 760, y: 520, hp: 80, maxHp: 80 };
   const weaponPower = {
@@ -2339,6 +2343,18 @@ function initRealtimeMultiplayer(httpServer) {
   function babelRoom(regionId) {
     return `babel:${regionId}`;
   }
+  const babelEquipmentSets = new Set(['ranger', 'forest', 'crystal', 'tower', 'dawn', 'abyss', 'frost', 'desert']);
+  const babelEquipmentSlots = ['helmet', 'armor', 'pants', 'boots'];
+  function sanitizeBabelEquipment(payload, previous = {}) {
+    const incoming = payload?.equipment && typeof payload.equipment === 'object' ? payload.equipment : {};
+    const equipment = Object.fromEntries(babelEquipmentSlots.map(slot => {
+      if (!(slot in incoming)) return [slot, previous[slot] || ''];
+      return [slot, babelEquipmentSets.has(incoming[slot]) ? incoming[slot] : ''];
+    }));
+    const weapon = String(incoming.weapon || '');
+    equipment.weapon = /^[a-z0-9-]{1,48}$/.test(weapon) ? weapon : (previous.weapon || '');
+    return equipment;
+  }
   function publicBabelPlayer(player) {
     return {
       id: player.id,
@@ -2347,6 +2363,8 @@ function initRealtimeMultiplayer(httpServer) {
       regionId: player.regionId,
       body: player.body,
       weapon: player.weapon,
+      armorSet: player.armorSet,
+      equipment: player.equipment,
       x: player.x,
       y: player.y,
       facing: player.facing,
@@ -2360,8 +2378,15 @@ function initRealtimeMultiplayer(httpServer) {
   }
   function broadcastBabelPopulation(regionId) {
     const room = babelRoom(regionId);
-    const count = [...babelPlayers.values()].filter(player => player.room === room).length;
+    const players = [...babelPlayers.values()].filter(player => player.room === room).map(publicBabelPlayer);
+    const count = players.length;
     io.to(room).emit('babel:population', { regionId, count });
+    io.to(room).emit('babel:presence', { regionId, count, players });
+  }
+  function babelPresencePayload(regionId) {
+    const room = babelRoom(regionId);
+    const players = [...babelPlayers.values()].filter(player => player.room === room).map(publicBabelPlayer);
+    return { ok: true, regionId, count: players.length, players };
   }
   function removeBabelPlayer(socketId) {
     const player = babelPlayers.get(socketId);
@@ -2432,8 +2457,9 @@ function initRealtimeMultiplayer(httpServer) {
       const priorSocketId = babelSocketByUser.get(user.id);
       if (priorSocketId && priorSocketId !== socket.id) {
         const priorSocket = io.sockets.sockets.get(priorSocketId);
+        const priorPlayer = babelPlayers.get(priorSocketId);
         priorSocket?.emit('babel:session-replaced', { message: 'A jornada foi aberta em outra aba.' });
-        priorSocket?.leave(room);
+        priorSocket?.leave(priorPlayer?.room || room);
         removeBabelPlayer(priorSocketId);
       }
 
@@ -2450,7 +2476,9 @@ function initRealtimeMultiplayer(httpServer) {
         regionId,
         room,
         body: payload?.body === 'female' ? 'female' : 'male',
-        weapon: ['sword', 'bow', 'staff', 'spear'].includes(payload?.weapon) ? payload.weapon : 'sword',
+        weapon: ['fists', 'sword', 'bow', 'staff', 'spear'].includes(payload?.weapon) ? payload.weapon : 'fists',
+        armorSet: ['ranger', 'forest', 'crystal', 'tower', 'dawn', 'abyss', 'frost', 'desert'].includes(payload?.armorSet) ? payload.armorSet : '',
+        equipment: sanitizeBabelEquipment(payload, previous?.equipment),
         x: clamp(payload?.x, babelBounds.minX, babelBounds.maxX),
         y: clamp(payload?.y, babelBounds.minY, babelBounds.maxY),
         facing: ['up', 'down', 'left', 'right'].includes(payload?.facing) ? payload.facing : 'down',
@@ -2460,7 +2488,8 @@ function initRealtimeMultiplayer(httpServer) {
         power: Math.round(clamp(payload?.power, 0, 9999999)),
         sequence: 0,
         updatedAt: Date.now(),
-        lastMoveAt: Date.now()
+        lastMoveAt: Date.now(),
+        lastSeenAt: Date.now()
       };
 
       babelPlayers.set(socket.id, player);
@@ -2500,6 +2529,7 @@ function initRealtimeMultiplayer(httpServer) {
       player.sequence = Math.max(player.sequence + 1, Math.round(clamp(payload?.sequence, 0, Number.MAX_SAFE_INTEGER)));
       player.updatedAt = now;
       player.lastMoveAt = now;
+      player.lastSeenAt = now;
       socket.to(player.room).volatile.emit('babel:player-update', publicBabelPlayer(player));
     });
 
@@ -2507,11 +2537,24 @@ function initRealtimeMultiplayer(httpServer) {
       const player = babelPlayers.get(socket.id);
       if (!player) return;
       player.body = payload?.body === 'female' ? 'female' : 'male';
-      player.weapon = ['sword', 'bow', 'staff', 'spear'].includes(payload?.weapon) ? payload.weapon : player.weapon;
+      player.weapon = ['fists', 'sword', 'bow', 'staff', 'spear'].includes(payload?.weapon) ? payload.weapon : player.weapon;
+      player.armorSet = ['ranger', 'forest', 'crystal', 'tower', 'dawn', 'abyss', 'frost', 'desert'].includes(payload?.armorSet) ? payload.armorSet : '';
+      player.equipment = sanitizeBabelEquipment(payload, player.equipment);
       player.level = Math.round(clamp(payload?.level, 1, 999));
       player.power = Math.round(clamp(payload?.power, 0, 9999999));
       player.updatedAt = Date.now();
+      player.lastSeenAt = Date.now();
       socket.to(player.room).emit('babel:player-update', publicBabelPlayer(player));
+    });
+
+    socket.on('babel:heartbeat', (_payload, acknowledge = () => {}) => {
+      const player = babelPlayers.get(socket.id);
+      if (!player) {
+        acknowledge({ ok: false, error: 'not_joined' });
+        return;
+      }
+      player.lastSeenAt = Date.now();
+      acknowledge(babelPresencePayload(player.regionId));
     });
 
     socket.on('concordium-gba:join', payload => {

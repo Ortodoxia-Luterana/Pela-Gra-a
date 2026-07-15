@@ -1,5 +1,6 @@
 const MOVE_INTERVAL_MS = 80;
-const HEARTBEAT_MS = 900;
+const POSITION_HEARTBEAT_MS = 2500;
+const PRESENCE_HEARTBEAT_MS = 3000;
 
 function currentFrame(simulation) {
   if (simulation.runtime.now < simulation.attackPoseUntil) return 3;
@@ -14,6 +15,7 @@ export class BabelRealtime {
     this.selfId = null;
     this.connected = false;
     this.joined = false;
+    this.joining = false;
     this.suspended = false;
     this.players = new Map();
     this.listeners = new Map();
@@ -22,6 +24,10 @@ export class BabelRealtime {
     this.lastMoveAt = 0;
     this.lastMoveKey = '';
     this.lastProfileKey = '';
+    this.heartbeatTimer = null;
+    this.visibilityHandler = () => {
+      if (document.visibilityState === 'visible') this.sendPresenceHeartbeat(true);
+    };
     this.simulationHandler = event => this.onSimulationEvent(event.detail.type);
     window.addEventListener('babel:event', this.simulationHandler);
   }
@@ -43,6 +49,7 @@ export class BabelRealtime {
     this.socket.on('connect', () => {
       this.connected = true;
       this.joined = false;
+      this.joining = false;
       if (this.suspended) {
         this.socket.disconnect();
         this.publishOnline('replaced');
@@ -55,6 +62,7 @@ export class BabelRealtime {
     this.socket.on('disconnect', reason => {
       this.connected = false;
       this.joined = false;
+      this.joining = false;
       this.selfId = null;
       this.population = 0;
       this.players.clear();
@@ -69,11 +77,10 @@ export class BabelRealtime {
     this.socket.on('babel:init', payload => {
       this.selfId = payload?.id || this.socket.id;
       this.joined = true;
-      this.players.clear();
-      for (const player of payload?.players || []) this.setPlayer(player);
-      this.emitLocal('sync', {});
-      this.publishOnline('online');
+      this.joining = false;
+      this.applyPresence(payload);
     });
+    this.socket.on('babel:presence', payload => this.applyPresence(payload));
     this.socket.on('babel:population', payload => {
       if (payload?.regionId !== this.sim.state.world.regionId) return;
       this.population = Math.max(1, Number(payload?.count) || 1);
@@ -104,6 +111,7 @@ export class BabelRealtime {
     this.socket.on('babel:session-replaced', payload => {
       this.suspended = true;
       this.joined = false;
+      this.joining = false;
       this.players.clear();
       this.emitLocal('replaced', payload || {});
       this.emitLocal('sync', {});
@@ -111,6 +119,9 @@ export class BabelRealtime {
       this.socket.disconnect();
     });
     this.socket.on('babel:error', payload => this.emitLocal('error', payload || {}));
+
+    this.heartbeatTimer = window.setInterval(() => this.sendPresenceHeartbeat(), PRESENCE_HEARTBEAT_MS);
+    document.addEventListener('visibilitychange', this.visibilityHandler);
   }
 
   on(type, handler) {
@@ -125,10 +136,19 @@ export class BabelRealtime {
 
   localPayload() {
     const state = this.sim.state;
+    const equipment = {
+      helmet: state.equipped.helmet?.setId || '',
+      armor: state.equipped.armor?.setId || '',
+      pants: state.equipped.pants?.setId || '',
+      boots: state.equipped.boots?.setId || '',
+      weapon: state.equipped.weapon?.id || ''
+    };
     return {
-      regionId: state.world.regionId,
+      regionId: state.world.currentRegionId || state.world.regionId,
       body: state.profile.body,
       weapon: state.profile.weapon,
+      armorSet: state.equipped.armor?.setId || '',
+      equipment,
       x: state.player.x,
       y: state.player.y,
       facing: this.sim.runtime.facing,
@@ -141,8 +161,10 @@ export class BabelRealtime {
 
   joinRegion(force = false) {
     if (!this.socket?.connected || !this.sim.state.profile.created || this.suspended) return;
-    if (this.joined && !force) return;
+    if (this.joining || (this.joined && !force)) return;
+    this.joining = true;
     this.socket.timeout(5000).emit('babel:join', this.localPayload(), (error, response) => {
+      this.joining = false;
       if (error || !response?.ok) {
         this.joined = false;
         this.emitLocal('error', { code: response?.error || 'join_timeout' });
@@ -154,6 +176,43 @@ export class BabelRealtime {
     });
   }
 
+  sendPresenceHeartbeat(force = false) {
+    if (!this.socket?.connected || !this.sim.state.profile.created || this.suspended) return;
+    if (!this.joined) {
+      this.joinRegion(force);
+      return;
+    }
+    this.socket.timeout(4500).emit('babel:heartbeat', {
+      regionId: this.sim.state.world.currentRegionId || this.sim.state.world.regionId
+    }, (error, response) => {
+      if (error) return;
+      if (!response?.ok) {
+        this.joined = false;
+        this.joinRegion(true);
+        return;
+      }
+      this.applyPresence(response);
+    });
+  }
+
+  applyPresence(payload) {
+    const currentRegionId = this.sim.state.world.currentRegionId || this.sim.state.world.regionId;
+    if (payload?.regionId && payload.regionId !== currentRegionId) return;
+    const selfId = this.selfId || this.socket?.id;
+    const incoming = new Set();
+    for (const player of payload?.players || []) {
+      if (!player || player.id === selfId) continue;
+      incoming.add(player.id);
+      this.setPlayer(player);
+    }
+    for (const id of this.players.keys()) {
+      if (!incoming.has(id)) this.players.delete(id);
+    }
+    this.population = Math.max(1, Number(payload?.count) || this.players.size + 1);
+    this.emitLocal('sync', {});
+    this.publishOnline('online');
+  }
+
   updateLocal(now = performance.now()) {
     if (!this.sim.state.profile.created || this.suspended) return;
     if (!this.joined) {
@@ -162,7 +221,7 @@ export class BabelRealtime {
     }
 
     const payload = this.localPayload();
-    const profileKey = `${payload.body}:${payload.weapon}:${payload.level}:${payload.power}`;
+    const profileKey = `${payload.body}:${payload.weapon}:${JSON.stringify(payload.equipment)}:${payload.level}:${payload.power}`;
     if (profileKey !== this.lastProfileKey) {
       this.lastProfileKey = profileKey;
       this.socket.emit('babel:profile', payload);
@@ -170,7 +229,7 @@ export class BabelRealtime {
 
     const moveKey = `${Math.round(payload.x)}:${Math.round(payload.y)}:${payload.facing}:${payload.moving ? 1 : 0}:${payload.frame}`;
     if (now - this.lastMoveAt < MOVE_INTERVAL_MS) return;
-    if (moveKey === this.lastMoveKey && now - this.lastMoveAt < HEARTBEAT_MS) return;
+    if (moveKey === this.lastMoveKey && now - this.lastMoveAt < POSITION_HEARTBEAT_MS) return;
     this.lastMoveAt = now;
     this.lastMoveKey = moveKey;
     payload.sequence = ++this.sequence;
@@ -193,6 +252,12 @@ export class BabelRealtime {
       this.joined = false;
       this.joinRegion(true);
     }
+    if (type === 'regionChanged') {
+      this.joined = false;
+      this.players.clear();
+      this.emitLocal('sync', {});
+      this.joinRegion(true);
+    }
     if (type === 'levelUp' || type === 'itemEquipped') this.lastProfileKey = '';
   }
 
@@ -210,6 +275,8 @@ export class BabelRealtime {
 
   destroy() {
     window.removeEventListener('babel:event', this.simulationHandler);
+    document.removeEventListener('visibilitychange', this.visibilityHandler);
+    if (this.heartbeatTimer) window.clearInterval(this.heartbeatTimer);
     this.socket?.disconnect();
     this.listeners.clear();
     this.players.clear();

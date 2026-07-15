@@ -1,7 +1,7 @@
-import { JourneyScene } from './game-scene.js';
-import { BabelRealtime } from './multiplayer.js';
-import { GameSimulation } from './simulation.js';
-import { GameUI } from './ui.js';
+import { JourneyScene } from './game-scene.js?v=2.2.0';
+import { BabelRealtime } from './multiplayer.js?v=2.2.0';
+import { GameSimulation } from './simulation.js?v=2.2.0';
+import { GameUI } from './ui.js?v=2.2.0';
 
 const boot = window.__BABEL_BOOT__ || { user: { name: 'Aventureiro' }, state: null, offlineSeconds: 0 };
 const emit = (type, payload = {}) => window.dispatchEvent(new CustomEvent('babel:event', { detail: { type, payload } }));
@@ -14,8 +14,9 @@ const game = new window.Phaser.Game({
   parent: 'game-canvas',
   transparent: false,
   backgroundColor: '#071827',
-  render: { antialias: true, roundPixels: false, powerPreference: 'high-performance' },
-  scale: { mode: window.Phaser.Scale.RESIZE, autoCenter: window.Phaser.Scale.CENTER_BOTH, width: '100%', height: '100%' },
+  resolution: Math.min(window.devicePixelRatio || 1, 2),
+  render: { antialias: true, antialiasGL: true, roundPixels: true, pixelArt: false, powerPreference: 'high-performance' },
+  scale: { mode: window.Phaser.Scale.RESIZE, autoCenter: window.Phaser.Scale.CENTER_BOTH, autoRound: true, width: '100%', height: '100%' },
   input: { activePointers: 3 },
   physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false } },
   scene: [new JourneyScene(simulation, realtime)]
@@ -62,14 +63,11 @@ async function saveProgress() {
   return saveInFlight;
 }
 
-const saveEvents = new Set(['journeyStarted', 'enemyDefeated', 'itemEquipped', 'levelUp', 'autoUnlocked', 'companionUnlocked', 'bossUnlocked', 'regionComplete', 'playerDefeated']);
+const saveEvents = new Set(['journeyStarted', 'enemyDefeated', 'itemEquipped', 'petEquipped', 'skillEquipped', 'equipmentFused', 'skillFused', 'equipmentSeen', 'levelUp', 'autoUnlocked', 'regionChanged', 'regionComplete', 'playerDefeated', 'trainingUpgraded', 'summoned', 'missionClaimed', 'gemsEarned']);
 window.addEventListener('babel:event', event => { if (saveEvents.has(event.detail.type)) window.setTimeout(saveProgress, 180); });
 window.setInterval(saveProgress, 10_000);
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) {
-    simulation.setPaused(true);
-    saveProgress();
-  }
+  if (document.hidden) saveProgress();
 });
 window.addEventListener('pagehide', () => {
   saveProgress();

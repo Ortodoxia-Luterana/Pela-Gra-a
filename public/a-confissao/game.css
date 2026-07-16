@@ -82,10 +82,18 @@ body::before {
 .card-image { position: relative; background: #4b3a2d center/cover no-repeat; filter: saturate(.78) contrast(1.04); }
 .card-image::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 55%, rgba(31,21,13,.46)); }
 .chapter-stamp { position: absolute; z-index: 2; left: 16px; bottom: 13px; padding: 5px 8px; background: rgba(24,18,13,.78); color: #f0dfbd; font-size: 9px; letter-spacing: .14em; text-transform: uppercase; }
-.card-copy { padding: 17px 22px 21px; display: grid; align-content: center; text-align: center; background-image: repeating-linear-gradient(0deg, rgba(84,57,33,.025) 0 1px, transparent 1px 4px); }
+.card-copy { position: relative; padding: 17px 22px 21px; display: grid; align-content: center; text-align: center; background-image: repeating-linear-gradient(0deg, rgba(84,57,33,.025) 0 1px, transparent 1px 4px); }
 .speaker { margin: 0 0 7px; color: var(--crimson); font-size: 10px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; }
 .context { margin: 0 auto; max-width: 42ch; color: #594636; font-size: clamp(13px, 3.45vw, 15px); line-height: 1.34; text-wrap: pretty; }
 .card-copy h1 { max-width: 18ch; margin: 12px auto 0; padding-top: 11px; border-top: 1px solid rgba(111,72,43,.22); font-family: 'Cormorant Garamond', Georgia, serif; font-size: clamp(23px, 6.2vw, 31px); line-height: 1; font-weight: 700; text-wrap: balance; }
+.decision-card.has-reference .card-copy { padding-bottom: 39px; }
+.card-reference { position: absolute; left: 18px; right: 18px; bottom: 8px; margin: 0; padding-top: 6px; border-top: 1px solid rgba(111,72,43,.2); overflow: hidden; color: #78634f; font-size: 7px; line-height: 1.15; letter-spacing: .035em; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
+.card-reference[hidden] { display: none; }
+.card-reference span { color: var(--crimson); font-weight: 700; text-transform: uppercase; }
+.card-reference span::after { content: ' — '; }
+.card-reference a { color: #5e4938; font-weight: 700; text-decoration: underline; text-decoration-color: rgba(94,73,56,.35); text-underline-offset: 2px; }
+.card-reference em { font-style: normal; }
+.card-reference em::before { content: ' · '; }
 .drag-edge { position: absolute; inset-block: 0; width: 7px; opacity: .35; }
 .drag-edge-left { left: 0; background: var(--crimson); }
 .drag-edge-right { right: 0; background: var(--green); }
@@ -201,11 +209,13 @@ dialog::backdrop { background: rgba(5,4,3,.83); backdrop-filter: blur(4px); }
 @media (max-width: 520px) {
   .decision-card.dense-copy { grid-template-rows: 45% 1fr; }
   .decision-card.dense-copy .card-copy { padding: 12px 17px 15px; }
+  .decision-card.dense-copy.has-reference .card-copy { padding-bottom: 35px; }
   .decision-card.dense-copy .context { font-size: 11.5px; line-height: 1.25; }
   .decision-card.dense-copy .card-copy h1 { margin-top: 7px; padding-top: 7px; font-size: 21px; }
   .decision-card.extra-dense-copy { grid-template-rows: 42% 1fr; }
   .decision-card.extra-dense-copy .context { font-size: 11px; }
   .decision-card.extra-dense-copy .card-copy h1 { font-size: 20px; }
+  .decision-card.extra-dense-copy .card-reference { font-size: 6.5px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

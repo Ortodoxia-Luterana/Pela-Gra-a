@@ -213,6 +213,17 @@
     const copyLength = `${node.context} ${node.prompt}`.length;
     cardEl.classList.toggle('dense-copy', copyLength > 300);
     cardEl.classList.toggle('extra-dense-copy', copyLength > 355);
+    const reference = node.source || null;
+    const referenceEl = $('#card-reference');
+    cardEl.classList.toggle('has-reference', Boolean(reference));
+    referenceEl.hidden = !reference;
+    if(reference){
+      $('#reference-kind').textContent = reference.kind || 'Referência';
+      $('#reference-link').textContent = reference.label;
+      $('#reference-link').href = reference.url;
+      $('#reference-note').textContent = reference.note || '';
+      referenceEl.title = `${reference.kind || 'Referência'}: ${reference.label}${reference.note ? ` — ${reference.note}` : ''}`;
+    }
     $('#card-image').style.backgroundImage = `url('${artFor(node)}')`;
     leftPreview.querySelector('span').textContent = visibleLeft.label;
     rightPreview.querySelector('span').textContent = visibleRight.label;
@@ -309,6 +320,8 @@
   cardEl.addEventListener('pointermove', e => { if(!dragging)return; currentX=e.clientX-startX; moveCard(currentX); });
   cardEl.addEventListener('pointerup', () => { if(!dragging)return; dragging=false; releaseCard(); });
   cardEl.addEventListener('pointercancel', () => { dragging=false; currentX=0; releaseCard(); });
+  $('#card-reference').addEventListener('pointerdown', e => e.stopPropagation());
+  $('#card-reference').addEventListener('click', e => e.stopPropagation());
   document.addEventListener('keydown', e => { if($('dialog[open]'))return; if(e.key==='ArrowLeft'||e.key.toLowerCase()==='a')choose('left'); if(e.key==='ArrowRight'||e.key.toLowerCase()==='d')choose('right'); });
 
   function renderCodex(){

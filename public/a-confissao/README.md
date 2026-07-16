@@ -10,6 +10,7 @@ A campanha ampliada possui **90 cartas**, **39 finais** e **40 registros histór
 - Cada carta parte de uma cidade ou lugar concreto, apresenta quem está ali, o que acabou de acontecer e o que está em risco antes de fazer a pergunta.
 - Depois da escolha, uma nota curta explica o que aconteceu historicamente.
 - As cartas alternam decisões históricas, consequências, encontros com personagens e rumores que correm pelas prensas.
+- Episódios biográficos pouco conhecidos, tradições posteriores e cenas baseadas em fontes antigas exibem uma referência curta no rodapé. O rodapé também avisa quando a cena ou a escolha foi dramatizada.
 - O lado da resposta histórica é sorteado de novo em cada jornada e permanece salvo durante aquela partida, sem sequência fixa ou alternância previsível.
 - Não há equilíbrio artificial entre facções. `Escritura`, `Confissão` e `Testemunho` registram o que o jogador aprendeu.
 - `Consciência`, `Proteção`, `Império`, `Igreja` e `Povo` mostram a pressão acumulada pelas decisões. Eles mudam consequências e podem abrir finais de colapso, mas não substituem a linha histórica como objetivo.

@@ -27,6 +27,14 @@
       <div class="timeline"><span id="timeline-fill"></span></div>
     </section>
 
+    <section class="pressure-strip" aria-label="Pressões da jornada">
+      <div class="meter" data-meter="conscience" title="Firmeza interior diante das decisões"><span>Consciência</span><i><b id="meter-conscience"></b></i><strong id="meter-conscience-value">42</strong></div>
+      <div class="meter" data-meter="protection" title="Amigos, cidades e governantes capazes de oferecer abrigo"><span>Proteção</span><i><b id="meter-protection"></b></i><strong id="meter-protection-value">56</strong></div>
+      <div class="meter danger-meter" data-meter="empire" title="Atenção e pressão das autoridades do Império"><span>Império</span><i><b id="meter-empire"></b></i><strong id="meter-empire-value">18</strong></div>
+      <div class="meter" data-meter="church" title="Clareza e união entre igrejas, pastores e professores"><span>Igreja</span><i><b id="meter-church"></b></i><strong id="meter-church-value">35</strong></div>
+      <div class="meter" data-meter="people" title="Quanto o ensino alcançou casas, escolas e cidades"><span>Povo</span><i><b id="meter-people"></b></i><strong id="meter-people-value">28</strong></div>
+    </section>
+
     <section class="witness-marks" aria-label="Marcos da jornada">
       <div><span class="seal scripture">S</span><p>Escritura<b id="scripture-count">0</b></p></div>
       <div><span class="seal confession">C</span><p>Confissão<b id="confession-count">0</b></p></div>
@@ -34,8 +42,8 @@
     </section>
 
     <section class="table-stage" id="table-stage">
-      <div class="choice-preview choice-left" id="choice-left" aria-hidden="true"><span></span></div>
-      <div class="choice-preview choice-right" id="choice-right" aria-hidden="true"><span></span></div>
+      <div class="choice-preview choice-left" id="choice-left" aria-hidden="true"><span></span><small></small></div>
+      <div class="choice-preview choice-right" id="choice-right" aria-hidden="true"><span></span><small></small></div>
       <article class="decision-card" id="decision-card" tabindex="0" aria-live="polite">
         <div class="card-image" id="card-image"><span class="chapter-stamp" id="card-stamp"></span></div>
         <div class="card-copy">
@@ -58,6 +66,7 @@
   <aside class="lesson-toast" id="lesson-toast" aria-live="polite">
     <span id="lesson-place"></span>
     <p id="lesson-text"></p>
+    <small id="lesson-effects"></small>
   </aside>
 
   <section class="intro-screen" id="intro-screen">
@@ -90,12 +99,14 @@
       <h2 id="ending-title"></h2>
       <p id="ending-body"></p>
       <div class="ending-fact" id="ending-fact"></div>
+      <div class="ending-meters" id="ending-meters"></div>
       <button id="restart-game" type="button">Recomeçar em 1483</button>
       <a href="/">Voltar ao Game Hub</a>
     </div>
   </dialog>
 
   <script src="narrative-v2.js"></script>
+  <script src="narrative-expansion.js"></script>
   <script src="game.js"></script>
 </body>
 </html>

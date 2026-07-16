@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   const API = '/api/a-confissao/save';
-  const TOTAL_CORE_CARDS = 47;
+  let TOTAL_CORE_CARDS = 47;
   const ART = {
     youth: 'assets/chapter-luther.webp',
     student: 'assets/scene-student-v2.webp',
@@ -14,6 +14,9 @@
     youth: 'O jovem Martinho', reform: 'A Palavra em público', confession: 'Uma Igreja confessa',
     concord: 'Depois de Lutero', exile: 'Confissão sob a espada'
   };
+  const meterLabels = { conscience:'Consciência', protection:'Proteção', empire:'Império', church:'Igreja', people:'Povo' };
+  const defaultMeters = () => ({conscience:42, protection:56, empire:18, church:35, people:28});
+  const kindLabels = {decision:'DECISÃO', consequence:'CONSEQUÊNCIA', rumor:'RUMOR & PRENSA', character:'PERSONAGEM', chapter:'NOVO CAPÍTULO'};
   const codex = [
     { id:'eisleben', group:'Vida de Lutero', year:'1483', title:'Eisleben e Mansfeld', text:'Martinho nasceu em Eisleben em 10 de novembro de 1483 e foi batizado no dia seguinte. A família logo se mudou para Mansfeld, ligada ao trabalho nas minas de cobre.' },
     { id:'schools', group:'Vida de Lutero', year:'1497–1501', title:'Magdeburgo, Eisenach e Erfurt', text:'Estudou em Magdeburgo com os Irmãos da Vida Comum, depois em Eisenach, e ingressou na Universidade de Erfurt em 1501.' },
@@ -122,9 +125,10 @@
   if(narrativeV2){
     codex.splice(0, codex.length, ...narrativeV2.codex);
     Object.assign(endings, narrativeV2.endings);
-    Object.entries(narrativeV2.cards).forEach(([id, copy]) => { if(cards[id]) cards[id] = {...cards[id], ...copy}; });
+    Object.entries(narrativeV2.cards).forEach(([id, copy]) => { cards[id] = cards[id] ? {...cards[id], ...copy} : copy; });
     const sceneArt = { birth:'student', magdeburgSchool:'student', erfurt:'student', storm:'monk', firstmass:'monk', rome:'monk', wittenberg:'monk', doctorate:'monk', romans:'monk' };
     Object.entries(sceneArt).forEach(([id, art]) => { cards[id].art = art; });
+    TOTAL_CORE_CARDS = Object.keys(cards).length;
   }
 
   function randomSide(){
@@ -141,7 +145,7 @@
     if(raw && typeof raw === 'object') Object.keys(result).forEach(id => { if(typeof raw[id] === 'boolean') result[id] = raw[id]; });
     return result;
   }
-  const defaultState = () => ({ current:'birth', started:false, completed:false, choices:[], visited:['birth'], codex:['eisleben'], marks:{scripture:0,confession:0,witness:0}, achievements:[], endings:[], sideMap:createSideMap() });
+  const defaultState = () => ({ current:'birth', started:false, completed:false, choices:[], visited:['birth'], codex:['eisleben'], marks:{scripture:0,confession:0,witness:0}, meters:defaultMeters(), achievements:[], endings:[], sideMap:createSideMap() });
   let state = defaultState();
   let dragging = false, choosing = false, startX = 0, currentX = 0, saveTimer = null, lessonTimer = null, loaded = false;
   const $ = sel => document.querySelector(sel);
@@ -153,6 +157,39 @@
   function currentCard(){ return cards[state.current] || cards.birth; }
   function artFor(node){ if(node.art && ART[node.art]) return ART[node.art]; return ART[node.chapter === 'youth' ? 'youth' : node.chapter === 'reform' || node.chapter === 'confession' ? 'reform' : node.chapter === 'concord' ? 'concord' : 'exile']; }
   function progress(){ return Math.min(100, (state.choices.length / TOTAL_CORE_CARDS) * 100); }
+  function effectsForOption(option){
+    if(option.effects) return option.effects;
+    if(option.mark === 'scripture') return {conscience:5, church:2};
+    if(option.mark === 'confession') return {conscience:3, church:5, empire:3};
+    if(option.mark === 'witness') return {people:5, protection:-2};
+    return {};
+  }
+  function effectText(effects){
+    return Object.entries(effects || {}).filter(([,value])=>value).map(([key,value])=>`${meterLabels[key]} ${value>0?'+':''}${value}`).join(' · ');
+  }
+  function applyEffects(effects){
+    state.meters.empire = Math.max(0, state.meters.empire - 1);
+    Object.entries(effects || {}).forEach(([key,value])=>{
+      if(!(key in state.meters)) return;
+      state.meters[key] = Math.max(0, Math.min(100, state.meters[key] + value));
+    });
+  }
+  function pressureEnding(){
+    if(state.meters.conscience <= 0) return 'conscienceCollapse';
+    if(state.meters.protection <= 0) return 'protectionCollapse';
+    if(state.meters.church <= 0) return 'churchCollapse';
+    if(state.meters.people <= 0) return 'peopleCollapse';
+    if(state.meters.empire >= 100) return 'empireCollapse';
+    return null;
+  }
+  function renderMeters(){
+    Object.entries(state.meters).forEach(([key,value])=>{
+      const fill=$(`#meter-${key}`); const number=$(`#meter-${key}-value`); const meter=document.querySelector(`[data-meter="${key}"]`);
+      if(fill) fill.style.width=`${value}%`;
+      if(number) number.textContent=value;
+      if(meter) meter.classList.toggle('critical', key==='empire' ? value>=82 : value<=18);
+    });
+  }
   function markAchievement(id){ if(!id || state.achievements.some(item => (typeof item==='string'?item:item?.id)===id)) return; state.achievements.push({id, unlockedAt:new Date().toISOString()}); }
   function updateStatus(text, bad=false){ const el=$('#save-status'); el.textContent=text; el.style.color=bad?'#bc655b':''; }
   function render(){
@@ -167,13 +204,20 @@
     $('#confession-count').textContent = state.marks.confession;
     $('#witness-count').textContent = state.marks.witness;
     $('#choice-count').textContent = state.choices.length;
+    renderMeters();
     $('#speaker').textContent = node.speaker;
     $('#prompt').textContent = node.prompt;
     $('#context').textContent = node.context;
-    $('#card-stamp').textContent = `${node.place || chapters[node.chapter]} · ${node.year}`;
+    $('#card-stamp').textContent = `${kindLabels[node.kind || 'decision']} · ${node.place || chapters[node.chapter]} · ${node.year}`;
+    cardEl.dataset.kind = node.kind || 'decision';
+    const copyLength = `${node.context} ${node.prompt}`.length;
+    cardEl.classList.toggle('dense-copy', copyLength > 300);
+    cardEl.classList.toggle('extra-dense-copy', copyLength > 355);
     $('#card-image').style.backgroundImage = `url('${artFor(node)}')`;
     leftPreview.querySelector('span').textContent = visibleLeft.label;
     rightPreview.querySelector('span').textContent = visibleRight.label;
+    leftPreview.querySelector('small').textContent = effectText(effectsForOption(visibleLeft));
+    rightPreview.querySelector('small').textContent = effectText(effectsForOption(visibleRight));
     cardEl.classList.remove('is-entering'); void cardEl.offsetWidth; cardEl.classList.add('is-entering');
     renderCodex();
   }
@@ -185,7 +229,9 @@
     const node = currentCard();
     const swapped = Boolean(state.sideMap[state.current]);
     const option = node[swapped ? (side === 'left' ? 'right' : 'left') : side];
-    state.choices.push({ node:state.current, year:node.year, place:node.place || chapters[node.chapter], prompt:node.prompt, side, label:option.label });
+    const effects = effectsForOption(option);
+    applyEffects(effects);
+    state.choices.push({ node:state.current, year:node.year, place:node.place || chapters[node.chapter], prompt:node.prompt, side, label:option.label, effects });
     if(option.mark) state.marks[option.mark] = (state.marks[option.mark] || 0) + 1;
     if(option.codex) uniquePush(state.codex, option.codex);
     if(option.achievement) markAchievement(option.achievement);
@@ -198,9 +244,11 @@
       cardEl.style.transition=''; cardEl.style.transform=''; cardEl.style.opacity='';
       choosing = false;
       if(option.end){ showEnding(option.end); return; }
+      const collapse = option.ignorePressure ? null : pressureEnding();
+      if(collapse){ showEnding(collapse); return; }
       state.current = option.next;
       uniquePush(state.visited, option.next);
-      render(); showLesson(node); scheduleSave();
+      render(); showLesson(node, option, effects); scheduleSave();
     }, 285);
   }
 
@@ -208,11 +256,13 @@
     clearTimeout(lessonTimer);
     $('#lesson-toast').classList.remove('visible');
   }
-  function showLesson(node){
-    if(!node?.lesson) return;
+  function showLesson(node, option, effects){
+    const lesson = option?.lesson || node?.lesson;
+    if(!lesson && !effectText(effects)) return;
     const toast = $('#lesson-toast');
     $('#lesson-place').textContent = `${node.place || chapters[node.chapter]} · ${node.year}`;
-    $('#lesson-text').textContent = node.lesson;
+    $('#lesson-text').textContent = lesson || 'A decisão muda as pressões ao redor da Reforma.';
+    $('#lesson-effects').textContent = effectText(effects);
     toast.classList.add('visible');
     clearTimeout(lessonTimer);
     lessonTimer = setTimeout(() => toast.classList.remove('visible'), 3200);
@@ -227,6 +277,7 @@
     $('#ending-title').textContent = ending.title;
     $('#ending-body').textContent = ending.body;
     $('#ending-fact').textContent = ending.fact;
+    $('#ending-meters').innerHTML = Object.entries(state.meters).map(([key,value])=>`<span>${meterLabels[key]} <b>${value}</b></span>`).join('');
     $('#ending-art').style.backgroundImage = `url('${ART[ending.art]}')`;
     $('#ending-dialog').showModal();
     scheduleSave(true);
@@ -283,7 +334,7 @@
   function validState(raw){
     if(!raw || typeof raw!=='object' || !cards[raw.current]) return null;
     const base = defaultState();
-    return {...base,...raw,marks:{...base.marks,...raw.marks},choices:Array.isArray(raw.choices)?raw.choices:[],visited:Array.isArray(raw.visited)?raw.visited:['birth'],codex:Array.isArray(raw.codex)?raw.codex:['eisleben'],achievements:Array.isArray(raw.achievements)?raw.achievements:[],endings:Array.isArray(raw.endings)?raw.endings:[],sideMap:normalizeSideMap(raw.sideMap)};
+    return {...base,...raw,marks:{...base.marks,...raw.marks},meters:{...base.meters,...raw.meters},choices:Array.isArray(raw.choices)?raw.choices:[],visited:Array.isArray(raw.visited)?raw.visited:['birth'],codex:Array.isArray(raw.codex)?raw.codex:['eisleben'],achievements:Array.isArray(raw.achievements)?raw.achievements:[],endings:Array.isArray(raw.endings)?raw.endings:[],sideMap:normalizeSideMap(raw.sideMap)};
   }
   async function saveNow(){
     if(!loaded)return;

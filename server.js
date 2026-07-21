@@ -20,8 +20,11 @@ const CROWNS_ACTION_MS = Math.max(250, Number(process.env.CROWNS_ACTION_MS || 20
 const CROWNS_LOCAL_PREVIEW = process.env.CROWNS_LOCAL_PREVIEW === '1';
 const CROWNS_LOCAL_PREVIEW_USER_ID = 'crowns-local-preview';
 const CROWNS_LOCAL_PREVIEW_USER_NAME = 'Conselheiro local';
+const CROWNS_ARTICLE_TITLE_MAX = 90;
+const CROWNS_ARTICLE_BODY_MAX = 1600;
+const CROWNS_ARTICLE_COOLDOWN_MS = 2 * 60 * 1000;
 const CROWNS_SEASON_ID = 'cc-sandbox-2026-01';
-const GAME_VERSION = 'v3.36.0';
+const GAME_VERSION = 'v3.37.0';
 const GAME_ID = 'pela-graca-1904';
 const HEROI_GAME_ID = 'heroi-ortodoxo';
 const CRONICAS_GAME_ID = 'cronicas-do-levante';
@@ -161,13 +164,15 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS quiz_invites (id TEXT PRIMARY KEY, from_user_id TEXT NOT NULL, from_user_name TEXT NOT NULL, to_user_id TEXT NOT NULL, to_user_name TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, match_id TEXT, FOREIGN KEY (from_user_id) REFERENCES users(id) ON DELETE CASCADE, FOREIGN KEY (to_user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS quiz_rankings (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, best_score INTEGER NOT NULL DEFAULT 0, wins INTEGER NOT NULL DEFAULT 0, duel_wins INTEGER NOT NULL DEFAULT 0, general_wins INTEGER NOT NULL DEFAULT 0, invite_wins INTEGER NOT NULL DEFAULT 0, matches_played INTEGER NOT NULL DEFAULT 0, reward_points INTEGER NOT NULL DEFAULT 0, reward_xp INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS cc_seasons (id TEXT PRIMARY KEY, name TEXT NOT NULL, status TEXT NOT NULL, starts_at TEXT NOT NULL, ends_at TEXT NOT NULL, geographic_version TEXT NOT NULL, config_json TEXT NOT NULL, created_at TEXT NOT NULL);
-  CREATE TABLE IF NOT EXISTS cc_regions (id TEXT PRIMARY KEY, name TEXT NOT NULL, country_code TEXT NOT NULL, iso3_code TEXT NOT NULL, centroid_x INTEGER NOT NULL, centroid_y INTEGER NOT NULL, neighbor_ids_json TEXT NOT NULL, geographic_version TEXT NOT NULL);
+  CREATE TABLE IF NOT EXISTS cc_regions (id TEXT PRIMARY KEY, name TEXT NOT NULL, country_code TEXT NOT NULL, iso3_code TEXT NOT NULL, centroid_x INTEGER NOT NULL, centroid_y INTEGER NOT NULL, neighbor_ids_json TEXT NOT NULL, geographic_version TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1);
   CREATE TABLE IF NOT EXISTS cc_realms (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, user_id TEXT NOT NULL, name TEXT NOT NULL, house_name TEXT NOT NULL, color TEXT NOT NULL, capital_region_id TEXT NOT NULL, treasury INTEGER NOT NULL DEFAULT 1200, provisions INTEGER NOT NULL DEFAULT 800, prestige INTEGER NOT NULL DEFAULT 15, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE (season_id, user_id), FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, FOREIGN KEY (capital_region_id) REFERENCES cc_regions(id));
   CREATE TABLE IF NOT EXISTS cc_season_regions (season_id TEXT NOT NULL, region_id TEXT NOT NULL, owner_realm_id TEXT, status TEXT NOT NULL DEFAULT 'neutral', development INTEGER NOT NULL DEFAULT 1, claim_action_id TEXT, version INTEGER NOT NULL DEFAULT 1, PRIMARY KEY (season_id, region_id), FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE, FOREIGN KEY (region_id) REFERENCES cc_regions(id), FOREIGN KEY (owner_realm_id) REFERENCES cc_realms(id) ON DELETE SET NULL);
   CREATE TABLE IF NOT EXISTS cc_actions (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, realm_id TEXT NOT NULL, user_id TEXT NOT NULL, type TEXT NOT NULL, region_id TEXT NOT NULL, status TEXT NOT NULL, completes_at TEXT NOT NULL, cost_json TEXT NOT NULL, created_at TEXT NOT NULL, completed_at TEXT, FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE, FOREIGN KEY (realm_id) REFERENCES cc_realms(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, FOREIGN KEY (region_id) REFERENCES cc_regions(id));
   CREATE TABLE IF NOT EXISTS cc_events (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, event_type TEXT NOT NULL, actor_realm_id TEXT, region_id TEXT, payload_json TEXT NOT NULL, created_at TEXT NOT NULL, FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE);
+  CREATE TABLE IF NOT EXISTS cc_articles (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, user_id TEXT NOT NULL, realm_id TEXT NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL, published_at TEXT NOT NULL, FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, FOREIGN KEY (realm_id) REFERENCES cc_realms(id) ON DELETE CASCADE);
   CREATE INDEX IF NOT EXISTS cc_actions_due_idx ON cc_actions (status, completes_at);
   CREATE INDEX IF NOT EXISTS cc_season_regions_owner_idx ON cc_season_regions (season_id, owner_realm_id);
+  CREATE INDEX IF NOT EXISTS cc_articles_published_idx ON cc_articles (season_id, published_at DESC);
 `);
 try { db.exec('ALTER TABLE users ADD COLUMN avatar_data TEXT'); } catch {}
 try { db.exec('ALTER TABLE luther_match_rankings ADD COLUMN max_combo INTEGER NOT NULL DEFAULT 0'); } catch {}
@@ -181,6 +186,7 @@ try { db.exec('ALTER TABLE quiz_rankings ADD COLUMN general_wins INTEGER NOT NUL
 try { db.exec('ALTER TABLE quiz_rankings ADD COLUMN invite_wins INTEGER NOT NULL DEFAULT 0'); } catch {}
 try { db.exec('ALTER TABLE quiz_rankings ADD COLUMN reward_points INTEGER NOT NULL DEFAULT 0'); } catch {}
 try { db.exec('ALTER TABLE quiz_rankings ADD COLUMN reward_xp INTEGER NOT NULL DEFAULT 0'); } catch {}
+try { db.exec('ALTER TABLE cc_regions ADD COLUMN active INTEGER NOT NULL DEFAULT 1'); } catch {}
 
 const getUserByName = db.prepare('SELECT * FROM users WHERE name = ? COLLATE NOCASE');
 const getUserById = db.prepare('SELECT * FROM users WHERE id = ?');
@@ -232,17 +238,20 @@ const insertUserAchievement = db.prepare(`
   VALUES (?, ?, ?, ?, ?)
 `);
 const crownsRegionCatalog = JSON.parse(fs.readFileSync(CROWNS_REGION_CATALOG_PATH, 'utf8'));
+const crownsRegionMetadataById = new Map(crownsRegionCatalog.regions.map(region => [region.id, region]));
 const insertCcSeason = db.prepare('INSERT OR IGNORE INTO cc_seasons (id, name, status, starts_at, ends_at, geographic_version, config_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+const updateCcSeasonGeography = db.prepare('UPDATE cc_seasons SET geographic_version = ?, config_json = ? WHERE id = ?');
+const deactivateCcRegions = db.prepare('UPDATE cc_regions SET active = 0');
 const upsertCcRegion = db.prepare(`
-  INSERT INTO cc_regions (id, name, country_code, iso3_code, centroid_x, centroid_y, neighbor_ids_json, geographic_version)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  ON CONFLICT(id) DO UPDATE SET name = excluded.name, country_code = excluded.country_code, iso3_code = excluded.iso3_code, centroid_x = excluded.centroid_x, centroid_y = excluded.centroid_y, neighbor_ids_json = excluded.neighbor_ids_json, geographic_version = excluded.geographic_version
+  INSERT INTO cc_regions (id, name, country_code, iso3_code, centroid_x, centroid_y, neighbor_ids_json, geographic_version, active)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+  ON CONFLICT(id) DO UPDATE SET name = excluded.name, country_code = excluded.country_code, iso3_code = excluded.iso3_code, centroid_x = excluded.centroid_x, centroid_y = excluded.centroid_y, neighbor_ids_json = excluded.neighbor_ids_json, geographic_version = excluded.geographic_version, active = 1
 `);
 const insertCcSeasonRegion = db.prepare('INSERT OR IGNORE INTO cc_season_regions (season_id, region_id, status, development, version) VALUES (?, ?, \'neutral\', 1, 1)');
 const getCcSeason = db.prepare('SELECT * FROM cc_seasons WHERE id = ?');
 const getCcRealmByUser = db.prepare('SELECT * FROM cc_realms WHERE season_id = ? AND user_id = ?');
 const getCcRealmById = db.prepare('SELECT * FROM cc_realms WHERE id = ? AND season_id = ?');
-const getCcSeasonRegion = db.prepare('SELECT sr.*, r.name, r.country_code, r.iso3_code, r.neighbor_ids_json FROM cc_season_regions sr JOIN cc_regions r ON r.id = sr.region_id WHERE sr.season_id = ? AND sr.region_id = ?');
+const getCcSeasonRegion = db.prepare('SELECT sr.*, r.name, r.country_code, r.iso3_code, r.neighbor_ids_json FROM cc_season_regions sr JOIN cc_regions r ON r.id = sr.region_id AND r.active = 1 WHERE sr.season_id = ? AND sr.region_id = ?');
 const getCcSeasonRegions = db.prepare(`
   SELECT r.id, r.name, r.country_code, r.iso3_code, r.centroid_x, r.centroid_y, r.neighbor_ids_json,
          sr.owner_realm_id, sr.status, sr.development, sr.claim_action_id, sr.version,
@@ -250,9 +259,10 @@ const getCcSeasonRegions = db.prepare(`
   FROM cc_regions r
   JOIN cc_season_regions sr ON sr.region_id = r.id AND sr.season_id = ?
   LEFT JOIN cc_realms owner ON owner.id = sr.owner_realm_id
+  WHERE r.active = 1
   ORDER BY r.id
 `);
-const getCcOwnedRegions = db.prepare('SELECT region_id FROM cc_season_regions WHERE season_id = ? AND owner_realm_id = ? ORDER BY region_id');
+const getCcOwnedRegions = db.prepare('SELECT sr.region_id FROM cc_season_regions sr JOIN cc_regions r ON r.id = sr.region_id AND r.active = 1 WHERE sr.season_id = ? AND sr.owner_realm_id = ? ORDER BY sr.region_id');
 const getCcPendingActionsForRealm = db.prepare('SELECT * FROM cc_actions WHERE season_id = ? AND realm_id = ? AND status = \'pending\' ORDER BY completes_at');
 const getCcDueActions = db.prepare('SELECT * FROM cc_actions WHERE status = \'pending\' AND completes_at <= ? ORDER BY completes_at LIMIT 100');
 const getCcAction = db.prepare('SELECT * FROM cc_actions WHERE id = ?');
@@ -268,6 +278,26 @@ const releaseCcClaim = db.prepare('UPDATE cc_season_regions SET status = \'neutr
 const rewardCcClaim = db.prepare('UPDATE cc_realms SET prestige = prestige + 2, updated_at = ? WHERE id = ? AND season_id = ?');
 const refundCcClaim = db.prepare('UPDATE cc_realms SET treasury = treasury + ?, provisions = provisions + ?, updated_at = ? WHERE id = ? AND season_id = ?');
 const insertCcEvent = db.prepare('INSERT INTO cc_events (id, season_id, event_type, actor_realm_id, region_id, payload_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)');
+const getCcJournalEvents = db.prepare(`
+  SELECT e.*, realm.name AS actor_realm_name, realm.house_name AS actor_house_name, region.name AS region_name
+  FROM cc_events e
+  LEFT JOIN cc_realms realm ON realm.id = e.actor_realm_id
+  LEFT JOIN cc_regions region ON region.id = e.region_id
+  WHERE e.season_id = ?
+  ORDER BY e.created_at DESC
+  LIMIT ?
+`);
+const getCcArticles = db.prepare(`
+  SELECT article.*, users.name AS author_name, realm.name AS realm_name, realm.house_name AS house_name
+  FROM cc_articles article
+  JOIN users ON users.id = article.user_id
+  JOIN cc_realms realm ON realm.id = article.realm_id
+  WHERE article.season_id = ?
+  ORDER BY article.published_at DESC
+  LIMIT ?
+`);
+const getCcLatestArticleByUser = db.prepare('SELECT * FROM cc_articles WHERE season_id = ? AND user_id = ? ORDER BY published_at DESC LIMIT 1');
+const insertCcArticle = db.prepare('INSERT INTO cc_articles (id, season_id, user_id, realm_id, title, body, created_at, published_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
 
 function seedCrownsAndCouncils() {
   const now = new Date();
@@ -284,6 +314,9 @@ function seedCrownsAndCouncils() {
       JSON.stringify({ seedRatio: 0.2, actionMs: CROWNS_ACTION_MS, mode: 'sandbox' }),
       now.toISOString()
     );
+    const seasonConfig = JSON.stringify({ seedRatio: 0.2, actionMs: CROWNS_ACTION_MS, mode: 'sandbox', theatre: crownsRegionCatalog.theatre });
+    updateCcSeasonGeography.run(crownsRegionCatalog.geographicVersion, seasonConfig, CROWNS_SEASON_ID);
+    deactivateCcRegions.run();
     crownsRegionCatalog.regions.forEach(region => {
       upsertCcRegion.run(region.id, region.name, region.countryCode, region.iso3Code, region.centroid[0], region.centroid[1], JSON.stringify(region.neighborIds), crownsRegionCatalog.geographicVersion);
       insertCcSeasonRegion.run(CROWNS_SEASON_ID, region.id);
@@ -1373,6 +1406,63 @@ function publicCcRealm(realm) {
     prestige: realm.prestige
   };
 }
+function publicCrownsJournalEvent(row) {
+  const payload = safeJsonParse(row.payload_json, {});
+  const realmName = row.actor_realm_name || payload.name || 'Uma casa sem nome';
+  const regionName = row.region_name || 'terras desconhecidas';
+  const templates = {
+    'realm.created': { category: 'realm', headline: `${realmName} ergue seu estandarte`, summary: `${payload.houseName || row.actor_house_name || 'Uma nova casa'} fundou um reino com capital em ${regionName}.` },
+    'territory.claim.started': { category: 'campaign', headline: `${realmName} envia uma expedição`, summary: `Mensageiros confirmam uma reivindicação em marcha sobre ${regionName}.` },
+    'territory.claim.completed': { category: 'campaign', headline: `${regionName} passa à coroa de ${realmName}`, summary: `A incorporação foi proclamada pelos arautos e registrada pelo conselho.` },
+    'territory.claim.cancelled': { category: 'campaign', headline: `${realmName} recua de ${regionName}`, summary: `A ordem territorial foi cancelada e os recursos retornaram ao tesouro.` },
+    'war.declared': { category: 'war', headline: `${realmName} declara guerra`, summary: payload.summary || 'Os sinos de alarme ecoam pelas fronteiras.' },
+    'peace.signed': { category: 'peace', headline: `A paz é firmada por ${realmName}`, summary: payload.summary || 'Emissários selaram o tratado diante das testemunhas.' },
+    'alliance.formed': { category: 'alliance', headline: `${realmName} anuncia uma aliança`, summary: payload.summary || 'Juramentos de auxílio mútuo foram tornados públicos.' },
+    'marriage.celebrated': { category: 'marriage', headline: `Casamento dinástico em ${realmName}`, summary: payload.summary || 'Duas casas uniram seus destinos diante da corte.' }
+  };
+  const template = templates[row.event_type] || { category: 'world', headline: `Novo acontecimento em ${realmName}`, summary: payload.summary || `A chancelaria registrou notícias vindas de ${regionName}.` };
+  return { id: row.id, kind: 'world', eventType: row.event_type, ...template, realmName, regionName, createdAt: row.created_at };
+}
+function crownsJournal() {
+  const events = getCcJournalEvents.all(CROWNS_SEASON_ID, 80).map(publicCrownsJournalEvent);
+  const articles = getCcArticles.all(CROWNS_SEASON_ID, 40).map(row => ({
+    id: row.id,
+    kind: 'article',
+    category: 'article',
+    headline: row.title,
+    summary: row.body,
+    authorName: row.author_name,
+    realmName: row.realm_name,
+    houseName: row.house_name,
+    createdAt: row.published_at
+  }));
+  const today = new Date().toISOString().slice(0, 10);
+  const dispatch = {
+    id: `dispatch-${today}`,
+    kind: 'dispatch',
+    category: 'gazette',
+    headline: 'A Gazeta dos Reinos abre sua edição diária',
+    summary: 'Guerras, tratados de paz, alianças, casamentos, fundações e campanhas proclamados ao servidor aparecerão neste jornal.',
+    authorName: 'Escrivães do Grande Conselho',
+    createdAt: `${today}T00:00:00.000Z`
+  };
+  return [dispatch, ...events, ...articles].sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+}
+function publishCrownsArticle(user, payload) {
+  const realm = getCcRealmByUser.get(CROWNS_SEASON_ID, user.id);
+  if (!realm) throw new Error('Funde um reino antes de enviar artigos ao jornal.');
+  const title = String(payload?.title || '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, CROWNS_ARTICLE_TITLE_MAX);
+  const body = String(payload?.body || '').replace(/[<>]/g, '').replace(/\r/g, '').replace(/\n{3,}/g, '\n\n').trim().slice(0, CROWNS_ARTICLE_BODY_MAX);
+  if (title.length < 5 || body.length < 20) throw new Error('O artigo precisa de título e pelo menos 20 caracteres de texto.');
+  const latest = getCcLatestArticleByUser.get(CROWNS_SEASON_ID, user.id);
+  if (latest && Date.now() - new Date(latest.published_at).getTime() < CROWNS_ARTICLE_COOLDOWN_MS) throw new Error('A tipografia ainda prepara seu último artigo. Aguarde dois minutos.');
+  const id = `article_${crypto.randomUUID()}`;
+  const now = new Date().toISOString();
+  insertCcArticle.run(id, CROWNS_SEASON_ID, user.id, realm.id, title, body, now, now);
+  const article = crownsJournal().find(item => item.id === id);
+  emitCrownsEvent('journal.published', { seasonId: CROWNS_SEASON_ID, article, version: Date.now() });
+  return article;
+}
 function crownsBootstrap(user) {
   processCrownsActions();
   const season = getCcSeason.get(CROWNS_SEASON_ID);
@@ -1380,6 +1470,7 @@ function crownsBootstrap(user) {
   const ownedIds = new Set(realm ? getCcOwnedRegions.all(CROWNS_SEASON_ID, realm.id).map(row => row.region_id) : []);
   const regions = getCcSeasonRegions.all(CROWNS_SEASON_ID).map(row => {
     const neighborIds = safeJsonParse(row.neighbor_ids_json, []);
+    const metadata = crownsRegionMetadataById.get(row.id) || {};
     return {
       id: row.id,
       name: row.name,
@@ -1393,6 +1484,10 @@ function crownsBootstrap(user) {
       status: row.status,
       development: row.development,
       version: row.version,
+      countryName: metadata.countryName || row.country_code,
+      levelLabel: metadata.levelLabel || 'Região',
+      sourceKind: metadata.sourceKind || 'UNKNOWN',
+      routeNeighborIds: metadata.routeNeighborIds || [],
       isAdjacentToRealm: Boolean(realm && !row.owner_realm_id && neighborIds.some(id => ownedIds.has(id)))
     };
   });
@@ -1415,23 +1510,27 @@ function crownsBootstrap(user) {
       endsAt: season.ends_at,
       geographicVersion: season.geographic_version
     },
-    realm: publicCcRealm(realm),
+    realm: realm ? { ...publicCcRealm(realm), regionCount: ownedIds.size } : null,
     regions,
     actions,
+    journal: crownsJournal().slice(0, 20),
     serverNow: new Date().toISOString(),
     map: {
-      topologyUrl: '/assets/crowns-and-councils/data/nuts2-2024-20m-3035.topo.json',
+      topologyUrl: `/assets/crowns-and-councils/data/${crownsRegionCatalog.topologyFile || 'christian-theatre-2026-3035.topo.json'}`,
       projection: crownsRegionCatalog.projection,
       regionCount: crownsRegionCatalog.regionCount,
-      sourceUrl: crownsRegionCatalog.sourceUrl
+      countryCount: crownsRegionCatalog.countryCount,
+      theatre: crownsRegionCatalog.theatre,
+      sourceUrl: crownsRegionCatalog.sourceUrl,
+      sourceUrls: crownsRegionCatalog.sourceUrls || [crownsRegionCatalog.sourceUrl]
     }
   };
 }
 function createCrownsRealm(user, payload) {
   const name = String(payload?.name || '').replace(/[<>]/g, '').trim().slice(0, 40);
   const houseName = String(payload?.houseName || '').replace(/[<>]/g, '').trim().slice(0, 40);
-  const regionId = String(payload?.regionId || '').trim().slice(0, 12);
-  const color = /^#[0-9a-f]{6}$/i.test(payload?.color || '') ? String(payload.color).toLowerCase() : '#2d6982';
+  const regionId = String(payload?.regionId || '').trim().slice(0, 32);
+  const color = /^#[0-9a-f]{6}$/i.test(payload?.color || '') ? String(payload.color).toLowerCase() : '#7f393f';
   if (name.length < 3 || houseName.length < 3 || !regionId) throw new Error('Informe reino, casa e capital inicial.');
   const realmId = `realm_${crypto.randomUUID()}`;
   const now = new Date().toISOString();
@@ -1456,7 +1555,7 @@ function claimCrownsTerritory(user, payload) {
   const realm = getCcRealmByUser.get(CROWNS_SEASON_ID, user.id);
   if (!realm) throw new Error('Funde um reino antes de ordenar uma colonização.');
   if (getCcPendingActionsForRealm.all(CROWNS_SEASON_ID, realm.id).length >= 1) throw new Error('Seu conselho já conduz uma reivindicação.');
-  const regionId = String(payload?.regionId || '').trim().slice(0, 12);
+  const regionId = String(payload?.regionId || '').trim().slice(0, 32);
   const region = getCcSeasonRegion.get(CROWNS_SEASON_ID, regionId);
   if (!region || region.owner_realm_id || region.status !== 'neutral') throw new Error('A região não está disponível para colonização.');
   const ownedIds = new Set(getCcOwnedRegions.all(CROWNS_SEASON_ID, realm.id).map(row => row.region_id));
@@ -1611,6 +1710,15 @@ async function handleApi(req, res, url, user) {
       if (req.method === 'POST' && url.pathname === '/api/crowns-and-councils/actions/cancel') {
         cancelCrownsAction(user, safeJsonParse(await readBody(req) || '{}', {}));
         json(res, 200, { ok: true });
+        return;
+      }
+      if (req.method === 'GET' && url.pathname === '/api/crowns-and-councils/journal') {
+        json(res, 200, { items: crownsJournal() });
+        return;
+      }
+      if (req.method === 'POST' && url.pathname === '/api/crowns-and-councils/journal/articles') {
+        const article = publishCrownsArticle(user, safeJsonParse(await readBody(req) || '{}', {}));
+        json(res, 201, { ok: true, article });
         return;
       }
       json(res, 404, { error: 'Ordem de Crowns and Councils desconhecida.' });

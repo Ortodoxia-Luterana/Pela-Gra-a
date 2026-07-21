@@ -1,9 +1,13 @@
-# Dados territoriais do protótipo
+# Dados territoriais do teatro cristão-mediterrâneo
 
-- Fonte: Eurostat/GISCO, NUTS 2024, regiões de nível 2.
-- Arquivo original: `NUTS_RG_20M_2024_3035_LEVL_2.json`.
+- Europa continental: Eurostat/GISCO, NUTS 2024, regiões de nível 2.
+- Reino Unido: Eurostat/GISCO, NUTS 2016, regiões de nível 2.
+- Norte da África, Rússia europeia, Cáucaso e Oriente Médio: Natural Earth 5.1.1, Admin 1 (estados e províncias), versão fixada no commit `ca96624a56bd078437bca8184e78163e5039ad19`.
 - Projeção: EPSG:3035 (ETRS89 / LAEA Europe).
-- Download: https://gisco-services.ec.europa.eu/distribution/v2/nuts/topojson/NUTS_RG_20M_2024_3035_LEVL_2.json
+- Teatro excluído: Guiana Francesa e demais recortes ultramarinos de França, Canárias, Açores e Madeira.
+- Rotas marítimas: componentes insulares recebem ligações determinísticas às regiões costeiras mais próximas para que nenhuma capital fique sem expansão.
+- GISCO: https://gisco-services.ec.europa.eu/distribution/v2/nuts/
+- Natural Earth: https://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-admin-1-states-provinces/
 - Catálogo e condições: https://gisco-services.ec.europa.eu/distribution/v2/nuts/
 
-Uso atual: protótipo/vertical slice. As condições específicas de download e uso do GISCO/Eurostat devem ser revistas e registradas formalmente antes de publicação comercial. Territórios europeus não cobertos pela classificação NUTS serão incorporados em uma fase posterior a partir de fontes abertas compatíveis, sem criação manual de fronteiras.
+Uso atual: protótipo/vertical slice. Natural Earth é domínio público; as condições específicas de uso do GISCO/Eurostat devem ser registradas formalmente antes de publicação comercial. As fronteiras servem como unidades geográficas de jogo e não representam os reinos históricos de uma data específica.

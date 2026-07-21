@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node --no-warnings start.js",
     "dev": "node --no-warnings start.js",
-    "build:crowns": "node --no-warnings tools/build-crowns-region-catalog.cjs && vite build --config games/crowns-and-councils/vite.config.mjs",
+    "build:crowns": "node --no-warnings tools/build-crowns-region-catalog.cjs && vite build --config games/crowns-and-councils/vite.config.mjs && node --no-warnings tools/clean-crowns-build.cjs",
     "preview:crowns": "node --no-warnings tools/preview-crowns.cjs",
     "test:crowns": "node --no-warnings tests/crowns-and-councils.cjs",
     "test:crowns:preview": "node --no-warnings tests/crowns-preview.cjs",
@@ -20,7 +20,9 @@
   },
   "devDependencies": {
     "@preact/preset-vite": "^2.10.6",
+    "proj4": "^2.20.9",
     "socket.io-client": "^4.8.3",
+    "topojson-server": "^3.0.1",
     "vite": "^8.1.5"
   }
 }

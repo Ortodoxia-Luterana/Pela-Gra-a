@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
+const { DatabaseSync } = require('node:sqlite');
 const { io } = require('socket.io-client');
 
 const root = path.resolve(__dirname, '..');
@@ -11,7 +12,7 @@ const port = 32000 + Math.floor(Math.random() * 2000);
 const origin = `http://127.0.0.1:${port}`;
 const server = spawn(process.execPath, ['--no-warnings', 'server.js'], {
   cwd: root,
-  env: { ...process.env, PORT: String(port), DB_PATH: path.join(tempRoot, 'crowns-test.sqlite'), CROWNS_ACTION_MS: '300' },
+  env: { ...process.env, PORT: String(port), DB_PATH: path.join(tempRoot, 'crowns-test.sqlite'), CROWNS_ACTION_MS: '300', CROWNS_REVOLT_CHECK_MS: '250', CROWNS_FORCE_REVOLTS: '1' },
   stdio: ['ignore', 'pipe', 'pipe']
 });
 let serverLog = '';
@@ -98,13 +99,20 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     assert.ok(result.payload.regions.some(region => region.iso3Code === 'EGY'));
     assert.ok(!result.payload.regions.some(region => region.id === 'FRY3' || region.name === 'Guyane'));
     assert.ok(result.payload.regions.every(region => region.neighborIds.length > 0));
+    assert.equal(result.payload.world.aiRealmCount, 10);
+    assert.equal(result.payload.world.realmCount, 10);
+    assert.equal(result.payload.customization.availableColors.length, 20);
+    assert.equal(result.payload.regions.find(region => region.id === 'EL30').name, 'Ática');
+    assert.equal(result.payload.regions.find(region => region.id === 'BG31').name, 'Noroeste da Bulgária');
+    assert.ok(result.payload.regions.find(region => region.id === 'IS00').routeNeighborIds.includes('UKM6'));
+    assert.ok(result.payload.regions.find(region => region.id === 'IS00').routeNeighborIds.includes('IE04'));
     assert.equal(result.payload.realm, null);
-    const capital = result.payload.regions.find(region => region.neighborIds.length > 2);
+    const capital = result.payload.regions.find(region => !region.ownerRealmId && region.neighborIds.length > 2);
     assert.ok(capital);
 
     result = await jsonRequest('/api/crowns-and-councils/realm/create', {
       method: 'POST',
-      body: JSON.stringify({ name: 'Reino do Teste', houseName: 'Casa Veritas', color: '#2d6982', regionId: capital.id })
+      body: JSON.stringify({ name: 'Reino do Teste', houseName: 'Casa Veritas', color: result.payload.customization.availableColors[0], regionId: capital.id })
     });
     assert.equal(result.response.status, 201);
     assert.equal(result.payload.realm.capitalRegionId, capital.id);
@@ -113,6 +121,9 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     const adjacentId = result.payload.regions.find(region => capital.neighborIds.includes(region.id) && !region.ownerRealmId)?.id;
     assert.ok(adjacentId, 'capital deve possuir ao menos uma região neutra adjacente');
     assert.equal(result.payload.regions.find(region => region.id === capital.id).ownerRealmId, result.payload.realm.id);
+    assert.equal(result.payload.realm.court.diplomacy.aiRealmCount, 10);
+    assert.equal(result.payload.realm.court.diplomacy.knownRealms.length, 10);
+    assert.equal(result.payload.realm.court.internal.canRevolt, false);
 
     socket = io(`${origin}/crowns-and-councils`, {
       transports: ['websocket'],
@@ -135,6 +146,26 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     assert.equal(result.payload.realm.provisions, 720);
     assert.equal(result.payload.realm.prestige, 17);
     assert.equal(result.payload.actions.length, 0);
+
+    const secondAdjacent = result.payload.regions.find(region => region.isAdjacentToRealm && !region.ownerRealmId && region.status === 'neutral');
+    assert.ok(secondAdjacent, 'o reino deve ter uma segunda fronteira disponível');
+    const secondCompleted = waitSocket(socket, 'action.completed');
+    result = await jsonRequest('/api/crowns-and-councils/territory/claim', { method: 'POST', body: JSON.stringify({ regionId: secondAdjacent.id }) });
+    assert.equal(result.response.status, 202);
+    await secondCompleted;
+    result = await jsonRequest('/api/crowns-and-councils/bootstrap');
+    assert.equal(result.payload.realm.regionCount, 3);
+
+    const revoltEvent = waitSocket(socket, 'world.patch', 5_000);
+    const testDb = new DatabaseSync(path.join(tempRoot, 'crowns-test.sqlite'));
+    testDb.prepare('UPDATE cc_realms SET stability = 25 WHERE id = ?').run(result.payload.realm.id);
+    testDb.close();
+    const revoltPayload = await revoltEvent;
+    assert.equal(revoltPayload.type, 'revolution.separatist');
+    result = await jsonRequest('/api/crowns-and-councils/bootstrap');
+    assert.equal(result.payload.world.aiRealmCount, 11);
+    assert.equal(result.payload.realm.regionCount, 2);
+    assert.ok(result.payload.journal.some(item => item.eventType === 'revolution.separatist'));
 
     const published = waitSocket(socket, 'journal.published');
     result = await jsonRequest('/api/crowns-and-councils/journal/articles', {

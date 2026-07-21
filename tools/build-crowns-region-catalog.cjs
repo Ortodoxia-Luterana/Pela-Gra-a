@@ -22,6 +22,36 @@ const extensionCountries = new Set([
   'GEO', 'ARM', 'AZE'
 ]);
 
+const portugueseCountryNames = {
+  AT: 'Áustria', BE: 'Bélgica', BG: 'Bulgária', CH: 'Suíça', CY: 'Chipre', CZ: 'Tchéquia', DE: 'Alemanha',
+  DK: 'Dinamarca', EE: 'Estônia', EL: 'Grécia', ES: 'Espanha', FI: 'Finlândia', FR: 'França', HR: 'Croácia',
+  HU: 'Hungria', IE: 'Irlanda', IS: 'Islândia', IT: 'Itália', LT: 'Lituânia', LU: 'Luxemburgo', LV: 'Letônia',
+  ME: 'Montenegro', MK: 'Macedônia do Norte', MT: 'Malta', NL: 'Países Baixos', NO: 'Noruega', PL: 'Polônia',
+  PT: 'Portugal', RO: 'Romênia', RS: 'Sérvia', SE: 'Suécia', SI: 'Eslovênia', SK: 'Eslováquia', UK: 'Reino Unido',
+  UA: 'Ucrânia', BY: 'Belarus', MD: 'Moldávia', RU: 'Rússia', MA: 'Marrocos', DZ: 'Argélia', TN: 'Tunísia',
+  LY: 'Líbia', EG: 'Egito', IL: 'Israel', PS: 'Palestina', LB: 'Líbano', JO: 'Jordânia', SY: 'Síria', IQ: 'Iraque',
+  SA: 'Arábia Saudita', IR: 'Irã', GE: 'Geórgia', AM: 'Armênia', AZ: 'Azerbaijão'
+};
+
+const portugueseRegionNames = {
+  BG31: 'Noroeste da Bulgária', BG32: 'Centro-Norte da Bulgária', BG33: 'Nordeste da Bulgária',
+  BG34: 'Sudeste da Bulgária', BG41: 'Sudoeste da Bulgária', BG42: 'Centro-Sul da Bulgária',
+  CY00: 'Chipre', EL30: 'Ática', EL41: 'Egeu Setentrional', EL42: 'Egeu Meridional', EL43: 'Creta',
+  EL51: 'Macedônia Oriental e Trácia', EL52: 'Macedônia Central', EL53: 'Macedônia Ocidental', EL54: 'Epiro',
+  EL61: 'Tessália', EL62: 'Ilhas Jônicas', EL63: 'Grécia Ocidental', EL64: 'Grécia Central', EL65: 'Peloponeso',
+  ME00: 'Montenegro', MK00: 'Macedônia do Norte', RS11: 'Região de Belgrado', RS12: 'Voivodina',
+  RS21: 'Šumadija e Sérvia Ocidental', RS22: 'Sérvia Meridional e Oriental', IS00: 'Islândia',
+  IE04: 'Norte e Oeste da Irlanda', IE05: 'Sul da Irlanda', IE06: 'Leste e Centro da Irlanda',
+  UKM6: 'Terras Altas e Ilhas', UKN0: 'Irlanda do Norte', UKI3: 'Londres Central-Oeste', UKI4: 'Londres Central-Leste'
+};
+
+const curatedMaritimeRoutes = [
+  ['IS00', 'UKM6'], ['IS00', 'IE04'], ['IS00', 'NO0A'],
+  ['UKM6', 'IE04'], ['UKN0', 'IE04'], ['UKK3', 'IE05'],
+  ['ES53', 'ES52'], ['FRM0', 'ITG2'], ['FRM0', 'FRJ2'], ['ITG2', 'ITG1'], ['ITG1', 'MT00'],
+  ['EL62', 'EL54'], ['EL41', 'EL52'], ['EL42', 'EL43'], ['EL43', 'EL41'], ['CY00', 'EL43']
+];
+
 async function cachedJson(url, fileName) {
   fs.mkdirSync(cacheDir, { recursive: true });
   const target = path.join(cacheDir, fileName);
@@ -68,10 +98,10 @@ function nutsFeatures(topologyData, predicate, sourceKind) {
     const properties = item.properties || {};
     return normalizedFeature(item, {
       id: String(properties.NUTS_ID),
-      name: properties.NUTS_NAME || properties.NAME_LATN || properties.NUTS_ID,
+      name: portugueseRegionNames[String(properties.NUTS_ID)] || properties.NAME_LATN || properties.NUTS_NAME || properties.NUTS_ID,
       countryCode: properties.CNTR_CODE || '',
       iso3Code: properties.ISO3_CODE || '',
-      countryName: properties.CNTR_CODE || '',
+      countryName: portugueseCountryNames[properties.CNTR_CODE] || properties.CNTR_CODE || '',
       levelLabel: 'NUTS 2',
       sourceKind
     });
@@ -98,7 +128,7 @@ function naturalEarthFeatures(data) {
       name: properties.name_pt || properties.name_en || properties.name || properties.adm1_code,
       countryCode: properties.iso_a2 || '',
       iso3Code: properties.adm0_a3 || '',
-      countryName: properties.admin || properties.adm0_a3,
+      countryName: portugueseCountryNames[properties.iso_a2] || properties.name_pt || properties.admin || properties.adm0_a3,
       levelLabel: properties.type_pt || properties.type_en || 'Admin. 1',
       sourceKind: 'NATURAL_EARTH_ADMIN1'
     });
@@ -185,6 +215,15 @@ function bridgeComponents(adjacency, routeAdjacency, stats) {
   }
 }
 
+function connectCuratedMaritimeRoutes(features, adjacency, routeAdjacency) {
+  const indexById = new Map(features.map((item, index) => [item.properties.REGION_ID, index]));
+  curatedMaritimeRoutes.forEach(([fromId, toId]) => {
+    const from = indexById.get(fromId);
+    const to = indexById.get(toId);
+    if (from !== undefined && to !== undefined) connect(adjacency, routeAdjacency, from, to, true);
+  });
+}
+
 async function build() {
   const nuts2024 = JSON.parse(fs.readFileSync(nuts2024Path, 'utf8'));
   const [nuts2016, naturalEarth] = await Promise.all([
@@ -223,6 +262,7 @@ async function build() {
       if (sampleDistance(stats[a].samples, stats[b].samples, 55001) <= 55000) connect(adjacency, routeAdjacency, a, b, true);
     }
   }
+  connectCuratedMaritimeRoutes(geo.features, adjacency, routeAdjacency);
   bridgeComponents(adjacency, routeAdjacency, stats);
 
   const regions = geo.features.map((item, index) => ({
@@ -250,8 +290,8 @@ async function build() {
   if (regions.some(region => region.neighborIds.length === 0)) throw new Error('Há regiões sem fronteira ou rota de expansão.');
 
   const catalog = {
-    schemaVersion: 2,
-    geographicVersion: 'CHRISTIAN-THEATRE-2026-EPSG3035-v2',
+    schemaVersion: 3,
+    geographicVersion: 'CHRISTIAN-THEATRE-2026-EPSG3035-v3',
     sourceUrl: 'https://gisco-services.ec.europa.eu/distribution/v2/nuts/',
     sourceUrls: [
       'https://gisco-services.ec.europa.eu/distribution/v2/nuts/',

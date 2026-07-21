@@ -5,14 +5,14 @@ const DESIGN_WIDTH = 1600;
 const DESIGN_HEIGHT = 980;
 const MAP_PADDING = 70;
 const COLORS = {
-  neutral: [0x827b66, 0x777860, 0x8a806b, 0x6f7461, 0x8a755e],
-  neutralHover: 0xc2ae75,
-  own: 0x7f393f,
-  foreign: 0x6b5448,
-  pending: 0xb9893e,
-  selected: 0xe1bd58,
-  border: 0x292a22,
-  coast: 0x1b211a
+  neutral: [0xe9e5d9, 0xdce7e2, 0xe9ddd2, 0xdce5ec, 0xeee7d3, 0xd7e5dc],
+  neutralHover: 0xffffff,
+  own: 0xc9485b,
+  foreign: 0x6f83a7,
+  pending: 0xe7ad45,
+  selected: 0xf3c84b,
+  border: 0x728b98,
+  coast: 0x9fcde5
 };
 
 function polygonRings(geometry) {
@@ -71,9 +71,9 @@ function drawFeature(graphics, geoFeature, project, fill) {
   polygonRings(geoFeature.geometry).forEach(rings => {
     const [outer, ...holes] = rings;
     if (!outer?.length) return;
-    graphics.poly(outer.flatMap(project)).fill({ color: fill, alpha: 0.98 });
+    graphics.poly(outer.flatMap(project)).fill({ color: fill, alpha: 1 });
     holes.forEach(hole => graphics.poly(hole.flatMap(project)).cut());
-    graphics.poly(outer.flatMap(project)).stroke({ color: COLORS.border, width: 1.4, alpha: 0.88 });
+    graphics.poly(outer.flatMap(project)).stroke({ color: COLORS.border, width: 1.2, alpha: 0.72 });
   });
 }
 

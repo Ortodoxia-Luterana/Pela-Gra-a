@@ -7,14 +7,18 @@ const { Server: SocketIOServer } = require('socket.io');
 
 const ROOT = __dirname;
 const PUBLIC_DIR = path.join(ROOT, 'public');
-const DB_PATH = path.join(ROOT, 'data', 'cultivando.sqlite');
+const DB_PATH = process.env.DB_PATH || path.join(ROOT, 'data', 'cultivando.sqlite');
 const QUIZ_QUESTIONS_PATH = path.join(ROOT, 'data', 'quiz-questions.json');
+const CROWNS_REGION_CATALOG_PATH = path.join(PUBLIC_DIR, 'crowns-and-councils', 'data', 'regions.json');
 const PORT = Number(process.env.PORT || 3000);
 const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
 const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').update(`pela-graca:${DB_PATH}`).digest('hex');
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
-const GAME_VERSION = 'v3.35.0';
+const CROWNS_LAUNCH_COOKIE_NAME = 'cultivando_cc_launch';
+const CROWNS_ACTION_MS = Math.max(250, Number(process.env.CROWNS_ACTION_MS || 20_000));
+const CROWNS_SEASON_ID = 'cc-sandbox-2026-01';
+const GAME_VERSION = 'v3.36.0';
 const GAME_ID = 'pela-graca-1904';
 const HEROI_GAME_ID = 'heroi-ortodoxo';
 const CRONICAS_GAME_ID = 'cronicas-do-levante';
@@ -25,6 +29,7 @@ const CONCORDIUM_GAME_ID = 'concordium-first-age';
 const CONCORDIUM_EXPLORACAO_GAME_ID = 'concordium-exploracao';
 const GUARDIOES_GAME_ID = 'caminho-dos-guardioes';
 const BABEL_GAME_ID = 'a-queda-de-babel';
+const CROWNS_COUNCILS_GAME_ID = 'crowns-and-councils';
 const CONCORDIUM_ACCESS_COOKIE = 'concordium_access';
 const CONCORDIUM_ACCESS_PIN = process.env.CONCORDIUM_ACCESS_PIN || '5892';
 const CONCORDIUM_ROM_PATH = process.env.CONCORDIUM_ROM_PATH || path.join(PUBLIC_DIR, 'concordium.gba');
@@ -152,6 +157,14 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS quiz_answers (match_id TEXT NOT NULL, user_id TEXT NOT NULL, question_index INTEGER NOT NULL, answer_index INTEGER NOT NULL, correct INTEGER NOT NULL, answered_at TEXT NOT NULL, PRIMARY KEY (match_id, user_id, question_index), FOREIGN KEY (match_id) REFERENCES quiz_matches(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS quiz_invites (id TEXT PRIMARY KEY, from_user_id TEXT NOT NULL, from_user_name TEXT NOT NULL, to_user_id TEXT NOT NULL, to_user_name TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, match_id TEXT, FOREIGN KEY (from_user_id) REFERENCES users(id) ON DELETE CASCADE, FOREIGN KEY (to_user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS quiz_rankings (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, best_score INTEGER NOT NULL DEFAULT 0, wins INTEGER NOT NULL DEFAULT 0, duel_wins INTEGER NOT NULL DEFAULT 0, general_wins INTEGER NOT NULL DEFAULT 0, invite_wins INTEGER NOT NULL DEFAULT 0, matches_played INTEGER NOT NULL DEFAULT 0, reward_points INTEGER NOT NULL DEFAULT 0, reward_xp INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
+  CREATE TABLE IF NOT EXISTS cc_seasons (id TEXT PRIMARY KEY, name TEXT NOT NULL, status TEXT NOT NULL, starts_at TEXT NOT NULL, ends_at TEXT NOT NULL, geographic_version TEXT NOT NULL, config_json TEXT NOT NULL, created_at TEXT NOT NULL);
+  CREATE TABLE IF NOT EXISTS cc_regions (id TEXT PRIMARY KEY, name TEXT NOT NULL, country_code TEXT NOT NULL, iso3_code TEXT NOT NULL, centroid_x INTEGER NOT NULL, centroid_y INTEGER NOT NULL, neighbor_ids_json TEXT NOT NULL, geographic_version TEXT NOT NULL);
+  CREATE TABLE IF NOT EXISTS cc_realms (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, user_id TEXT NOT NULL, name TEXT NOT NULL, house_name TEXT NOT NULL, color TEXT NOT NULL, capital_region_id TEXT NOT NULL, treasury INTEGER NOT NULL DEFAULT 1200, provisions INTEGER NOT NULL DEFAULT 800, prestige INTEGER NOT NULL DEFAULT 15, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE (season_id, user_id), FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, FOREIGN KEY (capital_region_id) REFERENCES cc_regions(id));
+  CREATE TABLE IF NOT EXISTS cc_season_regions (season_id TEXT NOT NULL, region_id TEXT NOT NULL, owner_realm_id TEXT, status TEXT NOT NULL DEFAULT 'neutral', development INTEGER NOT NULL DEFAULT 1, claim_action_id TEXT, version INTEGER NOT NULL DEFAULT 1, PRIMARY KEY (season_id, region_id), FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE, FOREIGN KEY (region_id) REFERENCES cc_regions(id), FOREIGN KEY (owner_realm_id) REFERENCES cc_realms(id) ON DELETE SET NULL);
+  CREATE TABLE IF NOT EXISTS cc_actions (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, realm_id TEXT NOT NULL, user_id TEXT NOT NULL, type TEXT NOT NULL, region_id TEXT NOT NULL, status TEXT NOT NULL, completes_at TEXT NOT NULL, cost_json TEXT NOT NULL, created_at TEXT NOT NULL, completed_at TEXT, FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE, FOREIGN KEY (realm_id) REFERENCES cc_realms(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, FOREIGN KEY (region_id) REFERENCES cc_regions(id));
+  CREATE TABLE IF NOT EXISTS cc_events (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, event_type TEXT NOT NULL, actor_realm_id TEXT, region_id TEXT, payload_json TEXT NOT NULL, created_at TEXT NOT NULL, FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE);
+  CREATE INDEX IF NOT EXISTS cc_actions_due_idx ON cc_actions (status, completes_at);
+  CREATE INDEX IF NOT EXISTS cc_season_regions_owner_idx ON cc_season_regions (season_id, owner_realm_id);
 `);
 try { db.exec('ALTER TABLE users ADD COLUMN avatar_data TEXT'); } catch {}
 try { db.exec('ALTER TABLE luther_match_rankings ADD COLUMN max_combo INTEGER NOT NULL DEFAULT 0'); } catch {}
@@ -215,6 +228,70 @@ const insertUserAchievement = db.prepare(`
   INSERT OR IGNORE INTO user_achievements (user_id, game_id, medal_id, unlocked_at, source_save_name)
   VALUES (?, ?, ?, ?, ?)
 `);
+const crownsRegionCatalog = JSON.parse(fs.readFileSync(CROWNS_REGION_CATALOG_PATH, 'utf8'));
+const insertCcSeason = db.prepare('INSERT OR IGNORE INTO cc_seasons (id, name, status, starts_at, ends_at, geographic_version, config_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+const upsertCcRegion = db.prepare(`
+  INSERT INTO cc_regions (id, name, country_code, iso3_code, centroid_x, centroid_y, neighbor_ids_json, geographic_version)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  ON CONFLICT(id) DO UPDATE SET name = excluded.name, country_code = excluded.country_code, iso3_code = excluded.iso3_code, centroid_x = excluded.centroid_x, centroid_y = excluded.centroid_y, neighbor_ids_json = excluded.neighbor_ids_json, geographic_version = excluded.geographic_version
+`);
+const insertCcSeasonRegion = db.prepare('INSERT OR IGNORE INTO cc_season_regions (season_id, region_id, status, development, version) VALUES (?, ?, \'neutral\', 1, 1)');
+const getCcSeason = db.prepare('SELECT * FROM cc_seasons WHERE id = ?');
+const getCcRealmByUser = db.prepare('SELECT * FROM cc_realms WHERE season_id = ? AND user_id = ?');
+const getCcRealmById = db.prepare('SELECT * FROM cc_realms WHERE id = ? AND season_id = ?');
+const getCcSeasonRegion = db.prepare('SELECT sr.*, r.name, r.country_code, r.iso3_code, r.neighbor_ids_json FROM cc_season_regions sr JOIN cc_regions r ON r.id = sr.region_id WHERE sr.season_id = ? AND sr.region_id = ?');
+const getCcSeasonRegions = db.prepare(`
+  SELECT r.id, r.name, r.country_code, r.iso3_code, r.centroid_x, r.centroid_y, r.neighbor_ids_json,
+         sr.owner_realm_id, sr.status, sr.development, sr.claim_action_id, sr.version,
+         owner.name AS owner_name, owner.color AS owner_color
+  FROM cc_regions r
+  JOIN cc_season_regions sr ON sr.region_id = r.id AND sr.season_id = ?
+  LEFT JOIN cc_realms owner ON owner.id = sr.owner_realm_id
+  ORDER BY r.id
+`);
+const getCcOwnedRegions = db.prepare('SELECT region_id FROM cc_season_regions WHERE season_id = ? AND owner_realm_id = ? ORDER BY region_id');
+const getCcPendingActionsForRealm = db.prepare('SELECT * FROM cc_actions WHERE season_id = ? AND realm_id = ? AND status = \'pending\' ORDER BY completes_at');
+const getCcDueActions = db.prepare('SELECT * FROM cc_actions WHERE status = \'pending\' AND completes_at <= ? ORDER BY completes_at LIMIT 100');
+const getCcAction = db.prepare('SELECT * FROM cc_actions WHERE id = ?');
+const insertCcRealm = db.prepare('INSERT INTO cc_realms (id, season_id, user_id, name, house_name, color, capital_region_id, treasury, provisions, prestige, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 1200, 800, 15, ?, ?)');
+const assignCcCapital = db.prepare('UPDATE cc_season_regions SET owner_realm_id = ?, status = \'controlled\', version = version + 1 WHERE season_id = ? AND region_id = ? AND owner_realm_id IS NULL AND status = \'neutral\'');
+const insertCcAction = db.prepare('INSERT INTO cc_actions (id, season_id, realm_id, user_id, type, region_id, status, completes_at, cost_json, created_at) VALUES (?, ?, ?, ?, ?, ?, \'pending\', ?, ?, ?)');
+const markCcRegionClaiming = db.prepare('UPDATE cc_season_regions SET status = \'claiming\', claim_action_id = ?, version = version + 1 WHERE season_id = ? AND region_id = ? AND owner_realm_id IS NULL AND status = \'neutral\'');
+const spendCcClaimResources = db.prepare('UPDATE cc_realms SET treasury = treasury - ?, provisions = provisions - ?, updated_at = ? WHERE id = ? AND season_id = ? AND treasury >= ? AND provisions >= ?');
+const completeCcRegionClaim = db.prepare('UPDATE cc_season_regions SET owner_realm_id = ?, status = \'controlled\', claim_action_id = NULL, development = max(1, development), version = version + 1 WHERE season_id = ? AND region_id = ? AND claim_action_id = ? AND owner_realm_id IS NULL');
+const completeCcAction = db.prepare('UPDATE cc_actions SET status = \'completed\', completed_at = ? WHERE id = ? AND status = \'pending\'');
+const cancelCcAction = db.prepare('UPDATE cc_actions SET status = \'cancelled\', completed_at = ? WHERE id = ? AND realm_id = ? AND status = \'pending\'');
+const releaseCcClaim = db.prepare('UPDATE cc_season_regions SET status = \'neutral\', claim_action_id = NULL, version = version + 1 WHERE season_id = ? AND claim_action_id = ? AND owner_realm_id IS NULL');
+const rewardCcClaim = db.prepare('UPDATE cc_realms SET prestige = prestige + 2, updated_at = ? WHERE id = ? AND season_id = ?');
+const refundCcClaim = db.prepare('UPDATE cc_realms SET treasury = treasury + ?, provisions = provisions + ?, updated_at = ? WHERE id = ? AND season_id = ?');
+const insertCcEvent = db.prepare('INSERT INTO cc_events (id, season_id, event_type, actor_realm_id, region_id, payload_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)');
+
+function seedCrownsAndCouncils() {
+  const now = new Date();
+  const ends = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    insertCcSeason.run(
+      CROWNS_SEASON_ID,
+      'Temporada Sandbox — A Era dos Concílios',
+      'open',
+      now.toISOString(),
+      ends.toISOString(),
+      crownsRegionCatalog.geographicVersion,
+      JSON.stringify({ seedRatio: 0.2, actionMs: CROWNS_ACTION_MS, mode: 'sandbox' }),
+      now.toISOString()
+    );
+    crownsRegionCatalog.regions.forEach(region => {
+      upsertCcRegion.run(region.id, region.name, region.countryCode, region.iso3Code, region.centroid[0], region.centroid[1], JSON.stringify(region.neighborIds), crownsRegionCatalog.geographicVersion);
+      insertCcSeasonRegion.run(CROWNS_SEASON_ID, region.id);
+    });
+    db.exec('COMMIT');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+}
+seedCrownsAndCouncils();
 const deleteSessionsForUser = db.prepare('DELETE FROM sessions WHERE user_id = ?');
 const deleteSavesForUser = db.prepare('DELETE FROM saves WHERE user_id = ?');
 const deleteRankingsForUser = db.prepare('DELETE FROM rankings WHERE user_id = ?');
@@ -379,6 +456,7 @@ function normalizeGamePresence(input) {
   if (value === CONCORDIUM_EXPLORACAO_GAME_ID) return { gameId: CONCORDIUM_EXPLORACAO_GAME_ID, location: 'Concordium' };
   if (value === GUARDIOES_GAME_ID) return { gameId: GUARDIOES_GAME_ID, location: 'Sola Torre' };
   if (value === BABEL_GAME_ID) return { gameId: BABEL_GAME_ID, location: 'A Queda de Babel' };
+  if (value === CROWNS_COUNCILS_GAME_ID) return { gameId: CROWNS_COUNCILS_GAME_ID, location: 'Crowns and Councils' };
   if (value === GAME_ID) return { gameId: GAME_ID, location: 'Pela Graca 1904' };
   return { gameId: 'hub', location: 'Hub' };
 }
@@ -391,6 +469,7 @@ function presenceForPath(pathname) {
   if (pathname === '/concordium-exploracao' || pathname.startsWith('/api/concordium')) return normalizeGamePresence(CONCORDIUM_EXPLORACAO_GAME_ID);
   if (pathname === '/caminho-dos-guardioes' || pathname.startsWith('/api/guardioes')) return normalizeGamePresence(GUARDIOES_GAME_ID);
   if (pathname === '/a-queda-de-babel' || pathname.startsWith('/api/babel')) return normalizeGamePresence(BABEL_GAME_ID);
+  if (pathname === '/crowns-and-councils' || pathname.startsWith('/api/crowns-and-councils')) return normalizeGamePresence(CROWNS_COUNCILS_GAME_ID);
   if (pathname === '/play' || pathname === '/game' || pathname.startsWith('/api/saves')) return normalizeGamePresence(GAME_ID);
   return normalizeGamePresence('hub');
 }
@@ -656,6 +735,24 @@ function hasValidLaunch(req, userId) {
   const expiresAt = Number(rawExpiresAt);
   if (tokenUserId !== userId || !Number.isFinite(expiresAt) || expiresAt < Date.now() || !signature) return false;
   const expected = signLaunch(tokenUserId, expiresAt);
+  if (signature.length !== expected.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+}
+function signCrownsLaunch(userId, expiresAt) {
+  return crypto.createHmac('sha256', LAUNCH_SECRET).update(`${CROWNS_COUNCILS_GAME_ID}:${userId}:${expiresAt}`).digest('hex');
+}
+function setCrownsLaunchCookie(res, userId) {
+  const expiresAt = Date.now() + LAUNCH_MAX_AGE_SECONDS * 1000;
+  const token = `${userId}.${expiresAt}.${signCrownsLaunch(userId, expiresAt)}`;
+  res.setHeader('Set-Cookie', `${CROWNS_LAUNCH_COOKIE_NAME}=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${LAUNCH_MAX_AGE_SECONDS}`);
+}
+function hasValidCrownsLaunch(req, userId) {
+  const token = parseCookies(req)[CROWNS_LAUNCH_COOKIE_NAME];
+  if (!token) return false;
+  const [tokenUserId, rawExpiresAt, signature] = token.split('.');
+  const expiresAt = Number(rawExpiresAt);
+  if (tokenUserId !== userId || !Number.isFinite(expiresAt) || expiresAt < Date.now() || !signature) return false;
+  const expected = signCrownsLaunch(tokenUserId, expiresAt);
   if (signature.length !== expected.length) return false;
   return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
 }
@@ -1231,11 +1328,194 @@ function serveAsset(req, res) {
     res.writeHead(404); res.end('Not found'); return;
   }
   const ext = path.extname(filePath).toLowerCase();
-  const type = ext === '.css' ? 'text/css; charset=utf-8' : ext === '.js' ? 'text/javascript; charset=utf-8' : ext === '.html' ? 'text/html; charset=utf-8' : ext === '.svg' ? 'image/svg+xml; charset=utf-8' : ext === '.png' ? 'image/png' : ext === '.webp' ? 'image/webp' : ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : ext === '.mp3' ? 'audio/mpeg' : ext === '.ogg' ? 'audio/ogg' : ext === '.wav' ? 'audio/wav' : 'application/octet-stream';
+  const type = ext === '.css' ? 'text/css; charset=utf-8' : ext === '.js' ? 'text/javascript; charset=utf-8' : ext === '.json' || ext === '.map' ? 'application/json; charset=utf-8' : ext === '.html' ? 'text/html; charset=utf-8' : ext === '.svg' ? 'image/svg+xml; charset=utf-8' : ext === '.png' ? 'image/png' : ext === '.webp' ? 'image/webp' : ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : ext === '.mp3' ? 'audio/mpeg' : ext === '.ogg' ? 'audio/ogg' : ext === '.wav' ? 'audio/wav' : 'application/octet-stream';
   const headers = { 'Content-Type': type };
   if (['.css', '.js', '.html'].includes(ext)) headers['Cache-Control'] = 'no-store, max-age=0';
   res.writeHead(200, headers);
   fs.createReadStream(filePath).pipe(res);
+}
+
+let crownsRealtimeNamespace = null;
+function emitCrownsEvent(event, payload) {
+  crownsRealtimeNamespace?.to(`cc:${payload.seasonId || CROWNS_SEASON_ID}`).emit(event, payload);
+}
+function publicCcRealm(realm) {
+  if (!realm) return null;
+  return {
+    id: realm.id,
+    name: realm.name,
+    houseName: realm.house_name,
+    color: realm.color,
+    capitalRegionId: realm.capital_region_id,
+    treasury: realm.treasury,
+    provisions: realm.provisions,
+    prestige: realm.prestige
+  };
+}
+function crownsBootstrap(user) {
+  processCrownsActions();
+  const season = getCcSeason.get(CROWNS_SEASON_ID);
+  const realm = getCcRealmByUser.get(CROWNS_SEASON_ID, user.id);
+  const ownedIds = new Set(realm ? getCcOwnedRegions.all(CROWNS_SEASON_ID, realm.id).map(row => row.region_id) : []);
+  const regions = getCcSeasonRegions.all(CROWNS_SEASON_ID).map(row => {
+    const neighborIds = safeJsonParse(row.neighbor_ids_json, []);
+    return {
+      id: row.id,
+      name: row.name,
+      countryCode: row.country_code,
+      iso3Code: row.iso3_code,
+      centroid: [row.centroid_x, row.centroid_y],
+      neighborIds,
+      ownerRealmId: row.owner_realm_id,
+      ownerName: row.owner_name || null,
+      ownerColor: row.owner_color || null,
+      status: row.status,
+      development: row.development,
+      version: row.version,
+      isAdjacentToRealm: Boolean(realm && !row.owner_realm_id && neighborIds.some(id => ownedIds.has(id)))
+    };
+  });
+  const actions = realm ? getCcPendingActionsForRealm.all(CROWNS_SEASON_ID, realm.id).map(action => ({
+    id: action.id,
+    type: action.type,
+    regionId: action.region_id,
+    status: action.status,
+    completesAt: action.completes_at,
+    createdAt: action.created_at
+  })) : [];
+  return {
+    user: { id: user.id, name: user.name, avatarData: user.avatar_data || null },
+    season: {
+      id: season.id,
+      name: season.name,
+      status: season.status,
+      statusLabel: season.status === 'open' ? 'Fundação dos reinos' : 'Temporada em preparação',
+      startsAt: season.starts_at,
+      endsAt: season.ends_at,
+      geographicVersion: season.geographic_version
+    },
+    realm: publicCcRealm(realm),
+    regions,
+    actions,
+    serverNow: new Date().toISOString(),
+    map: {
+      topologyUrl: '/assets/crowns-and-councils/data/nuts2-2024-20m-3035.topo.json',
+      projection: crownsRegionCatalog.projection,
+      regionCount: crownsRegionCatalog.regionCount,
+      sourceUrl: crownsRegionCatalog.sourceUrl
+    }
+  };
+}
+function createCrownsRealm(user, payload) {
+  const name = String(payload?.name || '').replace(/[<>]/g, '').trim().slice(0, 40);
+  const houseName = String(payload?.houseName || '').replace(/[<>]/g, '').trim().slice(0, 40);
+  const regionId = String(payload?.regionId || '').trim().slice(0, 12);
+  const color = /^#[0-9a-f]{6}$/i.test(payload?.color || '') ? String(payload.color).toLowerCase() : '#2d6982';
+  if (name.length < 3 || houseName.length < 3 || !regionId) throw new Error('Informe reino, casa e capital inicial.');
+  const realmId = `realm_${crypto.randomUUID()}`;
+  const now = new Date().toISOString();
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    if (getCcRealmByUser.get(CROWNS_SEASON_ID, user.id)) throw new Error('Sua conta já governa um reino nesta temporada.');
+    const region = getCcSeasonRegion.get(CROWNS_SEASON_ID, regionId);
+    if (!region || region.owner_realm_id || region.status !== 'neutral') throw new Error('A região inicial não está mais livre.');
+    insertCcRealm.run(realmId, CROWNS_SEASON_ID, user.id, name, houseName, color, regionId, now, now);
+    const assigned = assignCcCapital.run(realmId, CROWNS_SEASON_ID, regionId);
+    if (Number(assigned.changes) !== 1) throw new Error('Outra casa ergueu seu estandarte nesta região.');
+    insertCcEvent.run(crypto.randomUUID(), CROWNS_SEASON_ID, 'realm.created', realmId, regionId, JSON.stringify({ name, houseName }), now);
+    db.exec('COMMIT');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+  emitCrownsEvent('world.patch', { seasonId: CROWNS_SEASON_ID, type: 'realm.created', regionIds: [regionId], version: Date.now() });
+  return getCcRealmById.get(realmId, CROWNS_SEASON_ID);
+}
+function claimCrownsTerritory(user, payload) {
+  const realm = getCcRealmByUser.get(CROWNS_SEASON_ID, user.id);
+  if (!realm) throw new Error('Funde um reino antes de ordenar uma colonização.');
+  if (getCcPendingActionsForRealm.all(CROWNS_SEASON_ID, realm.id).length >= 1) throw new Error('Seu conselho já conduz uma reivindicação.');
+  const regionId = String(payload?.regionId || '').trim().slice(0, 12);
+  const region = getCcSeasonRegion.get(CROWNS_SEASON_ID, regionId);
+  if (!region || region.owner_realm_id || region.status !== 'neutral') throw new Error('A região não está disponível para colonização.');
+  const ownedIds = new Set(getCcOwnedRegions.all(CROWNS_SEASON_ID, realm.id).map(row => row.region_id));
+  const neighborIds = safeJsonParse(region.neighbor_ids_json, []);
+  if (!neighborIds.some(id => ownedIds.has(id))) throw new Error('A região precisa compartilhar fronteira com seu reino.');
+  const cost = { treasury: 120, provisions: 80 };
+  if (realm.treasury < cost.treasury || realm.provisions < cost.provisions) throw new Error('O tesouro não cobre a expedição.');
+  const actionId = `action_${crypto.randomUUID()}`;
+  const now = new Date();
+  const completesAt = new Date(now.getTime() + CROWNS_ACTION_MS).toISOString();
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    const latest = getCcSeasonRegion.get(CROWNS_SEASON_ID, regionId);
+    if (!latest || latest.owner_realm_id || latest.status !== 'neutral') throw new Error('A região recebeu outra reivindicação.');
+    const spent = spendCcClaimResources.run(cost.treasury, cost.provisions, now.toISOString(), realm.id, CROWNS_SEASON_ID, cost.treasury, cost.provisions);
+    if (Number(spent.changes) !== 1) throw new Error('Recursos insuficientes para confirmar a ordem.');
+    insertCcAction.run(actionId, CROWNS_SEASON_ID, realm.id, user.id, 'territory.claim', regionId, completesAt, JSON.stringify(cost), now.toISOString());
+    const marked = markCcRegionClaiming.run(actionId, CROWNS_SEASON_ID, regionId);
+    if (Number(marked.changes) !== 1) throw new Error('A disputa territorial mudou antes da confirmação.');
+    insertCcEvent.run(crypto.randomUUID(), CROWNS_SEASON_ID, 'territory.claim.started', realm.id, regionId, JSON.stringify({ actionId, completesAt, cost }), now.toISOString());
+    db.exec('COMMIT');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+  emitCrownsEvent('world.patch', { seasonId: CROWNS_SEASON_ID, type: 'territory.claim.started', regionIds: [regionId], version: Date.now() });
+  return getCcAction.get(actionId);
+}
+function cancelCrownsAction(user, payload) {
+  const realm = getCcRealmByUser.get(CROWNS_SEASON_ID, user.id);
+  const action = getCcAction.get(String(payload?.actionId || ''));
+  if (!realm || !action || action.realm_id !== realm.id || action.status !== 'pending') throw new Error('Esta ordem não pode ser cancelada.');
+  const cost = safeJsonParse(action.cost_json, {});
+  const now = new Date().toISOString();
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    cancelCcAction.run(now, action.id, realm.id);
+    releaseCcClaim.run(CROWNS_SEASON_ID, action.id);
+    refundCcClaim.run(Number(cost.treasury || 0), Number(cost.provisions || 0), now, realm.id, CROWNS_SEASON_ID);
+    insertCcEvent.run(crypto.randomUUID(), CROWNS_SEASON_ID, 'territory.claim.cancelled', realm.id, action.region_id, JSON.stringify({ actionId: action.id }), now);
+    db.exec('COMMIT');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+  emitCrownsEvent('world.patch', { seasonId: CROWNS_SEASON_ID, type: 'territory.claim.cancelled', regionIds: [action.region_id], version: Date.now() });
+}
+function processCrownsActions() {
+  const due = getCcDueActions.all(new Date().toISOString());
+  due.forEach(candidate => {
+    const now = new Date().toISOString();
+    let completed = false;
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      const action = getCcAction.get(candidate.id);
+      if (!action || action.status !== 'pending') {
+        db.exec('COMMIT');
+        return;
+      }
+      const claimed = completeCcRegionClaim.run(action.realm_id, action.season_id, action.region_id, action.id);
+      if (Number(claimed.changes) !== 1) {
+        cancelCcAction.run(now, action.id, action.realm_id);
+        db.exec('COMMIT');
+        return;
+      }
+      completeCcAction.run(now, action.id);
+      rewardCcClaim.run(now, action.realm_id, action.season_id);
+      insertCcEvent.run(crypto.randomUUID(), action.season_id, 'territory.claim.completed', action.realm_id, action.region_id, JSON.stringify({ actionId: action.id }), now);
+      db.exec('COMMIT');
+      completed = true;
+    } catch (error) {
+      db.exec('ROLLBACK');
+      console.error('[crowns] action processing failed', candidate.id, error);
+    }
+    if (completed) {
+      const payload = { seasonId: candidate.season_id, actionId: candidate.id, regionId: candidate.region_id, version: Date.now() };
+      emitCrownsEvent('action.completed', payload);
+      emitCrownsEvent('world.patch', { ...payload, type: 'territory.claim.completed', regionIds: [candidate.region_id] });
+    }
+  });
 }
 
 async function handleAuth(req, res, url) {
@@ -1290,6 +1570,34 @@ async function handleApi(req, res, url, user) {
     }
   }
   if (!user) { json(res, 401, { error: 'Login necessário' }); return; }
+  if (url.pathname.startsWith('/api/crowns-and-councils')) {
+    if (!hasValidCrownsLaunch(req, user.id)) { json(res, 403, { error: 'Abra o jogo pelo Game Hub para renovar o token de lançamento.' }); return; }
+    try {
+      if (req.method === 'GET' && url.pathname === '/api/crowns-and-councils/bootstrap') {
+        json(res, 200, crownsBootstrap(user));
+        return;
+      }
+      if (req.method === 'POST' && url.pathname === '/api/crowns-and-councils/realm/create') {
+        const realm = createCrownsRealm(user, safeJsonParse(await readBody(req) || '{}', {}));
+        json(res, 201, { ok: true, realm: publicCcRealm(realm) });
+        return;
+      }
+      if (req.method === 'POST' && url.pathname === '/api/crowns-and-councils/territory/claim') {
+        const action = claimCrownsTerritory(user, safeJsonParse(await readBody(req) || '{}', {}));
+        json(res, 202, { ok: true, action: { id: action.id, regionId: action.region_id, completesAt: action.completes_at } });
+        return;
+      }
+      if (req.method === 'POST' && url.pathname === '/api/crowns-and-councils/actions/cancel') {
+        cancelCrownsAction(user, safeJsonParse(await readBody(req) || '{}', {}));
+        json(res, 200, { ok: true });
+        return;
+      }
+      json(res, 404, { error: 'Ordem de Crowns and Councils desconhecida.' });
+    } catch (error) {
+      json(res, 409, { error: error.message || 'A ordem foi rejeitada pelo servidor.' });
+    }
+    return;
+  }
   if (req.method === 'GET' && url.pathname === '/api/ranking') { json(res, 200, rankingPayload()); return; }
   if (req.method === 'GET' && url.pathname === '/api/me') {
     const mainSave = getSaveSlot.get(user.id, 1);
@@ -1377,6 +1685,13 @@ async function handleApi(req, res, url, user) {
           title: 'A Queda de Babel',
           status: 'playable',
           playUrl: '/a-queda-de-babel',
+          rankingUrl: null
+        },
+        {
+          id: 'crowns-and-councils',
+          title: 'Crowns and Councils',
+          status: 'vertical-slice',
+          playUrl: '/crowns-and-councils',
           rankingUrl: null
         }
       ]
@@ -1915,6 +2230,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     ['configuracoes', 'Configurações', '/?section=configuracoes', 'configuracoes']
   ].map(([key, label, href, icon]) => `<a class="${activeSection === key ? 'active' : ''}" href="${href}"><img class="nav-icon" src="/assets/nav-icons/nav-${icon}.png?v=${GAME_VERSION}" alt="">${label}</a>`).join('');
   const gameCard = `<section class="ol-panel ol-games">
+    <article class="ol-game-card crowns-cover"><div><span>GRAND STRATEGY ONLINE</span><h4>Crowns and Councils</h4><p>Funde um reino e uma dinastia sobre um mapa europeu real, com expansão assíncrona e autoridade do servidor.</p></div><a href="/crowns-and-councils">Jogar</a></article>
     <article class="ol-game-card pela-cover"><div><h4>Pela Graça 1904</h4><p>Gerencie igrejas, forme pastores, responda perguntas doutrinárias e acompanhe a história da IELB no Brasil.</p></div><a href="/play">Jogar</a></article>
     <article class="ol-game-card reforma-cover"><div><h4>A Confissão</h4><p>Conduza a Reforma de 1483 a 1648 por decisões históricas, da vida de Lutero ao Livro de Concórdia e ao exílio boêmio.</p></div><a href="/a-confissao">${reformaSave ? 'Continuar' : 'Jogar'}</a></article>
     <article class="ol-game-card cronicas-cover"><div><h4>Crônicas do Levante</h4><p>Uma narrativa bíblica interativa nos dias do rei Davi, com escolhas, descobertas, relações e consequências pelo caminho.</p></div><a href="/cronicas-do-levante">${cronicasSave ? 'Continuar' : 'Jogar'}</a></article>
@@ -1936,7 +2252,8 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     configuracoes: `<section class="ol-panel ol-settings" id="configuracoes"><div class="panel-head"><h3>Configurações</h3></div><form method="POST" action="/profile" class="profile-edit"><div class="profile-box">${renderAvatar(user, 'profile-avatar')}<div><label>Nome público<input name="name" maxlength="40" value="${escapeHtml(user.name)}" required></label><label>Foto do perfil<input id="avatar-file" type="file" accept="image/png,image/jpeg,image/webp"></label><input id="avatar-data" type="hidden" name="avatar_data" value="${escapeHtml(user.avatar_data || '')}"><button type="submit">Salvar perfil</button></div></div></form><hr><div class="saved-games-head"><h4>Campanhas por jogo</h4><p>Medalhas, campanhas e saves principais ficam salvos na conta.</p></div><div class="saved-game-list"><article class="saved-game-row"><div><span>Pela Graça 1904</span><strong>${mainSave ? escapeHtml(mainSave.name) : 'Nenhuma campanha atual'}</strong><small>${mainSave ? 'Apaga só esta campanha atual.' : 'Crie uma campanha para jogar novamente.'}</small></div>${mainSave ? `<form method="POST" action="/saves/${encodeURIComponent(mainSave.id)}/delete" onsubmit="return confirm('Apagar a campanha atual de Pela Graça 1904? Medalhas e melhor ranking serão mantidos.')"><button>Apagar campanha</button></form>` : '<a href="/play">Criar campanha</a>'}</article><article class="saved-game-row"><div><span>Crônicas do Levante</span><strong>${cronicasSave ? 'Campanha em andamento' : 'Nenhuma campanha atual'}</strong><small>${cronicasSave ? 'Apaga só o progresso narrativo. Medalhas futuras serão mantidas.' : 'Comece uma jornada para criar o save automático.'}</small></div>${cronicasSave ? `<form method="POST" action="/cronicas-do-levante/delete" onsubmit="return confirm('Apagar a campanha atual de Crônicas do Levante? Medalhas futuras serão mantidas.')"><button>Apagar campanha</button></form>` : '<a href="/cronicas-do-levante">Criar campanha</a>'}</article><article class="saved-game-row"><div><span>Herói Ortodoxo</span><strong>Save automático na conta</strong><small>Heróis, campanha, check-in e invocações acompanham seu perfil do hub.</small></div><a href="/heroi-ortodoxo">Abrir</a></article><article class="saved-game-row"><div><span>Luther Metch</span><strong>Save local automático</strong><small>Fase, objetivos, pontos e tabuleiro ficam salvos neste navegador.</small></div><a href="/luther-metch">Abrir</a></article><article class="saved-game-row"><div><span>Quiz Ortodoxia</span><strong>Multiplayer online</strong><small>Duelo, convite e competição geral rodam com pareamento pelo servidor.</small></div><a href="/quiz-ortodoxia">Abrir</a></article><article class="saved-game-row"><div><span>A Queda de Babel</span><strong>${babelSave ? 'Jornada em andamento' : 'Nenhuma jornada atual'}</strong><small>Herói, equipamento, pet e progresso da região acompanham seu perfil do hub.</small></div>${babelSave ? `<form method="POST" action="/a-queda-de-babel/delete" onsubmit="return confirm('Apagar a jornada atual de A Queda de Babel?')"><button>Apagar jornada</button></form>` : '<a href="/a-queda-de-babel">Criar jornada</a>'}</article></div></section>`
   };
   const reformaSettingsRow = `<article class="saved-game-row"><div><span>A Confissão</span><strong>${reformaSave ? 'Jornada em andamento' : 'Nenhuma jornada atual'}</strong><small>Decisões, finais, códice e medalhas acompanham seu perfil.</small></div>${reformaSave ? `<form method="POST" action="/a-confissao/delete" onsubmit="return confirm('Apagar a jornada atual de A Confissão? As medalhas serão mantidas.')"><button>Apagar jornada</button></form>` : '<a href="/a-confissao">Criar jornada</a>'}</article>`;
-  sections.configuracoes = sections.configuracoes.replace('<div class="saved-game-list">', `<div class="saved-game-list">${reformaSettingsRow}`);
+  const crownsSettingsRow = `<article class="saved-game-row"><div><span>Crowns and Councils</span><strong>Temporada online vinculada</strong><small>Reino, recursos e ordens acompanham sua conta do Hub.</small></div><a href="/crowns-and-councils">Abrir</a></article>`;
+  sections.configuracoes = sections.configuracoes.replace('<div class="saved-game-list">', `<div class="saved-game-list">${crownsSettingsRow}${reformaSettingsRow}`);
   return pageShell('Ortodoxia Luterana Gaming', `
 <main class="ol-hub">
   <aside class="ol-sidebar">
@@ -2082,6 +2399,13 @@ const server = http.createServer(async (req, res) => {
       if (!save) { redirect(res, '/'); return; }
       setLaunchCookie(res, user.id);
       redirect(res, `/game?save=${encodeURIComponent(save.id)}`);
+      return;
+    }
+    if (req.method === 'GET' && url.pathname === '/crowns-and-councils') {
+      setCrownsLaunchCookie(res, user.id);
+      const body = fs.readFileSync(path.join(PUBLIC_DIR, 'crowns-and-councils', 'index.html'), 'utf8');
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store, max-age=0' });
+      res.end(body);
       return;
     }
     if (req.method === 'GET' && url.pathname === '/cronicas-do-levante') {
@@ -2252,6 +2576,20 @@ const server = http.createServer(async (req, res) => {
 
 function initRealtimeMultiplayer(httpServer) {
   const io = new SocketIOServer(httpServer, { cors: { origin: false } });
+  const crowns = io.of('/crowns-and-councils');
+  crownsRealtimeNamespace = crowns;
+  crowns.use((socket, next) => {
+    const user = currentUser(socket.request);
+    if (!user || !hasValidCrownsLaunch(socket.request, user.id)) return next(new Error('launch_required'));
+    socket.data.user = user;
+    next();
+  });
+  crowns.on('connection', socket => {
+    socket.join(`cc:${CROWNS_SEASON_ID}`);
+    socket.emit('world.ready', { seasonId: CROWNS_SEASON_ID, serverNow: new Date().toISOString() });
+  });
+  const crownsActionTimer = setInterval(processCrownsActions, 1000);
+  crownsActionTimer.unref?.();
   const players = new Map();
   const gbaPlayers = new Map();
   const gbaBattleInvites = new Map();

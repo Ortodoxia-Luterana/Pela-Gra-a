@@ -6,12 +6,19 @@
   "scripts": {
     "start": "node --no-warnings start.js",
     "dev": "node --no-warnings start.js",
+    "build:crowns": "node --no-warnings tools/build-crowns-region-catalog.cjs && vite build --config games/crowns-and-councils/vite.config.mjs",
+    "test:crowns": "node --no-warnings tests/crowns-and-councils.cjs",
     "test:babel-realtime": "node --no-warnings tests/babel-realtime.cjs"
   },
   "dependencies": {
-    "socket.io": "^4.8.3"
+    "pixi.js": "^8.19.0",
+    "preact": "^10.29.7",
+    "socket.io": "^4.8.3",
+    "topojson-client": "^3.1.0"
   },
   "devDependencies": {
-    "socket.io-client": "4.8.3"
+    "@preact/preset-vite": "^2.10.6",
+    "socket.io-client": "^4.8.3",
+    "vite": "^8.1.5"
   }
 }

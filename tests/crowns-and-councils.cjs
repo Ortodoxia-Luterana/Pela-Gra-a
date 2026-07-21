@@ -91,6 +91,7 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     assert.equal(result.response.status, 200);
     assert.equal(result.payload.servers.length, 3);
     assert.ok(result.payload.servers.every(item => item.day === 1 && item.totalDays === 60 && item.aiCount === 10));
+    assert.ok(result.payload.servers.every(item => item.phase === 'waiting' && item.playerCount === 0));
 
     result = await jsonRequest('/api/crowns-and-councils/bootstrap');
     assert.equal(result.response.status, 200);
@@ -115,13 +116,13 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     assert.equal(result.payload.realm, null);
     assert.equal(result.payload.season.day, 1);
     assert.equal(result.payload.season.totalDays, 60);
-    assert.ok(result.payload.customization.religions.includes('Cristianismo ortodoxo'));
+    assert.deepEqual(result.payload.customization.religions, ['Cristianismo']);
     const capital = result.payload.regions.find(region => !region.ownerRealmId && region.neighborIds.length > 2);
     assert.ok(capital);
 
     result = await jsonRequest('/api/crowns-and-councils/realm/create', {
       method: 'POST',
-      body: JSON.stringify({ name: 'Reino do Teste', houseName: 'Casa Veritas', religion: 'Cristianismo ortodoxo', color: result.payload.customization.availableColors[0], regionId: capital.id })
+      body: JSON.stringify({ name: 'Reino do Teste', houseName: 'Casa Veritas', religion: 'Islã sunita', color: result.payload.customization.availableColors[0], regionId: capital.id })
     });
     assert.equal(result.response.status, 201);
     assert.equal(result.payload.realm.capitalRegionId, capital.id);
@@ -133,7 +134,11 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     assert.equal(result.payload.realm.court.diplomacy.aiRealmCount, 10);
     assert.equal(result.payload.realm.court.diplomacy.knownRealms.length, 10);
     assert.equal(result.payload.realm.court.internal.canRevolt, false);
-    assert.equal(result.payload.realm.religion, 'Cristianismo ortodoxo');
+    assert.equal(result.payload.season.phase, 'open');
+    assert.equal(result.payload.realm.religion, 'Cristianismo');
+    assert.ok(result.payload.realm.court.diplomacy.knownRealms.every(realm => realm.religion === 'Cristianismo'));
+    assert.equal(result.payload.regionReligions[0].heresyShare, 0);
+    assert.equal(result.payload.religiousMovements.length, 0);
     assert.equal(result.payload.buildings.length, 2);
     assert.equal(result.payload.armies.length, 1);
 
@@ -226,7 +231,7 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     lifecycleDb.prepare('UPDATE cc_seasons SET config_json = ? WHERE id = ?').run(JSON.stringify(lifecycleConfig), 'cc-world-1');
     lifecycleDb.close();
     result = await jsonRequest('/api/crowns-and-councils/servers');
-    assert.equal(result.payload.servers[0].phase, 'open');
+    assert.equal(result.payload.servers[0].phase, 'waiting');
     result = await jsonRequest('/api/crowns-and-councils/bootstrap');
     assert.equal(result.payload.realm, null);
     assert.equal(result.payload.world.aiRealmCount, 10);

@@ -53,6 +53,16 @@ async function api(pathname, body) {
 async function bootstrap() { return api('/bootstrap?serverId=cc-world-1'); }
 const voted = new Set();
 const received = new Set();
+const religiousDecisions = new Set();
+async function attendReligion(state) {
+  for (const movement of state.religiousMovements || []) {
+    if (!movement.response && !religiousDecisions.has(movement.id)) {
+      const response = religiousDecisions.size % 2 === 0 ? 'resist' : 'accept';
+      await api('/religion/respond', { serverId: 'cc-world-1', movementId: movement.id, response });
+      religiousDecisions.add(movement.id);
+    }
+  }
+}
 async function attendCouncils(state) {
   for (const council of state.councils || []) {
     if (council.status === 'voting' && !council.vote && !voted.has(council.id)) {
@@ -70,6 +80,7 @@ async function waitUntil(predicate, timeoutMs, label) {
   while (Date.now() - started < timeoutMs) {
     const state = await bootstrap();
     await attendCouncils(state);
+    await attendReligion(state);
     if (await predicate(state)) return state;
     await sleep(Math.min(500, Math.max(100, Math.floor(gameDayMs / 4))));
   }
@@ -91,9 +102,12 @@ let qaDb;
       return neighbors.filter(item => !item.ownerRealmId).length >= 2 && neighbors.some(item => item.ownerRealmId);
     }) || state.regions.find(region => !region.ownerRealmId && region.neighborIds.length >= 3);
     assert.ok(capital, 'capital adequada não encontrada');
-    await api('/realm/create', { serverId: 'cc-world-1', name: 'Reino da Campanha Total', houseName: 'Casa Veritas', religion: 'Cristianismo latino', color: state.customization.availableColors[0], regionId: capital.id });
+    await api('/realm/create', { serverId: 'cc-world-1', name: 'Reino da Campanha Total', houseName: 'Casa Veritas', religion: 'Islã sunita', color: state.customization.availableColors[0], regionId: capital.id });
     state = await bootstrap();
     assert.equal(state.season.phase, 'open');
+    assert.equal(state.realm.religion, 'Cristianismo');
+    assert.ok(state.realm.court.diplomacy.knownRealms.every(realm => realm.religion === 'Cristianismo'));
+    assert.equal(state.religiousMovements.length, 0);
     console.log(`QA: temporada iniciada no dia ${state.season.day}; 1 dia = ${gameDayMs}ms.`);
 
     qaDb = new DatabaseSync(databasePath);
@@ -125,7 +139,8 @@ let qaDb;
     await waitActions();
     await api('/religion/mission', { serverId: 'cc-world-1', regionId: state.realm.capitalRegionId });
     await waitActions();
-    qaDb.prepare("UPDATE cc_region_religions SET heresy_share = 35, heresy_name = 'Seita dos Dois Altares' WHERE season_id = 'cc-world-1' AND region_id = ?").run(state.realm.capitalRegionId);
+    state = await waitUntil(item => item.season.day >= 10 && item.religiousMovements.length >= 1, Math.max(12_000, gameDayMs * 12), 'primeiro movimento religioso');
+    qaDb.prepare("UPDATE cc_region_religions SET heresy_share = 35, heresy_name = ? WHERE season_id = 'cc-world-1' AND region_id = ?").run(state.religiousMovements[0].name, state.realm.capitalRegionId);
     qaDb.prepare("UPDATE cc_realms SET heresy_pressure = 35 WHERE id = ?").run(state.realm.id);
     await api('/religion/suppress', { serverId: 'cc-world-1', regionId: state.realm.capitalRegionId });
     await waitActions();
@@ -149,6 +164,10 @@ let qaDb;
     assert.ok(separatist, 'o novo reino separatista deveria tocar a fronteira');
     qaDb.prepare('UPDATE cc_realms SET treasury = 20000, provisions = 20000 WHERE id = ?').run(state.realm.id);
     state = await waitUntil(item => !item.wars.some(war => war.status === 'active'), Math.max(12_000, gameDayMs * 5), 'fim de guerra antes dos separatistas');
+    if (!state.armies.some(army => army.total >= 350)) {
+      await api('/armies/recruit', { serverId: 'cc-world-1', regionId: state.realm.capitalRegionId });
+      state = await waitActions();
+    }
     await api('/war/declare', { serverId: 'cc-world-1', regionId: separatist.regionId });
     await waitActions();
     console.log(`QA: separatistas de ${separatist.regionName} foram atacados.`);
@@ -161,6 +180,7 @@ let qaDb;
         console.log(`QA: dia ${state.season.day}/60; concílios ${state.councils.length}; IAs ${state.world.aiRealmCount}.`);
       }
       await attendCouncils(state);
+      await attendReligion(state);
       if (state.season.phase === 'ended') break;
       await sleep(Math.min(750, Math.max(120, Math.floor(gameDayMs / 5))));
     }
@@ -171,8 +191,9 @@ let qaDb;
     assert.equal(state.councils.length, 8);
     assert.ok(voted.size >= 7, `votos registrados: ${voted.size}`);
     assert.ok(received.size >= 7, `recepções registradas: ${received.size}`);
+    assert.equal(religiousDecisions.size, 6);
     const journal = (await api('/journal?serverId=cc-world-1')).items;
-    for (const eventType of ['alliance.formed', 'marriage.celebrated', 'territory.claim.completed', 'army.defended', 'religion.mission_completed', 'religion.heresy_suppressed', 'revolution.separatist', 'council.decided']) assert.ok(journal.some(item => item.eventType === eventType), `jornal sem ${eventType}`);
+    for (const eventType of ['alliance.formed', 'marriage.celebrated', 'territory.claim.completed', 'army.defended', 'religion.mission_completed', 'religion.heresy_suppressed', 'religion.movement_emerged', 'religion.movement_answered', 'religion.realm_converted', 'revolution.separatist', 'council.decided']) assert.ok(journal.some(item => item.eventType === eventType), `jornal sem ${eventType}`);
     assert.ok(journal.some(item => item.kind === 'article'));
     assert.ok(journal.some(item => ['war.victory', 'war.defeat'].includes(item.eventType)));
     console.log(`Crowns full campaign: PASS (${state.councils.length} concílios, ${voted.size} votos, ${received.size} recepções, ${state.winners.length} vencedores).`);

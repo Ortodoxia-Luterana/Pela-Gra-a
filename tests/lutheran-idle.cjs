@@ -112,11 +112,13 @@ async function run() {
   const collectOne = await json('/api/lutheran-idle/collect', { method: 'POST', body: JSON.stringify({ stationId: 'pulpit', idempotencyKey: key }) });
   assert.equal(collectOne.response.status, 200);
   assert.ok(collectOne.payload.reward.offerings > 0);
+  assert.equal(collectOne.payload.state.retention.dailyMissions.find((mission) => mission.id === 'collect').current, 1);
   const collectReplay = await json('/api/lutheran-idle/collect', { method: 'POST', body: JSON.stringify({ stationId: 'pulpit', idempotencyKey: key }) });
   assert.deepEqual(collectReplay.payload.reward, collectOne.payload.reward);
 
   const upgrade = await json('/api/lutheran-idle/upgrade', { method: 'POST', body: JSON.stringify({ stationId: 'pulpit' }) });
   assert.equal(upgrade.payload.state.stations.find((station) => station.id === 'pulpit').level, 2);
+  assert.equal(upgrade.payload.state.retention.dailyMissions.find((mission) => mission.id === 'upgrade').current, 1);
 
   const build = await json('/api/lutheran-idle/build', { method: 'POST', body: JSON.stringify({ stationId: 'reception' }) });
   assert.equal(build.payload.state.stations.find((station) => station.id === 'reception').built, true);
@@ -129,6 +131,14 @@ async function run() {
   const district = await json('/api/lutheran-idle/district/create', { method: 'POST', body: JSON.stringify({ name: 'Distrito de Teste' }) });
   assert.equal(district.response.status, 200);
   assert.equal(district.payload.state.district.name, 'Distrito de Teste');
+
+  const balanceDatabase = new DatabaseSync(DB_PATH);
+  balanceDatabase.prepare('UPDATE lutheran_idle_profiles SET offline_pending_json = NULL, last_seen_at = ? WHERE user_id = ?').run(new Date(Date.now() - 60 * 60 * 1000).toISOString(), bootstrap.payload.user.id);
+  balanceDatabase.close();
+  const oneHourBootstrap = await json('/api/lutheran-idle/bootstrap');
+  assert.ok(oneHourBootstrap.payload.offlineClaim.offerings > 0);
+  assert.ok(oneHourBootstrap.payload.offlineClaim.offerings < 250, `Uma hora offline gerou ofertas demais: ${oneHourBootstrap.payload.offlineClaim.offerings}`);
+  await json('/api/lutheran-idle/offline-claim', { method: 'POST', body: JSON.stringify({ idempotencyKey: crypto.randomUUID() }) });
 
   const database = new DatabaseSync(DB_PATH);
   database.prepare('UPDATE lutheran_idle_profiles SET level = 3, offerings = 500 WHERE user_id = ?').run(bootstrap.payload.user.id);

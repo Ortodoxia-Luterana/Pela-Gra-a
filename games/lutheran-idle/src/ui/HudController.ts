@@ -31,6 +31,7 @@ export class HudController {
   }
 
   selectStation(stationId: string): void {
+    if (this.dialog.open) return;
     this.selectedStation = stationId;
     this.renderStation(this.store.state);
     if (window.matchMedia('(max-width: 899px)').matches) this.openPanel('station');
@@ -47,16 +48,21 @@ export class HudController {
   openPanel(name: string): void {
     this.panelContent.innerHTML = this.panelMarkup(name, this.store.state);
     if (!this.dialog.open) this.dialog.showModal();
+    document.body.classList.add('modal-open');
   }
 
   private bind(): void {
-    document.querySelector('#collect-button')?.addEventListener('click', () => void this.actions.collect('pulpit'));
+    document.querySelector('#collect-button')?.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); void this.actions.collect('pulpit'); });
     document.querySelector('#upgrade-button')?.addEventListener('click', () => void this.actions.upgrade(this.selectedStation));
     document.querySelector('#menu-button')?.addEventListener('click', () => this.openPanel('menu'));
     document.querySelector('#profile-button')?.addEventListener('click', () => this.openPanel('profile'));
     document.querySelectorAll<HTMLElement>('[data-panel]').forEach((button) => button.addEventListener('click', () => this.openPanel(button.dataset.panel || 'church')));
     document.querySelector('[data-close]')?.addEventListener('click', () => this.dialog.close());
     this.dialog.addEventListener('click', (event) => { if (event.target === this.dialog) this.dialog.close(); });
+    this.dialog.addEventListener('close', () => document.body.classList.remove('modal-open'));
+    document.querySelectorAll<HTMLElement>('.hud-top button, .quick-actions button, .collect-callout, .bottom-nav button').forEach((control) => {
+      control.addEventListener('pointerdown', (event) => event.stopPropagation());
+    });
     this.panelContent.addEventListener('click', (event) => void this.handlePanelClick(event));
     this.panelContent.addEventListener('submit', (event) => void this.handlePanelSubmit(event));
     window.addEventListener('lutheran:progress', (event) => {

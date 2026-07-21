@@ -22,7 +22,7 @@ Idle tycoon de congregação integrado ao ecossistema Pela Graça, com progress�
 - progresso offline crescente de 4 a 12 horas, ranking e distrito cooperativo;
 - save vinculado à conta do Hub.
 
-A curva automatizada de referência usa duas sessões de cinco minutos por dia e alcança o oitavo estágio por volta do dia 231. Rode `npm run test:lutheran-idle:balance` para verificar que a curva permanece entre 60 e 300 dias.
+A curva automatizada de referência usa duas sessões de cinco minutos por dia e alcança o oitavo estágio por volta do dia 303. Rode `npm run test:lutheran-idle:balance` para verificar que a curva permanece entre 90 e 365 dias.
 
 ## Desenvolvimento
 

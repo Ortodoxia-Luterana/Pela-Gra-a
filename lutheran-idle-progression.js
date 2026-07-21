@@ -43,7 +43,7 @@ function checkinReward(day) {
   const normalized = Math.max(1, Math.min(28, Number(day) || 1));
   const milestone = normalized % 7 === 0;
   return {
-    offerings: milestone ? normalized * 1_500 : normalized * 180,
+    offerings: milestone ? normalized * 100 : normalized * 25,
     gems: milestone ? Math.ceil(normalized / 7) + 1 : 0,
     materials: milestone ? normalized * 2 : Math.floor(normalized / 4)
   };
@@ -52,9 +52,9 @@ function checkinReward(day) {
 function dailyMissionDefinitions(stage, progress = {}) {
   const currentStage = clampStage(stage);
   return [
-    { id: 'collect', label: 'Serviço constante', current: Number(progress.collect_count || 0), goal: 4 + currentStage * 2, reward: { offerings: 180 * currentStage, materials: currentStage } },
-    { id: 'upgrade', label: 'Cuidar da estrutura', current: Number(progress.upgrade_count || 0), goal: 1 + Math.floor(currentStage / 2), reward: { offerings: 260 * currentStage, materials: currentStage * 2 } },
-    { id: 'members', label: 'Acolher novos membros', current: Number(progress.members_gained || 0), goal: 2 + currentStage * 3, reward: { offerings: 320 * currentStage, gems: currentStage >= 4 ? 1 : 0 } }
+    { id: 'collect', label: 'Coletar produção', current: Number(progress.collect_count || 0), goal: 3 + currentStage, reward: { offerings: 60 * currentStage, materials: currentStage } },
+    { id: 'upgrade', label: 'Melhorar uma estação', current: Number(progress.upgrade_count || 0), goal: 1 + Math.floor(currentStage / 3), reward: { offerings: 90 * currentStage, materials: currentStage * 2 } },
+    { id: 'members', label: 'Receber novos membros', current: Number(progress.members_gained || 0), goal: 1 + currentStage * 2, reward: { offerings: 120 * currentStage, gems: currentStage >= 4 ? 1 : 0 } }
   ];
 }
 

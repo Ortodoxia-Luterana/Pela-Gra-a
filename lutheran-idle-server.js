@@ -357,7 +357,7 @@ function createLutheranIdleService({ db, gameId = 'lutheran-idle' }) {
           goal: weeklyGoal,
           claimed: Boolean(retention.weekly_claimed),
           ready: Number(retention.weekly_points) >= weeklyGoal,
-          reward: { offerings: weeklyGoal * 8, gems: Math.max(1, Math.floor(Number(profile.stage) / 2)), materials: Number(profile.stage) * 8 }
+          reward: { offerings: weeklyGoal * 4, gems: Math.max(1, Math.floor(Number(profile.stage) / 2)), materials: Number(profile.stage) * 8 }
         }
       },
       stations: stationRows.map(row => publicStation(row, profile.stage)),
@@ -398,7 +398,7 @@ function createLutheranIdleService({ db, gameId = 'lutheran-idle' }) {
     const pulpitLevel = Math.max(1, Number(pulpit?.level || 1));
     const altarLevel = Math.max(1, Number(q.station.get(user.id, 'altar')?.level || 1));
     const stageMultiplier = 1 + (Number(profile.stage) - 1) * 0.22;
-    const offerings = Math.max(1, Math.floor(cappedSeconds / 60 * Math.pow(1.16, pulpitLevel - 1) * (1 + (altarLevel - 1) * 0.04) * 9 * stageMultiplier));
+    const offerings = Math.max(1, Math.floor(cappedSeconds / 60 * Math.pow(1.12, pulpitLevel - 1) * (1 + (altarLevel - 1) * 0.04) * 1.5 * stageMultiplier));
     const catechesis = q.station.get(user.id, 'catechesis');
     const members = catechesis?.built ? Math.floor(cappedSeconds / 1800 * Math.pow(1.12, Math.max(0, Number(catechesis.level) - 1)) * stageMultiplier) : 0;
     const pending = { secondsAway: cappedSeconds, offerings, members, createdAt: new Date(now).toISOString() };
@@ -591,7 +591,7 @@ function createLutheranIdleService({ db, gameId = 'lutheran-idle' }) {
       const goal = 250 * Math.max(1, Number(profile.stage));
       if (retention.weekly_claimed) throw new Error('A recompensa semanal já foi recebida.');
       if (Number(retention.weekly_points) < goal) throw new Error('O objetivo semanal ainda não foi concluído.');
-      const reward = grantRewards(user.id, { offerings: goal * 8, gems: Math.max(1, Math.floor(Number(profile.stage) / 2)), materials: Number(profile.stage) * 8 }, 120 * Number(profile.stage));
+      const reward = grantRewards(user.id, { offerings: goal * 4, gems: Math.max(1, Math.floor(Number(profile.stage) / 2)), materials: Number(profile.stage) * 8 }, 120 * Number(profile.stage));
       q.claimWeekly.run(user.id);
       return { ok: true, action: 'weekly-claim', reward, state: snapshot(user) };
     });

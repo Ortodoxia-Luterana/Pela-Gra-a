@@ -23,7 +23,7 @@ export class VisitorMachine {
       .setScale(0.43)
       .setDepth(1160);
     this.sprite.setVisible(false);
-    scene.time.delayedCall(index * 1400, () => this.begin());
+    scene.time.delayedCall(1800 + index * 7200, () => this.begin());
   }
 
   private begin(): void {
@@ -56,7 +56,7 @@ export class VisitorMachine {
     this.phase = 'queueing';
     this.sprite.stop().setFrame(1);
     this.scene.tweens.add({ targets: this.sprite, y: this.sprite.y - 4, duration: 520, yoyo: true, repeat: 1, ease: 'Sine.easeInOut' });
-    this.scene.time.delayedCall(900, () => {
+    this.scene.time.delayedCall(1800, () => {
       this.sprite.play('visitor-walk-cycle');
       this.walk([this.path.seat], () => this.participate());
     });
@@ -65,7 +65,7 @@ export class VisitorMachine {
   private participate(): void {
     this.phase = 'participating';
     this.sprite.stop().setFrame(3).setScale(0.38).setDepth(Math.round(this.sprite.y - 16));
-    this.scene.time.delayedCall(2500, () => this.leave());
+    this.scene.time.delayedCall(14_000 + Phaser.Math.Between(0, 6_000), () => this.leave());
   }
 
   private leave(): void {
@@ -77,7 +77,7 @@ export class VisitorMachine {
       { x: 360 - this.path.lane, y: 1165 }
     ], () => {
       this.sprite.setFlipX(false).setVisible(false);
-      this.scene.time.delayedCall(1100, () => this.begin());
+      this.scene.time.delayedCall(8_000 + Phaser.Math.Between(0, 6_000), () => this.begin());
     });
   }
 

@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#4b2817" />
     <link rel="icon" href="/assets/lutheran-idle/assets/game/app_icon_lutheran_idle.png" />
     <title>Lutheran Idle</title>
-    <script type="module" crossorigin src="/assets/lutheran-idle/assets/index-BhF9eeTo.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/lutheran-idle/assets/index-BHaP6IYS.css">
+    <script type="module" crossorigin src="/assets/lutheran-idle/assets/index--ABS3Bi9.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/lutheran-idle/assets/index-zIWu_9FE.css">
   </head>
   <body>
     <main id="app" aria-label="Lutheran Idle">
@@ -15,19 +15,20 @@
         <div id="game-root" aria-label="Sala inicial da congregação"></div>
         <header class="hud-top" aria-label="Recursos da congregação">
           <button class="profile-seal" id="profile-button" type="button" aria-label="Ver progresso">
+            <img src="/assets/lutheran-idle/assets/game/ui_nav_profile.png" alt="" />
             <span id="level-value">1</span>
           </button>
           <div class="resource-ribbon">
             <div><img src="/assets/lutheran-idle/assets/game/ui_icon_offerings.png" alt="" /><span>Ofertas</span><strong id="offerings-value">0</strong></div>
             <div><img src="/assets/lutheran-idle/assets/game/ui_icon_members.png" alt="" /><span>Membros</span><strong id="members-value">0</strong></div>
           </div>
-          <button class="menu-button" id="menu-button" type="button" aria-label="Abrir menu">☰</button>
+          <button class="menu-button" id="menu-button" type="button" aria-label="Abrir menu"><img src="/assets/lutheran-idle/assets/game/ui_nav_menu.png" alt="" /></button>
         </header>
 
         <aside class="quick-actions" aria-label="Atalhos">
-          <button type="button" data-panel="missions" aria-label="Missões"><span>✓</span></button>
-          <button type="button" data-panel="offline" aria-label="Progresso offline"><span>☀</span></button>
-          <button type="button" data-panel="district" aria-label="Distrito online"><span>◇</span><b id="online-count">0</b></button>
+          <button type="button" data-panel="missions" aria-label="Missões"><img src="/assets/lutheran-idle/assets/game/ui_nav_missions.png" alt="" /></button>
+          <button type="button" data-panel="offline" aria-label="Progresso offline"><img src="/assets/lutheran-idle/assets/game/ui_nav_offline.png" alt="" /></button>
+          <button type="button" data-panel="district" aria-label="Distrito online"><img src="/assets/lutheran-idle/assets/game/ui_nav_district.png" alt="" /><b id="online-count">0</b></button>
         </aside>
 
         <section class="objective-strip" id="objective-strip" aria-live="polite">
@@ -37,15 +38,14 @@
         </section>
 
         <button class="collect-callout" id="collect-button" type="button" aria-label="Coletar produção do púlpito">
-          <span>Coletar</span><strong id="collect-ready">...</strong>
+          <img src="/assets/lutheran-idle/assets/game/ui_nav_offerings.png" alt="" /><span>Coletar</span><strong id="collect-ready">...</strong>
         </button>
 
         <nav class="bottom-nav" aria-label="Navegação principal">
-          <button class="active" type="button" data-panel="church"><span>⌂</span><small>Igreja</small></button>
-          <button type="button" data-panel="build"><span>✦</span><small>Construir</small></button>
-          <button type="button" data-panel="team"><span>♙</span><small>Equipe</small></button>
-          <button type="button" data-panel="members"><span>♧</span><small>Membros</small></button>
-          <button type="button" data-panel="district"><span>◇</span><small>Distrito</small></button>
+          <button class="active" type="button" data-panel="church"><img src="/assets/lutheran-idle/assets/game/ui_nav_church.png" alt="" /><small>Igreja</small></button>
+          <button type="button" data-panel="build"><img src="/assets/lutheran-idle/assets/game/ui_nav_build.png" alt="" /><small>Construir</small></button>
+          <button type="button" data-panel="team"><img src="/assets/lutheran-idle/assets/game/ui_nav_team.png" alt="" /><small>Equipe</small></button>
+          <button type="button" data-panel="members"><img src="/assets/lutheran-idle/assets/game/ui_nav_members.png" alt="" /><small>Membros</small></button>
         </nav>
 
         <section class="toast" id="toast" role="status" aria-live="polite"></section>

@@ -18,9 +18,12 @@ export class ChurchScene extends Phaser.Scene {
     this.add.image(WORLD.width / 2, WORLD.height / 2, 'church-room').setDisplaySize(WORLD.width, WORLD.height).setDepth(0);
     this.createStations();
     this.createPastor();
-    for (let index = 0; index < 4; index += 1) new VisitorMachine(this, index);
+    for (let index = 0; index < 2; index += 1) new VisitorMachine(this, index);
     this.addWarmth();
-    this.input.on('gameobjectdown', (_pointer: Phaser.Input.Pointer, object: Phaser.GameObjects.GameObject & { stationId?: string }) => {
+    this.input.on('gameobjectdown', (pointer: Phaser.Input.Pointer, object: Phaser.GameObjects.GameObject & { stationId?: string }) => {
+      const target = pointer.event?.target;
+      if (target instanceof Element && target.closest('.hud-top, .quick-actions, .objective-strip, .collect-callout, .bottom-nav, dialog')) return;
+      if (document.body.classList.contains('modal-open')) return;
       if (!object.stationId) return;
       window.dispatchEvent(new CustomEvent('lutheran:station-select', { detail: object.stationId }));
     });

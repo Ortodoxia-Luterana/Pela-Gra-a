@@ -26,6 +26,16 @@
     "frame_wood": "assets/game/ui_frame_wood.png",
     "button_primary": "assets/game/ui_button_primary.png",
     "icon_offerings": "assets/game/ui_icon_offerings.png",
-    "icon_members": "assets/game/ui_icon_members.png"
+    "icon_members": "assets/game/ui_icon_members.png",
+    "profile": "assets/game/ui_nav_profile.png",
+    "missions": "assets/game/ui_nav_missions.png",
+    "offline": "assets/game/ui_nav_offline.png",
+    "district": "assets/game/ui_nav_district.png",
+    "church": "assets/game/ui_nav_church.png",
+    "build": "assets/game/ui_nav_build.png",
+    "team": "assets/game/ui_nav_team.png",
+    "members": "assets/game/ui_nav_members.png",
+    "menu": "assets/game/ui_nav_menu.png",
+    "offerings": "assets/game/ui_nav_offerings.png"
   }
 }

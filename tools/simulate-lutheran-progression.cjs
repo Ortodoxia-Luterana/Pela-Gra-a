@@ -32,7 +32,7 @@ function dailyProduction() {
     + Math.floor(catechesisCycles * 8 * levelBonus('catechesis') * altarBonus);
   const activeMembers = Math.floor(catechesisCycles * Math.pow(1.14, Math.max(0, levels.catechesis - 1)) * stageBonus);
   const offlineSeconds = offlineHourCap(stage) * 3600;
-  const offlineOfferings = Math.floor(offlineSeconds / 60 * Math.pow(1.16, levels.pulpit - 1) * altarBonus * 9 * (1 + (stage - 1) * 0.22));
+  const offlineOfferings = Math.floor(offlineSeconds / 60 * Math.pow(1.12, levels.pulpit - 1) * altarBonus * 1.5 * (1 + (stage - 1) * 0.22));
   const offlineMembers = levels.catechesis ? Math.floor(offlineSeconds / 1800 * Math.pow(1.12, levels.catechesis - 1) * (1 + (stage - 1) * 0.22)) : 0;
   offerings += activeOfferings + offlineOfferings;
   members += activeMembers + offlineMembers;
@@ -44,7 +44,7 @@ function retentionRewards(day) {
   offerings += checkin.offerings;
   const daily = dailyMissionDefinitions(stage, { collect_count: 99, upgrade_count: 99, members_gained: 99 });
   offerings += daily.reduce((sum, mission) => sum + Number(mission.reward.offerings || 0), 0);
-  if (day % 7 === 0) offerings += 250 * stage * 8;
+  if (day % 7 === 0) offerings += 250 * stage * 4;
 }
 
 function buyProgression() {
@@ -85,11 +85,11 @@ const result = {
 console.log(JSON.stringify(result, null, 2));
 
 if (reached.length !== 8) process.exitCode = 1;
-if (reached.at(-1).day < 60) {
-  console.error('Curva curta demais: o estágio final foi alcançado antes de 60 dias.');
+if (reached.at(-1).day < 90) {
+  console.error('Curva curta demais: o estágio final foi alcançado antes de 90 dias.');
   process.exitCode = 1;
 }
-if (reached.at(-1).day > 300) {
-  console.error('Curva longa demais: o estágio final não foi alcançado em até 300 dias.');
+if (reached.at(-1).day > 365) {
+  console.error('Curva longa demais: o estágio final não foi alcançado em até 365 dias.');
   process.exitCode = 1;
 }

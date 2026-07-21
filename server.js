@@ -24,7 +24,26 @@ const CROWNS_ARTICLE_TITLE_MAX = 90;
 const CROWNS_ARTICLE_BODY_MAX = 1600;
 const CROWNS_ARTICLE_COOLDOWN_MS = 2 * 60 * 1000;
 const CROWNS_SEASON_ID = 'cc-sandbox-2026-01';
-const GAME_VERSION = 'v3.37.0';
+const CROWNS_REVOLT_CHECK_MS = Math.max(250, Number(process.env.CROWNS_REVOLT_CHECK_MS || 30 * 1000));
+const CROWNS_FORCE_REVOLTS = process.env.CROWNS_FORCE_REVOLTS === '1';
+const CROWNS_REALM_COLORS = [
+  '#c9485b', '#3f72c4', '#d79b2e', '#6f55a6', '#3f9a63', '#8a56c2', '#2f9b9b', '#d4b13e', '#4b83a8', '#b96b3d',
+  '#df5f98', '#5c8f32', '#e87842', '#4267a8', '#9b4e87', '#377d71', '#bd4b3f', '#7b6ec8', '#a97b2d', '#3a8ec2',
+  '#c15a78', '#668b5a', '#985eb5', '#cf7732', '#4b9b89', '#8d5b42', '#5f72b7', '#b18b3f', '#a64f62', '#527f9e'
+];
+const CROWNS_AI_REALMS = [
+  { key: 'francia', name: 'Reino da França', house: 'Casa Capetiana', ruler: 'Hugo de França', heir: 'Roberto', countries: ['FR'], terms: ['Île-de-France', 'Ile-de-France'], color: '#c9485b' },
+  { key: 'inglaterra', name: 'Coroa da Inglaterra', house: 'Casa de Wessex', ruler: 'Eduardo de Wessex', heir: 'Edmundo', countries: ['UK'], terms: ['Londres', 'London'], color: '#3f72c4' },
+  { key: 'castela', name: 'Reino de Castela', house: 'Casa de Jimena', ruler: 'Sancho de Castela', heir: 'Afonso', countries: ['ES'], terms: ['Madrid'], color: '#d79b2e' },
+  { key: 'germania', name: 'Reino da Germânia', house: 'Casa Otoniana', ruler: 'Henrique da Saxônia', heir: 'Otão', countries: ['DE'], terms: ['Sachsen', 'Saxônia', 'Berlin'], color: '#6f55a6' },
+  { key: 'italia', name: 'Reino da Itália', house: 'Casa de Saboia', ruler: 'Amadeu de Saboia', heir: 'Humberto', countries: ['IT'], terms: ['Lazio', 'Piemonte'], color: '#3f9a63' },
+  { key: 'romanos', name: 'Império dos Romanos', house: 'Dinastia Macedônica', ruler: 'Basílio de Constantinopla', heir: 'Constantino', countries: ['EL', 'TR'], terms: ['Ática', 'Istanbul', 'Constantinopla'], color: '#8a56c2' },
+  { key: 'egito', name: 'Sultanato do Egito', house: 'Casa do Cairo', ruler: 'Aláqueme do Egito', heir: 'Aziz', countries: ['EG'], terms: ['Cairo'], color: '#2f9b9b' },
+  { key: 'jerusalem', name: 'Reino de Jerusalém', house: 'Casa do Santo Sepulcro', ruler: 'Balduíno de Jerusalém', heir: 'Amalrico', countries: ['IL', 'PS'], terms: ['Jerusalém'], color: '#d4b13e' },
+  { key: 'kiev', name: 'Principado de Kiev', house: 'Casa de Rurique', ruler: 'Vladimir de Kiev', heir: 'Jaroslau', countries: ['UA'], terms: ['Kyiv', 'Kiev'], color: '#4b83a8' },
+  { key: 'magrebe', name: 'Reino do Magrebe', house: 'Casa Idríssida', ruler: 'Idris do Magrebe', heir: 'Hassan', countries: ['MA'], terms: ['Rabat', 'Casablanca'], color: '#b96b3d' }
+];
+const GAME_VERSION = 'v3.38.0';
 const GAME_ID = 'pela-graca-1904';
 const HEROI_GAME_ID = 'heroi-ortodoxo';
 const CRONICAS_GAME_ID = 'cronicas-do-levante';
@@ -165,7 +184,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS quiz_rankings (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, best_score INTEGER NOT NULL DEFAULT 0, wins INTEGER NOT NULL DEFAULT 0, duel_wins INTEGER NOT NULL DEFAULT 0, general_wins INTEGER NOT NULL DEFAULT 0, invite_wins INTEGER NOT NULL DEFAULT 0, matches_played INTEGER NOT NULL DEFAULT 0, reward_points INTEGER NOT NULL DEFAULT 0, reward_xp INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS cc_seasons (id TEXT PRIMARY KEY, name TEXT NOT NULL, status TEXT NOT NULL, starts_at TEXT NOT NULL, ends_at TEXT NOT NULL, geographic_version TEXT NOT NULL, config_json TEXT NOT NULL, created_at TEXT NOT NULL);
   CREATE TABLE IF NOT EXISTS cc_regions (id TEXT PRIMARY KEY, name TEXT NOT NULL, country_code TEXT NOT NULL, iso3_code TEXT NOT NULL, centroid_x INTEGER NOT NULL, centroid_y INTEGER NOT NULL, neighbor_ids_json TEXT NOT NULL, geographic_version TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1);
-  CREATE TABLE IF NOT EXISTS cc_realms (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, user_id TEXT NOT NULL, name TEXT NOT NULL, house_name TEXT NOT NULL, color TEXT NOT NULL, capital_region_id TEXT NOT NULL, treasury INTEGER NOT NULL DEFAULT 1200, provisions INTEGER NOT NULL DEFAULT 800, prestige INTEGER NOT NULL DEFAULT 15, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE (season_id, user_id), FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, FOREIGN KEY (capital_region_id) REFERENCES cc_regions(id));
+  CREATE TABLE IF NOT EXISTS cc_realms (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, user_id TEXT NOT NULL, name TEXT NOT NULL, house_name TEXT NOT NULL, color TEXT NOT NULL, capital_region_id TEXT NOT NULL, treasury INTEGER NOT NULL DEFAULT 1200, provisions INTEGER NOT NULL DEFAULT 800, prestige INTEGER NOT NULL DEFAULT 15, is_ai INTEGER NOT NULL DEFAULT 0, realm_kind TEXT NOT NULL DEFAULT 'player', origin_realm_id TEXT, ruler_name TEXT NOT NULL DEFAULT '', heir_name TEXT, legitimacy INTEGER NOT NULL DEFAULT 70, stability INTEGER NOT NULL DEFAULT 65, popular_support INTEGER NOT NULL DEFAULT 60, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE (season_id, user_id), FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, FOREIGN KEY (capital_region_id) REFERENCES cc_regions(id));
   CREATE TABLE IF NOT EXISTS cc_season_regions (season_id TEXT NOT NULL, region_id TEXT NOT NULL, owner_realm_id TEXT, status TEXT NOT NULL DEFAULT 'neutral', development INTEGER NOT NULL DEFAULT 1, claim_action_id TEXT, version INTEGER NOT NULL DEFAULT 1, PRIMARY KEY (season_id, region_id), FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE, FOREIGN KEY (region_id) REFERENCES cc_regions(id), FOREIGN KEY (owner_realm_id) REFERENCES cc_realms(id) ON DELETE SET NULL);
   CREATE TABLE IF NOT EXISTS cc_actions (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, realm_id TEXT NOT NULL, user_id TEXT NOT NULL, type TEXT NOT NULL, region_id TEXT NOT NULL, status TEXT NOT NULL, completes_at TEXT NOT NULL, cost_json TEXT NOT NULL, created_at TEXT NOT NULL, completed_at TEXT, FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE, FOREIGN KEY (realm_id) REFERENCES cc_realms(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, FOREIGN KEY (region_id) REFERENCES cc_regions(id));
   CREATE TABLE IF NOT EXISTS cc_events (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, event_type TEXT NOT NULL, actor_realm_id TEXT, region_id TEXT, payload_json TEXT NOT NULL, created_at TEXT NOT NULL, FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE);
@@ -187,6 +206,14 @@ try { db.exec('ALTER TABLE quiz_rankings ADD COLUMN invite_wins INTEGER NOT NULL
 try { db.exec('ALTER TABLE quiz_rankings ADD COLUMN reward_points INTEGER NOT NULL DEFAULT 0'); } catch {}
 try { db.exec('ALTER TABLE quiz_rankings ADD COLUMN reward_xp INTEGER NOT NULL DEFAULT 0'); } catch {}
 try { db.exec('ALTER TABLE cc_regions ADD COLUMN active INTEGER NOT NULL DEFAULT 1'); } catch {}
+try { db.exec('ALTER TABLE cc_realms ADD COLUMN is_ai INTEGER NOT NULL DEFAULT 0'); } catch {}
+try { db.exec("ALTER TABLE cc_realms ADD COLUMN realm_kind TEXT NOT NULL DEFAULT 'player'"); } catch {}
+try { db.exec('ALTER TABLE cc_realms ADD COLUMN origin_realm_id TEXT'); } catch {}
+try { db.exec("ALTER TABLE cc_realms ADD COLUMN ruler_name TEXT NOT NULL DEFAULT ''"); } catch {}
+try { db.exec('ALTER TABLE cc_realms ADD COLUMN heir_name TEXT'); } catch {}
+try { db.exec('ALTER TABLE cc_realms ADD COLUMN legitimacy INTEGER NOT NULL DEFAULT 70'); } catch {}
+try { db.exec('ALTER TABLE cc_realms ADD COLUMN stability INTEGER NOT NULL DEFAULT 65'); } catch {}
+try { db.exec('ALTER TABLE cc_realms ADD COLUMN popular_support INTEGER NOT NULL DEFAULT 60'); } catch {}
 
 const getUserByName = db.prepare('SELECT * FROM users WHERE name = ? COLLATE NOCASE');
 const getUserById = db.prepare('SELECT * FROM users WHERE id = ?');
@@ -251,11 +278,21 @@ const insertCcSeasonRegion = db.prepare('INSERT OR IGNORE INTO cc_season_regions
 const getCcSeason = db.prepare('SELECT * FROM cc_seasons WHERE id = ?');
 const getCcRealmByUser = db.prepare('SELECT * FROM cc_realms WHERE season_id = ? AND user_id = ?');
 const getCcRealmById = db.prepare('SELECT * FROM cc_realms WHERE id = ? AND season_id = ?');
+const getCcRealmByColor = db.prepare('SELECT id FROM cc_realms WHERE season_id = ? AND color = ? COLLATE NOCASE LIMIT 1');
+const getCcRealms = db.prepare(`
+  SELECT realm.*, region.name AS capital_name, COUNT(owned.region_id) AS region_count
+  FROM cc_realms realm
+  LEFT JOIN cc_regions region ON region.id = realm.capital_region_id
+  LEFT JOIN cc_season_regions owned ON owned.season_id = realm.season_id AND owned.owner_realm_id = realm.id
+  WHERE realm.season_id = ?
+  GROUP BY realm.id
+  ORDER BY realm.is_ai DESC, realm.prestige DESC, realm.name
+`);
 const getCcSeasonRegion = db.prepare('SELECT sr.*, r.name, r.country_code, r.iso3_code, r.neighbor_ids_json FROM cc_season_regions sr JOIN cc_regions r ON r.id = sr.region_id AND r.active = 1 WHERE sr.season_id = ? AND sr.region_id = ?');
 const getCcSeasonRegions = db.prepare(`
   SELECT r.id, r.name, r.country_code, r.iso3_code, r.centroid_x, r.centroid_y, r.neighbor_ids_json,
          sr.owner_realm_id, sr.status, sr.development, sr.claim_action_id, sr.version,
-         owner.name AS owner_name, owner.color AS owner_color
+         owner.name AS owner_name, owner.color AS owner_color, owner.is_ai AS owner_is_ai, owner.realm_kind AS owner_realm_kind
   FROM cc_regions r
   JOIN cc_season_regions sr ON sr.region_id = r.id AND sr.season_id = ?
   LEFT JOIN cc_realms owner ON owner.id = sr.owner_realm_id
@@ -266,8 +303,10 @@ const getCcOwnedRegions = db.prepare('SELECT sr.region_id FROM cc_season_regions
 const getCcPendingActionsForRealm = db.prepare('SELECT * FROM cc_actions WHERE season_id = ? AND realm_id = ? AND status = \'pending\' ORDER BY completes_at');
 const getCcDueActions = db.prepare('SELECT * FROM cc_actions WHERE status = \'pending\' AND completes_at <= ? ORDER BY completes_at LIMIT 100');
 const getCcAction = db.prepare('SELECT * FROM cc_actions WHERE id = ?');
-const insertCcRealm = db.prepare('INSERT INTO cc_realms (id, season_id, user_id, name, house_name, color, capital_region_id, treasury, provisions, prestige, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 1200, 800, 15, ?, ?)');
+const insertCcRealm = db.prepare("INSERT INTO cc_realms (id, season_id, user_id, name, house_name, color, capital_region_id, treasury, provisions, prestige, is_ai, realm_kind, ruler_name, heir_name, legitimacy, stability, popular_support, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 1200, 800, 15, 0, 'player', ?, ?, 72, 68, 64, ?, ?)");
+const insertCcAiRealm = db.prepare('INSERT INTO cc_realms (id, season_id, user_id, name, house_name, color, capital_region_id, treasury, provisions, prestige, is_ai, realm_kind, origin_realm_id, ruler_name, heir_name, legitimacy, stability, popular_support, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
 const assignCcCapital = db.prepare('UPDATE cc_season_regions SET owner_realm_id = ?, status = \'controlled\', version = version + 1 WHERE season_id = ? AND region_id = ? AND owner_realm_id IS NULL AND status = \'neutral\'');
+const transferCcRegion = db.prepare("UPDATE cc_season_regions SET owner_realm_id = ?, status = 'controlled', claim_action_id = NULL, version = version + 1 WHERE season_id = ? AND region_id = ? AND owner_realm_id = ?");
 const insertCcAction = db.prepare('INSERT INTO cc_actions (id, season_id, realm_id, user_id, type, region_id, status, completes_at, cost_json, created_at) VALUES (?, ?, ?, ?, ?, ?, \'pending\', ?, ?, ?)');
 const markCcRegionClaiming = db.prepare('UPDATE cc_season_regions SET status = \'claiming\', claim_action_id = ?, version = version + 1 WHERE season_id = ? AND region_id = ? AND owner_realm_id IS NULL AND status = \'neutral\'');
 const spendCcClaimResources = db.prepare('UPDATE cc_realms SET treasury = treasury - ?, provisions = provisions - ?, updated_at = ? WHERE id = ? AND season_id = ? AND treasury >= ? AND provisions >= ?');
@@ -275,7 +314,7 @@ const completeCcRegionClaim = db.prepare('UPDATE cc_season_regions SET owner_rea
 const completeCcAction = db.prepare('UPDATE cc_actions SET status = \'completed\', completed_at = ? WHERE id = ? AND status = \'pending\'');
 const cancelCcAction = db.prepare('UPDATE cc_actions SET status = \'cancelled\', completed_at = ? WHERE id = ? AND realm_id = ? AND status = \'pending\'');
 const releaseCcClaim = db.prepare('UPDATE cc_season_regions SET status = \'neutral\', claim_action_id = NULL, version = version + 1 WHERE season_id = ? AND claim_action_id = ? AND owner_realm_id IS NULL');
-const rewardCcClaim = db.prepare('UPDATE cc_realms SET prestige = prestige + 2, updated_at = ? WHERE id = ? AND season_id = ?');
+const rewardCcClaim = db.prepare('UPDATE cc_realms SET prestige = prestige + 2, stability = max(10, stability - 2), updated_at = ? WHERE id = ? AND season_id = ?');
 const refundCcClaim = db.prepare('UPDATE cc_realms SET treasury = treasury + ?, provisions = provisions + ?, updated_at = ? WHERE id = ? AND season_id = ?');
 const insertCcEvent = db.prepare('INSERT INTO cc_events (id, season_id, event_type, actor_realm_id, region_id, payload_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)');
 const getCcJournalEvents = db.prepare(`
@@ -298,6 +337,51 @@ const getCcArticles = db.prepare(`
 `);
 const getCcLatestArticleByUser = db.prepare('SELECT * FROM cc_articles WHERE season_id = ? AND user_id = ? ORDER BY published_at DESC LIMIT 1');
 const insertCcArticle = db.prepare('INSERT INTO cc_articles (id, season_id, user_id, realm_id, title, body, created_at, published_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+const getCcRevoltCandidates = db.prepare(`
+  SELECT realm.*, COUNT(owned.region_id) AS region_count
+  FROM cc_realms realm
+  JOIN cc_season_regions owned ON owned.season_id = realm.season_id AND owned.owner_realm_id = realm.id
+  WHERE realm.season_id = ? AND realm.stability <= 40
+  GROUP BY realm.id HAVING COUNT(owned.region_id) >= 3
+`);
+const getCcRevoltRegion = db.prepare("SELECT sr.region_id FROM cc_season_regions sr WHERE sr.season_id = ? AND sr.owner_realm_id = ? AND sr.region_id <> ? ORDER BY sr.development DESC, sr.region_id LIMIT 1");
+const stabilizeCcRealmAfterRevolt = db.prepare('UPDATE cc_realms SET stability = min(100, stability + 18), popular_support = max(10, popular_support - 8), updated_at = ? WHERE id = ? AND season_id = ?');
+
+function normalizedCrownsText(value) {
+  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
+function seedCcAiRealms(now) {
+  const reservedRegions = new Set(getCcRealms.all(CROWNS_SEASON_ID).map(realm => realm.capital_region_id));
+  CROWNS_AI_REALMS.forEach((blueprint, index) => {
+    const realmId = `realm_ai_${blueprint.key}`;
+    if (getCcRealmById.get(realmId, CROWNS_SEASON_ID)) return;
+    const countryRegions = crownsRegionCatalog.regions.filter(region => blueprint.countries.includes(region.countryCode));
+    const preferred = countryRegions.find(region => blueprint.terms.some(term => normalizedCrownsText(region.name).includes(normalizedCrownsText(term))));
+    const candidates = [preferred, ...countryRegions].filter(Boolean);
+    const capital = candidates.find(region => {
+      if (reservedRegions.has(region.id)) return false;
+      const state = getCcSeasonRegion.get(CROWNS_SEASON_ID, region.id);
+      return state && !state.owner_realm_id && state.status === 'neutral';
+    });
+    if (!capital) throw new Error(`Não foi possível reservar uma capital para a IA ${blueprint.name}.`);
+    const userId = `crowns-ai-${blueprint.key}`;
+    if (!getUserById.get(userId)) {
+      const salt = crypto.randomBytes(16).toString('hex');
+      const secretPin = crypto.randomInt(1000, 9999).toString();
+      insertUser.run(userId, `IA — ${blueprint.name}`, hashPin(secretPin, salt), salt, now);
+    }
+    insertCcAiRealm.run(
+      realmId, CROWNS_SEASON_ID, userId, blueprint.name, blueprint.house, blueprint.color, capital.id,
+      1500 + index * 45, 950 + index * 30, 20 + index, 'ai', null, blueprint.ruler, blueprint.heir,
+      68 + (index % 4) * 4, 58 + (index % 5) * 5, 52 + (index % 6) * 5, now, now
+    );
+    const assigned = assignCcCapital.run(realmId, CROWNS_SEASON_ID, capital.id);
+    if (Number(assigned.changes) !== 1) throw new Error(`A capital da IA ${blueprint.name} deixou de estar disponível.`);
+    insertCcEvent.run(crypto.randomUUID(), CROWNS_SEASON_ID, 'realm.created', realmId, capital.id, JSON.stringify({ name: blueprint.name, houseName: blueprint.house, isAi: true }), now);
+    reservedRegions.add(capital.id);
+  });
+}
 
 function seedCrownsAndCouncils() {
   const now = new Date();
@@ -321,6 +405,7 @@ function seedCrownsAndCouncils() {
       upsertCcRegion.run(region.id, region.name, region.countryCode, region.iso3Code, region.centroid[0], region.centroid[1], JSON.stringify(region.neighborIds), crownsRegionCatalog.geographicVersion);
       insertCcSeasonRegion.run(CROWNS_SEASON_ID, region.id);
     });
+    seedCcAiRealms(now.toISOString());
     db.exec('COMMIT');
   } catch (error) {
     db.exec('ROLLBACK');
@@ -1403,7 +1488,51 @@ function publicCcRealm(realm) {
     capitalRegionId: realm.capital_region_id,
     treasury: realm.treasury,
     provisions: realm.provisions,
-    prestige: realm.prestige
+    prestige: realm.prestige,
+    isAi: Boolean(realm.is_ai),
+    realmKind: realm.realm_kind || 'player',
+    originRealmId: realm.origin_realm_id || null,
+    rulerName: realm.ruler_name || 'Governante não registrado',
+    heirName: realm.heir_name || null,
+    legitimacy: Number(realm.legitimacy ?? 70),
+    stability: Number(realm.stability ?? 65),
+    popularSupport: Number(realm.popular_support ?? 60)
+  };
+}
+
+function crownsRealmCourt(realm) {
+  if (!realm) return null;
+  const realms = getCcRealms.all(CROWNS_SEASON_ID);
+  const knownRealms = realms.filter(other => other.id !== realm.id).map(other => {
+    const relationSeed = [...`${realm.id}:${other.id}`].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+    const relation = relationSeed % 7 === 0 ? 'cauteloso' : relationSeed % 5 === 0 ? 'cordial' : 'neutro';
+    return {
+      ...publicCcRealm(other),
+      capitalName: other.capital_name,
+      regionCount: Number(other.region_count || 0),
+      relation
+    };
+  });
+  const stability = Number(realm.stability ?? 65);
+  const regionCount = Number(realms.find(item => item.id === realm.id)?.region_count || 0);
+  return {
+    dynasty: {
+      houseName: realm.house_name,
+      rulerName: realm.ruler_name || 'Governante não registrado',
+      heirName: realm.heir_name || 'Herdeiro ainda não designado',
+      legitimacy: Number(realm.legitimacy ?? 70)
+    },
+    internal: {
+      stability,
+      popularSupport: Number(realm.popular_support ?? 60),
+      separatistRisk: Math.max(2, Math.min(85, (100 - stability) + Math.max(0, regionCount - 2) * 4)),
+      canRevolt: regionCount >= 3,
+      explanation: regionCount >= 3 ? 'Reinos extensos e instáveis podem perder uma província para uma revolução comandada pela IA.' : 'Revoluções separatistas exigem ao menos três regiões no domínio.'
+    },
+    diplomacy: {
+      aiRealmCount: knownRealms.filter(item => item.isAi).length,
+      knownRealms
+    }
   };
 }
 function publicCrownsJournalEvent(row) {
@@ -1418,7 +1547,8 @@ function publicCrownsJournalEvent(row) {
     'war.declared': { category: 'war', headline: `${realmName} declara guerra`, summary: payload.summary || 'Os sinos de alarme ecoam pelas fronteiras.' },
     'peace.signed': { category: 'peace', headline: `A paz é firmada por ${realmName}`, summary: payload.summary || 'Emissários selaram o tratado diante das testemunhas.' },
     'alliance.formed': { category: 'alliance', headline: `${realmName} anuncia uma aliança`, summary: payload.summary || 'Juramentos de auxílio mútuo foram tornados públicos.' },
-    'marriage.celebrated': { category: 'marriage', headline: `Casamento dinástico em ${realmName}`, summary: payload.summary || 'Duas casas uniram seus destinos diante da corte.' }
+    'marriage.celebrated': { category: 'marriage', headline: `Casamento dinástico em ${realmName}`, summary: payload.summary || 'Duas casas uniram seus destinos diante da corte.' },
+    'revolution.separatist': { category: 'revolution', headline: `${realmName} proclama sua independência`, summary: payload.summary || `${regionName} rompeu com a antiga coroa e passou a ser governada por uma nova IA.` }
   };
   const template = templates[row.event_type] || { category: 'world', headline: `Novo acontecimento em ${realmName}`, summary: payload.summary || `A chancelaria registrou notícias vindas de ${regionName}.` };
   return { id: row.id, kind: 'world', eventType: row.event_type, ...template, realmName, regionName, createdAt: row.created_at };
@@ -1481,6 +1611,8 @@ function crownsBootstrap(user) {
       ownerRealmId: row.owner_realm_id,
       ownerName: row.owner_name || null,
       ownerColor: row.owner_color || null,
+      ownerIsAi: Boolean(row.owner_is_ai),
+      ownerRealmKind: row.owner_realm_kind || null,
       status: row.status,
       development: row.development,
       version: row.version,
@@ -1510,7 +1642,14 @@ function crownsBootstrap(user) {
       endsAt: season.ends_at,
       geographicVersion: season.geographic_version
     },
-    realm: realm ? { ...publicCcRealm(realm), regionCount: ownedIds.size } : null,
+    realm: realm ? { ...publicCcRealm(realm), regionCount: ownedIds.size, court: crownsRealmCourt(realm) } : null,
+    world: {
+      realmCount: getCcRealms.all(CROWNS_SEASON_ID).length,
+      aiRealmCount: getCcRealms.all(CROWNS_SEASON_ID).filter(item => item.is_ai).length
+    },
+    customization: {
+      availableColors: CROWNS_REALM_COLORS.filter(color => !getCcRealmByColor.get(CROWNS_SEASON_ID, color))
+    },
     regions,
     actions,
     journal: crownsJournal().slice(0, 20),
@@ -1530,16 +1669,17 @@ function createCrownsRealm(user, payload) {
   const name = String(payload?.name || '').replace(/[<>]/g, '').trim().slice(0, 40);
   const houseName = String(payload?.houseName || '').replace(/[<>]/g, '').trim().slice(0, 40);
   const regionId = String(payload?.regionId || '').trim().slice(0, 32);
-  const color = /^#[0-9a-f]{6}$/i.test(payload?.color || '') ? String(payload.color).toLowerCase() : '#7f393f';
+  const color = /^#[0-9a-f]{6}$/i.test(payload?.color || '') ? String(payload.color).toLowerCase() : CROWNS_REALM_COLORS[10];
   if (name.length < 3 || houseName.length < 3 || !regionId) throw new Error('Informe reino, casa e capital inicial.');
   const realmId = `realm_${crypto.randomUUID()}`;
   const now = new Date().toISOString();
   db.exec('BEGIN IMMEDIATE');
   try {
     if (getCcRealmByUser.get(CROWNS_SEASON_ID, user.id)) throw new Error('Sua conta já governa um reino nesta temporada.');
+    if (!CROWNS_REALM_COLORS.includes(color) || getCcRealmByColor.get(CROWNS_SEASON_ID, color)) throw new Error('Essa cor de estandarte já pertence a outra coroa. Escolha uma cor livre.');
     const region = getCcSeasonRegion.get(CROWNS_SEASON_ID, regionId);
     if (!region || region.owner_realm_id || region.status !== 'neutral') throw new Error('A região inicial não está mais livre.');
-    insertCcRealm.run(realmId, CROWNS_SEASON_ID, user.id, name, houseName, color, regionId, now, now);
+    insertCcRealm.run(realmId, CROWNS_SEASON_ID, user.id, name, houseName, color, regionId, user.name, 'Herdeiro ainda não designado', now, now);
     const assigned = assignCcCapital.run(realmId, CROWNS_SEASON_ID, regionId);
     if (Number(assigned.changes) !== 1) throw new Error('Outra casa ergueu seu estandarte nesta região.');
     insertCcEvent.run(crypto.randomUUID(), CROWNS_SEASON_ID, 'realm.created', realmId, regionId, JSON.stringify({ name, houseName }), now);
@@ -1636,6 +1776,51 @@ function processCrownsActions() {
       emitCrownsEvent('world.patch', { ...payload, type: 'territory.claim.completed', regionIds: [candidate.region_id] });
     }
   });
+}
+
+function processCrownsSeparatistRevolts() {
+  const candidates = getCcRevoltCandidates.all(CROWNS_SEASON_ID);
+  for (const origin of candidates) {
+    const revoltChance = Math.min(0.28, Math.max(0.08, (45 - Number(origin.stability || 0)) / 100));
+    if (!CROWNS_FORCE_REVOLTS && Math.random() > revoltChance) continue;
+    const province = getCcRevoltRegion.get(CROWNS_SEASON_ID, origin.id, origin.capital_region_id);
+    if (!province) continue;
+    const region = getCcSeasonRegion.get(CROWNS_SEASON_ID, province.region_id);
+    if (!region || region.owner_realm_id !== origin.id) continue;
+    const now = new Date().toISOString();
+    const revoltKey = crypto.randomUUID();
+    const realmId = `realm_revolt_${revoltKey}`;
+    const userId = `crowns-ai-revolt-${revoltKey}`;
+    const realmName = `Liga de ${region.name}`;
+    const houseName = `Casa Livre de ${region.name}`;
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      const salt = crypto.randomBytes(16).toString('hex');
+      insertUser.run(userId, `IA — ${realmName}`, hashPin(crypto.randomInt(1000, 9999).toString(), salt), salt, now);
+      insertCcAiRealm.run(
+        realmId, CROWNS_SEASON_ID, userId, realmName, houseName, '#e06b46', region.region_id,
+        720, 520, 12, 'separatist', origin.id, `Conselho de ${region.name}`, null,
+        44, 56, 72, now, now
+      );
+      const transferred = transferCcRegion.run(realmId, CROWNS_SEASON_ID, region.region_id, origin.id);
+      if (Number(transferred.changes) !== 1) throw new Error('A província separatista mudou de domínio.');
+      stabilizeCcRealmAfterRevolt.run(now, origin.id, CROWNS_SEASON_ID);
+      insertCcEvent.run(crypto.randomUUID(), CROWNS_SEASON_ID, 'revolution.separatist', realmId, region.region_id, JSON.stringify({
+        originRealmId: origin.id,
+        originRealmName: origin.name,
+        summary: `${region.name} rompeu com ${origin.name}; a nova coroa será conduzida por uma IA.`
+      }), now);
+      db.exec('COMMIT');
+    } catch (error) {
+      db.exec('ROLLBACK');
+      console.error('[crowns] separatist revolt failed', origin.id, error);
+      return;
+    }
+    const payload = { seasonId: CROWNS_SEASON_ID, type: 'revolution.separatist', regionIds: [region.region_id], realmId, version: Date.now() };
+    emitCrownsEvent('world.patch', payload);
+    emitCrownsEvent('journal.published', payload);
+    return;
+  }
 }
 
 async function handleAuth(req, res, url) {
@@ -2719,6 +2904,8 @@ function initRealtimeMultiplayer(httpServer) {
   });
   const crownsActionTimer = setInterval(processCrownsActions, 1000);
   crownsActionTimer.unref?.();
+  const crownsRevoltTimer = setInterval(processCrownsSeparatistRevolts, CROWNS_REVOLT_CHECK_MS);
+  crownsRevoltTimer.unref?.();
   const players = new Map();
   const gbaPlayers = new Map();
   const gbaBattleInvites = new Map();

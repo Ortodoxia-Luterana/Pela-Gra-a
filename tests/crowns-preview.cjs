@@ -50,6 +50,9 @@ async function waitForServer(timeoutMs = 8_000) {
     assert.equal(payload.user.id, 'crowns-local-preview');
     assert.equal(payload.map.regionCount, 801);
     assert.ok(payload.regions.some(region => region.name === 'Jerusalém'));
+    assert.equal(payload.world.aiRealmCount, 10);
+    assert.equal(payload.realm, null);
+    assert.ok(payload.customization.availableColors.length >= 20);
     console.log('Crowns and Councils local preview: PASS');
   } finally {
     server.kill('SIGTERM');

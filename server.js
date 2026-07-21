@@ -21,6 +21,9 @@ const CROWNS_ACTION_MS = Math.max(250, Number(process.env.CROWNS_ACTION_MS || 20
 const CROWNS_LOCAL_PREVIEW = process.env.CROWNS_LOCAL_PREVIEW === '1';
 const CROWNS_LOCAL_PREVIEW_USER_ID = 'crowns-local-preview';
 const CROWNS_LOCAL_PREVIEW_USER_NAME = 'Conselheiro local';
+const LUTHERAN_IDLE_LOCAL_PREVIEW = process.env.LUTHERAN_IDLE_LOCAL_PREVIEW === '1';
+const LUTHERAN_IDLE_LOCAL_PREVIEW_USER_ID = 'lutheran-idle-local-preview';
+const LUTHERAN_IDLE_LOCAL_PREVIEW_USER_NAME = 'Jogador Local';
 const CROWNS_ARTICLE_TITLE_MAX = 90;
 const CROWNS_ARTICLE_BODY_MAX = 1600;
 const CROWNS_ARTICLE_COOLDOWN_MS = 2 * 60 * 1000;
@@ -843,6 +846,16 @@ if (CROWNS_LOCAL_PREVIEW && !getUserById.get(CROWNS_LOCAL_PREVIEW_USER_ID)) {
     new Date().toISOString()
   );
 }
+if (LUTHERAN_IDLE_LOCAL_PREVIEW && !getUserById.get(LUTHERAN_IDLE_LOCAL_PREVIEW_USER_ID)) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  insertUser.run(
+    LUTHERAN_IDLE_LOCAL_PREVIEW_USER_ID,
+    LUTHERAN_IDLE_LOCAL_PREVIEW_USER_NAME,
+    hashPin(crypto.randomBytes(4).toString('hex'), salt),
+    salt,
+    new Date().toISOString()
+  );
+}
 
 function parseCookies(req) {
   return Object.fromEntries((req.headers.cookie || '').split(';').filter(Boolean).map(part => {
@@ -860,6 +873,7 @@ function currentUser(req) {
     const session = getSession.get(sessionId);
     if (session) return getUserById.get(session.user_id);
   }
+  if (LUTHERAN_IDLE_LOCAL_PREVIEW && isLoopbackRequest(req)) return getUserById.get(LUTHERAN_IDLE_LOCAL_PREVIEW_USER_ID);
   if (CROWNS_LOCAL_PREVIEW && isLoopbackRequest(req)) return getUserById.get(CROWNS_LOCAL_PREVIEW_USER_ID);
   return null;
 }
@@ -3517,5 +3531,6 @@ initRealtimeMultiplayer(server);
 server.listen(PORT, () => {
   console.log(`Cultivando SSR rodando em http://localhost:${PORT}`);
   if (CROWNS_LOCAL_PREVIEW) console.log(`[crowns] prévia local sem login: http://localhost:${PORT}/crowns-and-councils`);
+  if (LUTHERAN_IDLE_LOCAL_PREVIEW) console.log(`[lutheran-idle] prévia local sem login: http://localhost:${PORT}/lutheran-idle`);
 });
 

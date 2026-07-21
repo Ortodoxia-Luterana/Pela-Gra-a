@@ -24,7 +24,16 @@ Vertical slice do idle tycoon de congregação integrado ao ecossistema Pela Gra
 ```bash
 npm run build:lutheran-idle
 npm run test:lutheran-idle
+npm run test:lutheran-idle:preview
 npx tsc --noEmit -p games/lutheran-idle/tsconfig.json
 ```
+
+Para abrir uma prévia local persistente sem tela de login:
+
+```bash
+npm run preview:lutheran-idle
+```
+
+Depois, acesse `http://localhost:3338/lutheran-idle`. O atalho sem login só é ativado para conexões de loopback e quando `LUTHERAN_IDLE_LOCAL_PREVIEW=1` está definido pelo script de prévia.
 
 Os arquivos finais do jogo são publicados em `public/lutheran-idle`. As artes originais ficam em `art-source`; o script `tools/process-lutheran-assets.py` normaliza e recorta os recursos usados pelo Phaser.

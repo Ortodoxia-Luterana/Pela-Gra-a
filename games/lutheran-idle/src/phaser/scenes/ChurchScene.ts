@@ -35,7 +35,7 @@ export class ChurchScene extends Phaser.Scene {
     const benches = this.state.stations.find((station) => station.id === 'benches');
     const benchTexture = `benches-l${Math.max(1, Math.min(3, benches?.level || 1))}`;
     [[242, 550], [478, 550], [242, 670], [478, 670], [242, 790], [478, 790]].forEach(([x, y]) => {
-      const bench = this.add.image(x, y, benchTexture).setScale(0.35).setDepth(y).setInteractive({ useHandCursor: true });
+      const bench = this.add.image(x, y, benchTexture).setScale(0.35).setFlipY(true).setDepth(y).setInteractive({ useHandCursor: true });
       (bench as Phaser.GameObjects.Image & { stationId?: string }).stationId = 'benches';
     });
     this.station('reception', 150, 915, 'reception-l1', 0.29, 915, true);

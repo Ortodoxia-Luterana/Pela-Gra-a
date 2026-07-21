@@ -7,7 +7,9 @@
     "start": "node --no-warnings start.js",
     "dev": "node --no-warnings start.js",
     "build:crowns": "node --no-warnings tools/build-crowns-region-catalog.cjs && vite build --config games/crowns-and-councils/vite.config.mjs",
+    "preview:crowns": "node --no-warnings tools/preview-crowns.cjs",
     "test:crowns": "node --no-warnings tests/crowns-and-councils.cjs",
+    "test:crowns:preview": "node --no-warnings tests/crowns-preview.cjs",
     "test:babel-realtime": "node --no-warnings tests/babel-realtime.cjs"
   },
   "dependencies": {

@@ -17,6 +17,9 @@ const LAUNCH_SECRET = process.env.LAUNCH_SECRET || crypto.createHash('sha256').u
 const LAUNCH_MAX_AGE_SECONDS = 5 * 60;
 const CROWNS_LAUNCH_COOKIE_NAME = 'cultivando_cc_launch';
 const CROWNS_ACTION_MS = Math.max(250, Number(process.env.CROWNS_ACTION_MS || 20_000));
+const CROWNS_LOCAL_PREVIEW = process.env.CROWNS_LOCAL_PREVIEW === '1';
+const CROWNS_LOCAL_PREVIEW_USER_ID = 'crowns-local-preview';
+const CROWNS_LOCAL_PREVIEW_USER_NAME = 'Conselheiro local';
 const CROWNS_SEASON_ID = 'cc-sandbox-2026-01';
 const GAME_VERSION = 'v3.36.0';
 const GAME_ID = 'pela-graca-1904';
@@ -706,17 +709,35 @@ function cleanupNonPlayerAccounts() {
 }
 cleanupNonPlayerAccounts();
 
+if (CROWNS_LOCAL_PREVIEW && !getUserById.get(CROWNS_LOCAL_PREVIEW_USER_ID)) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  insertUser.run(
+    CROWNS_LOCAL_PREVIEW_USER_ID,
+    CROWNS_LOCAL_PREVIEW_USER_NAME,
+    hashPin(crypto.randomBytes(4).toString('hex'), salt),
+    salt,
+    new Date().toISOString()
+  );
+}
+
 function parseCookies(req) {
   return Object.fromEntries((req.headers.cookie || '').split(';').filter(Boolean).map(part => {
     const [key, ...rest] = part.trim().split('=');
     return [key, decodeURIComponent(rest.join('='))];
   }));
 }
+function isLoopbackRequest(req) {
+  const address = String(req.socket?.remoteAddress || '');
+  return address === '127.0.0.1' || address === '::1' || address === '::ffff:127.0.0.1';
+}
 function currentUser(req) {
   const sessionId = parseCookies(req)[COOKIE_NAME];
-  if (!sessionId) return null;
-  const session = getSession.get(sessionId);
-  return session ? getUserById.get(session.user_id) : null;
+  if (sessionId) {
+    const session = getSession.get(sessionId);
+    if (session) return getUserById.get(session.user_id);
+  }
+  if (CROWNS_LOCAL_PREVIEW && isLoopbackRequest(req)) return getUserById.get(CROWNS_LOCAL_PREVIEW_USER_ID);
+  return null;
 }
 function setSessionCookie(res, sessionId) { res.setHeader('Set-Cookie', `${COOKIE_NAME}=${encodeURIComponent(sessionId)}; HttpOnly; SameSite=Lax; Path=/`); }
 function clearSessionCookie(res) { res.setHeader('Set-Cookie', `${COOKIE_NAME}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0`); }
@@ -3151,5 +3172,8 @@ function initRealtimeMultiplayer(httpServer) {
 }
 
 initRealtimeMultiplayer(server);
-server.listen(PORT, () => console.log(`Cultivando SSR rodando em http://localhost:${PORT}`));
+server.listen(PORT, () => {
+  console.log(`Cultivando SSR rodando em http://localhost:${PORT}`);
+  if (CROWNS_LOCAL_PREVIEW) console.log(`[crowns] prévia local sem login: http://localhost:${PORT}/crowns-and-councils`);
+});
 

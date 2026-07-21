@@ -1,0 +1,4890 @@
+{
+  "schemaVersion": 1,
+  "geographicVersion": "NUTS-2024-20M-EPSG3035",
+  "sourceUrl": "https://gisco-services.ec.europa.eu/distribution/v2/nuts/topojson/NUTS_RG_20M_2024_3035_LEVL_2.json",
+  "projection": "EPSG:3035",
+  "regionCount": 299,
+  "regions": [
+    {
+      "id": "AL01",
+      "name": "Veri",
+      "countryCode": "AL",
+      "iso3Code": "ALB",
+      "centroid": [
+        5151253,
+        2135839
+      ],
+      "neighborIds": [
+        "AL02",
+        "ME00",
+        "MK00",
+        "XK00"
+      ]
+    },
+    {
+      "id": "AL02",
+      "name": "Qender",
+      "countryCode": "AL",
+      "iso3Code": "ALB",
+      "centroid": [
+        5164281,
+        2061962
+      ],
+      "neighborIds": [
+        "AL01",
+        "AL03",
+        "MK00"
+      ]
+    },
+    {
+      "id": "AL03",
+      "name": "Jug",
+      "countryCode": "AL",
+      "iso3Code": "ALB",
+      "centroid": [
+        5194782,
+        1985094
+      ],
+      "neighborIds": [
+        "AL02",
+        "EL53",
+        "EL54",
+        "MK00"
+      ]
+    },
+    {
+      "id": "AT11",
+      "name": "Burgenland",
+      "countryCode": "AT",
+      "iso3Code": "AUT",
+      "centroid": [
+        4810637,
+        2737379
+      ],
+      "neighborIds": [
+        "AT12",
+        "AT22",
+        "HU22",
+        "SI03",
+        "SK01"
+      ]
+    },
+    {
+      "id": "AT12",
+      "name": "Niederösterreich",
+      "countryCode": "AT",
+      "iso3Code": "AUT",
+      "centroid": [
+        4756099,
+        2805100
+      ],
+      "neighborIds": [
+        "AT11",
+        "AT13",
+        "AT22",
+        "AT31",
+        "CZ03",
+        "CZ06",
+        "SK01",
+        "SK02"
+      ]
+    },
+    {
+      "id": "AT13",
+      "name": "Wien",
+      "countryCode": "AT",
+      "iso3Code": "AUT",
+      "centroid": [
+        4793690,
+        2807301
+      ],
+      "neighborIds": [
+        "AT12"
+      ]
+    },
+    {
+      "id": "AT21",
+      "name": "Kärnten",
+      "countryCode": "AT",
+      "iso3Code": "AUT",
+      "centroid": [
+        4636842,
+        2628716
+      ],
+      "neighborIds": [
+        "AT22",
+        "AT32",
+        "AT33",
+        "ITH3",
+        "ITH4",
+        "SI03",
+        "SI04"
+      ]
+    },
+    {
+      "id": "AT22",
+      "name": "Steiermark",
+      "countryCode": "AT",
+      "iso3Code": "AUT",
+      "centroid": [
+        4704815,
+        2680477
+      ],
+      "neighborIds": [
+        "AT11",
+        "AT12",
+        "AT21",
+        "AT31",
+        "AT32",
+        "SI03"
+      ]
+    },
+    {
+      "id": "AT31",
+      "name": "Oberösterreich",
+      "countryCode": "AT",
+      "iso3Code": "AUT",
+      "centroid": [
+        4616007,
+        2789398
+      ],
+      "neighborIds": [
+        "AT12",
+        "AT22",
+        "AT32",
+        "CZ03",
+        "DE21",
+        "DE22"
+      ]
+    },
+    {
+      "id": "AT32",
+      "name": "Salzburg",
+      "countryCode": "AT",
+      "iso3Code": "AUT",
+      "centroid": [
+        4549749,
+        2712063
+      ],
+      "neighborIds": [
+        "AT21",
+        "AT22",
+        "AT31",
+        "AT33",
+        "DE21",
+        "ITH1"
+      ]
+    },
+    {
+      "id": "AT33",
+      "name": "Tirol",
+      "countryCode": "AT",
+      "iso3Code": "AUT",
+      "centroid": [
+        4438209,
+        2672339
+      ],
+      "neighborIds": [
+        "AT21",
+        "AT32",
+        "AT34",
+        "CH05",
+        "DE21",
+        "DE27",
+        "ITH1",
+        "ITH3"
+      ]
+    },
+    {
+      "id": "AT34",
+      "name": "Vorarlberg",
+      "countryCode": "AT",
+      "iso3Code": "AUT",
+      "centroid": [
+        4305367,
+        2675121
+      ],
+      "neighborIds": [
+        "AT33",
+        "CH05",
+        "DE27",
+        "LI00"
+      ]
+    },
+    {
+      "id": "BA01",
+      "name": "Federacija Bosne i Hercegovine",
+      "countryCode": "BA",
+      "iso3Code": "BIH",
+      "centroid": [
+        4944811,
+        2376279
+      ],
+      "neighborIds": [
+        "BA02",
+        "BA03",
+        "HR02",
+        "HR03"
+      ]
+    },
+    {
+      "id": "BA02",
+      "name": "Republika Srpska",
+      "countryCode": "BA",
+      "iso3Code": "BIH",
+      "centroid": [
+        4986010,
+        2375299
+      ],
+      "neighborIds": [
+        "BA01",
+        "BA03",
+        "HR02",
+        "HR03",
+        "ME00",
+        "RS12",
+        "RS21"
+      ]
+    },
+    {
+      "id": "BA03",
+      "name": "Brčko District BiH",
+      "countryCode": "BA",
+      "iso3Code": "BIH",
+      "centroid": [
+        5011788,
+        2454128
+      ],
+      "neighborIds": [
+        "BA01",
+        "BA02",
+        "HR02"
+      ]
+    },
+    {
+      "id": "BE10",
+      "name": "Région de Bruxelles-Capitale/ Brussels Hoofdstedelijk Gewest",
+      "countryCode": "BE",
+      "iso3Code": "BEL",
+      "centroid": [
+        3924186,
+        3096528
+      ],
+      "neighborIds": [
+        "BE24"
+      ]
+    },
+    {
+      "id": "BE21",
+      "name": "Prov. Antwerpen",
+      "countryCode": "BE",
+      "iso3Code": "BEL",
+      "centroid": [
+        3945270,
+        3145367
+      ],
+      "neighborIds": [
+        "BE22",
+        "BE23",
+        "BE24",
+        "NL34",
+        "NL41"
+      ]
+    },
+    {
+      "id": "BE22",
+      "name": "Prov. Limburg (BE)",
+      "countryCode": "BE",
+      "iso3Code": "BEL",
+      "centroid": [
+        4005129,
+        3100520
+      ],
+      "neighborIds": [
+        "BE21",
+        "BE24",
+        "BE33",
+        "NL41",
+        "NL42"
+      ]
+    },
+    {
+      "id": "BE23",
+      "name": "Prov. Oost-Vlaanderen",
+      "countryCode": "BE",
+      "iso3Code": "BEL",
+      "centroid": [
+        3886647,
+        3123805
+      ],
+      "neighborIds": [
+        "BE21",
+        "BE24",
+        "BE25",
+        "BE32",
+        "NL34"
+      ]
+    },
+    {
+      "id": "BE24",
+      "name": "Prov. Vlaams-Brabant",
+      "countryCode": "BE",
+      "iso3Code": "BEL",
+      "centroid": [
+        3938397,
+        3096812
+      ],
+      "neighborIds": [
+        "BE10",
+        "BE21",
+        "BE22",
+        "BE23",
+        "BE31",
+        "BE32",
+        "BE33"
+      ]
+    },
+    {
+      "id": "BE25",
+      "name": "Prov. West-Vlaanderen",
+      "countryCode": "BE",
+      "iso3Code": "BEL",
+      "centroid": [
+        3841431,
+        3115061
+      ],
+      "neighborIds": [
+        "BE23",
+        "BE32",
+        "FRE1",
+        "NL34"
+      ]
+    },
+    {
+      "id": "BE31",
+      "name": "Prov. Brabant wallon",
+      "countryCode": "BE",
+      "iso3Code": "BEL",
+      "centroid": [
+        3932834,
+        3077949
+      ],
+      "neighborIds": [
+        "BE24",
+        "BE32",
+        "BE33",
+        "BE35"
+      ]
+    },
+    {
+      "id": "BE32",
+      "name": "Prov. Hainaut",
+      "countryCode": "BE",
+      "iso3Code": "BEL",
+      "centroid": [
+        3880370,
+        3062751
+      ],
+      "neighborIds": [
+        "BE23",
+        "BE24",
+        "BE25",
+        "BE31",
+        "BE35",
+        "FRE1",
+        "FRE2",
+        "FRF2"
+      ]
+    },
+    {
+      "id": "BE33",
+      "name": "Prov. Liège",
+      "countryCode": "BE",
+      "iso3Code": "BEL",
+      "centroid": [
+        4018520,
+        3056618
+      ],
+      "neighborIds": [
+        "BE22",
+        "BE24",
+        "BE31",
+        "BE34",
+        "BE35",
+        "DEA2",
+        "DEB2",
+        "LU00",
+        "NL42"
+      ]
+    },
+    {
+      "id": "BE34",
+      "name": "Prov. Luxembourg (BE)",
+      "countryCode": "BE",
+      "iso3Code": "BEL",
+      "centroid": [
+        3999486,
+        2996565
+      ],
+      "neighborIds": [
+        "BE33",
+        "BE35",
+        "FRF2",
+        "FRF3",
+        "LU00"
+      ]
+    },
+    {
+      "id": "BE35",
+      "name": "Prov. Namur",
+      "countryCode": "BE",
+      "iso3Code": "BEL",
+      "centroid": [
+        3958932,
+        3022655
+      ],
+      "neighborIds": [
+        "BE31",
+        "BE32",
+        "BE33",
+        "BE34",
+        "FRF2"
+      ]
+    },
+    {
+      "id": "BG31",
+      "name": "Северозападен",
+      "countryCode": "BG",
+      "iso3Code": "BGR",
+      "centroid": [
+        5434620,
+        2363961
+      ],
+      "neighborIds": [
+        "BG32",
+        "BG34",
+        "BG41",
+        "BG42",
+        "RO31",
+        "RO41",
+        "RS22"
+      ]
+    },
+    {
+      "id": "BG32",
+      "name": "Северен централен",
+      "countryCode": "BG",
+      "iso3Code": "BGR",
+      "centroid": [
+        5615944,
+        2403321
+      ],
+      "neighborIds": [
+        "BG31",
+        "BG33",
+        "BG34",
+        "RO22",
+        "RO31"
+      ]
+    },
+    {
+      "id": "BG33",
+      "name": "Североизточен",
+      "countryCode": "BG",
+      "iso3Code": "BGR",
+      "centroid": [
+        5700348,
+        2412736
+      ],
+      "neighborIds": [
+        "BG32",
+        "BG34",
+        "RO22"
+      ]
+    },
+    {
+      "id": "BG34",
+      "name": "Югоизточен",
+      "countryCode": "BG",
+      "iso3Code": "BGR",
+      "centroid": [
+        5680192,
+        2291634
+      ],
+      "neighborIds": [
+        "BG31",
+        "BG32",
+        "BG33",
+        "BG42",
+        "TR21"
+      ]
+    },
+    {
+      "id": "BG41",
+      "name": "Югозападен",
+      "countryCode": "BG",
+      "iso3Code": "BGR",
+      "centroid": [
+        5425924,
+        2240696
+      ],
+      "neighborIds": [
+        "BG31",
+        "BG42",
+        "EL51",
+        "EL52",
+        "MK00",
+        "RS22"
+      ]
+    },
+    {
+      "id": "BG42",
+      "name": "Южен централен",
+      "countryCode": "BG",
+      "iso3Code": "BGR",
+      "centroid": [
+        5584822,
+        2231384
+      ],
+      "neighborIds": [
+        "BG31",
+        "BG34",
+        "BG41",
+        "EL51",
+        "TR21"
+      ]
+    },
+    {
+      "id": "CH01",
+      "name": "Région lémanique",
+      "countryCode": "CH",
+      "iso3Code": "CHE",
+      "centroid": [
+        4094849,
+        2606635
+      ],
+      "neighborIds": [
+        "CH02",
+        "CH06",
+        "CH07",
+        "FRC2",
+        "FRK2",
+        "ITC1",
+        "ITC2"
+      ]
+    },
+    {
+      "id": "CH02",
+      "name": "Espace Mittelland",
+      "countryCode": "CH",
+      "iso3Code": "CHE",
+      "centroid": [
+        4115546,
+        2658760
+      ],
+      "neighborIds": [
+        "CH01",
+        "CH03",
+        "CH06",
+        "FRC2",
+        "FRF1"
+      ]
+    },
+    {
+      "id": "CH03",
+      "name": "Nordwestschweiz",
+      "countryCode": "CH",
+      "iso3Code": "CHE",
+      "centroid": [
+        4162400,
+        2705216
+      ],
+      "neighborIds": [
+        "CH02",
+        "CH04",
+        "CH06",
+        "DE13",
+        "FRF1"
+      ]
+    },
+    {
+      "id": "CH04",
+      "name": "Zürich",
+      "countryCode": "CH",
+      "iso3Code": "CHE",
+      "centroid": [
+        4221376,
+        2703298
+      ],
+      "neighborIds": [
+        "CH03",
+        "CH05",
+        "CH06",
+        "DE13"
+      ]
+    },
+    {
+      "id": "CH05",
+      "name": "Ostschweiz",
+      "countryCode": "CH",
+      "iso3Code": "CHE",
+      "centroid": [
+        4273976,
+        2656693
+      ],
+      "neighborIds": [
+        "AT33",
+        "AT34",
+        "CH04",
+        "CH06",
+        "CH07",
+        "DE13",
+        "DE14",
+        "ITC4",
+        "ITH1",
+        "LI00"
+      ]
+    },
+    {
+      "id": "CH06",
+      "name": "Zentralschweiz",
+      "countryCode": "CH",
+      "iso3Code": "CHE",
+      "centroid": [
+        4203036,
+        2651218
+      ],
+      "neighborIds": [
+        "CH01",
+        "CH02",
+        "CH03",
+        "CH04",
+        "CH05",
+        "CH07"
+      ]
+    },
+    {
+      "id": "CH07",
+      "name": "Ticino",
+      "countryCode": "CH",
+      "iso3Code": "CHE",
+      "centroid": [
+        4228020,
+        2569928
+      ],
+      "neighborIds": [
+        "CH01",
+        "CH05",
+        "CH06",
+        "ITC1",
+        "ITC4"
+      ]
+    },
+    {
+      "id": "CY00",
+      "name": "Κύπρος",
+      "countryCode": "CY",
+      "iso3Code": "CYP",
+      "centroid": [
+        6457896,
+        1685656
+      ],
+      "neighborIds": []
+    },
+    {
+      "id": "CZ01",
+      "name": "Praha",
+      "countryCode": "CZ",
+      "iso3Code": "CZE",
+      "centroid": [
+        4639597,
+        3004890
+      ],
+      "neighborIds": [
+        "CZ02"
+      ]
+    },
+    {
+      "id": "CZ02",
+      "name": "Střední Čechy",
+      "countryCode": "CZ",
+      "iso3Code": "CZE",
+      "centroid": [
+        4658388,
+        3001627
+      ],
+      "neighborIds": [
+        "CZ01",
+        "CZ03",
+        "CZ04",
+        "CZ05",
+        "CZ06"
+      ]
+    },
+    {
+      "id": "CZ03",
+      "name": "Jihozápad",
+      "countryCode": "CZ",
+      "iso3Code": "CZE",
+      "centroid": [
+        4605511,
+        2924364
+      ],
+      "neighborIds": [
+        "AT12",
+        "AT31",
+        "CZ02",
+        "CZ04",
+        "CZ06",
+        "DE22",
+        "DE23"
+      ]
+    },
+    {
+      "id": "CZ04",
+      "name": "Severozápad",
+      "countryCode": "CZ",
+      "iso3Code": "CZE",
+      "centroid": [
+        4565831,
+        3045088
+      ],
+      "neighborIds": [
+        "CZ02",
+        "CZ03",
+        "CZ05",
+        "DE23",
+        "DE24",
+        "DED2",
+        "DED4"
+      ]
+    },
+    {
+      "id": "CZ05",
+      "name": "Severovýchod",
+      "countryCode": "CZ",
+      "iso3Code": "CZE",
+      "centroid": [
+        4721519,
+        3046207
+      ],
+      "neighborIds": [
+        "CZ02",
+        "CZ04",
+        "CZ06",
+        "CZ07",
+        "DED2",
+        "PL51"
+      ]
+    },
+    {
+      "id": "CZ06",
+      "name": "Jihovýchod",
+      "countryCode": "CZ",
+      "iso3Code": "CZE",
+      "centroid": [
+        4773538,
+        2920673
+      ],
+      "neighborIds": [
+        "AT12",
+        "CZ02",
+        "CZ03",
+        "CZ05",
+        "CZ07",
+        "SK02"
+      ]
+    },
+    {
+      "id": "CZ07",
+      "name": "Střední Morava",
+      "countryCode": "CZ",
+      "iso3Code": "CZE",
+      "centroid": [
+        4854386,
+        2977523
+      ],
+      "neighborIds": [
+        "CZ05",
+        "CZ06",
+        "CZ08",
+        "PL51",
+        "PL52",
+        "SK02",
+        "SK03"
+      ]
+    },
+    {
+      "id": "CZ08",
+      "name": "Moravskoslezsko",
+      "countryCode": "CZ",
+      "iso3Code": "CZE",
+      "centroid": [
+        4898272,
+        3004444
+      ],
+      "neighborIds": [
+        "CZ07",
+        "PL22",
+        "PL52",
+        "SK03"
+      ]
+    },
+    {
+      "id": "DE11",
+      "name": "Stuttgart",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4293886,
+        2890461
+      ],
+      "neighborIds": [
+        "DE12",
+        "DE14",
+        "DE25",
+        "DE26",
+        "DE27"
+      ]
+    },
+    {
+      "id": "DE12",
+      "name": "Karlsruhe",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4228354,
+        2893605
+      ],
+      "neighborIds": [
+        "DE11",
+        "DE13",
+        "DE14",
+        "DE26",
+        "DE71",
+        "DEB3",
+        "FRF1"
+      ]
+    },
+    {
+      "id": "DE13",
+      "name": "Freiburg",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4196832,
+        2760599
+      ],
+      "neighborIds": [
+        "CH03",
+        "CH04",
+        "CH05",
+        "DE12",
+        "DE14",
+        "FRF1"
+      ]
+    },
+    {
+      "id": "DE14",
+      "name": "Tübingen",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4285564,
+        2783721
+      ],
+      "neighborIds": [
+        "CH05",
+        "DE11",
+        "DE12",
+        "DE13",
+        "DE27"
+      ]
+    },
+    {
+      "id": "DE21",
+      "name": "Oberbayern",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4454940,
+        2786930
+      ],
+      "neighborIds": [
+        "AT31",
+        "AT32",
+        "AT33",
+        "DE22",
+        "DE23",
+        "DE25",
+        "DE27"
+      ]
+    },
+    {
+      "id": "DE22",
+      "name": "Niederbayern",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4517218,
+        2844774
+      ],
+      "neighborIds": [
+        "AT31",
+        "CZ03",
+        "DE21",
+        "DE23"
+      ]
+    },
+    {
+      "id": "DE23",
+      "name": "Oberpfalz",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4477789,
+        2918920
+      ],
+      "neighborIds": [
+        "CZ03",
+        "CZ04",
+        "DE21",
+        "DE22",
+        "DE24",
+        "DE25"
+      ]
+    },
+    {
+      "id": "DE24",
+      "name": "Oberfranken",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4411674,
+        2993885
+      ],
+      "neighborIds": [
+        "CZ04",
+        "DE23",
+        "DE25",
+        "DE26",
+        "DED4",
+        "DEG0"
+      ]
+    },
+    {
+      "id": "DE25",
+      "name": "Mittelfranken",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4381370,
+        2925964
+      ],
+      "neighborIds": [
+        "DE11",
+        "DE21",
+        "DE23",
+        "DE24",
+        "DE26",
+        "DE27"
+      ]
+    },
+    {
+      "id": "DE26",
+      "name": "Unterfranken",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4314168,
+        2986483
+      ],
+      "neighborIds": [
+        "DE11",
+        "DE12",
+        "DE24",
+        "DE25",
+        "DE71",
+        "DE73",
+        "DEG0"
+      ]
+    },
+    {
+      "id": "DE27",
+      "name": "Schwaben",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4354936,
+        2778763
+      ],
+      "neighborIds": [
+        "AT33",
+        "AT34",
+        "DE11",
+        "DE14",
+        "DE21",
+        "DE25"
+      ]
+    },
+    {
+      "id": "DE30",
+      "name": "Berlin",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4553668,
+        3267924
+      ],
+      "neighborIds": [
+        "DE40"
+      ]
+    },
+    {
+      "id": "DE40",
+      "name": "Brandenburg",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4550486,
+        3269192
+      ],
+      "neighborIds": [
+        "DE30",
+        "DE80",
+        "DE93",
+        "DED2",
+        "DED5",
+        "DEE0",
+        "PL42",
+        "PL43"
+      ]
+    },
+    {
+      "id": "DE50",
+      "name": "Bremen",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4231156,
+        3362512
+      ],
+      "neighborIds": [
+        "DE92",
+        "DE93",
+        "DE94"
+      ]
+    },
+    {
+      "id": "DE60",
+      "name": "Hamburg",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4291100,
+        3397049
+      ],
+      "neighborIds": [
+        "DE93",
+        "DEF0"
+      ]
+    },
+    {
+      "id": "DE71",
+      "name": "Darmstadt",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4232621,
+        2990858
+      ],
+      "neighborIds": [
+        "DE12",
+        "DE26",
+        "DE72",
+        "DE73",
+        "DEB1",
+        "DEB3"
+      ]
+    },
+    {
+      "id": "DE72",
+      "name": "Gießen",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4232428,
+        3051799
+      ],
+      "neighborIds": [
+        "DE71",
+        "DE73",
+        "DEA5",
+        "DEB1"
+      ]
+    },
+    {
+      "id": "DE73",
+      "name": "Kassel",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4284268,
+        3105183
+      ],
+      "neighborIds": [
+        "DE26",
+        "DE71",
+        "DE72",
+        "DE91",
+        "DEA4",
+        "DEA5",
+        "DEG0"
+      ]
+    },
+    {
+      "id": "DE80",
+      "name": "Mecklenburg-Vorpommern",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4492941,
+        3416029
+      ],
+      "neighborIds": [
+        "DE40",
+        "DE93",
+        "DEF0",
+        "PL42"
+      ]
+    },
+    {
+      "id": "DE91",
+      "name": "Braunschweig",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4341243,
+        3210294
+      ],
+      "neighborIds": [
+        "DE73",
+        "DE92",
+        "DE93",
+        "DEA4",
+        "DEE0",
+        "DEG0"
+      ]
+    },
+    {
+      "id": "DE92",
+      "name": "Hannover",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4273349,
+        3255419
+      ],
+      "neighborIds": [
+        "DE50",
+        "DE91",
+        "DE93",
+        "DE94",
+        "DEA4"
+      ]
+    },
+    {
+      "id": "DE93",
+      "name": "Lüneburg",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4302596,
+        3349148
+      ],
+      "neighborIds": [
+        "DE40",
+        "DE50",
+        "DE60",
+        "DE80",
+        "DE91",
+        "DE92",
+        "DE94",
+        "DEE0",
+        "DEF0"
+      ]
+    },
+    {
+      "id": "DE94",
+      "name": "Weser-Ems",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4170612,
+        3325043
+      ],
+      "neighborIds": [
+        "DE50",
+        "DE92",
+        "DE93",
+        "DEA3",
+        "DEA4",
+        "NL11",
+        "NL13",
+        "NL21"
+      ]
+    },
+    {
+      "id": "DEA1",
+      "name": "Düsseldorf",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4092968,
+        3146573
+      ],
+      "neighborIds": [
+        "DEA2",
+        "DEA3",
+        "DEA5",
+        "NL22",
+        "NL42"
+      ]
+    },
+    {
+      "id": "DEA2",
+      "name": "Köln",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4097183,
+        3090516
+      ],
+      "neighborIds": [
+        "BE33",
+        "DEA1",
+        "DEA5",
+        "DEB1",
+        "DEB2",
+        "NL42"
+      ]
+    },
+    {
+      "id": "DEA3",
+      "name": "Münster",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4141130,
+        3196806
+      ],
+      "neighborIds": [
+        "DE94",
+        "DEA1",
+        "DEA4",
+        "DEA5",
+        "NL21",
+        "NL22"
+      ]
+    },
+    {
+      "id": "DEA4",
+      "name": "Detmold",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4240383,
+        3207102
+      ],
+      "neighborIds": [
+        "DE73",
+        "DE91",
+        "DE92",
+        "DE94",
+        "DEA3",
+        "DEA5"
+      ]
+    },
+    {
+      "id": "DEA5",
+      "name": "Arnsberg",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4180550,
+        3141104
+      ],
+      "neighborIds": [
+        "DE72",
+        "DE73",
+        "DEA1",
+        "DEA2",
+        "DEA3",
+        "DEA4",
+        "DEB1"
+      ]
+    },
+    {
+      "id": "DEB1",
+      "name": "Koblenz",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4142436,
+        3018005
+      ],
+      "neighborIds": [
+        "DE71",
+        "DE72",
+        "DEA2",
+        "DEA5",
+        "DEB2",
+        "DEB3",
+        "DEC0"
+      ]
+    },
+    {
+      "id": "DEB2",
+      "name": "Trier",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4084635,
+        2994232
+      ],
+      "neighborIds": [
+        "BE33",
+        "DEA2",
+        "DEB1",
+        "DEC0",
+        "LU00"
+      ]
+    },
+    {
+      "id": "DEB3",
+      "name": "Rheinhessen-Pfalz",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4174480,
+        2937650
+      ],
+      "neighborIds": [
+        "DE12",
+        "DE71",
+        "DEB1",
+        "DEC0",
+        "FRF1",
+        "FRF3"
+      ]
+    },
+    {
+      "id": "DEC0",
+      "name": "Saarland",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4106210,
+        2921356
+      ],
+      "neighborIds": [
+        "DEB1",
+        "DEB2",
+        "DEB3",
+        "FRF3",
+        "LU00"
+      ]
+    },
+    {
+      "id": "DED2",
+      "name": "Dresden",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4614855,
+        3125827
+      ],
+      "neighborIds": [
+        "CZ04",
+        "CZ05",
+        "DE40",
+        "DED4",
+        "DED5",
+        "PL43",
+        "PL51"
+      ]
+    },
+    {
+      "id": "DED4",
+      "name": "Chemnitz",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4511975,
+        3068815
+      ],
+      "neighborIds": [
+        "CZ04",
+        "DE24",
+        "DED2",
+        "DED5",
+        "DEG0"
+      ]
+    },
+    {
+      "id": "DED5",
+      "name": "Leipzig",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4508317,
+        3132911
+      ],
+      "neighborIds": [
+        "DE40",
+        "DED2",
+        "DED4",
+        "DEE0",
+        "DEG0"
+      ]
+    },
+    {
+      "id": "DEE0",
+      "name": "Sachsen-Anhalt",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4438835,
+        3200828
+      ],
+      "neighborIds": [
+        "DE40",
+        "DE91",
+        "DE93",
+        "DED5",
+        "DEG0"
+      ]
+    },
+    {
+      "id": "DEF0",
+      "name": "Schleswig-Holstein",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4291721,
+        3467456
+      ],
+      "neighborIds": [
+        "DE60",
+        "DE80",
+        "DE93",
+        "DK03"
+      ]
+    },
+    {
+      "id": "DEG0",
+      "name": "Thüringen",
+      "countryCode": "DE",
+      "iso3Code": "DEU",
+      "centroid": [
+        4400407,
+        3083816
+      ],
+      "neighborIds": [
+        "DE24",
+        "DE26",
+        "DE73",
+        "DE91",
+        "DED4",
+        "DED5",
+        "DEE0"
+      ]
+    },
+    {
+      "id": "DK01",
+      "name": "Hovedstaden",
+      "countryCode": "DK",
+      "iso3Code": "DNK",
+      "centroid": [
+        4516217,
+        3612919
+      ],
+      "neighborIds": [
+        "DK02"
+      ]
+    },
+    {
+      "id": "DK02",
+      "name": "Sjælland",
+      "countryCode": "DK",
+      "iso3Code": "DNK",
+      "centroid": [
+        4436594,
+        3576991
+      ],
+      "neighborIds": [
+        "DK01"
+      ]
+    },
+    {
+      "id": "DK03",
+      "name": "Syddanmark",
+      "countryCode": "DK",
+      "iso3Code": "DNK",
+      "centroid": [
+        4294565,
+        3569510
+      ],
+      "neighborIds": [
+        "DEF0",
+        "DK04"
+      ]
+    },
+    {
+      "id": "DK04",
+      "name": "Midtjylland",
+      "countryCode": "DK",
+      "iso3Code": "DNK",
+      "centroid": [
+        4310632,
+        3690638
+      ],
+      "neighborIds": [
+        "DK03",
+        "DK05"
+      ]
+    },
+    {
+      "id": "DK05",
+      "name": "Nordjylland",
+      "countryCode": "DK",
+      "iso3Code": "DNK",
+      "centroid": [
+        4299806,
+        3763880
+      ],
+      "neighborIds": [
+        "DK04"
+      ]
+    },
+    {
+      "id": "EE00",
+      "name": "Eesti",
+      "countryCode": "EE",
+      "iso3Code": "EST",
+      "centroid": [
+        5166206,
+        4049472
+      ],
+      "neighborIds": [
+        "LV00"
+      ]
+    },
+    {
+      "id": "EL30",
+      "name": "Aττική",
+      "countryCode": "EL",
+      "iso3Code": "GRC",
+      "centroid": [
+        5510190,
+        1699085
+      ],
+      "neighborIds": [
+        "EL64",
+        "EL65"
+      ]
+    },
+    {
+      "id": "EL41",
+      "name": "Βόρειο Αιγαίο",
+      "countryCode": "EL",
+      "iso3Code": "GRC",
+      "centroid": [
+        5707143,
+        1877894
+      ],
+      "neighborIds": []
+    },
+    {
+      "id": "EL42",
+      "name": "Νότιο Αιγαίο",
+      "countryCode": "EL",
+      "iso3Code": "GRC",
+      "centroid": [
+        5745070,
+        1677336
+      ],
+      "neighborIds": []
+    },
+    {
+      "id": "EL43",
+      "name": "Κρήτη",
+      "countryCode": "EL",
+      "iso3Code": "GRC",
+      "centroid": [
+        5665321,
+        1479291
+      ],
+      "neighborIds": []
+    },
+    {
+      "id": "EL51",
+      "name": "Aνατολική Μακεδονία, Θράκη",
+      "countryCode": "EL",
+      "iso3Code": "GRC",
+      "centroid": [
+        5622498,
+        2132735
+      ],
+      "neighborIds": [
+        "BG41",
+        "BG42",
+        "EL52",
+        "TR21"
+      ]
+    },
+    {
+      "id": "EL52",
+      "name": "Κεντρική Μακεδονία",
+      "countryCode": "EL",
+      "iso3Code": "GRC",
+      "centroid": [
+        5424697,
+        2036843
+      ],
+      "neighborIds": [
+        "BG41",
+        "EL51",
+        "EL53",
+        "EL61",
+        "MK00"
+      ]
+    },
+    {
+      "id": "EL53",
+      "name": "Δυτική Μακεδονία",
+      "countryCode": "EL",
+      "iso3Code": "GRC",
+      "centroid": [
+        5292626,
+        1998513
+      ],
+      "neighborIds": [
+        "AL03",
+        "EL52",
+        "EL54",
+        "EL61",
+        "MK00"
+      ]
+    },
+    {
+      "id": "EL54",
+      "name": "Ήπειρος",
+      "countryCode": "EL",
+      "iso3Code": "GRC",
+      "centroid": [
+        5240244,
+        1905127
+      ],
+      "neighborIds": [
+        "AL03",
+        "EL53",
+        "EL61",
+        "EL63"
+      ]
+    },
+    {
+      "id": "EL61",
+      "name": "Θεσσαλία",
+      "countryCode": "EL",
+      "iso3Code": "GRC",
+      "centroid": [
+        5439166,
+        1909532
+      ],
+      "neighborIds": [
+        "EL52",
+        "EL53",
+        "EL54",
+        "EL63",
+        "EL64"
+      ]
+    },
+    {
+      "id": "EL62",
+      "name": "Ιόνια Νησιά",
+      "countryCode": "EL",
+      "iso3Code": "GRC",
+      "centroid": [
+        5244082,
+        1782456
+      ],
+      "neighborIds": []
+    },
+    {
+      "id": "EL63",
+      "name": "Δυτική Ελλάδα",
+      "countryCode": "EL",
+      "iso3Code": "GRC",
+      "centroid": [
+        5340357,
+        1774277
+      ],
+      "neighborIds": [
+        "EL54",
+        "EL61",
+        "EL64",
+        "EL65"
+      ]
+    },
+    {
+      "id": "EL64",
+      "name": "Στερεά Ελλάδα",
+      "countryCode": "EL",
+      "iso3Code": "GRC",
+      "centroid": [
+        5450000,
+        1825922
+      ],
+      "neighborIds": [
+        "EL30",
+        "EL61",
+        "EL63"
+      ]
+    },
+    {
+      "id": "EL65",
+      "name": "Πελοπόννησος",
+      "countryCode": "EL",
+      "iso3Code": "GRC",
+      "centroid": [
+        5440899,
+        1690492
+      ],
+      "neighborIds": [
+        "EL30",
+        "EL63"
+      ]
+    },
+    {
+      "id": "ES11",
+      "name": "Galicia",
+      "countryCode": "ES",
+      "iso3Code": "ESP",
+      "centroid": [
+        2879615,
+        2342901
+      ],
+      "neighborIds": [
+        "ES12",
+        "ES41",
+        "PT11"
+      ]
+    },
+    {
+      "id": "ES12",
+      "name": "Principado de Asturias",
+      "countryCode": "ES",
+      "iso3Code": "ESP",
+      "centroid": [
+        3034499,
+        2370423
+      ],
+      "neighborIds": [
+        "ES11",
+        "ES13",
+        "ES41"
+      ]
+    },
+    {
+      "id": "ES13",
+      "name": "Cantabria",
+      "countryCode": "ES",
+      "iso3Code": "ESP",
+      "centroid": [
+        3189986,
+        2334987
+      ],
+      "neighborIds": [
+        "ES12",
+        "ES21",
+        "ES41"
+      ]
+    },
+    {
+      "id": "ES21",
+      "name": "País Vasco",
+      "countryCode": "ES",
+      "iso3Code": "ESP",
+      "centroid": [
+        3291552,
+        2293761
+      ],
+      "neighborIds": [
+        "ES13",
+        "ES22",
+        "ES23",
+        "ES41",
+        "FRI1"
+      ]
+    },
+    {
+      "id": "ES22",
+      "name": "Comunidad Foral de Navarra",
+      "countryCode": "ES",
+      "iso3Code": "ESP",
+      "centroid": [
+        3379476,
+        2243405
+      ],
+      "neighborIds": [
+        "ES21",
+        "ES23",
+        "ES24",
+        "FRI1"
+      ]
+    },
+    {
+      "id": "ES23",
+      "name": "La Rioja",
+      "countryCode": "ES",
+      "iso3Code": "ESP",
+      "centroid": [
+        3295458,
+        2209617
+      ],
+      "neighborIds": [
+        "ES21",
+        "ES22",
+        "ES24",
+        "ES41"
+      ]
+    },
+    {
+      "id": "ES24",
+      "name": "Aragón",
+      "countryCode": "ES",
+      "iso3Code": "ESP",
+      "centroid": [
+        3421874,
+        2096974
+      ],
+      "neighborIds": [
+        "ES22",
+        "ES23",
+        "ES41",
+        "ES42",
+        "ES51",
+        "ES52",
+        "FRI1",
+        "FRJ2"
+      ]
+    },
+    {
+      "id": "ES30",
+      "name": "Comunidad de Madrid",
+      "countryCode": "ES",
+      "iso3Code": "ESP",
+      "centroid": [
+        3163514,
+        2021756
+      ],
+      "neighborIds": [
+        "ES41",
+        "ES42"
+      ]
+    },
+    {
+      "id": "ES41",
+      "name": "Castilla y León",
+      "countryCode": "ES",
+      "iso3Code": "ESP",
+      "centroid": [
+        3135109,
+        2218280
+      ],
+      "neighborIds": [
+        "ES11",
+        "ES12",
+        "ES13",
+        "ES21",
+        "ES23",
+        "ES24",
+        "ES30",
+        "ES42",
+        "ES43",
+        "PT11",
+        "PT19"
+      ]
+    },
+    {
+      "id": "ES42",
+      "name": "Castilla-La Mancha",
+      "countryCode": "ES",
+      "iso3Code": "ESP",
+      "centroid": [
+        3211606,
+        1937797
+      ],
+      "neighborIds": [
+        "ES24",
+        "ES30",
+        "ES41",
+        "ES43",
+        "ES52",
+        "ES61",
+        "ES62"
+      ]
+    },
+    {
+      "id": "ES43",
+      "name": "Extremadura",
+      "countryCode": "ES",
+      "iso3Code": "ESP",
+      "centroid": [
+        2941343,
+        1942444
+      ],
+      "neighborIds": [
+        "ES41",
+        "ES42",
+        "ES61",
+        "PT19",
+        "PT1C"
+      ]
+    },
+    {
+      "id": "ES51",
+      "name": "Cataluña",
+      "countryCode": "ES",
+      "iso3Code": "ESP",
+      "centroid": [
+        3606041,
+        2125688
+      ],
+      "neighborIds": [
+        "ES24",
+        "ES52",
+        "FRJ1",
+        "FRJ2"
+      ]
+    },
+    {
+      "id": "ES52",
+      "name": "Comunitat Valenciana ",
+      "countryCode": "ES",
+      "iso3Code": "ESP",
+      "centroid": [
+        3402914,
+        1902660
+      ],
+      "neighborIds": [
+        "ES24",
+        "ES42",
+        "ES51",
+        "ES62"
+      ]
+    },
+    {
+      "id": "ES53",
+      "name": "Illes Balears",
+      "countryCode": "ES",
+      "iso3Code": "ESP",
+      "centroid": [
+        3684650,
+        1844830
+      ],
+      "neighborIds": []
+    },
+    {
+      "id": "ES61",
+      "name": "Andalucía",
+      "countryCode": "ES",
+      "iso3Code": "ESP",
+      "centroid": [
+        3017744,
+        1717572
+      ],
+      "neighborIds": [
+        "ES42",
+        "ES43",
+        "ES62",
+        "PT15",
+        "PT1C"
+      ]
+    },
+    {
+      "id": "ES62",
+      "name": "Región de Murcia",
+      "countryCode": "ES",
+      "iso3Code": "ESP",
+      "centroid": [
+        3312947,
+        1737100
+      ],
+      "neighborIds": [
+        "ES42",
+        "ES52",
+        "ES61"
+      ]
+    },
+    {
+      "id": "ES63",
+      "name": "Ciudad de Ceuta",
+      "countryCode": "ES",
+      "iso3Code": "ESP",
+      "centroid": [
+        2931057,
+        1566725
+      ],
+      "neighborIds": []
+    },
+    {
+      "id": "ES64",
+      "name": "Ciudad de Melilla",
+      "countryCode": "ES",
+      "iso3Code": "ESP",
+      "centroid": [
+        3137784,
+        1459606
+      ],
+      "neighborIds": []
+    },
+    {
+      "id": "ES70",
+      "name": "Canarias",
+      "countryCode": "ES",
+      "iso3Code": "ESP",
+      "centroid": [
+        1770387,
+        1023023
+      ],
+      "neighborIds": []
+    },
+    {
+      "id": "FI19",
+      "name": "Länsi-Suomi",
+      "countryCode": "FI",
+      "iso3Code": "FIN",
+      "centroid": [
+        5002139,
+        4457911
+      ],
+      "neighborIds": [
+        "FI1C",
+        "FI1D"
+      ]
+    },
+    {
+      "id": "FI1B",
+      "name": "Helsinki-Uusimaa",
+      "countryCode": "FI",
+      "iso3Code": "FIN",
+      "centroid": [
+        5129592,
+        4218081
+      ],
+      "neighborIds": [
+        "FI1C"
+      ]
+    },
+    {
+      "id": "FI1C",
+      "name": "Etelä-Suomi",
+      "countryCode": "FI",
+      "iso3Code": "FIN",
+      "centroid": [
+        5082855,
+        4254115
+      ],
+      "neighborIds": [
+        "FI19",
+        "FI1B",
+        "FI1D"
+      ]
+    },
+    {
+      "id": "FI1D",
+      "name": "Pohjois- ja Itä-Suomi",
+      "countryCode": "FI",
+      "iso3Code": "FIN",
+      "centroid": [
+        5063521,
+        4811504
+      ],
+      "neighborIds": [
+        "FI19",
+        "FI1C",
+        "NO07",
+        "SE33"
+      ]
+    },
+    {
+      "id": "FI20",
+      "name": "Åland",
+      "countryCode": "FI",
+      "iso3Code": "FIN",
+      "centroid": [
+        4896590,
+        4165415
+      ],
+      "neighborIds": []
+    },
+    {
+      "id": "FR10",
+      "name": "Ile-de-France",
+      "countryCode": "FR",
+      "iso3Code": "FRA",
+      "centroid": [
+        3778355,
+        2871829
+      ],
+      "neighborIds": [
+        "FRB0",
+        "FRC1",
+        "FRD2",
+        "FRE2",
+        "FRF2"
+      ]
+    },
+    {
+      "id": "FRB0",
+      "name": "Centre — Val de Loire",
+      "countryCode": "FR",
+      "iso3Code": "FRA",
+      "centroid": [
+        3698908,
+        2761575
+      ],
+      "neighborIds": [
+        "FR10",
+        "FRC1",
+        "FRD1",
+        "FRD2",
+        "FRG0",
+        "FRI2",
+        "FRI3",
+        "FRK1"
+      ]
+    },
+    {
+      "id": "FRC1",
+      "name": "Bourgogne",
+      "countryCode": "FR",
+      "iso3Code": "FRA",
+      "centroid": [
+        3873211,
+        2698646
+      ],
+      "neighborIds": [
+        "FR10",
+        "FRB0",
+        "FRC2",
+        "FRF2",
+        "FRK1",
+        "FRK2"
+      ]
+    },
+    {
+      "id": "FRC2",
+      "name": "Franche-Comté",
+      "countryCode": "FR",
+      "iso3Code": "FRA",
+      "centroid": [
+        4022662,
+        2683736
+      ],
+      "neighborIds": [
+        "CH01",
+        "CH02",
+        "FRC1",
+        "FRF1",
+        "FRF2",
+        "FRF3",
+        "FRK2"
+      ]
+    },
+    {
+      "id": "FRD1",
+      "name": "Basse-Normandie ",
+      "countryCode": "FR",
+      "iso3Code": "FRA",
+      "centroid": [
+        3555926,
+        2920340
+      ],
+      "neighborIds": [
+        "FRB0",
+        "FRD2",
+        "FRG0",
+        "FRH0"
+      ]
+    },
+    {
+      "id": "FRD2",
+      "name": "Haute-Normandie ",
+      "countryCode": "FR",
+      "iso3Code": "FRA",
+      "centroid": [
+        3662086,
+        2956614
+      ],
+      "neighborIds": [
+        "FR10",
+        "FRB0",
+        "FRD1",
+        "FRE2"
+      ]
+    },
+    {
+      "id": "FRE1",
+      "name": "Nord-Pas de Calais",
+      "countryCode": "FR",
+      "iso3Code": "FRA",
+      "centroid": [
+        3826691,
+        3056876
+      ],
+      "neighborIds": [
+        "BE25",
+        "BE32",
+        "FRE2"
+      ]
+    },
+    {
+      "id": "FRE2",
+      "name": "Picardie",
+      "countryCode": "FR",
+      "iso3Code": "FRA",
+      "centroid": [
+        3794602,
+        2984089
+      ],
+      "neighborIds": [
+        "BE32",
+        "FR10",
+        "FRD2",
+        "FRE1",
+        "FRF2"
+      ]
+    },
+    {
+      "id": "FRF1",
+      "name": "Alsace",
+      "countryCode": "FR",
+      "iso3Code": "FRA",
+      "centroid": [
+        4132700,
+        2807222
+      ],
+      "neighborIds": [
+        "CH02",
+        "CH03",
+        "DE12",
+        "DE13",
+        "DEB3",
+        "FRC2",
+        "FRF3"
+      ]
+    },
+    {
+      "id": "FRF2",
+      "name": "Champagne-Ardenne",
+      "countryCode": "FR",
+      "iso3Code": "FRA",
+      "centroid": [
+        3921171,
+        2871588
+      ],
+      "neighborIds": [
+        "BE32",
+        "BE34",
+        "BE35",
+        "FR10",
+        "FRC1",
+        "FRC2",
+        "FRE2",
+        "FRF3"
+      ]
+    },
+    {
+      "id": "FRF3",
+      "name": "Lorraine",
+      "countryCode": "FR",
+      "iso3Code": "FRA",
+      "centroid": [
+        4052616,
+        2868044
+      ],
+      "neighborIds": [
+        "BE34",
+        "DEB3",
+        "DEC0",
+        "FRC2",
+        "FRF1",
+        "FRF2",
+        "LU00"
+      ]
+    },
+    {
+      "id": "FRG0",
+      "name": "Pays de la Loire",
+      "countryCode": "FR",
+      "iso3Code": "FRA",
+      "centroid": [
+        3500167,
+        2773859
+      ],
+      "neighborIds": [
+        "FRB0",
+        "FRD1",
+        "FRH0",
+        "FRI3"
+      ]
+    },
+    {
+      "id": "FRH0",
+      "name": "Bretagne",
+      "countryCode": "FR",
+      "iso3Code": "FRA",
+      "centroid": [
+        3367310,
+        2862379
+      ],
+      "neighborIds": [
+        "FRD1",
+        "FRG0"
+      ]
+    },
+    {
+      "id": "FRI1",
+      "name": "Aquitaine",
+      "countryCode": "FR",
+      "iso3Code": "FRA",
+      "centroid": [
+        3514477,
+        2409509
+      ],
+      "neighborIds": [
+        "ES21",
+        "ES22",
+        "ES24",
+        "FRI2",
+        "FRI3",
+        "FRJ2"
+      ]
+    },
+    {
+      "id": "FRI2",
+      "name": "Limousin",
+      "countryCode": "FR",
+      "iso3Code": "FRA",
+      "centroid": [
+        3670753,
+        2548525
+      ],
+      "neighborIds": [
+        "FRB0",
+        "FRI1",
+        "FRI3",
+        "FRJ2",
+        "FRK1"
+      ]
+    },
+    {
+      "id": "FRI3",
+      "name": "Poitou-Charentes",
+      "countryCode": "FR",
+      "iso3Code": "FRA",
+      "centroid": [
+        3524510,
+        2615423
+      ],
+      "neighborIds": [
+        "FRB0",
+        "FRG0",
+        "FRI1",
+        "FRI2"
+      ]
+    },
+    {
+      "id": "FRJ1",
+      "name": "Languedoc-Roussillon",
+      "countryCode": "FR",
+      "iso3Code": "FRA",
+      "centroid": [
+        3756800,
+        2299991
+      ],
+      "neighborIds": [
+        "ES51",
+        "FRJ2",
+        "FRK1",
+        "FRK2",
+        "FRL0"
+      ]
+    },
+    {
+      "id": "FRJ2",
+      "name": "Midi-Pyrénées",
+      "countryCode": "FR",
+      "iso3Code": "FRA",
+      "centroid": [
+        3637914,
+        2326455
+      ],
+      "neighborIds": [
+        "ES24",
+        "ES51",
+        "FRI1",
+        "FRI2",
+        "FRJ1",
+        "FRK1"
+      ]
+    },
+    {
+      "id": "FRK1",
+      "name": "Auvergne",
+      "countryCode": "FR",
+      "iso3Code": "FRA",
+      "centroid": [
+        3791557,
+        2530874
+      ],
+      "neighborIds": [
+        "FRB0",
+        "FRC1",
+        "FRI2",
+        "FRJ1",
+        "FRJ2",
+        "FRK2"
+      ]
+    },
+    {
+      "id": "FRK2",
+      "name": "Rhône-Alpes",
+      "countryCode": "FR",
+      "iso3Code": "FRA",
+      "centroid": [
+        3960154,
+        2494002
+      ],
+      "neighborIds": [
+        "CH01",
+        "FRC1",
+        "FRC2",
+        "FRJ1",
+        "FRK1",
+        "FRL0",
+        "ITC1",
+        "ITC2"
+      ]
+    },
+    {
+      "id": "FRL0",
+      "name": "Provence-Alpes-Côte d’Azur",
+      "countryCode": "FR",
+      "iso3Code": "FRA",
+      "centroid": [
+        4004138,
+        2335155
+      ],
+      "neighborIds": [
+        "FRJ1",
+        "FRK2",
+        "ITC1",
+        "ITC3"
+      ]
+    },
+    {
+      "id": "FRM0",
+      "name": "Corse",
+      "countryCode": "FR",
+      "iso3Code": "FRA",
+      "centroid": [
+        4243565,
+        2123062
+      ],
+      "neighborIds": []
+    },
+    {
+      "id": "FRY1",
+      "name": "Guadeloupe",
+      "countryCode": "FR",
+      "iso3Code": "FRA",
+      "centroid": [
+        -2597366,
+        2763934
+      ],
+      "neighborIds": []
+    },
+    {
+      "id": "FRY2",
+      "name": "Martinique ",
+      "countryCode": "FR",
+      "iso3Code": "FRA",
+      "centroid": [
+        -2668391,
+        2503567
+      ],
+      "neighborIds": []
+    },
+    {
+      "id": "FRY3",
+      "name": "Guyane",
+      "countryCode": "FR",
+      "iso3Code": "FRA",
+      "centroid": [
+        -2673702,
+        768229
+      ],
+      "neighborIds": []
+    },
+    {
+      "id": "FRY4",
+      "name": "La Réunion ",
+      "countryCode": "FR",
+      "iso3Code": "FRA",
+      "centroid": [
+        9991114,
+        -3052157
+      ],
+      "neighborIds": []
+    },
+    {
+      "id": "FRY5",
+      "name": "Mayotte",
+      "countryCode": "FR",
+      "iso3Code": "FRA",
+      "centroid": [
+        8729125,
+        -2780260
+      ],
+      "neighborIds": []
+    },
+    {
+      "id": "HR02",
+      "name": "Panonska Hrvatska",
+      "countryCode": "HR",
+      "iso3Code": "HRV",
+      "centroid": [
+        4884211,
+        2504680
+      ],
+      "neighborIds": [
+        "BA01",
+        "BA02",
+        "BA03",
+        "HR03",
+        "HR06",
+        "HU23",
+        "HU33",
+        "RS12",
+        "SI03"
+      ]
+    },
+    {
+      "id": "HR03",
+      "name": "Jadranska Hrvatska",
+      "countryCode": "HR",
+      "iso3Code": "HRV",
+      "centroid": [
+        4774994,
+        2347656
+      ],
+      "neighborIds": [
+        "BA01",
+        "BA02",
+        "HR02",
+        "ME00",
+        "SI03",
+        "SI04"
+      ]
+    },
+    {
+      "id": "HR05",
+      "name": "Grad Zagreb",
+      "countryCode": "HR",
+      "iso3Code": "HRV",
+      "centroid": [
+        4785645,
+        2542186
+      ],
+      "neighborIds": [
+        "HR06"
+      ]
+    },
+    {
+      "id": "HR06",
+      "name": "Sjeverna Hrvatska",
+      "countryCode": "HR",
+      "iso3Code": "HRV",
+      "centroid": [
+        4795717,
+        2570716
+      ],
+      "neighborIds": [
+        "HR02",
+        "HR05",
+        "HU22",
+        "HU23",
+        "SI03"
+      ]
+    },
+    {
+      "id": "HU11",
+      "name": "Budapest",
+      "countryCode": "HU",
+      "iso3Code": "HUN",
+      "centroid": [
+        5002924,
+        2751269
+      ],
+      "neighborIds": [
+        "HU12"
+      ]
+    },
+    {
+      "id": "HU12",
+      "name": "Pest",
+      "countryCode": "HU",
+      "iso3Code": "HUN",
+      "centroid": [
+        5013984,
+        2749689
+      ],
+      "neighborIds": [
+        "HU11",
+        "HU21",
+        "HU31",
+        "HU32",
+        "HU33",
+        "SK02"
+      ]
+    },
+    {
+      "id": "HU21",
+      "name": "Közép-Dunántúl",
+      "countryCode": "HU",
+      "iso3Code": "HUN",
+      "centroid": [
+        4941956,
+        2717877
+      ],
+      "neighborIds": [
+        "HU12",
+        "HU22",
+        "HU23",
+        "HU33",
+        "SK02"
+      ]
+    },
+    {
+      "id": "HU22",
+      "name": "Nyugat-Dunántúl",
+      "countryCode": "HU",
+      "iso3Code": "HUN",
+      "centroid": [
+        4839338,
+        2687979
+      ],
+      "neighborIds": [
+        "AT11",
+        "HR06",
+        "HU21",
+        "HU23",
+        "SI03",
+        "SK01",
+        "SK02"
+      ]
+    },
+    {
+      "id": "HU23",
+      "name": "Dél-Dunántúl",
+      "countryCode": "HU",
+      "iso3Code": "HUN",
+      "centroid": [
+        4948036,
+        2615691
+      ],
+      "neighborIds": [
+        "HR02",
+        "HR06",
+        "HU21",
+        "HU22",
+        "HU33"
+      ]
+    },
+    {
+      "id": "HU31",
+      "name": "Észak-Magyarország",
+      "countryCode": "HU",
+      "iso3Code": "HUN",
+      "centroid": [
+        5100962,
+        2826761
+      ],
+      "neighborIds": [
+        "HU12",
+        "HU32",
+        "SK02",
+        "SK03",
+        "SK04"
+      ]
+    },
+    {
+      "id": "HU32",
+      "name": "Észak-Alföld",
+      "countryCode": "HU",
+      "iso3Code": "HUN",
+      "centroid": [
+        5172703,
+        2789830
+      ],
+      "neighborIds": [
+        "HU12",
+        "HU31",
+        "HU33",
+        "RO11",
+        "SK04"
+      ]
+    },
+    {
+      "id": "HU33",
+      "name": "Dél-Alföld",
+      "countryCode": "HU",
+      "iso3Code": "HUN",
+      "centroid": [
+        5091608,
+        2661991
+      ],
+      "neighborIds": [
+        "HR02",
+        "HU12",
+        "HU21",
+        "HU23",
+        "HU32",
+        "RO11",
+        "RO42",
+        "RS12"
+      ]
+    },
+    {
+      "id": "IE04",
+      "name": "Northern and Western",
+      "countryCode": "IE",
+      "iso3Code": "IRL",
+      "centroid": [
+        3150078,
+        3602669
+      ],
+      "neighborIds": [
+        "IE05",
+        "IE06"
+      ]
+    },
+    {
+      "id": "IE05",
+      "name": "Southern",
+      "countryCode": "IE",
+      "iso3Code": "IRL",
+      "centroid": [
+        3087718,
+        3410906
+      ],
+      "neighborIds": [
+        "IE04",
+        "IE06"
+      ]
+    },
+    {
+      "id": "IE06",
+      "name": "Eastern and Midland",
+      "countryCode": "IE",
+      "iso3Code": "IRL",
+      "centroid": [
+        3212838,
+        3504322
+      ],
+      "neighborIds": [
+        "IE04",
+        "IE05"
+      ]
+    },
+    {
+      "id": "IS00",
+      "name": "Ísland",
+      "countryCode": "IS",
+      "iso3Code": "ISL",
+      "centroid": [
+        2965391,
+        4956069
+      ],
+      "neighborIds": []
+    },
+    {
+      "id": "ITC1",
+      "name": "Piemonte",
+      "countryCode": "IT",
+      "iso3Code": "ITA",
+      "centroid": [
+        4171154,
+        2449778
+      ],
+      "neighborIds": [
+        "CH01",
+        "CH07",
+        "FRK2",
+        "FRL0",
+        "ITC2",
+        "ITC3",
+        "ITC4",
+        "ITH5"
+      ]
+    },
+    {
+      "id": "ITC2",
+      "name": "Valle d’Aosta/Vallée d’Aoste",
+      "countryCode": "IT",
+      "iso3Code": "ITA",
+      "centroid": [
+        4113157,
+        2513823
+      ],
+      "neighborIds": [
+        "CH01",
+        "FRK2",
+        "ITC1"
+      ]
+    },
+    {
+      "id": "ITC3",
+      "name": "Liguria",
+      "countryCode": "IT",
+      "iso3Code": "ITA",
+      "centroid": [
+        4224187,
+        2355597
+      ],
+      "neighborIds": [
+        "FRL0",
+        "ITC1",
+        "ITH5",
+        "ITI1"
+      ]
+    },
+    {
+      "id": "ITC4",
+      "name": "Lombardia",
+      "countryCode": "IT",
+      "iso3Code": "ITA",
+      "centroid": [
+        4306877,
+        2503170
+      ],
+      "neighborIds": [
+        "CH05",
+        "CH07",
+        "ITC1",
+        "ITH1",
+        "ITH2",
+        "ITH3",
+        "ITH5"
+      ]
+    },
+    {
+      "id": "ITF1",
+      "name": "Abruzzo",
+      "countryCode": "IT",
+      "iso3Code": "ITA",
+      "centroid": [
+        4633029,
+        2128344
+      ],
+      "neighborIds": [
+        "ITF2",
+        "ITI3",
+        "ITI4"
+      ]
+    },
+    {
+      "id": "ITF2",
+      "name": "Molise",
+      "countryCode": "IT",
+      "iso3Code": "ITA",
+      "centroid": [
+        4698951,
+        2078526
+      ],
+      "neighborIds": [
+        "ITF1",
+        "ITF3",
+        "ITF4",
+        "ITI4"
+      ]
+    },
+    {
+      "id": "ITF3",
+      "name": "Campania",
+      "countryCode": "IT",
+      "iso3Code": "ITA",
+      "centroid": [
+        4716365,
+        1985368
+      ],
+      "neighborIds": [
+        "ITF2",
+        "ITF4",
+        "ITF5",
+        "ITI4"
+      ]
+    },
+    {
+      "id": "ITF4",
+      "name": "Puglia",
+      "countryCode": "IT",
+      "iso3Code": "ITA",
+      "centroid": [
+        4883948,
+        2001380
+      ],
+      "neighborIds": [
+        "ITF2",
+        "ITF3",
+        "ITF5"
+      ]
+    },
+    {
+      "id": "ITF5",
+      "name": "Basilicata",
+      "countryCode": "IT",
+      "iso3Code": "ITA",
+      "centroid": [
+        4838406,
+        1953405
+      ],
+      "neighborIds": [
+        "ITF3",
+        "ITF4",
+        "ITF6"
+      ]
+    },
+    {
+      "id": "ITF6",
+      "name": "Calabria",
+      "countryCode": "IT",
+      "iso3Code": "ITA",
+      "centroid": [
+        4873776,
+        1801175
+      ],
+      "neighborIds": [
+        "ITF5"
+      ]
+    },
+    {
+      "id": "ITG1",
+      "name": "Sicilia",
+      "countryCode": "IT",
+      "iso3Code": "ITA",
+      "centroid": [
+        4673928,
+        1626159
+      ],
+      "neighborIds": []
+    },
+    {
+      "id": "ITG2",
+      "name": "Sardegna",
+      "countryCode": "IT",
+      "iso3Code": "ITA",
+      "centroid": [
+        4217561,
+        1899071
+      ],
+      "neighborIds": []
+    },
+    {
+      "id": "ITH1",
+      "name": "Provincia Autonoma di Bolzano/Bozen",
+      "countryCode": "IT",
+      "iso3Code": "ITA",
+      "centroid": [
+        4429676,
+        2620055
+      ],
+      "neighborIds": [
+        "AT32",
+        "AT33",
+        "CH05",
+        "ITC4",
+        "ITH2",
+        "ITH3"
+      ]
+    },
+    {
+      "id": "ITH2",
+      "name": "Provincia Autonoma di Trento",
+      "countryCode": "IT",
+      "iso3Code": "ITA",
+      "centroid": [
+        4411133,
+        2560256
+      ],
+      "neighborIds": [
+        "ITC4",
+        "ITH1",
+        "ITH3"
+      ]
+    },
+    {
+      "id": "ITH3",
+      "name": "Veneto",
+      "countryCode": "IT",
+      "iso3Code": "ITA",
+      "centroid": [
+        4470138,
+        2515702
+      ],
+      "neighborIds": [
+        "AT21",
+        "AT33",
+        "ITC4",
+        "ITH1",
+        "ITH2",
+        "ITH4",
+        "ITH5"
+      ]
+    },
+    {
+      "id": "ITH4",
+      "name": "Friuli-Venezia Giulia",
+      "countryCode": "IT",
+      "iso3Code": "ITA",
+      "centroid": [
+        4583424,
+        2547448
+      ],
+      "neighborIds": [
+        "AT21",
+        "ITH3",
+        "SI04"
+      ]
+    },
+    {
+      "id": "ITH5",
+      "name": "Emilia-Romagna",
+      "countryCode": "IT",
+      "iso3Code": "ITA",
+      "centroid": [
+        4404116,
+        2373974
+      ],
+      "neighborIds": [
+        "ITC1",
+        "ITC3",
+        "ITC4",
+        "ITH3",
+        "ITI1",
+        "ITI3"
+      ]
+    },
+    {
+      "id": "ITI1",
+      "name": "Toscana",
+      "countryCode": "IT",
+      "iso3Code": "ITA",
+      "centroid": [
+        4394785,
+        2247733
+      ],
+      "neighborIds": [
+        "ITC3",
+        "ITH5",
+        "ITI2",
+        "ITI3",
+        "ITI4"
+      ]
+    },
+    {
+      "id": "ITI2",
+      "name": "Umbria",
+      "countryCode": "IT",
+      "iso3Code": "ITA",
+      "centroid": [
+        4528286,
+        2212536
+      ],
+      "neighborIds": [
+        "ITI1",
+        "ITI3",
+        "ITI4"
+      ]
+    },
+    {
+      "id": "ITI3",
+      "name": "Marche",
+      "countryCode": "IT",
+      "iso3Code": "ITA",
+      "centroid": [
+        4562137,
+        2261187
+      ],
+      "neighborIds": [
+        "ITF1",
+        "ITH5",
+        "ITI1",
+        "ITI2",
+        "ITI4"
+      ]
+    },
+    {
+      "id": "ITI4",
+      "name": "Lazio",
+      "countryCode": "IT",
+      "iso3Code": "ITA",
+      "centroid": [
+        4544070,
+        2119067
+      ],
+      "neighborIds": [
+        "ITF1",
+        "ITF2",
+        "ITF3",
+        "ITI1",
+        "ITI2",
+        "ITI3"
+      ]
+    },
+    {
+      "id": "LI00",
+      "name": "Liechtenstein",
+      "countryCode": "LI",
+      "iso3Code": "LIE",
+      "centroid": [
+        4287164,
+        2670413
+      ],
+      "neighborIds": [
+        "AT34",
+        "CH05"
+      ]
+    },
+    {
+      "id": "LT01",
+      "name": "Sostinės regionas",
+      "countryCode": "LT",
+      "iso3Code": "LTU",
+      "centroid": [
+        5297776,
+        3629588
+      ],
+      "neighborIds": [
+        "LT02"
+      ]
+    },
+    {
+      "id": "LT02",
+      "name": "Vidurio ir vakarų Lietuvos regionas ",
+      "countryCode": "LT",
+      "iso3Code": "LTU",
+      "centroid": [
+        5192083,
+        3661191
+      ],
+      "neighborIds": [
+        "LT01",
+        "LV00",
+        "PL84"
+      ]
+    },
+    {
+      "id": "LU00",
+      "name": "Luxembourg",
+      "countryCode": "LU",
+      "iso3Code": "LUX",
+      "centroid": [
+        4041549,
+        2975875
+      ],
+      "neighborIds": [
+        "BE33",
+        "BE34",
+        "DEB2",
+        "DEC0",
+        "FRF3"
+      ]
+    },
+    {
+      "id": "LV00",
+      "name": "Latvija",
+      "countryCode": "LV",
+      "iso3Code": "LVA",
+      "centroid": [
+        5209637,
+        3833899
+      ],
+      "neighborIds": [
+        "EE00",
+        "LT02"
+      ]
+    },
+    {
+      "id": "ME00",
+      "name": "Црна Гора",
+      "countryCode": "ME",
+      "iso3Code": "MNE",
+      "centroid": [
+        5075460,
+        2219096
+      ],
+      "neighborIds": [
+        "AL01",
+        "BA02",
+        "HR03",
+        "RS21",
+        "XK00"
+      ]
+    },
+    {
+      "id": "MK00",
+      "name": "Северна Македонија",
+      "countryCode": "MK",
+      "iso3Code": "MKD",
+      "centroid": [
+        5286576,
+        2135285
+      ],
+      "neighborIds": [
+        "AL01",
+        "AL02",
+        "AL03",
+        "BG41",
+        "EL52",
+        "EL53",
+        "RS22",
+        "XK00"
+      ]
+    },
+    {
+      "id": "MT00",
+      "name": "Malta",
+      "countryCode": "MT",
+      "iso3Code": "MLT",
+      "centroid": [
+        4722248,
+        1443054
+      ],
+      "neighborIds": []
+    },
+    {
+      "id": "NL11",
+      "name": "Groningen",
+      "countryCode": "NL",
+      "iso3Code": "NLD",
+      "centroid": [
+        4108326,
+        3347270
+      ],
+      "neighborIds": [
+        "DE94",
+        "NL12",
+        "NL13"
+      ]
+    },
+    {
+      "id": "NL12",
+      "name": "Friesland (NL)",
+      "countryCode": "NL",
+      "iso3Code": "NLD",
+      "centroid": [
+        4037499,
+        3351253
+      ],
+      "neighborIds": [
+        "NL11",
+        "NL13",
+        "NL21",
+        "NL23",
+        "NL32"
+      ]
+    },
+    {
+      "id": "NL13",
+      "name": "Drenthe",
+      "countryCode": "NL",
+      "iso3Code": "NLD",
+      "centroid": [
+        4094233,
+        3312199
+      ],
+      "neighborIds": [
+        "DE94",
+        "NL11",
+        "NL12",
+        "NL21"
+      ]
+    },
+    {
+      "id": "NL21",
+      "name": "Overijssel",
+      "countryCode": "NL",
+      "iso3Code": "NLD",
+      "centroid": [
+        4070303,
+        3276324
+      ],
+      "neighborIds": [
+        "DE94",
+        "DEA3",
+        "NL12",
+        "NL13",
+        "NL22",
+        "NL23"
+      ]
+    },
+    {
+      "id": "NL22",
+      "name": "Gelderland",
+      "countryCode": "NL",
+      "iso3Code": "NLD",
+      "centroid": [
+        4037468,
+        3224526
+      ],
+      "neighborIds": [
+        "DEA1",
+        "DEA3",
+        "NL21",
+        "NL23",
+        "NL35",
+        "NL36",
+        "NL41",
+        "NL42"
+      ]
+    },
+    {
+      "id": "NL23",
+      "name": "Flevoland",
+      "countryCode": "NL",
+      "iso3Code": "NLD",
+      "centroid": [
+        4017579,
+        3281038
+      ],
+      "neighborIds": [
+        "NL12",
+        "NL21",
+        "NL22",
+        "NL32",
+        "NL35"
+      ]
+    },
+    {
+      "id": "NL32",
+      "name": "Noord-Holland",
+      "countryCode": "NL",
+      "iso3Code": "NLD",
+      "centroid": [
+        3976458,
+        3289524
+      ],
+      "neighborIds": [
+        "NL12",
+        "NL23",
+        "NL35",
+        "NL36"
+      ]
+    },
+    {
+      "id": "NL34",
+      "name": "Zeeland",
+      "countryCode": "NL",
+      "iso3Code": "NLD",
+      "centroid": [
+        3896152,
+        3164945
+      ],
+      "neighborIds": [
+        "BE21",
+        "BE23",
+        "BE25",
+        "NL36",
+        "NL41"
+      ]
+    },
+    {
+      "id": "NL35",
+      "name": "Utrecht",
+      "countryCode": "NL",
+      "iso3Code": "NLD",
+      "centroid": [
+        3987128,
+        3234788
+      ],
+      "neighborIds": [
+        "NL22",
+        "NL23",
+        "NL32",
+        "NL36"
+      ]
+    },
+    {
+      "id": "NL36",
+      "name": "Zuid-Holland",
+      "countryCode": "NL",
+      "iso3Code": "NLD",
+      "centroid": [
+        3943126,
+        3227672
+      ],
+      "neighborIds": [
+        "NL22",
+        "NL32",
+        "NL34",
+        "NL35",
+        "NL41"
+      ]
+    },
+    {
+      "id": "NL41",
+      "name": "Noord-Brabant",
+      "countryCode": "NL",
+      "iso3Code": "NLD",
+      "centroid": [
+        3980206,
+        3168221
+      ],
+      "neighborIds": [
+        "BE21",
+        "BE22",
+        "NL22",
+        "NL34",
+        "NL36",
+        "NL42"
+      ]
+    },
+    {
+      "id": "NL42",
+      "name": "Limburg (NL)",
+      "countryCode": "NL",
+      "iso3Code": "NLD",
+      "centroid": [
+        4034567,
+        3124960
+      ],
+      "neighborIds": [
+        "BE22",
+        "BE33",
+        "DEA1",
+        "DEA2",
+        "NL22",
+        "NL41"
+      ]
+    },
+    {
+      "id": "NO02",
+      "name": "Innlandet",
+      "countryCode": "NO",
+      "iso3Code": "NOR",
+      "centroid": [
+        4346116,
+        4251969
+      ],
+      "neighborIds": [
+        "NO06",
+        "NO08",
+        "NO0A",
+        "SE31",
+        "SE32"
+      ]
+    },
+    {
+      "id": "NO06",
+      "name": "Trøndelag/Trööndelage",
+      "countryCode": "NO",
+      "iso3Code": "NOR",
+      "centroid": [
+        4358645,
+        4527351
+      ],
+      "neighborIds": [
+        "NO02",
+        "NO07",
+        "NO0A",
+        "SE32"
+      ]
+    },
+    {
+      "id": "NO07",
+      "name": "Nord-Norge",
+      "countryCode": "NO",
+      "iso3Code": "NOR",
+      "centroid": [
+        4657626,
+        5065010
+      ],
+      "neighborIds": [
+        "FI1D",
+        "NO06",
+        "SE33"
+      ]
+    },
+    {
+      "id": "NO08",
+      "name": "Oslo og Viken",
+      "countryCode": "NO",
+      "iso3Code": "NOR",
+      "centroid": [
+        4348972,
+        4051605
+      ],
+      "neighborIds": [
+        "NO02",
+        "NO09",
+        "NO0A",
+        "SE23",
+        "SE31"
+      ]
+    },
+    {
+      "id": "NO09",
+      "name": "Agder og Sør-Østlandet",
+      "countryCode": "NO",
+      "iso3Code": "NOR",
+      "centroid": [
+        4222743,
+        4010682
+      ],
+      "neighborIds": [
+        "NO08",
+        "NO0A"
+      ]
+    },
+    {
+      "id": "NO0A",
+      "name": "Vestlandet",
+      "countryCode": "NO",
+      "iso3Code": "NOR",
+      "centroid": [
+        4118321,
+        4206282
+      ],
+      "neighborIds": [
+        "NO02",
+        "NO06",
+        "NO08",
+        "NO09"
+      ]
+    },
+    {
+      "id": "NO0B",
+      "name": "Svalbard og Jan Mayen",
+      "countryCode": "NO",
+      "iso3Code": "NOR",
+      "centroid": [
+        4492141,
+        6173121
+      ],
+      "neighborIds": []
+    },
+    {
+      "id": "PL21",
+      "name": "Małopolskie",
+      "countryCode": "PL",
+      "iso3Code": "POL",
+      "centroid": [
+        5058682,
+        3024357
+      ],
+      "neighborIds": [
+        "PL22",
+        "PL72",
+        "PL82",
+        "SK03",
+        "SK04"
+      ]
+    },
+    {
+      "id": "PL22",
+      "name": "Śląskie",
+      "countryCode": "PL",
+      "iso3Code": "POL",
+      "centroid": [
+        4964940,
+        3065932
+      ],
+      "neighborIds": [
+        "CZ08",
+        "PL21",
+        "PL52",
+        "PL71",
+        "PL72",
+        "SK03"
+      ]
+    },
+    {
+      "id": "PL41",
+      "name": "Wielkopolskie",
+      "countryCode": "PL",
+      "iso3Code": "POL",
+      "centroid": [
+        4823059,
+        3279216
+      ],
+      "neighborIds": [
+        "PL42",
+        "PL43",
+        "PL51",
+        "PL52",
+        "PL61",
+        "PL63",
+        "PL71"
+      ]
+    },
+    {
+      "id": "PL42",
+      "name": "Zachodniopomorskie",
+      "countryCode": "PL",
+      "iso3Code": "POL",
+      "centroid": [
+        4693071,
+        3393885
+      ],
+      "neighborIds": [
+        "DE40",
+        "DE80",
+        "PL41",
+        "PL43",
+        "PL63"
+      ]
+    },
+    {
+      "id": "PL43",
+      "name": "Lubuskie",
+      "countryCode": "PL",
+      "iso3Code": "POL",
+      "centroid": [
+        4690087,
+        3245006
+      ],
+      "neighborIds": [
+        "DE40",
+        "DED2",
+        "PL41",
+        "PL42",
+        "PL51"
+      ]
+    },
+    {
+      "id": "PL51",
+      "name": "Dolnośląskie",
+      "countryCode": "PL",
+      "iso3Code": "POL",
+      "centroid": [
+        4760332,
+        3123620
+      ],
+      "neighborIds": [
+        "CZ05",
+        "CZ07",
+        "DED2",
+        "PL41",
+        "PL43",
+        "PL52"
+      ]
+    },
+    {
+      "id": "PL52",
+      "name": "Opolskie",
+      "countryCode": "PL",
+      "iso3Code": "POL",
+      "centroid": [
+        4879491,
+        3083289
+      ],
+      "neighborIds": [
+        "CZ07",
+        "CZ08",
+        "PL22",
+        "PL41",
+        "PL51",
+        "PL71"
+      ]
+    },
+    {
+      "id": "PL61",
+      "name": "Kujawsko-pomorskie",
+      "countryCode": "PL",
+      "iso3Code": "POL",
+      "centroid": [
+        4888622,
+        3363621
+      ],
+      "neighborIds": [
+        "PL41",
+        "PL62",
+        "PL63",
+        "PL71",
+        "PL92"
+      ]
+    },
+    {
+      "id": "PL62",
+      "name": "Warmińsko-mazurskie",
+      "countryCode": "PL",
+      "iso3Code": "POL",
+      "centroid": [
+        5008721,
+        3467285
+      ],
+      "neighborIds": [
+        "PL61",
+        "PL63",
+        "PL84",
+        "PL92"
+      ]
+    },
+    {
+      "id": "PL63",
+      "name": "Pomorskie",
+      "countryCode": "PL",
+      "iso3Code": "POL",
+      "centroid": [
+        4852477,
+        3464086
+      ],
+      "neighborIds": [
+        "PL41",
+        "PL42",
+        "PL61",
+        "PL62"
+      ]
+    },
+    {
+      "id": "PL71",
+      "name": "Łódzkie",
+      "countryCode": "PL",
+      "iso3Code": "POL",
+      "centroid": [
+        4974652,
+        3209416
+      ],
+      "neighborIds": [
+        "PL22",
+        "PL41",
+        "PL52",
+        "PL61",
+        "PL72",
+        "PL92"
+      ]
+    },
+    {
+      "id": "PL72",
+      "name": "Świętokrzyskie",
+      "countryCode": "PL",
+      "iso3Code": "POL",
+      "centroid": [
+        5062253,
+        3132529
+      ],
+      "neighborIds": [
+        "PL21",
+        "PL22",
+        "PL71",
+        "PL81",
+        "PL82",
+        "PL92"
+      ]
+    },
+    {
+      "id": "PL81",
+      "name": "Lubelskie",
+      "countryCode": "PL",
+      "iso3Code": "POL",
+      "centroid": [
+        5220650,
+        3201745
+      ],
+      "neighborIds": [
+        "PL72",
+        "PL82",
+        "PL84",
+        "PL92"
+      ]
+    },
+    {
+      "id": "PL82",
+      "name": "Podkarpackie",
+      "countryCode": "PL",
+      "iso3Code": "POL",
+      "centroid": [
+        5195803,
+        3068709
+      ],
+      "neighborIds": [
+        "PL21",
+        "PL72",
+        "PL81",
+        "SK04"
+      ]
+    },
+    {
+      "id": "PL84",
+      "name": "Podlaskie",
+      "countryCode": "PL",
+      "iso3Code": "POL",
+      "centroid": [
+        5178815,
+        3437201
+      ],
+      "neighborIds": [
+        "LT02",
+        "PL62",
+        "PL81",
+        "PL92"
+      ]
+    },
+    {
+      "id": "PL91",
+      "name": "Warszawski stołeczny",
+      "countryCode": "PL",
+      "iso3Code": "POL",
+      "centroid": [
+        5078817,
+        3294118
+      ],
+      "neighborIds": [
+        "PL92"
+      ]
+    },
+    {
+      "id": "PL92",
+      "name": "Mazowiecki regionalny",
+      "countryCode": "PL",
+      "iso3Code": "POL",
+      "centroid": [
+        5077230,
+        3295644
+      ],
+      "neighborIds": [
+        "PL61",
+        "PL62",
+        "PL71",
+        "PL72",
+        "PL81",
+        "PL84",
+        "PL91"
+      ]
+    },
+    {
+      "id": "PT11",
+      "name": "Norte",
+      "countryCode": "PT",
+      "iso3Code": "PRT",
+      "centroid": [
+        2854373,
+        2211691
+      ],
+      "neighborIds": [
+        "ES11",
+        "ES41",
+        "PT19"
+      ]
+    },
+    {
+      "id": "PT15",
+      "name": "Algarve",
+      "countryCode": "PT",
+      "iso3Code": "PRT",
+      "centroid": [
+        2713778,
+        1769912
+      ],
+      "neighborIds": [
+        "ES61",
+        "PT1C"
+      ]
+    },
+    {
+      "id": "PT19",
+      "name": "Centro (PT)",
+      "countryCode": "PT",
+      "iso3Code": "PRT",
+      "centroid": [
+        2806677,
+        2091071
+      ],
+      "neighborIds": [
+        "ES41",
+        "ES43",
+        "PT11",
+        "PT1C",
+        "PT1D"
+      ]
+    },
+    {
+      "id": "PT1A",
+      "name": "Grande Lisboa",
+      "countryCode": "PT",
+      "iso3Code": "PRT",
+      "centroid": [
+        2665492,
+        1966203
+      ],
+      "neighborIds": [
+        "PT1D"
+      ]
+    },
+    {
+      "id": "PT1B",
+      "name": "Península de Setúbal",
+      "countryCode": "PT",
+      "iso3Code": "PRT",
+      "centroid": [
+        2689605,
+        1934907
+      ],
+      "neighborIds": [
+        "PT1C",
+        "PT1D"
+      ]
+    },
+    {
+      "id": "PT1C",
+      "name": "Alentejo",
+      "countryCode": "PT",
+      "iso3Code": "PRT",
+      "centroid": [
+        2767148,
+        1901538
+      ],
+      "neighborIds": [
+        "ES43",
+        "ES61",
+        "PT15",
+        "PT19",
+        "PT1B",
+        "PT1D"
+      ]
+    },
+    {
+      "id": "PT1D",
+      "name": "Oeste e Vale do Tejo",
+      "countryCode": "PT",
+      "iso3Code": "PRT",
+      "centroid": [
+        2725343,
+        1999516
+      ],
+      "neighborIds": [
+        "PT19",
+        "PT1A",
+        "PT1B",
+        "PT1C"
+      ]
+    },
+    {
+      "id": "PT20",
+      "name": "Região Autónoma dos Açores",
+      "countryCode": "PT",
+      "iso3Code": "PRT",
+      "centroid": [
+        1153540,
+        2535807
+      ],
+      "neighborIds": []
+    },
+    {
+      "id": "PT30",
+      "name": "Região Autónoma da Madeira",
+      "countryCode": "PT",
+      "iso3Code": "PRT",
+      "centroid": [
+        1839121,
+        1427152
+      ],
+      "neighborIds": []
+    },
+    {
+      "id": "RO11",
+      "name": "Nord-Vest",
+      "countryCode": "RO",
+      "iso3Code": "ROU",
+      "centroid": [
+        5340109,
+        2782991
+      ],
+      "neighborIds": [
+        "HU32",
+        "HU33",
+        "RO12",
+        "RO21",
+        "RO42"
+      ]
+    },
+    {
+      "id": "RO12",
+      "name": "Centru",
+      "countryCode": "RO",
+      "iso3Code": "ROU",
+      "centroid": [
+        5450973,
+        2683986
+      ],
+      "neighborIds": [
+        "RO11",
+        "RO21",
+        "RO22",
+        "RO31",
+        "RO41",
+        "RO42"
+      ]
+    },
+    {
+      "id": "RO21",
+      "name": "Nord-Est",
+      "countryCode": "RO",
+      "iso3Code": "ROU",
+      "centroid": [
+        5577936,
+        2806516
+      ],
+      "neighborIds": [
+        "RO11",
+        "RO12",
+        "RO22"
+      ]
+    },
+    {
+      "id": "RO22",
+      "name": "Sud-Est",
+      "countryCode": "RO",
+      "iso3Code": "ROU",
+      "centroid": [
+        5711124,
+        2607624
+      ],
+      "neighborIds": [
+        "BG32",
+        "BG33",
+        "RO12",
+        "RO21",
+        "RO31"
+      ]
+    },
+    {
+      "id": "RO31",
+      "name": "Sud-Muntenia",
+      "countryCode": "RO",
+      "iso3Code": "ROU",
+      "centroid": [
+        5573193,
+        2524423
+      ],
+      "neighborIds": [
+        "BG31",
+        "BG32",
+        "RO12",
+        "RO22",
+        "RO32",
+        "RO41"
+      ]
+    },
+    {
+      "id": "RO32",
+      "name": "Bucureşti-Ilfov",
+      "countryCode": "RO",
+      "iso3Code": "ROU",
+      "centroid": [
+        5594786,
+        2512951
+      ],
+      "neighborIds": [
+        "RO31"
+      ]
+    },
+    {
+      "id": "RO41",
+      "name": "Sud-Vest Oltenia",
+      "countryCode": "RO",
+      "iso3Code": "ROU",
+      "centroid": [
+        5393356,
+        2475508
+      ],
+      "neighborIds": [
+        "BG31",
+        "RO12",
+        "RO31",
+        "RO42",
+        "RS22"
+      ]
+    },
+    {
+      "id": "RO42",
+      "name": "Vest",
+      "countryCode": "RO",
+      "iso3Code": "ROU",
+      "centroid": [
+        5248623,
+        2575798
+      ],
+      "neighborIds": [
+        "HU33",
+        "RO11",
+        "RO12",
+        "RO41",
+        "RS12",
+        "RS22"
+      ]
+    },
+    {
+      "id": "RS11",
+      "name": "Београдски регион",
+      "countryCode": "RS",
+      "iso3Code": "SRB",
+      "centroid": [
+        5145688,
+        2453009
+      ],
+      "neighborIds": [
+        "RS12",
+        "RS21",
+        "RS22"
+      ]
+    },
+    {
+      "id": "RS12",
+      "name": "Регион Војводине",
+      "countryCode": "RS",
+      "iso3Code": "SRB",
+      "centroid": [
+        5097755,
+        2519493
+      ],
+      "neighborIds": [
+        "BA02",
+        "HR02",
+        "HU33",
+        "RO42",
+        "RS11",
+        "RS21",
+        "RS22"
+      ]
+    },
+    {
+      "id": "RS21",
+      "name": "Регион Шумадије и Западне Србије",
+      "countryCode": "RS",
+      "iso3Code": "SRB",
+      "centroid": [
+        5145220,
+        2356931
+      ],
+      "neighborIds": [
+        "BA02",
+        "ME00",
+        "RS11",
+        "RS12",
+        "RS22",
+        "XK00"
+      ]
+    },
+    {
+      "id": "RS22",
+      "name": "Регион Јужне и Источне Србије",
+      "countryCode": "RS",
+      "iso3Code": "SRB",
+      "centroid": [
+        5275691,
+        2347503
+      ],
+      "neighborIds": [
+        "BG31",
+        "BG41",
+        "MK00",
+        "RO41",
+        "RO42",
+        "RS11",
+        "RS12",
+        "RS21",
+        "XK00"
+      ]
+    },
+    {
+      "id": "SE11",
+      "name": "Stockholm",
+      "countryCode": "SE",
+      "iso3Code": "SWE",
+      "centroid": [
+        4802057,
+        4055917
+      ],
+      "neighborIds": [
+        "SE12"
+      ]
+    },
+    {
+      "id": "SE12",
+      "name": "Östra Mellansverige",
+      "countryCode": "SE",
+      "iso3Code": "SWE",
+      "centroid": [
+        4683056,
+        4031872
+      ],
+      "neighborIds": [
+        "SE11",
+        "SE21",
+        "SE23",
+        "SE31"
+      ]
+    },
+    {
+      "id": "SE21",
+      "name": "Småland med öarna",
+      "countryCode": "SE",
+      "iso3Code": "SWE",
+      "centroid": [
+        4681691,
+        3826438
+      ],
+      "neighborIds": [
+        "SE12",
+        "SE22",
+        "SE23"
+      ]
+    },
+    {
+      "id": "SE22",
+      "name": "Sydsverige",
+      "countryCode": "SE",
+      "iso3Code": "SWE",
+      "centroid": [
+        4571009,
+        3668767
+      ],
+      "neighborIds": [
+        "SE21",
+        "SE23"
+      ]
+    },
+    {
+      "id": "SE23",
+      "name": "Västsverige",
+      "countryCode": "SE",
+      "iso3Code": "SWE",
+      "centroid": [
+        4488165,
+        3874770
+      ],
+      "neighborIds": [
+        "NO08",
+        "SE12",
+        "SE21",
+        "SE22",
+        "SE31"
+      ]
+    },
+    {
+      "id": "SE31",
+      "name": "Norra Mellansverige",
+      "countryCode": "SE",
+      "iso3Code": "SWE",
+      "centroid": [
+        4559684,
+        4170743
+      ],
+      "neighborIds": [
+        "NO02",
+        "NO08",
+        "SE12",
+        "SE23",
+        "SE32"
+      ]
+    },
+    {
+      "id": "SE32",
+      "name": "Mellersta Norrland",
+      "countryCode": "SE",
+      "iso3Code": "SWE",
+      "centroid": [
+        4608589,
+        4461008
+      ],
+      "neighborIds": [
+        "NO02",
+        "NO06",
+        "SE31",
+        "SE33"
+      ]
+    },
+    {
+      "id": "SE33",
+      "name": "Övre Norrland",
+      "countryCode": "SE",
+      "iso3Code": "SWE",
+      "centroid": [
+        4786333,
+        4803919
+      ],
+      "neighborIds": [
+        "FI1D",
+        "NO07",
+        "SE32"
+      ]
+    },
+    {
+      "id": "SI03",
+      "name": "Vzhodna Slovenija",
+      "countryCode": "SI",
+      "iso3Code": "SVN",
+      "centroid": [
+        4731515,
+        2583057
+      ],
+      "neighborIds": [
+        "AT11",
+        "AT21",
+        "AT22",
+        "HR02",
+        "HR03",
+        "HR06",
+        "HU22",
+        "SI04"
+      ]
+    },
+    {
+      "id": "SI04",
+      "name": "Zahodna Slovenija",
+      "countryCode": "SI",
+      "iso3Code": "SVN",
+      "centroid": [
+        4646842,
+        2548026
+      ],
+      "neighborIds": [
+        "AT21",
+        "HR03",
+        "ITH4",
+        "SI03"
+      ]
+    },
+    {
+      "id": "SK01",
+      "name": "Bratislavský kraj",
+      "countryCode": "SK",
+      "iso3Code": "SVK",
+      "centroid": [
+        4849898,
+        2823311
+      ],
+      "neighborIds": [
+        "AT11",
+        "AT12",
+        "HU22",
+        "SK02"
+      ]
+    },
+    {
+      "id": "SK02",
+      "name": "Západné Slovensko",
+      "countryCode": "SK",
+      "iso3Code": "SVK",
+      "centroid": [
+        4922542,
+        2852278
+      ],
+      "neighborIds": [
+        "AT12",
+        "CZ06",
+        "CZ07",
+        "HU12",
+        "HU21",
+        "HU22",
+        "HU31",
+        "SK01",
+        "SK03"
+      ]
+    },
+    {
+      "id": "SK03",
+      "name": "Stredné Slovensko",
+      "countryCode": "SK",
+      "iso3Code": "SVK",
+      "centroid": [
+        5009243,
+        2902285
+      ],
+      "neighborIds": [
+        "CZ07",
+        "CZ08",
+        "HU31",
+        "PL21",
+        "PL22",
+        "SK02",
+        "SK04"
+      ]
+    },
+    {
+      "id": "SK04",
+      "name": "Východné Slovensko",
+      "countryCode": "SK",
+      "iso3Code": "SVK",
+      "centroid": [
+        5139802,
+        2926021
+      ],
+      "neighborIds": [
+        "HU31",
+        "HU32",
+        "PL21",
+        "PL82",
+        "SK03"
+      ]
+    },
+    {
+      "id": "TR10",
+      "name": "İstanbul",
+      "countryCode": "TR",
+      "iso3Code": "TUR",
+      "centroid": [
+        5890480,
+        2202191
+      ],
+      "neighborIds": [
+        "TR21",
+        "TR42"
+      ]
+    },
+    {
+      "id": "TR21",
+      "name": "Tekirdağ, Edirne, Kırklareli",
+      "countryCode": "TR",
+      "iso3Code": "TUR",
+      "centroid": [
+        5744380,
+        2188770
+      ],
+      "neighborIds": [
+        "BG34",
+        "BG42",
+        "EL51",
+        "TR10",
+        "TR22"
+      ]
+    },
+    {
+      "id": "TR22",
+      "name": "Balıkesir, Çanakkale",
+      "countryCode": "TR",
+      "iso3Code": "TUR",
+      "centroid": [
+        5764092,
+        2048261
+      ],
+      "neighborIds": [
+        "TR21",
+        "TR31",
+        "TR33",
+        "TR41"
+      ]
+    },
+    {
+      "id": "TR31",
+      "name": "İzmir",
+      "countryCode": "TR",
+      "iso3Code": "TUR",
+      "centroid": [
+        5802803,
+        1883395
+      ],
+      "neighborIds": [
+        "TR22",
+        "TR32",
+        "TR33"
+      ]
+    },
+    {
+      "id": "TR32",
+      "name": "Aydın, Denizli, Muğla",
+      "countryCode": "TR",
+      "iso3Code": "TUR",
+      "centroid": [
+        5950780,
+        1774080
+      ],
+      "neighborIds": [
+        "TR31",
+        "TR33",
+        "TR61"
+      ]
+    },
+    {
+      "id": "TR33",
+      "name": "Manisa, Afyonkarahisar, Kütahya, Uşak",
+      "countryCode": "TR",
+      "iso3Code": "TUR",
+      "centroid": [
+        6007093,
+        1965256
+      ],
+      "neighborIds": [
+        "TR22",
+        "TR31",
+        "TR32",
+        "TR41",
+        "TR52",
+        "TR61"
+      ]
+    },
+    {
+      "id": "TR41",
+      "name": "Bursa, Eskişehir, Bilecik",
+      "countryCode": "TR",
+      "iso3Code": "TUR",
+      "centroid": [
+        6024592,
+        2095779
+      ],
+      "neighborIds": [
+        "TR22",
+        "TR33",
+        "TR42",
+        "TR51",
+        "TR52"
+      ]
+    },
+    {
+      "id": "TR42",
+      "name": "Kocaeli, Sakarya, Düzce, Bolu, Yalova",
+      "countryCode": "TR",
+      "iso3Code": "TUR",
+      "centroid": [
+        6042303,
+        2193593
+      ],
+      "neighborIds": [
+        "TR10",
+        "TR41",
+        "TR51",
+        "TR81",
+        "TR82"
+      ]
+    },
+    {
+      "id": "TR51",
+      "name": "Ankara",
+      "countryCode": "TR",
+      "iso3Code": "TUR",
+      "centroid": [
+        6242634,
+        2138108
+      ],
+      "neighborIds": [
+        "TR41",
+        "TR42",
+        "TR52",
+        "TR71",
+        "TR82"
+      ]
+    },
+    {
+      "id": "TR52",
+      "name": "Konya, Karaman",
+      "countryCode": "TR",
+      "iso3Code": "TUR",
+      "centroid": [
+        6296048,
+        1945425
+      ],
+      "neighborIds": [
+        "TR33",
+        "TR41",
+        "TR51",
+        "TR61",
+        "TR62",
+        "TR71"
+      ]
+    },
+    {
+      "id": "TR61",
+      "name": "Antalya, Isparta, Burdur",
+      "countryCode": "TR",
+      "iso3Code": "TUR",
+      "centroid": [
+        6158080,
+        1813108
+      ],
+      "neighborIds": [
+        "TR32",
+        "TR33",
+        "TR52",
+        "TR62"
+      ]
+    },
+    {
+      "id": "TR62",
+      "name": "Adana, Mersin",
+      "countryCode": "TR",
+      "iso3Code": "TUR",
+      "centroid": [
+        6508012,
+        1909996
+      ],
+      "neighborIds": [
+        "TR52",
+        "TR61",
+        "TR63",
+        "TR71",
+        "TR72"
+      ]
+    },
+    {
+      "id": "TR63",
+      "name": "Hatay, Kahramanmaraş, Osmaniye",
+      "countryCode": "TR",
+      "iso3Code": "TUR",
+      "centroid": [
+        6651866,
+        1969588
+      ],
+      "neighborIds": [
+        "TR62",
+        "TR72",
+        "TRB1",
+        "TRC1"
+      ]
+    },
+    {
+      "id": "TR71",
+      "name": "Kırıkkale, Aksaray, Niğde, Nevşehir, Kırşehir",
+      "countryCode": "TR",
+      "iso3Code": "TUR",
+      "centroid": [
+        6398827,
+        2084084
+      ],
+      "neighborIds": [
+        "TR51",
+        "TR52",
+        "TR62",
+        "TR72",
+        "TR82",
+        "TR83"
+      ]
+    },
+    {
+      "id": "TR72",
+      "name": "Kayseri, Sivas, Yozgat",
+      "countryCode": "TR",
+      "iso3Code": "TUR",
+      "centroid": [
+        6552566,
+        2197816
+      ],
+      "neighborIds": [
+        "TR62",
+        "TR63",
+        "TR71",
+        "TR83",
+        "TR90",
+        "TRA1",
+        "TRB1"
+      ]
+    },
+    {
+      "id": "TR81",
+      "name": "Zonguldak, Karabük, Bartın",
+      "countryCode": "TR",
+      "iso3Code": "TUR",
+      "centroid": [
+        6172275,
+        2301330
+      ],
+      "neighborIds": [
+        "TR42",
+        "TR82"
+      ]
+    },
+    {
+      "id": "TR82",
+      "name": "Kastamonu, Çankırı, Sinop",
+      "countryCode": "TR",
+      "iso3Code": "TUR",
+      "centroid": [
+        6307240,
+        2342721
+      ],
+      "neighborIds": [
+        "TR42",
+        "TR51",
+        "TR71",
+        "TR81",
+        "TR83"
+      ]
+    },
+    {
+      "id": "TR83",
+      "name": "Samsun, Tokat, Çorum, Amasya",
+      "countryCode": "TR",
+      "iso3Code": "TUR",
+      "centroid": [
+        6466030,
+        2354756
+      ],
+      "neighborIds": [
+        "TR71",
+        "TR72",
+        "TR82",
+        "TR90"
+      ]
+    },
+    {
+      "id": "TR90",
+      "name": "Trabzon, Ordu, Giresun, Rize, Artvin, Gümüşhane",
+      "countryCode": "TR",
+      "iso3Code": "TUR",
+      "centroid": [
+        6762461,
+        2462081
+      ],
+      "neighborIds": [
+        "TR72",
+        "TR83",
+        "TRA1",
+        "TRA2"
+      ]
+    },
+    {
+      "id": "TRA1",
+      "name": "Erzurum, Erzincan, Bayburt",
+      "countryCode": "TR",
+      "iso3Code": "TUR",
+      "centroid": [
+        6862205,
+        2394271
+      ],
+      "neighborIds": [
+        "TR72",
+        "TR90",
+        "TRA2",
+        "TRB1",
+        "TRB2"
+      ]
+    },
+    {
+      "id": "TRA2",
+      "name": "Ağrı, Kars, Iğdır, Ardahan",
+      "countryCode": "TR",
+      "iso3Code": "TUR",
+      "centroid": [
+        7070380,
+        2539610
+      ],
+      "neighborIds": [
+        "TR90",
+        "TRA1",
+        "TRB2"
+      ]
+    },
+    {
+      "id": "TRB1",
+      "name": "Malatya, Elazığ, Bingöl, Tunceli",
+      "countryCode": "TR",
+      "iso3Code": "TUR",
+      "centroid": [
+        6805172,
+        2232968
+      ],
+      "neighborIds": [
+        "TR63",
+        "TR72",
+        "TRA1",
+        "TRB2",
+        "TRC1",
+        "TRC2"
+      ]
+    },
+    {
+      "id": "TRB2",
+      "name": "Van, Muş, Bitlis, Hakkari",
+      "countryCode": "TR",
+      "iso3Code": "TUR",
+      "centroid": [
+        7154946,
+        2321481
+      ],
+      "neighborIds": [
+        "TRA1",
+        "TRA2",
+        "TRB1",
+        "TRC2",
+        "TRC3"
+      ]
+    },
+    {
+      "id": "TRC1",
+      "name": "Gaziantep, Adıyaman, Kilis",
+      "countryCode": "TR",
+      "iso3Code": "TUR",
+      "centroid": [
+        6738253,
+        2038807
+      ],
+      "neighborIds": [
+        "TR63",
+        "TRB1",
+        "TRC2"
+      ]
+    },
+    {
+      "id": "TRC2",
+      "name": "Şanlıurfa, Diyarbakır",
+      "countryCode": "TR",
+      "iso3Code": "TUR",
+      "centroid": [
+        6889414,
+        2114623
+      ],
+      "neighborIds": [
+        "TRB1",
+        "TRB2",
+        "TRC1",
+        "TRC3"
+      ]
+    },
+    {
+      "id": "TRC3",
+      "name": "Mardin, Batman, Şırnak, Siirt",
+      "countryCode": "TR",
+      "iso3Code": "TUR",
+      "centroid": [
+        7047665,
+        2185453
+      ],
+      "neighborIds": [
+        "TRB2",
+        "TRC2"
+      ]
+    },
+    {
+      "id": "XK00",
+      "name": "Kosovo",
+      "countryCode": "XK",
+      "iso3Code": "XK",
+      "centroid": [
+        5214163,
+        2220998
+      ],
+      "neighborIds": [
+        "AL01",
+        "ME00",
+        "MK00",
+        "RS21",
+        "RS22"
+      ]
+    }
+  ]
+}

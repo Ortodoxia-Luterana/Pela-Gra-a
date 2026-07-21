@@ -1957,3 +1957,7 @@ img.feed-avatar {
   background:linear-gradient(90deg, rgba(0,0,0,.08), rgba(0,0,0,.78)), url("/assets/concordium-exploracao-card.png?v=cards-20260614") center/cover !important;
 }
 
+.ol-game-card.crowns-cover{
+  background:linear-gradient(90deg, rgba(0,0,0,.10), rgba(0,0,0,.82)), url("/assets/crowns-and-councils/banner.png?v=cards-20260721") center/cover !important;
+}
+

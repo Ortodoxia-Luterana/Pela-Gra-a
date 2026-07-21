@@ -302,7 +302,7 @@ function createLutheranIdleService({ db, gameId = 'lutheran-idle' }) {
 
   function snapshot(user) {
     const profile = q.profile.get(user.id);
-    const pending = parseJson(profile.offline_pending_json, null);
+    const pending = normalizeOfflinePending(user.id, parseJson(profile.offline_pending_json, null));
     const stationRows = q.stations.all(user.id);
     const progression = progressionSnapshot(profile, stationRows);
     const { dayKey, weekKey } = ensureRetention(user.id);
@@ -394,15 +394,31 @@ function createLutheranIdleService({ db, gameId = 'lutheran-idle' }) {
       return;
     }
     const cappedSeconds = Math.min(progressionSnapshot(profile, q.stations.all(user.id)).offlineHours * 60 * 60, elapsedSeconds);
-    const pulpit = q.station.get(user.id, 'pulpit');
+    const pending = calculateOfflineReward(user.id, cappedSeconds);
+    q.setPending.run(JSON.stringify(pending), new Date(now).toISOString(), new Date(now).toISOString(), user.id);
+  }
+
+  function calculateOfflineReward(userId, secondsAway, createdAt = isoNow()) {
+    const profile = q.profile.get(userId);
+    const cappedSeconds = Math.min(progressionSnapshot(profile, q.stations.all(userId)).offlineHours * 60 * 60, Math.max(0, Number(secondsAway) || 0));
+    const pulpit = q.station.get(userId, 'pulpit');
     const pulpitLevel = Math.max(1, Number(pulpit?.level || 1));
-    const altarLevel = Math.max(1, Number(q.station.get(user.id, 'altar')?.level || 1));
+    const altarLevel = Math.max(1, Number(q.station.get(userId, 'altar')?.level || 1));
     const stageMultiplier = 1 + (Number(profile.stage) - 1) * 0.22;
     const offerings = Math.max(1, Math.floor(cappedSeconds / 60 * Math.pow(1.12, pulpitLevel - 1) * (1 + (altarLevel - 1) * 0.04) * 1.5 * stageMultiplier));
-    const catechesis = q.station.get(user.id, 'catechesis');
+    const catechesis = q.station.get(userId, 'catechesis');
     const members = catechesis?.built ? Math.floor(cappedSeconds / 1800 * Math.pow(1.12, Math.max(0, Number(catechesis.level) - 1)) * stageMultiplier) : 0;
-    const pending = { secondsAway: cappedSeconds, offerings, members, createdAt: new Date(now).toISOString() };
-    q.setPending.run(JSON.stringify(pending), new Date(now).toISOString(), new Date(now).toISOString(), user.id);
+    return { secondsAway: cappedSeconds, offerings, members, createdAt };
+  }
+
+  function normalizeOfflinePending(userId, pending) {
+    if (!pending) return null;
+    const recalculated = calculateOfflineReward(userId, pending.secondsAway, pending.createdAt || isoNow());
+    return {
+      ...recalculated,
+      offerings: Math.min(clampInt(pending.offerings, 0, 2_000_000_000), recalculated.offerings),
+      members: Math.min(clampInt(pending.members, 0, 100_000), recalculated.members)
+    };
   }
 
   function receipt(userId, key) {
@@ -603,7 +619,7 @@ function createLutheranIdleService({ db, gameId = 'lutheran-idle' }) {
     if (prior) return prior;
     return transaction(() => {
       const profile = q.profile.get(user.id);
-      const pending = parseJson(profile.offline_pending_json, null);
+      const pending = normalizeOfflinePending(user.id, parseJson(profile.offline_pending_json, null));
       if (!pending) throw new Error('Nenhuma recompensa offline disponível.');
       const now = isoNow();
       q.clearPending.run(clampInt(pending.offerings, 0, 2_000_000_000), clampInt(pending.members, 0, 100_000), now, now, user.id);

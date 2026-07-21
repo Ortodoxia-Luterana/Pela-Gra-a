@@ -139,6 +139,12 @@ async function run() {
   assert.ok(oneHourBootstrap.payload.offlineClaim.offerings > 0);
   assert.ok(oneHourBootstrap.payload.offlineClaim.offerings < 250, `Uma hora offline gerou ofertas demais: ${oneHourBootstrap.payload.offlineClaim.offerings}`);
   await json('/api/lutheran-idle/offline-claim', { method: 'POST', body: JSON.stringify({ idempotencyKey: crypto.randomUUID() }) });
+  const staleDatabase = new DatabaseSync(DB_PATH);
+  staleDatabase.prepare('UPDATE lutheran_idle_profiles SET offline_pending_json = ? WHERE user_id = ?').run(JSON.stringify({ secondsAway: 3600, offerings: 999_999, members: 999, createdAt: new Date().toISOString() }), bootstrap.payload.user.id);
+  staleDatabase.close();
+  const normalizedPending = await json('/api/lutheran-idle/bootstrap');
+  assert.ok(normalizedPending.payload.offlineClaim.offerings < 250, 'Recompensa pendente da economia antiga não foi normalizada.');
+  await json('/api/lutheran-idle/offline-claim', { method: 'POST', body: JSON.stringify({ idempotencyKey: crypto.randomUUID() }) });
 
   const database = new DatabaseSync(DB_PATH);
   database.prepare('UPDATE lutheran_idle_profiles SET level = 3, offerings = 500 WHERE user_id = ?').run(bootstrap.payload.user.id);

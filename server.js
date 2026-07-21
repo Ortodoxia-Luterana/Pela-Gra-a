@@ -45,9 +45,14 @@ const CROWNS_COUNCIL_TEMPLATES = [
   { key: 'concilio-das-fronteiras', day: 31, kind: 'regional', name: 'Concílio das Fronteiras', theme: 'Disciplina, missões e resposta às novas seitas' },
   { key: 'assembleia-dos-reinos', day: 45, kind: 'regional', name: 'Assembleia dos Reinos', theme: 'Recepção dos decretos e comunhão entre as coroas' }
 ];
-const CROWNS_RELIGIONS = [
-  'Cristianismo latino', 'Cristianismo ortodoxo', 'Cristianismo oriental',
-  'Igreja do Oriente', 'Islã sunita', 'Islã xiita', 'Judaísmo rabínico'
+const CROWNS_RELIGIONS = ['Cristianismo'];
+const CROWNS_RELIGIOUS_MOVEMENTS = [
+  { key: 'arianismo', day: 10, name: 'Arianismo', description: 'Pregadores questionam a plena divindade de Cristo e atraem cortes inquietas.' },
+  { key: 'donatismo', day: 18, name: 'Donatismo', description: 'Comunidades rigoristas contestam a validade dos sacramentos dos clérigos considerados indignos.' },
+  { key: 'nestorianismo', day: 27, name: 'Nestorianismo', description: 'Escolas orientais propõem uma separação mais forte entre as naturezas de Cristo.' },
+  { key: 'monofisismo', day: 35, name: 'Monofisismo', description: 'Mosteiros e bispos defendem uma única natureza em Cristo após a encarnação.' },
+  { key: 'iconoclasmo', day: 44, name: 'Iconoclasmo', description: 'Um movimento exige a retirada das imagens sagradas e divide o povo.' },
+  { key: 'pelagianismo', day: 52, name: 'Pelagianismo', description: 'Mestres itinerantes minimizam o pecado original e exaltam a capacidade moral humana.' }
 ];
 const CROWNS_BUILDINGS = {
   fazenda: { name: 'Fazenda', treasury: 180, provisions: 60, hours: 8, description: 'Aumenta a produção diária de provisões.' },
@@ -70,14 +75,14 @@ const CROWNS_AI_REALMS = [
   { key: 'germania', name: 'Reino da Germânia', house: 'Casa Otoniana', ruler: 'Henrique da Saxônia', heir: 'Otão', countries: ['DE'], terms: ['Sachsen', 'Saxônia', 'Berlin'], color: '#6f55a6' },
   { key: 'italia', name: 'Reino da Itália', house: 'Casa de Saboia', ruler: 'Amadeu de Saboia', heir: 'Humberto', countries: ['IT'], terms: ['Lazio', 'Piemonte'], color: '#3f9a63' },
   { key: 'romanos', name: 'Império dos Romanos', house: 'Dinastia Macedônica', ruler: 'Basílio de Constantinopla', heir: 'Constantino', countries: ['EL', 'TR'], terms: ['Ática', 'Istanbul', 'Constantinopla'], color: '#8a56c2' },
-  { key: 'egito', name: 'Sultanato do Egito', house: 'Casa do Cairo', ruler: 'Aláqueme do Egito', heir: 'Aziz', countries: ['EG'], terms: ['Cairo'], color: '#2f9b9b' },
+  { key: 'egito', name: 'Reino do Egito', house: 'Casa do Cairo', ruler: 'Marcos do Egito', heir: 'Atanásio', countries: ['EG'], terms: ['Cairo'], color: '#2f9b9b' },
   { key: 'jerusalem', name: 'Reino de Jerusalém', house: 'Casa do Santo Sepulcro', ruler: 'Balduíno de Jerusalém', heir: 'Amalrico', countries: ['IL', 'PS'], terms: ['Jerusalém'], color: '#d4b13e' },
   { key: 'kiev', name: 'Principado de Kiev', house: 'Casa de Rurique', ruler: 'Vladimir de Kiev', heir: 'Jaroslau', countries: ['UA'], terms: ['Kyiv', 'Kiev'], color: '#4b83a8' },
-  { key: 'magrebe', name: 'Reino do Magrebe', house: 'Casa Idríssida', ruler: 'Idris do Magrebe', heir: 'Hassan', countries: ['MA'], terms: ['Rabat', 'Casablanca'], color: '#b96b3d', religion: 'Islã sunita' },
+  { key: 'magrebe', name: 'Reino do Magrebe', house: 'Casa de Cartago', ruler: 'Cipriano do Magrebe', heir: 'Agostinho', countries: ['MA'], terms: ['Rabat', 'Casablanca'], color: '#b96b3d' },
   { key: 'polonia', name: 'Reino da Polônia', house: 'Casa Piasta', ruler: 'Miecislau da Polônia', heir: 'Boleslau', countries: ['PL'], terms: ['Warszawski', 'Mazowiecki'], color: '#df5f98' },
   { key: 'rus', name: 'Principado de Vladimir', house: 'Casa de Rurique', ruler: 'André de Vladimir', heir: 'Miquel', countries: ['RU'], terms: ['Vladimir', 'Moscow', 'Moscou'], color: '#668b5a' },
-  { key: 'persia', name: 'Reino da Pérsia', house: 'Casa Safárida', ruler: 'Amir da Pérsia', heir: 'Dario', countries: ['IR'], terms: ['Tehran', 'Teerã', 'Fars'], color: '#985eb5', religion: 'Islã xiita' },
-  { key: 'andalus', name: 'Emirado de Al-Andalus', house: 'Casa Omíada', ruler: 'Abderramão de Córdova', heir: 'Hixame', countries: ['ES'], terms: ['Andalucía', 'Andaluzia'], color: '#cf7732', religion: 'Islã sunita' },
+  { key: 'persia', name: 'Reino da Pérsia', house: 'Casa de Ctesifonte', ruler: 'Dario da Pérsia', heir: 'Ciro', countries: ['IR'], terms: ['Tehran', 'Teerã', 'Fars'], color: '#985eb5' },
+  { key: 'andalus', name: 'Reino de Al-Andalus', house: 'Casa de Córdova', ruler: 'Isidoro de Córdova', heir: 'Leandro', countries: ['ES'], terms: ['Andalucía', 'Andaluzia'], color: '#cf7732' },
   { key: 'escandinavia', name: 'Reino da Escandinávia', house: 'Casa de Uppsala', ruler: 'Erik do Norte', heir: 'Haroldo', countries: ['SE', 'NO', 'DK'], terms: ['Stockholm', 'Oslo', 'Hovedstaden'], color: '#4b9b89' }
 ];
 const GAME_VERSION = 'v3.39.0';
@@ -224,7 +229,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS quiz_rankings (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, best_score INTEGER NOT NULL DEFAULT 0, wins INTEGER NOT NULL DEFAULT 0, duel_wins INTEGER NOT NULL DEFAULT 0, general_wins INTEGER NOT NULL DEFAULT 0, invite_wins INTEGER NOT NULL DEFAULT 0, matches_played INTEGER NOT NULL DEFAULT 0, reward_points INTEGER NOT NULL DEFAULT 0, reward_xp INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS cc_seasons (id TEXT PRIMARY KEY, name TEXT NOT NULL, status TEXT NOT NULL, starts_at TEXT NOT NULL, ends_at TEXT NOT NULL, geographic_version TEXT NOT NULL, config_json TEXT NOT NULL, created_at TEXT NOT NULL);
   CREATE TABLE IF NOT EXISTS cc_regions (id TEXT PRIMARY KEY, name TEXT NOT NULL, country_code TEXT NOT NULL, iso3_code TEXT NOT NULL, centroid_x INTEGER NOT NULL, centroid_y INTEGER NOT NULL, neighbor_ids_json TEXT NOT NULL, geographic_version TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1);
-  CREATE TABLE IF NOT EXISTS cc_realms (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, user_id TEXT NOT NULL, name TEXT NOT NULL, house_name TEXT NOT NULL, color TEXT NOT NULL, capital_region_id TEXT NOT NULL, treasury INTEGER NOT NULL DEFAULT 1200, provisions INTEGER NOT NULL DEFAULT 800, prestige INTEGER NOT NULL DEFAULT 15, is_ai INTEGER NOT NULL DEFAULT 0, realm_kind TEXT NOT NULL DEFAULT 'player', origin_realm_id TEXT, ruler_name TEXT NOT NULL DEFAULT '', heir_name TEXT, legitimacy INTEGER NOT NULL DEFAULT 70, stability INTEGER NOT NULL DEFAULT 65, popular_support INTEGER NOT NULL DEFAULT 60, religion TEXT NOT NULL DEFAULT 'Cristianismo calcedoniano', religious_unity INTEGER NOT NULL DEFAULT 70, heresy_pressure INTEGER NOT NULL DEFAULT 8, last_economy_at TEXT, last_ai_action_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE (season_id, user_id), FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, FOREIGN KEY (capital_region_id) REFERENCES cc_regions(id));
+  CREATE TABLE IF NOT EXISTS cc_realms (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, user_id TEXT NOT NULL, name TEXT NOT NULL, house_name TEXT NOT NULL, color TEXT NOT NULL, capital_region_id TEXT NOT NULL, treasury INTEGER NOT NULL DEFAULT 1200, provisions INTEGER NOT NULL DEFAULT 800, prestige INTEGER NOT NULL DEFAULT 15, is_ai INTEGER NOT NULL DEFAULT 0, realm_kind TEXT NOT NULL DEFAULT 'player', origin_realm_id TEXT, ruler_name TEXT NOT NULL DEFAULT '', heir_name TEXT, legitimacy INTEGER NOT NULL DEFAULT 70, stability INTEGER NOT NULL DEFAULT 65, popular_support INTEGER NOT NULL DEFAULT 60, religion TEXT NOT NULL DEFAULT 'Cristianismo', religious_unity INTEGER NOT NULL DEFAULT 70, heresy_pressure INTEGER NOT NULL DEFAULT 8, last_economy_at TEXT, last_ai_action_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE (season_id, user_id), FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, FOREIGN KEY (capital_region_id) REFERENCES cc_regions(id));
   CREATE TABLE IF NOT EXISTS cc_season_regions (season_id TEXT NOT NULL, region_id TEXT NOT NULL, owner_realm_id TEXT, status TEXT NOT NULL DEFAULT 'neutral', development INTEGER NOT NULL DEFAULT 1, claim_action_id TEXT, version INTEGER NOT NULL DEFAULT 1, PRIMARY KEY (season_id, region_id), FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE, FOREIGN KEY (region_id) REFERENCES cc_regions(id), FOREIGN KEY (owner_realm_id) REFERENCES cc_realms(id) ON DELETE SET NULL);
   CREATE TABLE IF NOT EXISTS cc_actions (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, realm_id TEXT NOT NULL, user_id TEXT NOT NULL, type TEXT NOT NULL, region_id TEXT NOT NULL, status TEXT NOT NULL, completes_at TEXT NOT NULL, cost_json TEXT NOT NULL, created_at TEXT NOT NULL, completed_at TEXT, FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE, FOREIGN KEY (realm_id) REFERENCES cc_realms(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, FOREIGN KEY (region_id) REFERENCES cc_regions(id));
   CREATE TABLE IF NOT EXISTS cc_events (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, event_type TEXT NOT NULL, actor_realm_id TEXT, region_id TEXT, payload_json TEXT NOT NULL, created_at TEXT NOT NULL, FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE);
@@ -239,6 +244,8 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS cc_councils (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, template_key TEXT NOT NULL, name TEXT NOT NULL, theme TEXT NOT NULL, council_kind TEXT NOT NULL, status TEXT NOT NULL, choices_json TEXT NOT NULL, starts_at TEXT NOT NULL, ends_at TEXT NOT NULL, result_key TEXT, UNIQUE (season_id, template_key));
   CREATE TABLE IF NOT EXISTS cc_council_votes (council_id TEXT NOT NULL, realm_id TEXT NOT NULL, vote_key TEXT NOT NULL, reason TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY (council_id, realm_id));
   CREATE TABLE IF NOT EXISTS cc_council_receptions (council_id TEXT NOT NULL, realm_id TEXT NOT NULL, reception_key TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY (council_id, realm_id));
+  CREATE TABLE IF NOT EXISTS cc_religious_movements (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, movement_key TEXT NOT NULL, name TEXT NOT NULL, description TEXT NOT NULL, starts_day INTEGER NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, UNIQUE (season_id, movement_key));
+  CREATE TABLE IF NOT EXISTS cc_religious_responses (movement_id TEXT NOT NULL, realm_id TEXT NOT NULL, response_key TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY (movement_id, realm_id));
   CREATE INDEX IF NOT EXISTS cc_actions_due_idx ON cc_actions (status, completes_at);
   CREATE INDEX IF NOT EXISTS cc_season_regions_owner_idx ON cc_season_regions (season_id, owner_realm_id);
   CREATE INDEX IF NOT EXISTS cc_articles_published_idx ON cc_articles (season_id, published_at DESC);
@@ -267,7 +274,7 @@ try { db.exec('ALTER TABLE cc_realms ADD COLUMN heir_name TEXT'); } catch {}
 try { db.exec('ALTER TABLE cc_realms ADD COLUMN legitimacy INTEGER NOT NULL DEFAULT 70'); } catch {}
 try { db.exec('ALTER TABLE cc_realms ADD COLUMN stability INTEGER NOT NULL DEFAULT 65'); } catch {}
 try { db.exec('ALTER TABLE cc_realms ADD COLUMN popular_support INTEGER NOT NULL DEFAULT 60'); } catch {}
-try { db.exec("ALTER TABLE cc_realms ADD COLUMN religion TEXT NOT NULL DEFAULT 'Cristianismo calcedoniano'"); } catch {}
+try { db.exec("ALTER TABLE cc_realms ADD COLUMN religion TEXT NOT NULL DEFAULT 'Cristianismo'"); } catch {}
 try { db.exec('ALTER TABLE cc_realms ADD COLUMN religious_unity INTEGER NOT NULL DEFAULT 70'); } catch {}
 try { db.exec('ALTER TABLE cc_realms ADD COLUMN heresy_pressure INTEGER NOT NULL DEFAULT 8'); } catch {}
 try { db.exec('ALTER TABLE cc_realms ADD COLUMN last_economy_at TEXT'); } catch {}
@@ -365,7 +372,7 @@ const getCcPendingActionsForRealm = db.prepare('SELECT * FROM cc_actions WHERE s
 const getCcPendingClaimForRealm = db.prepare("SELECT * FROM cc_actions WHERE season_id = ? AND realm_id = ? AND type = 'territory.claim' AND status = 'pending' LIMIT 1");
 const getCcDueActions = db.prepare('SELECT * FROM cc_actions WHERE status = \'pending\' AND completes_at <= ? ORDER BY completes_at LIMIT 100');
 const getCcAction = db.prepare('SELECT * FROM cc_actions WHERE id = ?');
-const insertCcRealm = db.prepare("INSERT INTO cc_realms (id, season_id, user_id, name, house_name, color, capital_region_id, treasury, provisions, prestige, is_ai, realm_kind, ruler_name, heir_name, legitimacy, stability, popular_support, religion, religious_unity, heresy_pressure, last_economy_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 1200, 800, 15, 0, 'player', ?, ?, 72, 68, 64, ?, 72, 8, ?, ?, ?)");
+const insertCcRealm = db.prepare("INSERT INTO cc_realms (id, season_id, user_id, name, house_name, color, capital_region_id, treasury, provisions, prestige, is_ai, realm_kind, ruler_name, heir_name, legitimacy, stability, popular_support, religion, religious_unity, heresy_pressure, last_economy_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 1200, 800, 15, 0, 'player', ?, ?, 72, 68, 64, ?, 78, 0, ?, ?, ?)");
 const insertCcAiRealm = db.prepare("INSERT INTO cc_realms (id, season_id, user_id, name, house_name, color, capital_region_id, treasury, provisions, prestige, is_ai, realm_kind, origin_realm_id, ruler_name, heir_name, legitimacy, stability, popular_support, religion, religious_unity, heresy_pressure, last_economy_at, last_ai_action_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 const assignCcCapital = db.prepare('UPDATE cc_season_regions SET owner_realm_id = ?, status = \'controlled\', version = version + 1 WHERE season_id = ? AND region_id = ? AND owner_realm_id IS NULL AND status = \'neutral\'');
 const transferCcRegion = db.prepare("UPDATE cc_season_regions SET owner_realm_id = ?, status = 'controlled', claim_action_id = NULL, version = version + 1 WHERE season_id = ? AND region_id = ? AND owner_realm_id = ?");
@@ -441,6 +448,11 @@ const insertCcCouncilVote = db.prepare('INSERT INTO cc_council_votes (council_id
 const decideCcCouncil = db.prepare("UPDATE cc_councils SET status = 'decided', result_key = ? WHERE id = ? AND status = 'voting'");
 const getCcCouncilReception = db.prepare('SELECT * FROM cc_council_receptions WHERE council_id = ? AND realm_id = ?');
 const insertCcCouncilReception = db.prepare('INSERT INTO cc_council_receptions (council_id, realm_id, reception_key, created_at) VALUES (?, ?, ?, ?)');
+const insertCcReligiousMovement = db.prepare('INSERT OR IGNORE INTO cc_religious_movements (id, season_id, movement_key, name, description, starts_day, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+const getCcReligiousMovements = db.prepare('SELECT * FROM cc_religious_movements WHERE season_id = ? ORDER BY starts_day, created_at');
+const getCcReligiousMovement = db.prepare('SELECT * FROM cc_religious_movements WHERE id = ? AND season_id = ?');
+const getCcReligiousResponse = db.prepare('SELECT * FROM cc_religious_responses WHERE movement_id = ? AND realm_id = ?');
+const insertCcReligiousResponse = db.prepare('INSERT INTO cc_religious_responses (movement_id, realm_id, response_key, created_at) VALUES (?, ?, ?, ?)');
 const getCcSeasonResults = db.prepare('SELECT * FROM cc_season_results WHERE season_id = ? ORDER BY rank');
 const insertCcSeasonResult = db.prepare('INSERT OR REPLACE INTO cc_season_results (season_id, rank, realm_name, house_name, score, regions, prestige, recorded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
 const updateCcSeasonTiming = db.prepare('UPDATE cc_seasons SET status = ?, starts_at = ?, ends_at = ?, config_json = ? WHERE id = ?');
@@ -459,6 +471,8 @@ const deleteCcRegionReligionsForSeason = db.prepare('DELETE FROM cc_region_relig
 const deleteCcCouncilVotesForSeason = db.prepare('DELETE FROM cc_council_votes WHERE council_id IN (SELECT id FROM cc_councils WHERE season_id = ?)');
 const deleteCcCouncilReceptionsForSeason = db.prepare('DELETE FROM cc_council_receptions WHERE council_id IN (SELECT id FROM cc_councils WHERE season_id = ?)');
 const deleteCcCouncilsForSeason = db.prepare('DELETE FROM cc_councils WHERE season_id = ?');
+const deleteCcReligiousResponsesForSeason = db.prepare('DELETE FROM cc_religious_responses WHERE movement_id IN (SELECT id FROM cc_religious_movements WHERE season_id = ?)');
+const deleteCcReligiousMovementsForSeason = db.prepare('DELETE FROM cc_religious_movements WHERE season_id = ?');
 const deleteCcRealmsForSeason = db.prepare('DELETE FROM cc_realms WHERE season_id = ?');
 
 function normalizedCrownsText(value) {
@@ -489,20 +503,14 @@ function shuffledCrowns(items, random) {
   return result;
 }
 
-function crownsAiReligion(blueprint) {
-  if (blueprint.religion) return blueprint.religion;
-  if (blueprint.countries.some(code => ['EG', 'MA', 'IR', 'IQ', 'SY', 'JO', 'SA'].includes(code))) return 'Islã sunita';
-  if (blueprint.countries.some(code => ['IL', 'PS'].includes(code))) return 'Cristianismo oriental';
-  if (blueprint.countries.some(code => ['EL', 'RU', 'UA', 'RS', 'BG'].includes(code))) return 'Cristianismo ortodoxo';
-  return 'Cristianismo latino';
-}
+function crownsAiReligion() { return 'Cristianismo'; }
 
 function seedCcStartingAssets(serverId, realmId, capitalId, now, isAi = false) {
   const realm = getCcRealmById.get(realmId, serverId);
   upsertCcBuilding.run(serverId, capitalId, 'fazenda', now);
   upsertCcBuilding.run(serverId, capitalId, 'quartel', now);
   insertCcArmy.run(`army_${serverId}_${realmId}`, serverId, realmId, capitalId, isAi ? 700 : 500, isAi ? 120 : 80, isAi ? 40 : 20, isAi ? 76 : 72, now, now);
-  upsertCcRegionReligion.run(serverId, capitalId, realm?.religion || 'Cristianismo latino', isAi ? 68 : 74, 'Dissidências locais', isAi ? 10 : 7, now);
+  upsertCcRegionReligion.run(serverId, capitalId, realm?.religion || 'Cristianismo', isAi ? 72 : 78, 'Sem heresia organizada', 0, now);
 }
 
 function seedCcAiRealms(serverId, now, seed) {
@@ -556,10 +564,18 @@ function seedCrownsAndCouncils() {
       const starts = existing?.starts_at || now.toISOString();
       const ends = existing?.ends_at || new Date(new Date(starts).getTime() + CROWNS_SEASON_DAYS * CROWNS_GAME_DAY_MS).toISOString();
       const config = { ...existingConfig, seed, serverNumber: index + 1, totalDays: CROWNS_SEASON_DAYS, gameDayMs: CROWNS_GAME_DAY_MS, resetDelayMs: CROWNS_RESET_DELAY_MS, theatre: crownsRegionCatalog.theatre, mode: CROWNS_LOCAL_PREVIEW ? 'teste-acelerado' : 'persistente' };
-      insertCcSeason.run(serverId, `Servidor ${index + 1} — Era dos Concílios`, CROWNS_LOCAL_PREVIEW ? 'waiting' : 'open', starts, ends, crownsRegionCatalog.geographicVersion, JSON.stringify(config), now.toISOString());
+      insertCcSeason.run(serverId, `Servidor ${index + 1} — Era dos Concílios`, 'waiting', starts, ends, crownsRegionCatalog.geographicVersion, JSON.stringify(config), now.toISOString());
       updateCcSeasonGeography.run(crownsRegionCatalog.geographicVersion, JSON.stringify(config), serverId);
       crownsRegionCatalog.regions.forEach(region => insertCcSeasonRegion.run(serverId, region.id));
       seedCcAiRealms(serverId, now.toISOString(), seed);
+      const humanCount = getCcRealms.all(serverId).filter(realm => !realm.is_ai).length;
+      if (!humanCount && getCcSeason.get(serverId)?.status !== 'ended') {
+        const waitingConfig = { ...config };
+        delete waitingConfig.activatedAt;
+        updateCcSeasonTiming.run('waiting', now.toISOString(), new Date(now.getTime() + CROWNS_SEASON_DAYS * CROWNS_GAME_DAY_MS).toISOString(), JSON.stringify(waitingConfig), serverId);
+        db.prepare("UPDATE cc_realms SET religion = 'Cristianismo', religious_unity = max(72, religious_unity), heresy_pressure = 0, updated_at = ? WHERE season_id = ?").run(now.toISOString(), serverId);
+        db.prepare("UPDATE cc_region_religions SET majority_religion = 'Cristianismo', majority_share = max(72, majority_share), heresy_name = 'Sem heresia organizada', heresy_share = 0, updated_at = ? WHERE season_id = ?").run(now.toISOString(), serverId);
+      }
     });
     db.exec('COMMIT');
   } catch (error) {
@@ -1750,9 +1766,11 @@ function processCrownsSeasonLifecycle(requestedServerId) {
       deleteCcCouncilVotesForSeason.run(serverId);
       deleteCcCouncilReceptionsForSeason.run(serverId);
       deleteCcCouncilsForSeason.run(serverId);
+      deleteCcReligiousResponsesForSeason.run(serverId);
+      deleteCcReligiousMovementsForSeason.run(serverId);
       resetCcSeasonRegions.run(serverId);
       deleteCcRealmsForSeason.run(serverId);
-      updateCcSeasonTiming.run(CROWNS_LOCAL_PREVIEW ? 'waiting' : 'open', now.toISOString(), new Date(now.getTime() + CROWNS_SEASON_DAYS * CROWNS_GAME_DAY_MS).toISOString(), JSON.stringify(config), serverId);
+      updateCcSeasonTiming.run('waiting', now.toISOString(), new Date(now.getTime() + CROWNS_SEASON_DAYS * CROWNS_GAME_DAY_MS).toISOString(), JSON.stringify(config), serverId);
       db.exec('COMMIT');
     } catch (error) {
       db.exec('ROLLBACK');
@@ -1816,11 +1834,13 @@ function processCrownsEconomy(requestedServerId) {
       db.prepare('UPDATE cc_realms SET religious_unity = min(100, religious_unity + ?), heresy_pressure = max(0, heresy_pressure - ?), updated_at = ? WHERE id = ? AND season_id = ?').run(ticks * temples, ticks * temples, new Date().toISOString(), realm.id, serverId);
     }
     const day = crownsSeasonClock(season).day;
-    if (day % 9 === 0) {
+    const activeMovements = getCcReligiousMovements.all(serverId);
+    if (activeMovements.length && day % 9 === 0) {
+      const latestMovement = activeMovements[activeMovements.length - 1];
       db.prepare('UPDATE cc_realms SET heresy_pressure = min(100, heresy_pressure + ?), religious_unity = max(0, religious_unity - ?), updated_at = ? WHERE id = ? AND season_id = ?').run(2 * ticks, ticks, new Date().toISOString(), realm.id, serverId);
       for (const owned of getCcOwnedRegions.all(serverId, realm.id)) {
         const faith = getCcRegionReligion.get(serverId, owned.region_id);
-        if (faith) upsertCcRegionReligion.run(serverId, owned.region_id, faith.majority_religion, Math.max(20, faith.majority_share - ticks), faith.heresy_name, Math.min(60, faith.heresy_share + 2 * ticks), new Date().toISOString());
+        if (faith) upsertCcRegionReligion.run(serverId, owned.region_id, faith.majority_religion, Math.max(20, faith.majority_share - ticks), faith.heresy_name === 'Sem heresia organizada' ? latestMovement.name : faith.heresy_name, Math.min(60, faith.heresy_share + 2 * ticks), new Date().toISOString());
       }
     }
   });
@@ -1849,7 +1869,7 @@ function publicCcRealm(realm) {
     legitimacy: Number(realm.legitimacy ?? 70),
     stability: Number(realm.stability ?? 65),
     popularSupport: Number(realm.popular_support ?? 60),
-    religion: realm.religion || 'Cristianismo latino',
+    religion: realm.religion || 'Cristianismo',
     religiousUnity: Number(realm.religious_unity ?? 70),
     heresyPressure: Number(realm.heresy_pressure ?? 8),
     nextEconomyAt: new Date(new Date(realm.last_economy_at || realm.created_at).getTime() + CROWNS_GAME_DAY_MS).toISOString()
@@ -1890,7 +1910,7 @@ function crownsRealmCourt(realm, serverId) {
       knownRealms
     },
     religion: {
-      faith: realm.religion || 'Cristianismo latino',
+      faith: realm.religion || 'Cristianismo',
       unity: Number(realm.religious_unity ?? 70),
       heresyPressure: Number(realm.heresy_pressure ?? 8),
       warning: Number(realm.heresy_pressure ?? 8) >= 35 ? 'Pregadores heréticos ameaçam a unidade da coroa.' : 'A confissão oficial permanece estável por enquanto.'
@@ -1918,6 +1938,9 @@ function publicCrownsJournalEvent(row) {
     'army.defended': { category: 'army', headline: `${realmName} fortifica ${regionName}`, summary: payload.summary || 'A hoste tomou posições defensivas.' },
     'religion.mission_completed': { category: 'religion', headline: `Missionários de ${realmName} chegam a ${regionName}`, summary: `A presença de ${payload.faith || 'sua fé'} cresceu gradualmente entre a população.` },
     'religion.heresy_suppressed': { category: 'religion', headline: `${realmName} contém uma heresia em ${regionName}`, summary: 'A dissidência recuou, embora a ação tenha causado tensão interna.' },
+    'religion.movement_emerged': { category: 'religion', headline: `${payload.movementName || 'Uma nova doutrina'} começa a se espalhar`, summary: payload.summary || 'Pregadores e bispos dividem-se diante de uma nova interpretação da fé cristã.' },
+    'religion.realm_converted': { category: 'religion', headline: `${realmName} muda sua confissão`, summary: payload.summary || `A corte aderiu ao ${payload.movementName || 'novo movimento'}.` },
+    'religion.movement_answered': { category: 'religion', headline: `${realmName} responde ao ${payload.movementName || 'movimento religioso'}`, summary: payload.summary || 'A decisão foi proclamada diante do clero e da corte.' },
     'council.vote': { category: 'council', headline: `${realmName} apresenta seu voto`, summary: `${payload.councilName || 'O concílio'} recebeu a posição oficial da delegação.` },
     'council.decided': { category: 'council', headline: `${payload.councilName || 'O concílio'} publica seu decreto`, summary: payload.summary || 'A votação foi encerrada e o resultado proclamado.' },
     'council.received': { category: 'council', headline: `${realmName} responde ao decreto`, summary: `${payload.councilName || 'O concílio'} foi ${payload.reception === 'receive' ? 'recebido' : 'resistido'} pela coroa.` },
@@ -1972,6 +1995,7 @@ function crownsBootstrap(user, requestedServerId) {
   processCrownsEconomy(serverId);
   processCrownsSeasonLifecycle(serverId);
   processCrownsCouncils(serverId);
+  processCrownsReligiousMovements(serverId);
   const season = getCcSeason.get(serverId);
   const seasonClock = crownsSeasonClock(season);
   const realm = getCcRealmByUser.get(serverId, user.id);
@@ -2025,6 +2049,7 @@ function crownsBootstrap(user, requestedServerId) {
   const wars = realm ? getCcWars.all(serverId).filter(item => item.attacker_realm_id === realm.id || item.defender_realm_id === realm.id).map(item => ({ id: item.id, status: item.status, attackerRealmId: item.attacker_realm_id, attackerName: item.attacker_name, defenderRealmId: item.defender_realm_id, defenderName: item.defender_name, objectiveRegionId: item.objective_region_id, objectiveName: item.objective_name, score: item.score, result: safeJsonParse(item.result_json, {}) })) : [];
   const regionReligions = realm ? getCcRegionReligions.all(serverId).filter(item => ownedIds.has(item.region_id)).map(item => ({ regionId: item.region_id, regionName: item.region_name, majorityReligion: item.majority_religion, majorityShare: item.majority_share, heresyName: item.heresy_name, heresyShare: item.heresy_share })) : [];
   const councils = getCcCouncils.all(serverId).map(item => { const vote = realm && getCcCouncilVote.get(item.id, realm.id); const reception = realm && getCcCouncilReception.get(item.id, realm.id); return { id: item.id, name: item.name, theme: item.theme, kind: item.council_kind, status: item.status, startsAt: item.starts_at, endsAt: item.ends_at, result: item.result_key, vote: vote?.vote_key || null, reception: reception?.reception_key || null, totals: Object.fromEntries(getCcCouncilVotes.all(item.id).map(row => [row.vote_key, Number(row.total)])) }; });
+  const religiousMovements = getCcReligiousMovements.all(serverId).map(item => { const response = realm && getCcReligiousResponse.get(item.id, realm.id); const acceptances = db.prepare("SELECT COUNT(*) AS total FROM cc_religious_responses WHERE movement_id = ? AND response_key = 'accept'").get(item.id); return { id: item.id, key: item.movement_key, name: item.name, description: item.description, startsDay: item.starts_day, status: item.status, response: response?.response_key || null, convertedRealms: Number(acceptances?.total || 0) }; });
   return {
     user: { id: user.id, name: user.name, avatarData: user.avatar_data || null },
     season: {
@@ -2058,6 +2083,7 @@ function crownsBootstrap(user, requestedServerId) {
     wars,
     regionReligions,
     councils,
+    religiousMovements,
     attackTargets: regions.filter(item => item.ownerRealmId && item.ownerRealmId !== realm?.id && item.isBorderRegion).map(item => ({ regionId: item.id, regionName: item.name, realmId: item.ownerRealmId, realmName: item.ownerName })),
     winners: getCcSeasonResults.all(serverId),
     journal: crownsJournal(serverId).slice(0, 20),
@@ -2080,7 +2106,7 @@ function createCrownsRealm(user, payload, requestedServerId) {
   const houseName = String(payload?.houseName || '').replace(/[<>]/g, '').trim().slice(0, 40);
   const regionId = String(payload?.regionId || '').trim().slice(0, 32);
   const color = /^#[0-9a-f]{6}$/i.test(payload?.color || '') ? String(payload.color).toLowerCase() : CROWNS_REALM_COLORS[10];
-  const religion = CROWNS_RELIGIONS.includes(String(payload?.religion || '')) ? String(payload.religion) : 'Cristianismo latino';
+  const religion = 'Cristianismo';
   const entryPhase = crownsSeasonClock(processCrownsSeasonLifecycle(serverId)).phase;
   if (!['open', 'waiting'].includes(entryPhase)) throw new Error('Este servidor encerrou a temporada e aguarda o reinício.');
   if (name.length < 3 || houseName.length < 3 || !regionId) throw new Error('Informe reino, casa e capital inicial.');
@@ -2367,6 +2393,67 @@ function processCrownsCouncils(serverId) {
   }
 }
 
+function processCrownsReligiousMovements(serverId) {
+  const season = getCcSeason.get(serverId);
+  if (!season || crownsSeasonClock(season).phase !== 'open') return;
+  const clock = crownsSeasonClock(season);
+  const now = new Date().toISOString();
+  for (const template of CROWNS_RELIGIOUS_MOVEMENTS.filter(item => item.day <= clock.day)) {
+    const id = `movement_${serverId}_${template.key}`;
+    const inserted = insertCcReligiousMovement.run(id, serverId, template.key, template.name, template.description, template.day, 'active', now);
+    if (inserted.changes) {
+      insertCcEvent.run(crypto.randomUUID(), serverId, 'religion.movement_emerged', null, null, JSON.stringify({ movementName: template.name, summary: `${template.name} começou a circular entre bispos, mosteiros e cortes. Cada reino deverá decidir se adere ou resiste.` }), now);
+      emitCrownsEvent('journal.published', { seasonId: serverId, type: 'religion.movement_emerged', version: Date.now() });
+    }
+  }
+  for (const movement of getCcReligiousMovements.all(serverId)) {
+    for (const ai of getCcRealms.all(serverId).filter(realm => realm.is_ai)) {
+      if (getCcReligiousResponse.get(movement.id, ai.id)) continue;
+      const roll = seededCrownsRandom(`${movement.id}:${ai.id}`)();
+      const response = roll > 0.72 ? 'accept' : 'resist';
+      insertCcReligiousResponse.run(movement.id, ai.id, response, now);
+      if (response === 'accept') {
+        const convertedFaith = `Cristianismo — ${movement.name}`;
+        db.prepare('UPDATE cc_realms SET religion = ?, religious_unity = max(35, religious_unity - 9), heresy_pressure = min(100, heresy_pressure + 8), updated_at = ? WHERE id = ? AND season_id = ?').run(convertedFaith, now, ai.id, serverId);
+        const regions = getCcOwnedRegions.all(serverId, ai.id);
+        for (const owned of regions.slice(0, Math.max(1, Math.ceil(regions.length / 2)))) {
+          const current = getCcRegionReligion.get(serverId, owned.region_id) || { majority_share: 72 };
+          upsertCcRegionReligion.run(serverId, owned.region_id, convertedFaith, Math.max(52, Number(current.majority_share) - 8), movement.name, 24, now);
+        }
+        insertCcEvent.run(crypto.randomUUID(), serverId, 'religion.realm_converted', ai.id, ai.capital_region_id, JSON.stringify({ movementName: movement.name, summary: `${ai.name} aderiu ao ${movement.name} e alterou a confissão de sua corte.` }), now);
+      }
+    }
+  }
+}
+
+function respondCrownsReligiousMovement(user, payload, requestedServerId) {
+  const serverId = crownsServerId(requestedServerId);
+  const realm = getCcRealmByUser.get(serverId, user.id);
+  const movement = getCcReligiousMovement.get(String(payload?.movementId || ''), serverId);
+  const response = ['accept', 'resist'].includes(payload?.response) ? payload.response : null;
+  if (!realm || !movement || !response) throw new Error('Esta decisão religiosa não pode ser registrada.');
+  if (getCcReligiousResponse.get(movement.id, realm.id)) throw new Error('Sua coroa já respondeu a este movimento.');
+  const now = new Date().toISOString();
+  insertCcReligiousResponse.run(movement.id, realm.id, response, now);
+  if (response === 'accept') {
+    const convertedFaith = `Cristianismo — ${movement.name}`;
+    db.prepare('UPDATE cc_realms SET religion = ?, religious_unity = max(25, religious_unity - 12), heresy_pressure = min(100, heresy_pressure + 10), prestige = prestige + 2, updated_at = ? WHERE id = ? AND season_id = ?').run(convertedFaith, now, realm.id, serverId);
+    for (const owned of getCcOwnedRegions.all(serverId, realm.id)) {
+      const current = getCcRegionReligion.get(serverId, owned.region_id) || { majority_share: 72 };
+      upsertCcRegionReligion.run(serverId, owned.region_id, convertedFaith, Math.max(52, Number(current.majority_share) - 8), movement.name, 18, now);
+    }
+  } else {
+    db.prepare('UPDATE cc_realms SET religious_unity = min(100, religious_unity + 5), heresy_pressure = max(0, heresy_pressure - 7), stability = max(10, stability - 2), prestige = prestige + 1, updated_at = ? WHERE id = ? AND season_id = ?').run(now, realm.id, serverId);
+    for (const owned of getCcOwnedRegions.all(serverId, realm.id)) {
+      const current = getCcRegionReligion.get(serverId, owned.region_id);
+      if (current?.heresy_name === movement.name) upsertCcRegionReligion.run(serverId, owned.region_id, current.majority_religion, Math.min(96, Number(current.majority_share) + 6), movement.name, Math.max(0, Number(current.heresy_share) - 10), now);
+    }
+  }
+  insertCcEvent.run(crypto.randomUUID(), serverId, 'religion.movement_answered', realm.id, realm.capital_region_id, JSON.stringify({ movementName: movement.name, response, summary: `${realm.name} decidiu ${response === 'accept' ? `aderir ao ${movement.name}` : `resistir ao ${movement.name}`}.` }), now);
+  emitCrownsEvent('journal.published', { seasonId: serverId, type: 'religion.movement_answered', version: Date.now() });
+  return { movementId: movement.id, response };
+}
+
 function voteCrownsCouncil(user, payload, requestedServerId) {
   const serverId = crownsServerId(requestedServerId);
   const realm = getCcRealmByUser.get(serverId, user.id);
@@ -2416,7 +2503,8 @@ function processCrownsActions() {
         }
         rewardCcClaim.run(now, action.realm_id, action.season_id);
         const claimant = getCcRealmById.get(action.realm_id, action.season_id);
-        upsertCcRegionReligion.run(action.season_id, action.region_id, claimant?.religion || 'Cristianismo latino', 58, 'Crenças locais', 12, now);
+        const activeMovement = getCcReligiousMovements.all(action.season_id).slice(-1)[0];
+        upsertCcRegionReligion.run(action.season_id, action.region_id, claimant?.religion || 'Cristianismo', activeMovement ? 64 : 78, activeMovement?.name || 'Sem heresia organizada', activeMovement ? 8 : 0, now);
         eventType = 'territory.claim.completed';
       } else if (action.type.startsWith('building.')) {
         const buildingType = action.type.split('.')[1];
@@ -2539,7 +2627,7 @@ function processCrownsSeparatistRevolts(serverId) {
       insertCcAiRealm.run(
         realmId, serverId, userId, realmName, houseName, CROWNS_REALM_COLORS.find(color => !getCcRealmByColor.get(serverId, color)) || '#e06b46', region.region_id,
         720, 520, 12, 'separatist', origin.id, `Conselho de ${region.name}`, null,
-        44, 56, 72, origin.religion || 'Cristianismo popular', 48, 34, now, now, now, now
+        44, 56, 72, origin.religion || 'Cristianismo', 48, 34, now, now, now, now
       );
       const transferred = transferCcRegion.run(realmId, serverId, region.region_id, origin.id);
       if (Number(transferred.changes) !== 1) throw new Error('A província separatista mudou de domínio.');
@@ -2682,6 +2770,11 @@ async function handleApi(req, res, url, user) {
         const payload = safeJsonParse(await readBody(req) || '{}', {});
         const action = queueCrownsReligion(user, payload, payload.serverId, 'suppress');
         json(res, 202, { ok: true, action: { id: action.id, completesAt: action.completes_at } });
+        return;
+      }
+      if (req.method === 'POST' && url.pathname === '/api/crowns-and-councils/religion/respond') {
+        const payload = safeJsonParse(await readBody(req) || '{}', {});
+        json(res, 201, { ok: true, decision: respondCrownsReligiousMovement(user, payload, payload.serverId) });
         return;
       }
       if (req.method === 'POST' && url.pathname === '/api/crowns-and-councils/council/vote') {
@@ -3738,6 +3831,8 @@ function initRealtimeMultiplayer(httpServer) {
   crownsAiTimer.unref?.();
   const crownsCouncilTimer = setInterval(() => CROWNS_SERVER_IDS.forEach(processCrownsCouncils), Math.min(30_000, Math.max(1_000, Math.floor(CROWNS_GAME_DAY_MS / 3))));
   crownsCouncilTimer.unref?.();
+  const crownsReligionTimer = setInterval(() => CROWNS_SERVER_IDS.forEach(processCrownsReligiousMovements), Math.min(30_000, Math.max(1_000, Math.floor(CROWNS_GAME_DAY_MS / 3))));
+  crownsReligionTimer.unref?.();
   const crownsSeasonTimer = setInterval(() => CROWNS_SERVER_IDS.forEach(processCrownsSeasonLifecycle), Math.min(60_000, Math.max(2_000, Math.floor(CROWNS_GAME_DAY_MS / 4))));
   crownsSeasonTimer.unref?.();
   const players = new Map();

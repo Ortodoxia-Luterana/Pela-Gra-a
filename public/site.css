@@ -1965,3 +1965,300 @@ img.feed-avatar {
   background:linear-gradient(90deg, rgba(0,0,0,.10), rgba(0,0,0,.82)), url("/assets/crowns-and-councils/banner.png?v=cards-20260721") center/cover !important;
 }
 
+/* Álbum de cartinhas */
+.album-panel,
+.shop-panel{
+  grid-column:1 / -1;
+}
+
+.album-toolbar{
+  display:flex;
+  gap:.8rem;
+  margin:0 0 1.2rem;
+  padding:.85rem;
+  border:1px solid rgba(242,199,95,.14);
+  border-radius:12px;
+  background:rgba(7,14,22,.48);
+}
+
+.album-toolbar label{
+  display:grid;
+  flex:1;
+  gap:.35rem;
+  color:#d8cdb8;
+  font-size:.76rem;
+  font-weight:800;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+}
+
+.album-toolbar input,
+.album-toolbar select{
+  width:100%;
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:9px;
+  background:#101b27;
+  color:#fff;
+  padding:.7rem .8rem;
+}
+
+.album-grid{
+  grid-template-columns:repeat(auto-fill,minmax(172px,1fr));
+  gap:1rem;
+}
+
+.album-grid .album-card{
+  overflow:hidden;
+  padding:0;
+  opacity:1;
+  filter:none;
+  border-color:rgba(255,255,255,.12);
+  background:linear-gradient(155deg,rgba(25,38,51,.98),rgba(8,15,23,.98));
+  box-shadow:0 13px 28px rgba(0,0,0,.2);
+  transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease;
+}
+
+.album-grid .album-card:hover{
+  transform:translateY(-4px);
+  border-color:rgba(242,199,95,.48);
+  box-shadow:0 18px 34px rgba(0,0,0,.34);
+}
+
+.album-card-art{
+  position:relative;
+  overflow:hidden;
+  aspect-ratio:591 / 1004;
+  background:radial-gradient(circle at 50% 24%,#33465a,#101922 58%,#080d12);
+}
+
+.album-card-art img{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.album-card.locked .album-card-art img{
+  opacity:.17;
+  filter:grayscale(1) contrast(1.35) blur(2px);
+  transform:scale(1.035);
+}
+
+.album-card-lock{
+  display:none;
+  position:absolute;
+  inset:50% auto auto 50%;
+  width:48px;
+  height:48px;
+  place-items:center;
+  transform:translate(-50%,-50%);
+  border:1px solid rgba(242,199,95,.7);
+  border-radius:50%;
+  background:rgba(7,13,19,.78);
+  color:#f2c75f;
+  font-size:1.4rem;
+  box-shadow:0 0 26px rgba(197,138,32,.3);
+}
+
+.album-card.locked .album-card-lock{
+  display:grid;
+}
+
+.album-grid .album-card-quantity{
+  position:absolute;
+  right:.55rem;
+  bottom:.55rem;
+  display:grid;
+  width:auto;
+  min-width:34px;
+  height:28px;
+  margin:0;
+  padding:0 .5rem;
+  place-items:center;
+  border:1px solid rgba(255,255,255,.3);
+  border-radius:999px;
+  background:rgba(5,10,15,.88);
+  color:#fff;
+  font-size:.75rem;
+}
+
+.album-card-copy{
+  display:grid;
+  gap:.28rem;
+  min-height:67px;
+  padding:.75rem .85rem .85rem;
+}
+
+.album-card-copy strong{
+  color:#fff7df;
+  font-size:.86rem;
+  line-height:1.25;
+}
+
+.album-card-copy span{
+  color:#aa9f8d;
+  font-size:.7rem;
+}
+
+.album-card.rarity-rara,
+.pack-reveal-grid .rarity-rara{border-color:rgba(83,167,255,.48)}
+.album-card.rarity-epica,
+.pack-reveal-grid .rarity-epica{border-color:rgba(183,104,255,.52)}
+.album-card.rarity-lendaria,
+.pack-reveal-grid .rarity-lendaria{border-color:rgba(242,199,95,.58)}
+.album-card.rarity-deluxe,
+.pack-reveal-grid .rarity-deluxe{border-color:rgba(81,222,190,.55)}
+
+.card-wallet{
+  border:1px solid rgba(242,199,95,.36);
+  border-radius:999px;
+  background:rgba(197,138,32,.12);
+  color:#f2c75f;
+  padding:.5rem .8rem;
+  font-weight:900;
+}
+
+.shop-grid{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+}
+
+.shop-grid .shop-pack{
+  position:relative;
+  overflow:hidden;
+  min-height:245px;
+  padding:1.25rem;
+  background:radial-gradient(circle at 85% 8%,rgba(242,199,95,.17),transparent 35%),linear-gradient(145deg,#172534,#0a121a);
+}
+
+.shop-pack::after{
+  content:'✦';
+  position:absolute;
+  top:-.45rem;
+  right:.6rem;
+  color:rgba(242,199,95,.13);
+  font-size:6rem;
+  line-height:1;
+  pointer-events:none;
+}
+
+.shop-pack-kicker{
+  color:#87a7bd;
+  font-size:.7rem;
+  font-weight:900;
+  letter-spacing:.09em;
+  text-transform:uppercase;
+}
+
+.shop-grid .shop-pack h4{
+  margin:.45rem 0 .3rem;
+  font-size:1.3rem;
+}
+
+.shop-grid .shop-pack p{
+  margin:.25rem 0;
+  color:#fff;
+  font-size:1.05rem;
+  font-weight:900;
+}
+
+.shop-grid .shop-pack small{
+  display:block;
+  min-height:48px;
+  color:#b8b0a4;
+  line-height:1.45;
+}
+
+.shop-pack form{
+  margin-top:1rem;
+}
+
+.shop-pack button{
+  width:100%;
+  border:0;
+  border-radius:9px;
+  background:linear-gradient(135deg,#f2c75f,#c58a20);
+  color:#171007;
+  padding:.72rem .9rem;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.shop-pack button:disabled{
+  opacity:.35;
+  cursor:not-allowed;
+  filter:grayscale(.6);
+}
+
+.shop-footnote{
+  margin:1rem 0 0;
+  color:#8e9ba5;
+  font-size:.78rem;
+}
+
+.pack-reveal{
+  margin:0 0 1.2rem;
+  padding:1rem;
+  border:1px solid rgba(242,199,95,.35);
+  border-radius:14px;
+  background:radial-gradient(circle at 50% 0,rgba(197,138,32,.17),transparent 44%),rgba(7,14,22,.62);
+}
+
+.pack-reveal-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:1rem;
+  margin-bottom:.85rem;
+}
+
+.pack-reveal-head p,
+.pack-reveal-head h4{margin:0}
+.pack-reveal-head p{color:#a99e8d;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em}
+.pack-reveal-head h4{color:#f2c75f;font-size:1.2rem}
+.pack-reveal-head a{color:#f2c75f;font-weight:800}
+
+.pack-reveal-grid{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:.7rem;
+}
+
+.pack-reveal-grid article{
+  display:grid;
+  gap:.3rem;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:9px;
+  background:#101b27;
+  padding:.45rem;
+  animation:card-reveal .5s both;
+  animation-delay:var(--reveal-delay);
+}
+
+.pack-reveal-grid img{
+  width:100%;
+  aspect-ratio:591 / 1004;
+  border-radius:5px;
+  object-fit:cover;
+}
+
+.pack-reveal-grid strong{color:#fff7df;font-size:.72rem;line-height:1.2}
+.pack-reveal-grid span{color:#a99e8d;font-size:.64rem}
+
+@keyframes card-reveal{
+  from{opacity:0;transform:translateY(16px) rotateY(35deg)}
+  to{opacity:1;transform:none}
+}
+
+@media (max-width:760px){
+  .album-toolbar{display:grid}
+  .album-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .shop-grid{grid-template-columns:1fr}
+  .pack-reveal-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .album-grid .album-card,
+  .pack-reveal-grid article{animation:none;transition:none}
+}
+

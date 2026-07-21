@@ -234,8 +234,10 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
   } finally {
     socket?.disconnect();
     server.kill('SIGTERM');
-    await new Promise(resolve => setTimeout(resolve, 120));
-    fs.rmSync(tempRoot, { recursive: true, force: true });
+    await Promise.race([new Promise(resolve => server.once('exit', resolve)), new Promise(resolve => setTimeout(resolve, 1500))]);
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      try { fs.rmSync(tempRoot, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); break; } catch { await new Promise(resolve => setTimeout(resolve, 250)); }
+    }
   }
 })().catch(error => {
   console.error(error);

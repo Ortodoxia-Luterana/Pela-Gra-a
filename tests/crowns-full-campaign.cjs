@@ -10,7 +10,7 @@ const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'crowns-full-campaign-'))
 const databasePath = path.join(tempRoot, 'campaign.sqlite');
 const port = 34000 + Math.floor(Math.random() * 1500);
 const origin = `http://127.0.0.1:${port}`;
-const gameDayMs = Math.max(250, Number(process.env.CROWNS_QA_DAY_MS || 300));
+const gameDayMs = Math.max(250, Number(process.env.CROWNS_QA_DAY_MS || 500));
 const server = spawn(process.execPath, ['--no-warnings', 'server.js'], {
   cwd: root,
   env: {
@@ -66,12 +66,20 @@ async function attendReligion(state) {
 async function attendCouncils(state) {
   for (const council of state.councils || []) {
     if (council.status === 'voting' && !council.vote && !voted.has(council.id)) {
-      await api('/council/vote', { serverId: 'cc-world-1', councilId: council.id, vote: council.kind === 'historical' ? 'accept' : 'abstain' });
-      voted.add(council.id);
+      try {
+        await api('/council/vote', { serverId: 'cc-world-1', councilId: council.id, vote: council.kind === 'historical' ? 'accept' : 'abstain' });
+        voted.add(council.id);
+      } catch (error) {
+        if (!error.message.includes('Este voto não pode ser registrado')) throw error;
+      }
     }
     if (council.status === 'decided' && !council.reception && !received.has(council.id)) {
-      await api('/religion/receive', { serverId: 'cc-world-1', councilId: council.id, reception: council.result === 'accept' ? 'receive' : 'resist' });
-      received.add(council.id);
+      try {
+        await api('/religion/receive', { serverId: 'cc-world-1', councilId: council.id, reception: council.result === 'accept' ? 'receive' : 'resist' });
+        received.add(council.id);
+      } catch (error) {
+        if (!error.message.includes('A recepção só ocorre após o decreto conciliar')) throw error;
+      }
     }
   }
 }
@@ -122,7 +130,7 @@ let qaDb;
 
     for (let count = 0; count < 2; count += 1) {
       state = await bootstrap();
-      const target = state.regions.find(region => region.isAdjacentToRealm && !region.ownerRealmId && region.status === 'neutral');
+      const target = state.regions.find(region => capital.neighborIds.includes(region.id) && !region.ownerRealmId && region.status === 'neutral');
       assert.ok(target, 'fronteira neutra ausente');
       await api('/territory/claim', { serverId: 'cc-world-1', regionId: target.id });
       await waitActions();

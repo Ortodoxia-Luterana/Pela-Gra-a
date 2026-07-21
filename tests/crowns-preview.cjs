@@ -48,7 +48,8 @@ async function waitForServer(timeoutMs = 8_000) {
     assert.equal(bootstrap.status, 200);
     const payload = await bootstrap.json();
     assert.equal(payload.user.id, 'crowns-local-preview');
-    assert.equal(payload.map.regionCount, 299);
+    assert.equal(payload.map.regionCount, 801);
+    assert.ok(payload.regions.some(region => region.name === 'Jerusalém'));
     console.log('Crowns and Councils local preview: PASS');
   } finally {
     server.kill('SIGTERM');

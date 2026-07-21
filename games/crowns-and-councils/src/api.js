@@ -16,5 +16,7 @@ export const crownsApi = {
   bootstrap: () => request('/bootstrap'),
   createRealm: payload => request('/realm/create', { method: 'POST', body: JSON.stringify(payload) }),
   claimTerritory: regionId => request('/territory/claim', { method: 'POST', body: JSON.stringify({ regionId }) }),
-  cancelAction: actionId => request('/actions/cancel', { method: 'POST', body: JSON.stringify({ actionId }) })
+  cancelAction: actionId => request('/actions/cancel', { method: 'POST', body: JSON.stringify({ actionId }) }),
+  journal: () => request('/journal'),
+  publishArticle: payload => request('/journal/articles', { method: 'POST', body: JSON.stringify(payload) })
 };

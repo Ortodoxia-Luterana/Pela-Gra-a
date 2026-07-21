@@ -88,8 +88,16 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
 
     let result = await jsonRequest('/api/crowns-and-councils/bootstrap');
     assert.equal(result.response.status, 200);
-    assert.equal(result.payload.map.regionCount, 299);
-    assert.equal(result.payload.regions.length, 299);
+    assert.equal(result.payload.map.regionCount, 801);
+    assert.equal(result.payload.regions.length, 801);
+    assert.equal(result.payload.map.countryCount, 59);
+    assert.match(result.payload.map.theatre, /Norte da África/);
+    assert.ok(result.payload.regions.some(region => region.name === 'Jerusalém' && region.iso3Code === 'ISR'));
+    assert.ok(result.payload.regions.some(region => region.countryCode === 'UK'));
+    assert.ok(result.payload.regions.some(region => region.iso3Code === 'RUS'));
+    assert.ok(result.payload.regions.some(region => region.iso3Code === 'EGY'));
+    assert.ok(!result.payload.regions.some(region => region.id === 'FRY3' || region.name === 'Guyane'));
+    assert.ok(result.payload.regions.every(region => region.neighborIds.length > 0));
     assert.equal(result.payload.realm, null);
     const capital = result.payload.regions.find(region => region.neighborIds.length > 2);
     assert.ok(capital);
@@ -127,6 +135,20 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     assert.equal(result.payload.realm.provisions, 720);
     assert.equal(result.payload.realm.prestige, 17);
     assert.equal(result.payload.actions.length, 0);
+
+    const published = waitSocket(socket, 'journal.published');
+    result = await jsonRequest('/api/crowns-and-councils/journal/articles', {
+      method: 'POST',
+      body: JSON.stringify({ title: 'Carta aos reinos vizinhos', body: 'Nossa casa anuncia que as fronteiras permanecem abertas ao diálogo.' })
+    });
+    assert.equal(result.response.status, 201);
+    assert.equal(result.payload.article.headline, 'Carta aos reinos vizinhos');
+    assert.equal((await published).article.id, result.payload.article.id);
+
+    result = await jsonRequest('/api/crowns-and-councils/journal');
+    assert.ok(result.payload.items.some(item => item.eventType === 'realm.created'));
+    assert.ok(result.payload.items.some(item => item.eventType === 'territory.claim.completed'));
+    assert.ok(result.payload.items.some(item => item.kind === 'article' && item.headline === 'Carta aos reinos vizinhos'));
 
     result = await jsonRequest('/api/games');
     assert.ok(result.payload.games.some(game => game.id === 'crowns-and-councils' && game.playUrl === '/crowns-and-councils'));

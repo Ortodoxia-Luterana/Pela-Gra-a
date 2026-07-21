@@ -5,14 +5,14 @@ const DESIGN_WIDTH = 1600;
 const DESIGN_HEIGHT = 980;
 const MAP_PADDING = 70;
 const COLORS = {
-  neutral: 0x7e8074,
-  neutralHover: 0xa4a494,
-  own: 0x2d6982,
-  foreign: 0x7b4a4f,
+  neutral: [0x827b66, 0x777860, 0x8a806b, 0x6f7461, 0x8a755e],
+  neutralHover: 0xc2ae75,
+  own: 0x7f393f,
+  foreign: 0x6b5448,
   pending: 0xb9893e,
-  selected: 0xd8bd70,
-  border: 0x242a2c,
-  coast: 0x17252b
+  selected: 0xe1bd58,
+  border: 0x292a22,
+  coast: 0x1b211a
 };
 
 function polygonRings(geometry) {
@@ -50,11 +50,20 @@ function projectionFor(features) {
   return ([x, y]) => [offsetX + (x - minX) * scale, DESIGN_HEIGHT - offsetY - (y - minY) * scale];
 }
 
-function regionColor(region, realm, selected) {
+function colorFromHex(value, fallback) {
+  return /^#[0-9a-f]{6}$/i.test(value || '') ? Number.parseInt(value.slice(1), 16) : fallback;
+}
+
+function neutralColor(id) {
+  const hash = [...String(id || '')].reduce((sum, char) => ((sum * 31) + char.charCodeAt(0)) >>> 0, 0);
+  return COLORS.neutral[hash % COLORS.neutral.length];
+}
+
+function regionColor(region, realm, selected, id) {
   if (selected) return COLORS.selected;
   if (region?.status === 'claiming') return COLORS.pending;
-  if (!region?.ownerRealmId) return COLORS.neutral;
-  return region.ownerRealmId === realm?.id ? COLORS.own : COLORS.foreign;
+  if (!region?.ownerRealmId) return neutralColor(id);
+  return region.ownerRealmId === realm?.id ? colorFromHex(realm?.color, COLORS.own) : colorFromHex(region.ownerColor, COLORS.foreign);
 }
 
 function drawFeature(graphics, geoFeature, project, fill) {
@@ -89,7 +98,7 @@ export class CrownsMapStage {
       preference: 'webgl'
     });
     this.app.canvas.className = 'cc-map-canvas';
-    this.app.canvas.setAttribute('aria-label', 'Mapa político clicável da Europa');
+    this.app.canvas.setAttribute('aria-label', 'Mapa político clicável da Europa, Norte da África, Rússia europeia e Oriente Médio');
     this.host.appendChild(this.app.canvas);
     this.app.stage.addChild(this.world);
     this.app.stage.eventMode = 'static';
@@ -109,7 +118,7 @@ export class CrownsMapStage {
 
   buildRegions() {
     this.features.forEach(geoFeature => {
-      const id = geoFeature.properties.NUTS_ID;
+      const id = geoFeature.properties.REGION_ID || geoFeature.properties.NUTS_ID;
       const graphics = new Graphics();
       graphics.eventMode = 'static';
       graphics.cursor = 'pointer';
@@ -121,7 +130,7 @@ export class CrownsMapStage {
         if (id !== this.selectedId) graphics.tint = COLORS.neutralHover;
       });
       graphics.on('pointerout', () => { graphics.tint = 0xffffff; });
-      drawFeature(graphics, geoFeature, this.project, COLORS.neutral);
+      drawFeature(graphics, geoFeature, this.project, neutralColor(id));
       this.world.addChild(graphics);
       this.regions.set(id, { graphics, geoFeature });
     });
@@ -132,7 +141,7 @@ export class CrownsMapStage {
     const byId = new Map((territories || []).map(item => [item.id, item]));
     this.regions.forEach(({ graphics, geoFeature }, id) => {
       graphics.tint = 0xffffff;
-      drawFeature(graphics, geoFeature, this.project, regionColor(byId.get(id), realm, id === selectedId));
+      drawFeature(graphics, geoFeature, this.project, regionColor(byId.get(id), realm, id === selectedId, id));
     });
   }
 
@@ -177,7 +186,7 @@ export class CrownsMapStage {
   zoomIn() { this.zoomAt({ x: this.app.screen.width / 2, y: this.app.screen.height / 2 }, 1.2); }
   zoomOut() { this.zoomAt({ x: this.app.screen.width / 2, y: this.app.screen.height / 2 }, 0.82); }
   fit() {
-    const framing = this.app.screen.width < 900 ? 1.72 : 1.48;
+    const framing = this.app.screen.width < 900 ? 1.04 : 1.08;
     const scale = Math.min(this.app.screen.width / DESIGN_WIDTH, this.app.screen.height / DESIGN_HEIGHT) * framing;
     this.world.scale.set(scale);
     this.world.position.set(

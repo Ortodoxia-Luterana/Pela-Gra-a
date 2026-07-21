@@ -42,7 +42,15 @@ async function waitForServer(timeoutMs = 8_000) {
     const launchCookie = gamePage.headers.get('set-cookie');
     assert.match(launchCookie || '', /cultivando_cc_launch=/);
 
-    const bootstrap = await fetch(`${origin}/api/crowns-and-councils/bootstrap`, {
+    const serversResponse = await fetch(`${origin}/api/crowns-and-councils/servers`, {
+      headers: { Cookie: launchCookie.split(';')[0] }
+    });
+    assert.equal(serversResponse.status, 200);
+    const servers = await serversResponse.json();
+    assert.equal(servers.servers.length, 3);
+    assert.ok(servers.servers.every(item => item.aiCount === 10 && item.totalDays === 60));
+
+    const bootstrap = await fetch(`${origin}/api/crowns-and-councils/bootstrap?serverId=cc-world-2`, {
       headers: { Cookie: launchCookie.split(';')[0] }
     });
     assert.equal(bootstrap.status, 200);
@@ -51,6 +59,8 @@ async function waitForServer(timeoutMs = 8_000) {
     assert.equal(payload.map.regionCount, 801);
     assert.ok(payload.regions.some(region => region.name === 'Jerusalém'));
     assert.equal(payload.world.aiRealmCount, 10);
+    assert.equal(payload.season.id, 'cc-world-2');
+    assert.equal(payload.season.mode, 'teste-acelerado');
     assert.equal(payload.realm, null);
     assert.ok(payload.customization.availableColors.length >= 20);
     console.log('Crowns and Councils local preview: PASS');

@@ -9,10 +9,12 @@ const publicData = path.join(root, 'games', 'crowns-and-councils', 'public', 'da
 const cacheDir = path.join(root, '.cache', 'crowns-map-sources');
 const nuts2024Path = path.join(publicData, 'nuts2-2024-20m-3035.topo.json');
 const topologyTarget = path.join(publicData, 'christian-theatre-2026-3035.topo.json');
+const contextTopologyTarget = path.join(publicData, 'world-context-2026-3035.topo.json');
 const catalogTarget = path.join(publicData, 'regions.json');
 const naturalEarthCommit = 'ca96624a56bd078437bca8184e78163e5039ad19';
 const ukNutsUrl = 'https://gisco-services.ec.europa.eu/distribution/v2/nuts/topojson/NUTS_RG_20M_2016_3035_LEVL_2.json';
 const naturalEarthUrl = `https://raw.githubusercontent.com/nvkelso/natural-earth-vector/${naturalEarthCommit}/geojson/ne_10m_admin_1_states_provinces.geojson`;
+const naturalEarthCountriesUrl = `https://raw.githubusercontent.com/nvkelso/natural-earth-vector/${naturalEarthCommit}/geojson/ne_110m_admin_0_countries.geojson`;
 const epsg3035 = '+proj=laea +lat_0=52 +lon_0=10 +x_0=4321000 +y_0=3210000 +ellps=GRS80 +units=m +no_defs';
 const excludedNutsIds = new Set(['ES70', 'PT20', 'PT30']);
 const extensionCountries = new Set([
@@ -23,6 +25,7 @@ const extensionCountries = new Set([
 ]);
 
 const portugueseCountryNames = {
+  AL: 'Albânia', BA: 'Bósnia e Herzegovina', LI: 'Liechtenstein', TR: 'Turquia', XK: 'Kosovo',
   AT: 'Áustria', BE: 'Bélgica', BG: 'Bulgária', CH: 'Suíça', CY: 'Chipre', CZ: 'Tchéquia', DE: 'Alemanha',
   DK: 'Dinamarca', EE: 'Estônia', EL: 'Grécia', ES: 'Espanha', FI: 'Finlândia', FR: 'França', HR: 'Croácia',
   HU: 'Hungria', IE: 'Irlanda', IS: 'Islândia', IT: 'Itália', LT: 'Lituânia', LU: 'Luxemburgo', LV: 'Letônia',
@@ -226,9 +229,10 @@ function connectCuratedMaritimeRoutes(features, adjacency, routeAdjacency) {
 
 async function build() {
   const nuts2024 = JSON.parse(fs.readFileSync(nuts2024Path, 'utf8'));
-  const [nuts2016, naturalEarth] = await Promise.all([
+  const [nuts2016, naturalEarth, naturalEarthCountries] = await Promise.all([
     cachedJson(ukNutsUrl, 'nuts2-2016-20m-3035.json'),
-    cachedJson(naturalEarthUrl, `natural-earth-admin1-${naturalEarthCommit}.geojson`)
+    cachedJson(naturalEarthUrl, `natural-earth-admin1-${naturalEarthCommit}.geojson`),
+    cachedJson(naturalEarthCountriesUrl, `natural-earth-admin0-110m-${naturalEarthCommit}.geojson`)
   ]);
 
   const mainlandNuts = nutsFeatures(nuts2024, item => {
@@ -246,6 +250,17 @@ async function build() {
   });
 
   const theatreTopology = topology({ regions: { type: 'FeatureCollection', features } }, 100000);
+  const contextFeatures = naturalEarthCountries.features
+    .filter(item => String(item.properties?.ADM0_A3 || item.properties?.adm0_a3 || '') !== 'ATA')
+    .map((item, index) => ({
+      type: 'Feature',
+      properties: {
+        CONTEXT_ID: String(item.properties?.ADM0_A3 || item.properties?.adm0_a3 || item.properties?.ISO_A3 || `context-${index}`),
+        CONTEXT_NAME: item.properties?.NAME_PT || item.properties?.NAME_EN || item.properties?.ADMIN || item.properties?.NAME || 'Terra não jogável'
+      },
+      geometry: { ...item.geometry, coordinates: transformCoordinates(item.geometry.coordinates) }
+    }));
+  const contextTopology = topology({ countries: { type: 'FeatureCollection', features: contextFeatures } }, 60000);
   const object = theatreTopology.objects.regions;
   const geo = feature(theatreTopology, object);
   const stats = geo.features.map(featureStats);
@@ -299,12 +314,14 @@ async function build() {
     ],
     projection: 'EPSG:3035',
     topologyFile: 'christian-theatre-2026-3035.topo.json',
+    contextTopologyFile: 'world-context-2026-3035.topo.json',
     regionCount: regions.length,
     countryCount: new Set(regions.map(region => region.countryCode)).size,
     theatre: 'Europa, Norte da África, Rússia europeia e Oriente Médio',
     regions
   };
   fs.writeFileSync(topologyTarget, `${JSON.stringify(theatreTopology)}\n`);
+  fs.writeFileSync(contextTopologyTarget, `${JSON.stringify(contextTopology)}\n`);
   fs.writeFileSync(catalogTarget, `${JSON.stringify(catalog, null, 2)}\n`);
   console.log(`Crowns and Councils: ${regions.length} regiões em ${catalog.countryCount} países; Jerusalém e rotas marítimas validadas.`);
 }

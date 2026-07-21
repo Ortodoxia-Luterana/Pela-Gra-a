@@ -43,14 +43,28 @@ def fit_on_canvas(image: Image.Image, size: tuple[int, int], max_height: int) ->
 
 def process_stations() -> dict[str, str]:
     atlas = Image.open(GENERATED / "stations_atlas.png").convert("RGBA")
-    names = [
-        "pulpit_l1", "pulpit_l2", "pulpit_l3",
-        "benches_l1", "benches_l2", "benches_l3",
-        "altar_l1", "reception_l1", "catechesis_l1",
+    cells = [
+        (0, "pulpit_l1"), (1, "pulpit_l2"), (2, "pulpit_l3"),
+        (6, "altar_l1"), (7, "reception_l1"), (8, "catechesis_l1"),
     ]
     result: dict[str, str] = {}
-    for index, name in enumerate(names):
-        cell = trim_alpha(crop_cell(atlas, index % 3, index // 3, 3, 3), 12)
+    for index, name in cells:
+        raw_cell = crop_cell(atlas, index % 3, index // 3, 3, 3)
+        if name == "altar_l1":
+            raw_cell = raw_cell.crop((0, 0, round(raw_cell.width * 0.93), raw_cell.height))
+        cell = trim_alpha(raw_cell, 12)
+        path = OUT / f"station_{name}.png"
+        cell.save(path, optimize=True)
+        result[name] = f"assets/game/{path.name}"
+    result.update(process_benches())
+    return result
+
+
+def process_benches() -> dict[str, str]:
+    atlas = Image.open(GENERATED / "benches_rear_atlas.png").convert("RGBA")
+    result: dict[str, str] = {}
+    for index, name in enumerate(("benches_l1", "benches_l2", "benches_l3")):
+        cell = fit_on_canvas(crop_cell(atlas, index, 0, 3, 1), (420, 340), 316)
         path = OUT / f"station_{name}.png"
         cell.save(path, optimize=True)
         result[name] = f"assets/game/{path.name}"

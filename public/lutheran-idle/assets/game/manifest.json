@@ -9,12 +9,12 @@
     "pulpit_l1": "assets/game/station_pulpit_l1.png",
     "pulpit_l2": "assets/game/station_pulpit_l2.png",
     "pulpit_l3": "assets/game/station_pulpit_l3.png",
-    "benches_l1": "assets/game/station_benches_l1.png",
-    "benches_l2": "assets/game/station_benches_l2.png",
-    "benches_l3": "assets/game/station_benches_l3.png",
     "altar_l1": "assets/game/station_altar_l1.png",
     "reception_l1": "assets/game/station_reception_l1.png",
-    "catechesis_l1": "assets/game/station_catechesis_l1.png"
+    "catechesis_l1": "assets/game/station_catechesis_l1.png",
+    "benches_l1": "assets/game/station_benches_l1.png",
+    "benches_l2": "assets/game/station_benches_l2.png",
+    "benches_l3": "assets/game/station_benches_l3.png"
   },
   "characters": {
     "frameWidth": 192,

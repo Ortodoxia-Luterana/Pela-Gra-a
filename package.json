@@ -7,12 +7,17 @@
     "start": "node --no-warnings start.js",
     "dev": "node --no-warnings start.js",
     "build:crowns": "node --no-warnings tools/build-crowns-region-catalog.cjs && vite build --config games/crowns-and-councils/vite.config.mjs && node --no-warnings tools/clean-crowns-build.cjs",
+    "build:lutheran-idle": "vite build --config games/lutheran-idle/vite.config.mjs",
     "preview:crowns": "node --no-warnings tools/preview-crowns.cjs",
+    "preview:lutheran-idle": "node --no-warnings tools/preview-lutheran-idle.cjs",
     "test:crowns": "node --no-warnings tests/crowns-and-councils.cjs",
     "test:crowns:preview": "node --no-warnings tests/crowns-preview.cjs",
-    "test:babel-realtime": "node --no-warnings tests/babel-realtime.cjs"
+    "test:babel-realtime": "node --no-warnings tests/babel-realtime.cjs",
+    "test:lutheran-idle": "node --no-warnings tests/lutheran-idle.cjs",
+    "test:lutheran-idle:preview": "node --no-warnings tests/lutheran-idle-preview.cjs"
   },
   "dependencies": {
+    "phaser": "^3.90.0",
     "pixi.js": "^8.19.0",
     "preact": "^10.29.7",
     "socket.io": "^4.8.3",
@@ -23,6 +28,7 @@
     "proj4": "^2.20.9",
     "socket.io-client": "^4.8.3",
     "topojson-server": "^3.0.1",
+    "typescript": "^5.9.3",
     "vite": "^8.1.5"
   }
 }

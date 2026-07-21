@@ -14,7 +14,8 @@
     "test:crowns:preview": "node --no-warnings tests/crowns-preview.cjs",
     "test:babel-realtime": "node --no-warnings tests/babel-realtime.cjs",
     "test:lutheran-idle": "node --no-warnings tests/lutheran-idle.cjs",
-    "test:lutheran-idle:preview": "node --no-warnings tests/lutheran-idle-preview.cjs"
+    "test:lutheran-idle:preview": "node --no-warnings tests/lutheran-idle-preview.cjs",
+    "test:lutheran-idle:balance": "node --no-warnings tools/simulate-lutheran-progression.cjs"
   },
   "dependencies": {
     "phaser": "^3.90.0",

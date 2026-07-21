@@ -98,6 +98,15 @@ async function run() {
   assert.equal(bootstrap.payload.gameId, 'lutheran-idle');
   assert.equal(bootstrap.payload.economy.offerings, 200);
   assert.equal(bootstrap.payload.stations.find((station) => station.id === 'pulpit').built, true);
+  assert.equal(bootstrap.payload.progression.current.name, 'Sala emprestada');
+  assert.equal(bootstrap.payload.progression.levelCap, 10);
+  assert.equal(bootstrap.payload.retention.checkin.day, 1);
+
+  const daily = await json('/api/lutheran-idle/daily-claim', { method: 'POST', body: '{}' });
+  assert.equal(daily.response.status, 200);
+  assert.equal(daily.payload.day, 1);
+  const dailyReplay = await json('/api/lutheran-idle/daily-claim', { method: 'POST', body: '{}' });
+  assert.equal(dailyReplay.response.status, 409);
 
   const key = crypto.randomUUID();
   const collectOne = await json('/api/lutheran-idle/collect', { method: 'POST', body: JSON.stringify({ stationId: 'pulpit', idempotencyKey: key }) });
@@ -114,11 +123,25 @@ async function run() {
   const assign = await json('/api/lutheran-idle/assign-worker', { method: 'POST', body: JSON.stringify({ workerId: 'voluntario-inicial', stationId: 'reception' }) });
   assert.equal(assign.payload.state.workers.find((worker) => worker.id === 'voluntario-inicial').assignedStation, 'reception');
 
+  const lockedCatechesis = await json('/api/lutheran-idle/build', { method: 'POST', body: JSON.stringify({ stationId: 'catechesis' }) });
+  assert.equal(lockedCatechesis.response.status, 409);
+
   const district = await json('/api/lutheran-idle/district/create', { method: 'POST', body: JSON.stringify({ name: 'Distrito de Teste' }) });
   assert.equal(district.response.status, 200);
   assert.equal(district.payload.state.district.name, 'Distrito de Teste');
 
   const database = new DatabaseSync(DB_PATH);
+  database.prepare('UPDATE lutheran_idle_profiles SET level = 3, offerings = 500 WHERE user_id = ?').run(bootstrap.payload.user.id);
+  database.prepare('UPDATE lutheran_idle_daily_progress SET collect_count = 99, upgrade_count = 99, members_gained = 99 WHERE user_id = ?').run(bootstrap.payload.user.id);
+  database.prepare('UPDATE lutheran_idle_retention SET weekly_points = 9999 WHERE user_id = ?').run(bootstrap.payload.user.id);
+  const stage = await json('/api/lutheran-idle/advance-stage', { method: 'POST', body: '{}' });
+  assert.equal(stage.response.status, 200);
+  assert.equal(stage.payload.state.profile.stage, 2);
+  assert.equal(stage.payload.state.progression.levelCap, 16);
+  const mission = await json('/api/lutheran-idle/mission-claim', { method: 'POST', body: JSON.stringify({ missionId: 'collect' }) });
+  assert.equal(mission.response.status, 200);
+  const weekly = await json('/api/lutheran-idle/weekly-claim', { method: 'POST', body: '{}' });
+  assert.equal(weekly.response.status, 200);
   database.prepare('UPDATE lutheran_idle_profiles SET offline_pending_json = NULL, last_seen_at = ? WHERE user_id = ?').run(new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), bootstrap.payload.user.id);
   database.close();
   const offlineBootstrap = await json('/api/lutheran-idle/bootstrap');

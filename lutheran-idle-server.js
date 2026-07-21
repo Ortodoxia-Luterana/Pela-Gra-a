@@ -1,12 +1,22 @@
 const crypto = require('node:crypto');
+const {
+  STAGES,
+  checkinReward,
+  dailyMissionDefinitions,
+  daysBetween,
+  progressionSnapshot,
+  stageLevelCap,
+  utcDayKey,
+  utcWeekKey
+} = require('./lutheran-idle-progression');
 
 const STATIONS = Object.freeze({
-  entrance: { title: 'Entrada', cycleSeconds: 10, baseOutput: 1, buildCost: 0, maxLevel: 3 },
-  benches: { title: 'Bancos', cycleSeconds: 0, baseOutput: 0, buildCost: 0, maxLevel: 3 },
-  pulpit: { title: 'Púlpito', cycleSeconds: 12, baseOutput: 34, buildCost: 0, upgradeBase: 75, maxLevel: 3 },
-  altar: { title: 'Altar', cycleSeconds: 0, baseOutput: 0, buildCost: 0, upgradeBase: 110, maxLevel: 3 },
-  reception: { title: 'Recepção', cycleSeconds: 18, baseOutput: 2, buildCost: 160, upgradeBase: 120, maxLevel: 3 },
-  catechesis: { title: 'Catequese', cycleSeconds: 32, baseOutput: 1, buildCost: 420, upgradeBase: 260, maxLevel: 3 }
+  entrance: { title: 'Entrada', cycleSeconds: 10, baseOutput: 1, buildCost: 0, upgradeBase: 90, maxLevel: 50, unlockStage: 1 },
+  benches: { title: 'Bancos', cycleSeconds: 0, baseOutput: 0, buildCost: 0, upgradeBase: 100, maxLevel: 50, unlockStage: 1 },
+  pulpit: { title: 'Púlpito', cycleSeconds: 12, baseOutput: 34, buildCost: 0, upgradeBase: 75, maxLevel: 50, unlockStage: 1 },
+  altar: { title: 'Altar', cycleSeconds: 0, baseOutput: 0, buildCost: 0, upgradeBase: 110, maxLevel: 50, unlockStage: 1 },
+  reception: { title: 'Recepção', cycleSeconds: 18, baseOutput: 2, buildCost: 160, upgradeBase: 120, maxLevel: 50, unlockStage: 1 },
+  catechesis: { title: 'Catequese', cycleSeconds: 32, baseOutput: 1, buildCost: 420, upgradeBase: 260, maxLevel: 50, unlockStage: 2 }
 });
 
 const INITIAL_STATIONS = [
@@ -105,6 +115,25 @@ function createLutheranIdleService({ db, gameId = 'lutheran-idle' }) {
       FOREIGN KEY (district_id) REFERENCES lutheran_idle_districts(id) ON DELETE CASCADE,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
+    CREATE TABLE IF NOT EXISTS lutheran_idle_daily_progress (
+      user_id TEXT NOT NULL,
+      day_key TEXT NOT NULL,
+      collect_count INTEGER NOT NULL DEFAULT 0,
+      upgrade_count INTEGER NOT NULL DEFAULT 0,
+      members_gained INTEGER NOT NULL DEFAULT 0,
+      claimed_json TEXT NOT NULL DEFAULT '[]',
+      PRIMARY KEY (user_id, day_key),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+    CREATE TABLE IF NOT EXISTS lutheran_idle_retention (
+      user_id TEXT PRIMARY KEY,
+      checkin_day INTEGER NOT NULL DEFAULT 0,
+      last_checkin_day TEXT,
+      week_key TEXT NOT NULL,
+      weekly_points INTEGER NOT NULL DEFAULT 0,
+      weekly_claimed INTEGER NOT NULL DEFAULT 0,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
     CREATE INDEX IF NOT EXISTS lutheran_idle_rank_idx ON lutheran_idle_profiles (stage DESC, members DESC, offerings DESC);
     CREATE INDEX IF NOT EXISTS lutheran_idle_district_rank_idx ON lutheran_idle_districts (project_total DESC);
   `);
@@ -128,7 +157,8 @@ function createLutheranIdleService({ db, gameId = 'lutheran-idle' }) {
     clearWorkerAssignment: db.prepare('UPDATE lutheran_idle_workers SET assigned_station = NULL WHERE user_id = ? AND assigned_station = ?'),
     assignWorker: db.prepare('UPDATE lutheran_idle_workers SET assigned_station = ? WHERE user_id = ? AND worker_id = ?'),
     spendOfferings: db.prepare('UPDATE lutheran_idle_profiles SET offerings = offerings - ?, xp = xp + ?, last_seen_at = ?, updated_at = ?, revision = revision + 1 WHERE user_id = ? AND offerings >= ?'),
-    addProduction: db.prepare('UPDATE lutheran_idle_profiles SET offerings = offerings + ?, visitors = visitors + ?, attendees = attendees + ?, members = members + ?, reputation = reputation + ?, xp = xp + ?, level = max(level, 1 + CAST((xp + ?) / 220 AS INTEGER)), last_seen_at = ?, updated_at = ?, revision = revision + 1 WHERE user_id = ?'),
+    addProduction: db.prepare('UPDATE lutheran_idle_profiles SET offerings = offerings + ?, visitors = visitors + ?, attendees = attendees + ?, members = members + ?, reputation = reputation + ?, xp = xp + ?, last_seen_at = ?, updated_at = ?, revision = revision + 1 WHERE user_id = ?'),
+    updateLevel: db.prepare('UPDATE lutheran_idle_profiles SET level = ? WHERE user_id = ? AND level < ?'),
     tutorial: db.prepare('UPDATE lutheran_idle_profiles SET tutorial_step = max(tutorial_step, ?), updated_at = ? WHERE user_id = ?'),
     receipt: db.prepare('SELECT * FROM lutheran_idle_action_receipts WHERE user_id = ? AND idempotency_key = ?'),
     insertReceipt: db.prepare('INSERT INTO lutheran_idle_action_receipts (user_id, idempotency_key, action, response_json, created_at) VALUES (?, ?, ?, ?, ?)'),
@@ -141,7 +171,20 @@ function createLutheranIdleService({ db, gameId = 'lutheran-idle' }) {
     insertDistrictMember: db.prepare('INSERT INTO lutheran_idle_district_members (district_id, user_id, role, contribution, joined_at) VALUES (?, ?, ?, 0, ?)'),
     addContribution: db.prepare('UPDATE lutheran_idle_district_members SET contribution = contribution + ? WHERE district_id = ? AND user_id = ?'),
     addDistrictTotal: db.prepare('UPDATE lutheran_idle_districts SET project_total = project_total + ? WHERE id = ?'),
-    spendContribution: db.prepare('UPDATE lutheran_idle_profiles SET offerings = offerings - ?, district_points = district_points + ?, last_seen_at = ?, updated_at = ?, revision = revision + 1 WHERE user_id = ? AND offerings >= ?')
+    spendContribution: db.prepare('UPDATE lutheran_idle_profiles SET offerings = offerings - ?, district_points = district_points + ?, last_seen_at = ?, updated_at = ?, revision = revision + 1 WHERE user_id = ? AND offerings >= ?'),
+    spendStage: db.prepare('UPDATE lutheran_idle_profiles SET offerings = offerings - ?, stage = stage + 1, gems = gems + ?, materials = materials + ?, xp = xp + ?, last_seen_at = ?, updated_at = ?, revision = revision + 1 WHERE user_id = ? AND stage = ? AND offerings >= ?'),
+    grantRewards: db.prepare('UPDATE lutheran_idle_profiles SET offerings = offerings + ?, gems = gems + ?, materials = materials + ?, xp = xp + ?, last_seen_at = ?, updated_at = ?, revision = revision + 1 WHERE user_id = ?'),
+    daily: db.prepare('SELECT * FROM lutheran_idle_daily_progress WHERE user_id = ? AND day_key = ?'),
+    insertDaily: db.prepare('INSERT OR IGNORE INTO lutheran_idle_daily_progress (user_id, day_key) VALUES (?, ?)'),
+    addDailyCollect: db.prepare('UPDATE lutheran_idle_daily_progress SET collect_count = collect_count + ?, members_gained = members_gained + ? WHERE user_id = ? AND day_key = ?'),
+    addDailyUpgrade: db.prepare('UPDATE lutheran_idle_daily_progress SET upgrade_count = upgrade_count + 1 WHERE user_id = ? AND day_key = ?'),
+    setDailyClaims: db.prepare('UPDATE lutheran_idle_daily_progress SET claimed_json = ? WHERE user_id = ? AND day_key = ?'),
+    retention: db.prepare('SELECT * FROM lutheran_idle_retention WHERE user_id = ?'),
+    insertRetention: db.prepare('INSERT OR IGNORE INTO lutheran_idle_retention (user_id, week_key) VALUES (?, ?)'),
+    resetWeekly: db.prepare('UPDATE lutheran_idle_retention SET week_key = ?, weekly_points = 0, weekly_claimed = 0 WHERE user_id = ?'),
+    addWeeklyPoints: db.prepare('UPDATE lutheran_idle_retention SET weekly_points = weekly_points + ? WHERE user_id = ?'),
+    setCheckin: db.prepare('UPDATE lutheran_idle_retention SET checkin_day = ?, last_checkin_day = ? WHERE user_id = ?'),
+    claimWeekly: db.prepare('UPDATE lutheran_idle_retention SET weekly_claimed = 1 WHERE user_id = ?')
   };
 
   let namespace = null;
@@ -160,30 +203,56 @@ function createLutheranIdleService({ db, gameId = 'lutheran-idle' }) {
   }
 
   function ensurePlayer(user) {
-    if (q.profile.get(user.id)) return;
-    transaction(() => {
-      if (q.profile.get(user.id)) return;
-      const now = isoNow();
-      q.insertProfile.run(user.id, `Comunidade de ${user.name}`.slice(0, 52), now, now, now);
-      for (const [stationId, level, built, worker] of INITIAL_STATIONS) {
-        const collectedAt = stationId === 'pulpit' ? new Date(Date.now() - 14_000).toISOString() : now;
-        q.insertStation.run(user.id, stationId, level, built, worker, collectedAt);
-      }
-      q.insertWorker.run(user.id, 'pastor-inicial', 'Pastor', 1, 'comum', 'culto', 'pulpit');
-      q.insertWorker.run(user.id, 'voluntario-inicial', 'Voluntário', 1, 'comum', 'acolhimento', null);
-    });
+    if (!q.profile.get(user.id)) {
+      transaction(() => {
+        if (q.profile.get(user.id)) return;
+        const now = isoNow();
+        q.insertProfile.run(user.id, `Comunidade de ${user.name}`.slice(0, 52), now, now, now);
+        for (const [stationId, level, built, worker] of INITIAL_STATIONS) {
+          const collectedAt = stationId === 'pulpit' ? new Date(Date.now() - 14_000).toISOString() : now;
+          q.insertStation.run(user.id, stationId, level, built, worker, collectedAt);
+        }
+        q.insertWorker.run(user.id, 'pastor-inicial', 'Pastor', 1, 'comum', 'culto', 'pulpit');
+        q.insertWorker.run(user.id, 'voluntario-inicial', 'Voluntário', 1, 'comum', 'acolhimento', null);
+      });
+    }
+    ensureRetention(user.id);
+  }
+
+  function ensureRetention(userId, now = new Date()) {
+    const dayKey = utcDayKey(now);
+    const weekKey = utcWeekKey(now);
+    q.insertDaily.run(userId, dayKey);
+    q.insertRetention.run(userId, weekKey);
+    const retention = q.retention.get(userId);
+    if (retention.week_key !== weekKey) q.resetWeekly.run(weekKey, userId);
+    return { dayKey, weekKey };
+  }
+
+  function addActivity(userId, { collects = 0, upgrades = 0, members = 0, weeklyPoints = 0 } = {}) {
+    const { dayKey } = ensureRetention(userId);
+    if (collects || members) q.addDailyCollect.run(collects, members, userId, dayKey);
+    for (let index = 0; index < upgrades; index += 1) q.addDailyUpgrade.run(userId, dayKey);
+    if (weeklyPoints) q.addWeeklyPoints.run(weeklyPoints, userId);
+  }
+
+  function syncProfileLevel(userId) {
+    const profile = q.profile.get(userId);
+    const level = Math.min(100, 1 + Math.floor(Math.sqrt(Math.max(0, Number(profile.xp)) / 120)));
+    q.updateLevel.run(level, userId, level);
   }
 
   function upgradeCost(stationId, level) {
     const definition = STATIONS[stationId];
-    return Math.ceil((definition?.upgradeBase || 100) * Math.pow(1.58, Math.max(0, level - 1)) / 5) * 5;
+    return Math.ceil((definition?.upgradeBase || 100) * Math.pow(1.32, Math.max(0, level - 1)) / 5) * 5;
   }
 
-  function publicStation(row, now = Date.now()) {
+  function publicStation(row, stage, now = Date.now()) {
     const definition = STATIONS[row.station_id];
     const cycleSeconds = definition.cycleSeconds || 0;
     const elapsedMs = Math.max(0, now - Date.parse(row.last_collected_at));
-    const readyCycles = cycleSeconds ? Math.min(8, Math.floor(elapsedMs / (cycleSeconds * 1000))) : 0;
+    const levelCap = Math.min(definition.maxLevel, stageLevelCap(stage));
+    const readyCycles = cycleSeconds ? Math.min(8 + Number(stage) * 4, Math.floor(elapsedMs / (cycleSeconds * 1000))) : 0;
     return {
       id: row.station_id,
       title: definition.title,
@@ -193,9 +262,12 @@ function createLutheranIdleService({ db, gameId = 'lutheran-idle' }) {
       cycleSeconds,
       readyCycles,
       progress: cycleSeconds ? Math.min(1, (elapsedMs % (cycleSeconds * 1000)) / (cycleSeconds * 1000)) : 0,
-      upgradeCost: Number(row.level) >= definition.maxLevel ? null : upgradeCost(row.station_id, Number(row.level)),
+      upgradeCost: Number(row.level) >= levelCap ? null : upgradeCost(row.station_id, Number(row.level)),
       buildCost: definition.buildCost,
-      maxLevel: definition.maxLevel
+      maxLevel: levelCap,
+      absoluteMaxLevel: definition.maxLevel,
+      unlockStage: definition.unlockStage,
+      locked: Number(stage) < definition.unlockStage
     };
   }
 
@@ -231,6 +303,19 @@ function createLutheranIdleService({ db, gameId = 'lutheran-idle' }) {
   function snapshot(user) {
     const profile = q.profile.get(user.id);
     const pending = parseJson(profile.offline_pending_json, null);
+    const stationRows = q.stations.all(user.id);
+    const progression = progressionSnapshot(profile, stationRows);
+    const { dayKey, weekKey } = ensureRetention(user.id);
+    const daily = q.daily.get(user.id, dayKey);
+    const retention = q.retention.get(user.id);
+    const claimedMissions = parseJson(daily.claimed_json, []);
+    const dailyMissions = dailyMissionDefinitions(profile.stage, daily).map(mission => ({
+      ...mission,
+      claimed: claimedMissions.includes(mission.id),
+      ready: Number(mission.current) >= Number(mission.goal)
+    }));
+    const nextCheckinDay = retention.last_checkin_day === dayKey ? Number(retention.checkin_day) : (daysBetween(retention.last_checkin_day, dayKey) === 1 ? Number(retention.checkin_day) % 28 + 1 : 1);
+    const weeklyGoal = 250 * Math.max(1, Number(profile.stage));
     return {
       gameId,
       serverNow: isoNow(),
@@ -257,7 +342,25 @@ function createLutheranIdleService({ db, gameId = 'lutheran-idle' }) {
         members: Number(profile.members),
         volunteers: Number(profile.volunteers)
       },
-      stations: q.stations.all(user.id).map(row => publicStation(row)),
+      progression,
+      retention: {
+        dayKey,
+        checkin: {
+          day: nextCheckinDay,
+          claimedToday: retention.last_checkin_day === dayKey,
+          reward: checkinReward(nextCheckinDay)
+        },
+        dailyMissions,
+        weekly: {
+          weekKey,
+          current: Number(retention.weekly_points),
+          goal: weeklyGoal,
+          claimed: Boolean(retention.weekly_claimed),
+          ready: Number(retention.weekly_points) >= weeklyGoal,
+          reward: { offerings: weeklyGoal * 8, gems: Math.max(1, Math.floor(Number(profile.stage) / 2)), materials: Number(profile.stage) * 8 }
+        }
+      },
+      stations: stationRows.map(row => publicStation(row, profile.stage)),
       workers: q.workers.all(user.id).map(row => ({
         id: row.worker_id,
         role: row.role,
@@ -290,11 +393,14 @@ function createLutheranIdleService({ db, gameId = 'lutheran-idle' }) {
       q.updateSeen.run(new Date(now).toISOString(), new Date(now).toISOString(), user.id);
       return;
     }
-    const cappedSeconds = Math.min(4 * 60 * 60, elapsedSeconds);
+    const cappedSeconds = Math.min(progressionSnapshot(profile, q.stations.all(user.id)).offlineHours * 60 * 60, elapsedSeconds);
     const pulpit = q.station.get(user.id, 'pulpit');
     const pulpitLevel = Math.max(1, Number(pulpit?.level || 1));
-    const offerings = Math.max(1, Math.floor(cappedSeconds / 60 * pulpitLevel * 9));
-    const members = Math.floor(cappedSeconds / 1800 * Math.max(0, Number(q.station.get(user.id, 'catechesis')?.built || 0)));
+    const altarLevel = Math.max(1, Number(q.station.get(user.id, 'altar')?.level || 1));
+    const stageMultiplier = 1 + (Number(profile.stage) - 1) * 0.22;
+    const offerings = Math.max(1, Math.floor(cappedSeconds / 60 * Math.pow(1.16, pulpitLevel - 1) * (1 + (altarLevel - 1) * 0.04) * 9 * stageMultiplier));
+    const catechesis = q.station.get(user.id, 'catechesis');
+    const members = catechesis?.built ? Math.floor(cappedSeconds / 1800 * Math.pow(1.12, Math.max(0, Number(catechesis.level) - 1)) * stageMultiplier) : 0;
     const pending = { secondsAway: cappedSeconds, offerings, members, createdAt: new Date(now).toISOString() };
     q.setPending.run(JSON.stringify(pending), new Date(now).toISOString(), new Date(now).toISOString(), user.id);
   }
@@ -319,7 +425,8 @@ function createLutheranIdleService({ db, gameId = 'lutheran-idle' }) {
       if (!row || !definition || !row.built || !definition.cycleSeconds) throw new Error('Esta estação ainda não produz recursos.');
       const now = Date.now();
       const elapsedMs = Math.max(0, now - Date.parse(row.last_collected_at));
-      const cycles = Math.min(8, Math.floor(elapsedMs / (definition.cycleSeconds * 1000)));
+      const profile = q.profile.get(user.id);
+      const cycles = Math.min(8 + Number(profile.stage) * 4, Math.floor(elapsedMs / (definition.cycleSeconds * 1000)));
       if (cycles < 1) {
         const error = new Error('A atividade ainda está em andamento.');
         error.code = 'NOT_READY';
@@ -327,22 +434,31 @@ function createLutheranIdleService({ db, gameId = 'lutheran-idle' }) {
         throw error;
       }
       const workerBonus = row.active_worker_id ? 1.18 : 1;
-      const levelBonus = 1 + (Number(row.level) - 1) * 0.55;
-      const base = Math.floor(definition.baseOutput * cycles * levelBonus * workerBonus);
+      const levelBonus = Math.pow(1.18, Number(row.level) - 1);
+      const altarLevel = Number(q.station.get(user.id, 'altar')?.level || 1);
+      const entranceLevel = Number(q.station.get(user.id, 'entrance')?.level || 1);
+      const benchesLevel = Number(q.station.get(user.id, 'benches')?.level || 1);
+      const stageBonus = 1 + (Number(profile.stage) - 1) * 0.2;
+      const offeringBonus = 1 + (altarLevel - 1) * 0.04;
+      const visitorBonus = 1 + (entranceLevel - 1) * 0.04 + (benchesLevel - 1) * 0.025;
+      const base = Math.floor(definition.baseOutput * cycles * levelBonus * workerBonus * stageBonus);
       let offerings = 0;
       let visitors = 0;
       let attendees = 0;
       let members = 0;
       let reputation = 0;
-      if (stationId === 'pulpit') { offerings = base; visitors = cycles * (1 + Number(row.level)); attendees = Math.floor(visitors / 3); }
-      if (stationId === 'reception') { visitors = cycles * (1 + Number(row.level)); reputation = cycles; offerings = cycles * 5; }
-      if (stationId === 'catechesis') { members = cycles * Number(row.level); reputation = cycles * 2; offerings = cycles * 8; }
+      if (stationId === 'pulpit') { offerings = Math.floor(base * offeringBonus); visitors = Math.floor(cycles * (1 + Number(row.level)) * visitorBonus); attendees = Math.floor(visitors / 3); }
+      if (stationId === 'reception') { visitors = Math.floor(cycles * (1 + Number(row.level)) * visitorBonus); reputation = Math.floor(cycles * stageBonus); offerings = Math.floor(cycles * 5 * levelBonus * offeringBonus); }
+      if (stationId === 'catechesis') { members = Math.floor(cycles * Math.pow(1.14, Number(row.level) - 1) * stageBonus); reputation = Math.floor(cycles * 2 * stageBonus); offerings = Math.floor(cycles * 8 * levelBonus * offeringBonus); }
       const xp = Math.max(1, cycles * 4 + members * 6);
       const collectedAt = new Date(Date.parse(row.last_collected_at) + cycles * definition.cycleSeconds * 1000).toISOString();
       q.updateStationCollect.run(collectedAt, user.id, stationId);
       const nowIso = new Date(now).toISOString();
-      q.addProduction.run(offerings, visitors, attendees, members, reputation, xp, xp, nowIso, nowIso, user.id);
+      q.addProduction.run(offerings, visitors, attendees, members, reputation, xp, nowIso, nowIso, user.id);
+      syncProfileLevel(user.id);
+      addActivity(user.id, { collects: 1, members, weeklyPoints: Math.max(1, cycles + members * 2) });
       if (stationId === 'pulpit') q.tutorial.run(2, nowIso, user.id);
+      if (stationId === 'catechesis') q.tutorial.run(9, nowIso, user.id);
       const response = { ok: true, action: 'collect', reward: { offerings, visitors, attendees, members, reputation, xp }, state: snapshot(user) };
       saveReceipt(user.id, key, 'collect', response);
       return response;
@@ -356,12 +472,16 @@ function createLutheranIdleService({ db, gameId = 'lutheran-idle' }) {
       const row = q.station.get(user.id, stationId);
       const definition = STATIONS[stationId];
       if (!row || !definition || !row.built) throw new Error('Construa esta estação primeiro.');
-      if (Number(row.level) >= definition.maxLevel) throw new Error('Nível visual máximo alcançado neste vertical slice.');
+      const profile = q.profile.get(user.id);
+      const levelCap = Math.min(definition.maxLevel, stageLevelCap(profile.stage));
+      if (Number(row.level) >= levelCap) throw new Error('Avance o estágio da congregação para liberar mais níveis.');
       const cost = upgradeCost(stationId, Number(row.level));
       const now = isoNow();
       const spent = q.spendOfferings.run(cost, 18, now, now, user.id, cost);
       if (Number(spent.changes) !== 1) throw new Error('Ofertas insuficientes para esta melhoria.');
       q.upgradeStation.run(user.id, stationId);
+      syncProfileLevel(user.id);
+      addActivity(user.id, { upgrades: 1, weeklyPoints: 20 });
       q.tutorial.run(3, now, user.id);
       return { ok: true, action: 'upgrade', cost, stationId, state: snapshot(user) };
     });
@@ -374,10 +494,14 @@ function createLutheranIdleService({ db, gameId = 'lutheran-idle' }) {
       const definition = STATIONS[stationId];
       if (!row || !definition || !definition.buildCost) throw new Error('Slot de construção inválido.');
       if (row.built) throw new Error('A estação já foi construída.');
+      const profile = q.profile.get(user.id);
+      if (Number(profile.stage) < definition.unlockStage) throw new Error(`Esta estação é liberada no estágio ${definition.unlockStage}.`);
       const now = isoNow();
       const spent = q.spendOfferings.run(definition.buildCost, 30, now, now, user.id, definition.buildCost);
       if (Number(spent.changes) !== 1) throw new Error('Ofertas insuficientes para construir.');
       q.buildStation.run(now, user.id, stationId);
+      syncProfileLevel(user.id);
+      addActivity(user.id, { weeklyPoints: 50 });
       q.tutorial.run(stationId === 'reception' ? 5 : 7, now, user.id);
       return { ok: true, action: 'build', cost: definition.buildCost, stationId, state: snapshot(user) };
     });
@@ -401,6 +525,78 @@ function createLutheranIdleService({ db, gameId = 'lutheran-idle' }) {
     });
   }
 
+  function grantRewards(userId, reward, xp = 0) {
+    const offerings = clampInt(reward?.offerings, 0, 2_000_000_000);
+    const gems = clampInt(reward?.gems, 0, 1_000_000);
+    const materials = clampInt(reward?.materials, 0, 2_000_000_000);
+    const now = isoNow();
+    q.grantRewards.run(offerings, gems, materials, clampInt(xp, 0, 10_000_000), now, now, userId);
+    syncProfileLevel(userId);
+    return { offerings, gems, materials };
+  }
+
+  function advanceStage(user) {
+    return transaction(() => {
+      const profile = q.profile.get(user.id);
+      const progression = progressionSnapshot(profile, q.stations.all(user.id));
+      if (!progression.next) throw new Error('A congregação já alcançou o estágio máximo atual.');
+      if (!progression.next.ready) throw new Error('Conclua todos os requisitos antes de expandir.');
+      const cost = progression.next.requirement.offerings;
+      const reward = progression.next.reward || {};
+      const now = isoNow();
+      const spent = q.spendStage.run(cost, reward.gems || 0, reward.materials || 0, Number(profile.stage) * 220, now, now, user.id, Number(profile.stage), cost);
+      if (Number(spent.changes) !== 1) throw new Error('Ofertas insuficientes para esta expansão.');
+      syncProfileLevel(user.id);
+      addActivity(user.id, { weeklyPoints: 100 * Number(profile.stage) });
+      return { ok: true, action: 'advance-stage', cost, reward, state: snapshot(user) };
+    });
+  }
+
+  function claimDaily(user) {
+    return transaction(() => {
+      const { dayKey } = ensureRetention(user.id);
+      const retention = q.retention.get(user.id);
+      if (retention.last_checkin_day === dayKey) throw new Error('O check-in de hoje já foi recebido.');
+      const day = daysBetween(retention.last_checkin_day, dayKey) === 1 ? Number(retention.checkin_day) % 28 + 1 : 1;
+      const reward = grantRewards(user.id, checkinReward(day), day * 4);
+      q.setCheckin.run(day, dayKey, user.id);
+      addActivity(user.id, { weeklyPoints: 10 + day });
+      return { ok: true, action: 'daily-claim', reward, day, state: snapshot(user) };
+    });
+  }
+
+  function claimMission(user, payload) {
+    const missionId = String(payload.missionId || '');
+    return transaction(() => {
+      const profile = q.profile.get(user.id);
+      const { dayKey } = ensureRetention(user.id);
+      const daily = q.daily.get(user.id, dayKey);
+      const claimed = parseJson(daily.claimed_json, []);
+      const mission = dailyMissionDefinitions(profile.stage, daily).find(item => item.id === missionId);
+      if (!mission) throw new Error('Missão diária desconhecida.');
+      if (claimed.includes(missionId)) throw new Error('Esta recompensa já foi recebida.');
+      if (Number(mission.current) < Number(mission.goal)) throw new Error('A missão ainda não foi concluída.');
+      const reward = grantRewards(user.id, mission.reward, 35 * Number(profile.stage));
+      q.setDailyClaims.run(JSON.stringify([...claimed, missionId]), user.id, dayKey);
+      addActivity(user.id, { weeklyPoints: 30 });
+      return { ok: true, action: 'mission-claim', reward, missionId, state: snapshot(user) };
+    });
+  }
+
+  function claimWeeklyReward(user) {
+    return transaction(() => {
+      ensureRetention(user.id);
+      const profile = q.profile.get(user.id);
+      const retention = q.retention.get(user.id);
+      const goal = 250 * Math.max(1, Number(profile.stage));
+      if (retention.weekly_claimed) throw new Error('A recompensa semanal já foi recebida.');
+      if (Number(retention.weekly_points) < goal) throw new Error('O objetivo semanal ainda não foi concluído.');
+      const reward = grantRewards(user.id, { offerings: goal * 8, gems: Math.max(1, Math.floor(Number(profile.stage) / 2)), materials: Number(profile.stage) * 8 }, 120 * Number(profile.stage));
+      q.claimWeekly.run(user.id);
+      return { ok: true, action: 'weekly-claim', reward, state: snapshot(user) };
+    });
+  }
+
   function claimOffline(user, payload) {
     const key = String(payload.idempotencyKey || '').slice(0, 96);
     const prior = receipt(user.id, key);
@@ -410,7 +606,8 @@ function createLutheranIdleService({ db, gameId = 'lutheran-idle' }) {
       const pending = parseJson(profile.offline_pending_json, null);
       if (!pending) throw new Error('Nenhuma recompensa offline disponível.');
       const now = isoNow();
-      q.clearPending.run(clampInt(pending.offerings, 0, 10_000_000), clampInt(pending.members, 0, 100_000), now, now, user.id);
+      q.clearPending.run(clampInt(pending.offerings, 0, 2_000_000_000), clampInt(pending.members, 0, 100_000), now, now, user.id);
+      addActivity(user.id, { members: clampInt(pending.members, 0, 100_000), weeklyPoints: Math.max(5, Math.floor(clampInt(pending.secondsAway, 0, 43_200) / 600)) });
       const response = { ok: true, action: 'offline-claim', reward: pending, state: snapshot(user) };
       saveReceipt(user.id, key, 'offline-claim', response);
       return response;
@@ -455,6 +652,7 @@ function createLutheranIdleService({ db, gameId = 'lutheran-idle' }) {
       if (Number(spent.changes) !== 1) throw new Error('Ofertas insuficientes para esta contribuição.');
       q.addContribution.run(amount, membership.district_id, user.id);
       q.addDistrictTotal.run(amount, membership.district_id);
+      addActivity(user.id, { weeklyPoints: Math.max(5, Math.floor(amount / 10)) });
       return membership.district_id;
     });
     emitDistrict(districtId);
@@ -493,6 +691,10 @@ function createLutheranIdleService({ db, gameId = 'lutheran-idle' }) {
       else if (req.method === 'POST' && url.pathname === '/api/lutheran-idle/upgrade') result = upgrade(user, payload);
       else if (req.method === 'POST' && url.pathname === '/api/lutheran-idle/build') result = build(user, payload);
       else if (req.method === 'POST' && url.pathname === '/api/lutheran-idle/assign-worker') result = assignWorker(user, payload);
+      else if (req.method === 'POST' && url.pathname === '/api/lutheran-idle/advance-stage') result = advanceStage(user);
+      else if (req.method === 'POST' && url.pathname === '/api/lutheran-idle/daily-claim') result = claimDaily(user);
+      else if (req.method === 'POST' && url.pathname === '/api/lutheran-idle/mission-claim') result = claimMission(user, payload);
+      else if (req.method === 'POST' && url.pathname === '/api/lutheran-idle/weekly-claim') result = claimWeeklyReward(user);
       else if (req.method === 'POST' && url.pathname === '/api/lutheran-idle/offline-claim') result = claimOffline(user, payload);
       else if (req.method === 'GET' && url.pathname === '/api/lutheran-idle/district') result = { ok: true, district: publicDistrict(user.id), openDistricts: publicOpenDistricts() };
       else if (req.method === 'POST' && url.pathname === '/api/lutheran-idle/district/create') result = createDistrict(user, payload);

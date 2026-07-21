@@ -7,6 +7,10 @@ type Actions = {
   upgrade: (stationId: string) => Promise<void>;
   build: (stationId: string) => Promise<void>;
   assign: (workerId: string, stationId: string) => Promise<void>;
+  advanceStage: () => Promise<void>;
+  claimDaily: () => Promise<void>;
+  claimMission: (missionId: string) => Promise<void>;
+  claimWeekly: () => Promise<void>;
   claimOffline: () => Promise<void>;
   createDistrict: (name: string) => Promise<void>;
   joinDistrict: (districtId: string) => Promise<void>;
@@ -72,6 +76,10 @@ export class HudController {
     if (action === 'build') await this.actions.build(target.dataset.station || '');
     if (action === 'upgrade') await this.actions.upgrade(target.dataset.station || this.selectedStation);
     if (action === 'assign') await this.actions.assign(target.dataset.worker || '', target.dataset.station || '');
+    if (action === 'advance-stage') await this.actions.advanceStage();
+    if (action === 'claim-daily') await this.actions.claimDaily();
+    if (action === 'claim-mission') await this.actions.claimMission(target.dataset.mission || '');
+    if (action === 'claim-weekly') await this.actions.claimWeekly();
     if (action === 'claim-offline') await this.actions.claimOffline();
     if (action === 'join-district') await this.actions.joinDistrict(target.dataset.district || '');
     if (action === 'contribute') await this.actions.contribute(Number(target.dataset.amount || 50));
@@ -95,9 +103,10 @@ export class HudController {
     this.text('#members-value', format.format(state.population.members));
     this.text('#level-value', String(state.profile.level));
     this.text('#online-count', String(state.online));
+    const tutorialComplete = state.profile.tutorialStep >= tutorialObjectives.length - 1;
     const objective = tutorialObjectives[Math.min(tutorialObjectives.length - 1, state.profile.tutorialStep)];
-    this.text('#objective-title', objective[0]);
-    this.text('#objective-copy', objective[1]);
+    this.text('#objective-title', tutorialComplete ? (state.progression.next ? `Rumo a ${state.progression.next.name}` : 'Sede distrital consolidada') : objective[0]);
+    this.text('#objective-copy', tutorialComplete ? (state.progression.next ? `${state.progression.next.requirements.filter(item => item.current >= item.goal).length}/${state.progression.next.requirements.length} requisitos concluídos` : 'Continue nas missões e projetos semanais.') : objective[1]);
     const pulpit = stationById(state, 'pulpit');
     const progress = pulpit.readyCycles > 0 ? 1 : pulpit.progress;
     const bar = document.querySelector<HTMLElement>('#objective-progress');
@@ -105,6 +114,8 @@ export class HudController {
     this.text('#collect-ready', progress >= 1 ? 'Pronto!' : `${Math.round(progress * 100)}%`);
     document.querySelector('#collect-button')?.classList.toggle('ready', progress >= 1);
     document.querySelector('[data-panel="offline"]')?.classList.toggle('has-reward', Boolean(state.offlineClaim));
+    const retentionReady = !state.retention.checkin.claimedToday || state.retention.dailyMissions.some(mission => mission.ready && !mission.claimed) || (state.retention.weekly.ready && !state.retention.weekly.claimed);
+    document.querySelector('[data-panel="missions"]')?.classList.toggle('has-reward', retentionReady);
     this.renderStation(state);
   }
 
@@ -116,7 +127,7 @@ export class HudController {
     this.text('#station-cycle', station.cycleSeconds ? `${station.cycleSeconds}s` : 'Bônus passivo');
     const worker = state.workers.find((candidate) => candidate.id === station.activeWorkerId);
     this.text('#station-worker', worker?.role || 'Sem trabalhador');
-    this.text('#upgrade-cost', station.upgradeCost ? `${format.format(station.upgradeCost)} ofertas` : 'Máximo visual');
+    this.text('#upgrade-cost', station.upgradeCost ? `${format.format(station.upgradeCost)} ofertas` : (station.level >= station.absoluteMaxLevel ? 'Nível máximo' : 'Avance o estágio'));
     const upgrade = document.querySelector<HTMLButtonElement>('#upgrade-button');
     if (upgrade) upgrade.disabled = !station.built || station.upgradeCost === null;
   }
@@ -135,13 +146,14 @@ export class HudController {
   }
 
   private buildMarkup(state: BootstrapState): string {
-    const cards = state.stations.filter((station) => ['reception', 'catechesis'].includes(station.id)).map((station) => `
+    const artId = (stationId: string) => stationId === 'entrance' ? 'reception' : stationId;
+    const cards = state.stations.map((station) => `
       <article class="station-card ${station.built ? 'built' : ''}">
-        <img src="/assets/lutheran-idle/assets/game/station_${station.id}_l1.png" alt="${escape(station.title)}" />
-        <div><h3>${escape(station.title)}</h3><p>${escape(stationDescriptions[station.id])}</p><strong>${station.built ? `Nível ${station.level}` : `${format.format(station.buildCost)} ofertas`}</strong></div>
-        ${station.built ? '<span class="built-mark">Construída</span>' : `<button data-action="build" data-station="${station.id}" data-return-panel="build">Construir</button>`}
+        <img src="/assets/lutheran-idle/assets/game/station_${artId(station.id)}_l1.png" alt="${escape(station.title)}" />
+        <div><h3>${escape(station.title)}</h3><p>${escape(stationDescriptions[station.id])}</p><strong>${station.built ? `Nível ${station.level}/${station.maxLevel}` : station.locked ? `Libera no estágio ${station.unlockStage}` : `${format.format(station.buildCost)} ofertas`}</strong></div>
+        ${station.built ? (station.upgradeCost ? `<button data-action="upgrade" data-station="${station.id}" data-return-panel="build">Melhorar · ${format.format(station.upgradeCost)}</button>` : '<span class="built-mark">Limite do estágio</span>') : station.locked ? '<span class="built-mark locked">Bloqueada</span>' : `<button data-action="build" data-station="${station.id}" data-return-panel="build">Construir</button>`}
       </article>`).join('');
-    return `<p class="eyebrow">EXPANSÃO</p><h2>Construir</h2><p>Novos espaços mudam a planta e abrem atividades.</p><div class="station-list">${cards}</div>`;
+    return `<p class="eyebrow">CONSTRUÇÃO E MELHORIAS</p><h2>Estações · estágio ${state.profile.stage}</h2><p>Melhore todas as áreas para cumprir os requisitos da próxima expansão.</p><div class="station-list">${cards}</div>`;
   }
 
   private stationMarkup(state: BootstrapState): string {
@@ -175,23 +187,31 @@ export class HudController {
   }
 
   private offlineMarkup(state: BootstrapState): string {
-    if (!state.offlineClaim) return '<p class="eyebrow">PROGRESSO OFFLINE</p><h2>Tudo em dia</h2><p>Continue jogando; a congregação acumulará produção por até quatro horas quando você sair.</p>';
+    if (!state.offlineClaim) return `<p class="eyebrow">PROGRESSO OFFLINE</p><h2>Tudo em dia</h2><p>Continue jogando; neste estágio a congregação acumula produção por até ${state.progression.offlineHours} horas quando você sair.</p>`;
     const hours = Math.floor(state.offlineClaim.secondsAway / 3600);
     const minutes = Math.floor(state.offlineClaim.secondsAway % 3600 / 60);
     return `<p class="eyebrow">BEM-VINDO DE VOLTA</p><h2>A congregação continuou</h2><p>Você ficou fora por ${hours ? `${hours}h ` : ''}${minutes}min.</p><div class="offline-reward"><strong>+${format.format(state.offlineClaim.offerings)}</strong><span>ofertas</span>${state.offlineClaim.members ? `<strong>+${state.offlineClaim.members}</strong><span>membros</span>` : ''}</div><button class="panel-button" data-action="claim-offline" data-return-panel="offline">Receber produção</button>`;
   }
 
   private missionsMarkup(state: BootstrapState): string {
-    const missions = [
-      ['Acolhimento', Math.min(state.population.visitors, 10), 10],
-      ['Melhorias', Math.min(stationById(state, 'pulpit').level - 1, 2), 2],
-      ['Primeiros membros', Math.min(state.population.members, 5), 5]
-    ];
-    return `<p class="eyebrow">MISSÕES DIÁRIAS</p><h2>Hoje na congregação</h2><div class="mission-list">${missions.map(([label, value, goal]) => `<article><span>${label}</span><strong>${value}/${goal}</strong><div><i style="width:${Number(value) / Number(goal) * 100}%"></i></div></article>`).join('')}</div>`;
+    const checkin = state.retention.checkin;
+    const weekly = state.retention.weekly;
+    const rewardText = (reward: { offerings?: number; gems?: number; materials?: number }) => [reward.offerings ? `${format.format(reward.offerings)} ofertas` : '', reward.materials ? `${format.format(reward.materials)} materiais` : '', reward.gems ? `${reward.gems} gemas` : ''].filter(Boolean).join(' · ');
+    const dailyCards = state.retention.dailyMissions.map(mission => {
+      const percent = Math.min(100, Math.round(mission.current / mission.goal * 100));
+      const action = mission.claimed ? '<span class="reward-status">Recebida</span>' : mission.ready ? `<button data-action="claim-mission" data-mission="${mission.id}" data-return-panel="missions">Receber</button>` : `<small>${rewardText(mission.reward)}</small>`;
+      return `<article><span>${escape(mission.label)}</span><strong>${format.format(Math.min(mission.current, mission.goal))}/${format.format(mission.goal)}</strong><div><i style="width:${percent}%"></i></div>${action}</article>`;
+    }).join('');
+    const checkinAction = checkin.claimedToday ? '<span class="reward-status">Recebido hoje</span>' : `<button class="panel-button" data-action="claim-daily" data-return-panel="missions">Receber dia ${checkin.day}</button>`;
+    const weeklyAction = weekly.claimed ? '<span class="reward-status">Semana concluída</span>' : weekly.ready ? '<button data-action="claim-weekly" data-return-panel="missions">Receber recompensa semanal</button>' : `<small>${rewardText(weekly.reward)}</small>`;
+    return `<p class="eyebrow">CALENDÁRIO E RETENÇÃO</p><h2>Dia ${checkin.day} de 28</h2><section class="checkin-card"><div><strong>Check-in diário</strong><span>${rewardText(checkin.reward)}</span></div>${checkinAction}</section><h3>Missões de hoje</h3><div class="mission-list">${dailyCards}</div><h3>Projeto pessoal semanal</h3><article class="weekly-card"><span>${format.format(Math.min(weekly.current, weekly.goal))} / ${format.format(weekly.goal)} pontos</span><div><i style="width:${Math.min(100, weekly.current / weekly.goal * 100)}%"></i></div>${weeklyAction}</article>`;
   }
 
   private profileMarkup(state: BootstrapState): string {
-    return `<p class="eyebrow">PERFIL</p><h2>${escape(state.profile.congregationName)}</h2><div class="profile-summary"><strong>Nível ${state.profile.level}</strong><span>${format.format(state.profile.xp)} XP</span><span>Estágio ${state.profile.stage}: sala emprestada</span></div><h3>Ranking de congregações</h3><ol class="district-ranking">${state.rankings.slice(0, 8).map((row) => `<li><span>#${row.rank} ${escape(row.congregationName)}<small>${escape(row.player)}</small></span><strong>${row.members} membros</strong></li>`).join('')}</ol>`;
+    const next = state.progression.next;
+    const requirements = next ? next.requirements.map(item => `<article><span>${escape(item.label)}</span><strong>${item.goal === 0 ? 'Concluído' : `${format.format(Math.min(item.current, item.goal))}/${format.format(item.goal)}`}</strong><div><i style="width:${item.goal === 0 ? 100 : Math.min(100, item.current / item.goal * 100)}%"></i></div></article>`).join('') : '';
+    const advance = next ? `<section class="stage-roadmap"><p class="eyebrow">PRÓXIMO ESTÁGIO</p><h3>${escape(next.name)}</h3><div class="mission-list">${requirements}</div><button class="panel-button" data-action="advance-stage" data-return-panel="profile" ${next.ready ? '' : 'disabled'}>Expandir congregação · ${format.format(next.requirement.offerings)} ofertas</button></section>` : '<section class="stage-roadmap"><h3>Estágio máximo atual</h3><p>A Sede distrital foi alcançada. Missões, temporadas e ranking continuam ativos.</p></section>';
+    return `<p class="eyebrow">PERFIL E PROGRESSÃO</p><h2>${escape(state.profile.congregationName)}</h2><div class="profile-summary"><strong>Nível ${state.profile.level}</strong><span>${format.format(state.profile.xp)} XP</span><span>Estágio ${state.profile.stage}: ${escape(state.progression.current.name)}</span><span>Limite das estações: nível ${state.progression.levelCap}</span></div>${advance}<h3>Ranking de congregações</h3><ol class="district-ranking">${state.rankings.slice(0, 8).map((row) => `<li><span>#${row.rank} ${escape(row.congregationName)}<small>${escape(row.player)}</small></span><strong>${row.members} membros</strong></li>`).join('')}</ol>`;
   }
 
   private text(selector: string, value: string): void {

@@ -26,6 +26,9 @@ export type StationState = {
   upgradeCost: number | null;
   buildCost: number;
   maxLevel: number;
+  absoluteMaxLevel: number;
+  unlockStage: number;
+  locked: boolean;
 };
 
 export type WorkerState = {
@@ -54,6 +57,26 @@ export type BootstrapState = {
   profile: { congregationName: string; level: number; xp: number; stage: number; tutorialStep: number; revision: number };
   economy: Economy;
   population: Population;
+  progression: {
+    current: { id: number; name: string };
+    next: null | {
+      id: number;
+      name: string;
+      ready: boolean;
+      reward: { gems?: number; materials?: number } | null;
+      requirement: { level: number; members: number; stationLevels: number; offerings: number };
+      requirements: Array<{ id: string; label: string; current: number; goal: number }>;
+    };
+    stationLevels: number;
+    levelCap: number;
+    offlineHours: number;
+  };
+  retention: {
+    dayKey: string;
+    checkin: { day: number; claimedToday: boolean; reward: { offerings: number; gems: number; materials: number } };
+    dailyMissions: Array<{ id: string; label: string; current: number; goal: number; reward: { offerings?: number; gems?: number; materials?: number }; claimed: boolean; ready: boolean }>;
+    weekly: { weekKey: string; current: number; goal: number; claimed: boolean; ready: boolean; reward: { offerings: number; gems: number; materials: number } };
+  };
   stations: StationState[];
   workers: WorkerState[];
   offlineClaim: { secondsAway: number; offerings: number; members: number; createdAt: string } | null;

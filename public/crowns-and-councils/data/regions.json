@@ -8,6 +8,7 @@
   ],
   "projection": "EPSG:3035",
   "topologyFile": "christian-theatre-2026-3035.topo.json",
+  "contextTopologyFile": "world-context-2026-3035.topo.json",
   "regionCount": 801,
   "countryCount": 59,
   "theatre": "Europa, Norte da África, Rússia europeia e Oriente Médio",
@@ -17,7 +18,7 @@
       "name": "Veri",
       "countryCode": "AL",
       "iso3Code": "ALB",
-      "countryName": "AL",
+      "countryName": "Albânia",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [
@@ -37,7 +38,7 @@
       "name": "Qender",
       "countryCode": "AL",
       "iso3Code": "ALB",
-      "countryName": "AL",
+      "countryName": "Albânia",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [
@@ -56,7 +57,7 @@
       "name": "Jug",
       "countryCode": "AL",
       "iso3Code": "ALB",
-      "countryName": "AL",
+      "countryName": "Albânia",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [
@@ -271,7 +272,7 @@
       "name": "Federacija Bosne i Hercegovine",
       "countryCode": "BA",
       "iso3Code": "BIH",
-      "countryName": "BA",
+      "countryName": "Bósnia e Herzegovina",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [
@@ -291,7 +292,7 @@
       "name": "Republika Srpska",
       "countryCode": "BA",
       "iso3Code": "BIH",
-      "countryName": "BA",
+      "countryName": "Bósnia e Herzegovina",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [
@@ -314,7 +315,7 @@
       "name": "Brčko District BiH",
       "countryCode": "BA",
       "iso3Code": "BIH",
-      "countryName": "BA",
+      "countryName": "Bósnia e Herzegovina",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [
@@ -3983,7 +3984,7 @@
       "name": "Liechtenstein",
       "countryCode": "LI",
       "iso3Code": "LIE",
-      "countryName": "LI",
+      "countryName": "Liechtenstein",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [
@@ -15919,7 +15920,7 @@
       "name": "İstanbul",
       "countryCode": "TR",
       "iso3Code": "TUR",
-      "countryName": "TR",
+      "countryName": "Turquia",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [
@@ -15937,7 +15938,7 @@
       "name": "Tekirdağ, Edirne, Kırklareli",
       "countryCode": "TR",
       "iso3Code": "TUR",
-      "countryName": "TR",
+      "countryName": "Turquia",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [
@@ -15958,7 +15959,7 @@
       "name": "Balıkesir, Çanakkale",
       "countryCode": "TR",
       "iso3Code": "TUR",
-      "countryName": "TR",
+      "countryName": "Turquia",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [
@@ -15978,7 +15979,7 @@
       "name": "İzmir",
       "countryCode": "TR",
       "iso3Code": "TUR",
-      "countryName": "TR",
+      "countryName": "Turquia",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [
@@ -15997,7 +15998,7 @@
       "name": "Aydın, Denizli, Muğla",
       "countryCode": "TR",
       "iso3Code": "TUR",
-      "countryName": "TR",
+      "countryName": "Turquia",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [
@@ -16016,7 +16017,7 @@
       "name": "Manisa, Afyonkarahisar, Kütahya, Uşak",
       "countryCode": "TR",
       "iso3Code": "TUR",
-      "countryName": "TR",
+      "countryName": "Turquia",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [
@@ -16038,7 +16039,7 @@
       "name": "Bursa, Eskişehir, Bilecik",
       "countryCode": "TR",
       "iso3Code": "TUR",
-      "countryName": "TR",
+      "countryName": "Turquia",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [
@@ -16059,7 +16060,7 @@
       "name": "Kocaeli, Sakarya, Düzce, Bolu, Yalova",
       "countryCode": "TR",
       "iso3Code": "TUR",
-      "countryName": "TR",
+      "countryName": "Turquia",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [
@@ -16080,7 +16081,7 @@
       "name": "Ankara",
       "countryCode": "TR",
       "iso3Code": "TUR",
-      "countryName": "TR",
+      "countryName": "Turquia",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [
@@ -16101,7 +16102,7 @@
       "name": "Konya, Karaman",
       "countryCode": "TR",
       "iso3Code": "TUR",
-      "countryName": "TR",
+      "countryName": "Turquia",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [
@@ -16123,7 +16124,7 @@
       "name": "Antalya, Isparta, Burdur",
       "countryCode": "TR",
       "iso3Code": "TUR",
-      "countryName": "TR",
+      "countryName": "Turquia",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [
@@ -16143,7 +16144,7 @@
       "name": "Adana, Mersin",
       "countryCode": "TR",
       "iso3Code": "TUR",
-      "countryName": "TR",
+      "countryName": "Turquia",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [
@@ -16167,7 +16168,7 @@
       "name": "Hatay, Kahramanmaraş, Osmaniye",
       "countryCode": "TR",
       "iso3Code": "TUR",
-      "countryName": "TR",
+      "countryName": "Turquia",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [
@@ -16196,7 +16197,7 @@
       "name": "Kırıkkale, Aksaray, Niğde, Nevşehir, Kırşehir",
       "countryCode": "TR",
       "iso3Code": "TUR",
-      "countryName": "TR",
+      "countryName": "Turquia",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [
@@ -16218,7 +16219,7 @@
       "name": "Kayseri, Sivas, Yozgat",
       "countryCode": "TR",
       "iso3Code": "TUR",
-      "countryName": "TR",
+      "countryName": "Turquia",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [
@@ -16241,7 +16242,7 @@
       "name": "Zonguldak, Karabük, Bartın",
       "countryCode": "TR",
       "iso3Code": "TUR",
-      "countryName": "TR",
+      "countryName": "Turquia",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [
@@ -16259,7 +16260,7 @@
       "name": "Kastamonu, Çankırı, Sinop",
       "countryCode": "TR",
       "iso3Code": "TUR",
-      "countryName": "TR",
+      "countryName": "Turquia",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [
@@ -16280,7 +16281,7 @@
       "name": "Samsun, Tokat, Çorum, Amasya",
       "countryCode": "TR",
       "iso3Code": "TUR",
-      "countryName": "TR",
+      "countryName": "Turquia",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [
@@ -16300,7 +16301,7 @@
       "name": "Trabzon, Ordu, Giresun, Rize, Artvin, Gümüşhane",
       "countryCode": "TR",
       "iso3Code": "TUR",
-      "countryName": "TR",
+      "countryName": "Turquia",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [
@@ -16329,7 +16330,7 @@
       "name": "Erzurum, Erzincan, Bayburt",
       "countryCode": "TR",
       "iso3Code": "TUR",
-      "countryName": "TR",
+      "countryName": "Turquia",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [
@@ -16353,7 +16354,7 @@
       "name": "Ağrı, Kars, Iğdır, Ardahan",
       "countryCode": "TR",
       "iso3Code": "TUR",
-      "countryName": "TR",
+      "countryName": "Turquia",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [
@@ -16413,7 +16414,7 @@
       "name": "Malatya, Elazığ, Bingöl, Tunceli",
       "countryCode": "TR",
       "iso3Code": "TUR",
-      "countryName": "TR",
+      "countryName": "Turquia",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [
@@ -16435,7 +16436,7 @@
       "name": "Van, Muş, Bitlis, Hakkari",
       "countryCode": "TR",
       "iso3Code": "TUR",
-      "countryName": "TR",
+      "countryName": "Turquia",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [
@@ -16467,7 +16468,7 @@
       "name": "Gaziantep, Adıyaman, Kilis",
       "countryCode": "TR",
       "iso3Code": "TUR",
-      "countryName": "TR",
+      "countryName": "Turquia",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [
@@ -16493,7 +16494,7 @@
       "name": "Şanlıurfa, Diyarbakır",
       "countryCode": "TR",
       "iso3Code": "TUR",
-      "countryName": "TR",
+      "countryName": "Turquia",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [
@@ -16522,7 +16523,7 @@
       "name": "Mardin, Batman, Şırnak, Siirt",
       "countryCode": "TR",
       "iso3Code": "TUR",
-      "countryName": "TR",
+      "countryName": "Turquia",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [
@@ -17394,7 +17395,7 @@
       "name": "Kosovo",
       "countryCode": "XK",
       "iso3Code": "XK",
-      "countryName": "XK",
+      "countryName": "Kosovo",
       "levelLabel": "NUTS 2",
       "sourceKind": "GISCO_NUTS_2024",
       "centroid": [

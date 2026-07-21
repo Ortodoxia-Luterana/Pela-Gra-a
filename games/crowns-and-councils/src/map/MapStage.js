@@ -66,14 +66,14 @@ function regionColor(region, realm, selected, id) {
   return region.ownerRealmId === realm?.id ? colorFromHex(realm?.color, COLORS.own) : colorFromHex(region.ownerColor, COLORS.foreign);
 }
 
-function drawFeature(graphics, geoFeature, project, fill) {
+function drawFeature(graphics, geoFeature, project, fill, alpha = 1, border = COLORS.border) {
   graphics.clear();
   polygonRings(geoFeature.geometry).forEach(rings => {
     const [outer, ...holes] = rings;
     if (!outer?.length) return;
-    graphics.poly(outer.flatMap(project)).fill({ color: fill, alpha: 1 });
+    graphics.poly(outer.flatMap(project)).fill({ color: fill, alpha });
     holes.forEach(hole => graphics.poly(hole.flatMap(project)).cut());
-    graphics.poly(outer.flatMap(project)).stroke({ color: COLORS.border, width: 1.2, alpha: 0.72 });
+    graphics.poly(outer.flatMap(project)).stroke({ color: border, width: 1.2, alpha: Math.min(.72, alpha) });
   });
 }
 
@@ -83,12 +83,14 @@ export class CrownsMapStage {
     this.onSelect = onSelect;
     this.app = new Application();
     this.world = new Container();
+    this.contextLayer = new Container();
+    this.regionLayer = new Container();
     this.regions = new Map();
     this.drag = null;
     this.pointers = new Map();
   }
 
-  async init(topologyUrl) {
+  async init(topologyUrl, contextTopologyUrl) {
     await this.app.init({
       resizeTo: this.host,
       backgroundColor: COLORS.coast,
@@ -101,19 +103,39 @@ export class CrownsMapStage {
     this.app.canvas.setAttribute('aria-label', 'Mapa político clicável da Europa, Norte da África, Rússia europeia e Oriente Médio');
     this.host.appendChild(this.app.canvas);
     this.app.stage.addChild(this.world);
+    this.world.addChild(this.contextLayer);
+    this.world.addChild(this.regionLayer);
     this.app.stage.eventMode = 'static';
     this.app.stage.hitArea = new Rectangle(0, 0, this.app.screen.width, this.app.screen.height);
 
-    const response = await fetch(topologyUrl, { cache: 'force-cache' });
+    const [response, contextResponse] = await Promise.all([
+      fetch(topologyUrl, { cache: 'force-cache' }),
+      contextTopologyUrl ? fetch(contextTopologyUrl, { cache: 'force-cache' }) : Promise.resolve(null)
+    ]);
     if (!response.ok) throw new Error('A geometria oficial do mapa não foi carregada.');
     const topology = await response.json();
     const object = topology.objects[Object.keys(topology.objects)[0]];
     const collection = feature(topology, object);
     this.features = collection.features;
     this.project = projectionFor(this.features);
+    if (contextResponse?.ok) {
+      const contextTopology = await contextResponse.json();
+      const contextObject = contextTopology.objects[Object.keys(contextTopology.objects)[0]];
+      this.contextFeatures = feature(contextTopology, contextObject).features;
+      this.buildContext();
+    }
     this.buildRegions();
     this.fit();
     this.bindCamera();
+  }
+
+  buildContext() {
+    (this.contextFeatures || []).forEach(geoFeature => {
+      const graphics = new Graphics();
+      graphics.eventMode = 'none';
+      drawFeature(graphics, geoFeature, this.project, 0xd7e3e1, .72, 0x88a6ad);
+      this.contextLayer.addChild(graphics);
+    });
   }
 
   buildRegions() {
@@ -131,7 +153,7 @@ export class CrownsMapStage {
       });
       graphics.on('pointerout', () => { graphics.tint = 0xffffff; });
       drawFeature(graphics, geoFeature, this.project, neutralColor(id));
-      this.world.addChild(graphics);
+      this.regionLayer.addChild(graphics);
       this.regions.set(id, { graphics, geoFeature });
     });
   }
@@ -192,6 +214,16 @@ export class CrownsMapStage {
     this.world.position.set(
       (this.app.screen.width - DESIGN_WIDTH * scale) / 2,
       (this.app.screen.height - DESIGN_HEIGHT * scale) / 2
+    );
+  }
+  fitWorld() {
+    const bounds = this.world.getLocalBounds();
+    const padding = 24;
+    const scale = Math.max(.04, Math.min((this.app.screen.width - padding * 2) / Math.max(1, bounds.width), (this.app.screen.height - padding * 2) / Math.max(1, bounds.height)));
+    this.world.scale.set(scale);
+    this.world.position.set(
+      (this.app.screen.width - bounds.width * scale) / 2 - bounds.x * scale,
+      (this.app.screen.height - bounds.height * scale) / 2 - bounds.y * scale
     );
   }
   destroy() { this.app.destroy(true, { children: true }); }

@@ -87,11 +87,17 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     assert.ok(cookies.has('cultivando_cc_launch'));
     assert.match(await gamePage.text(), /Crowns and Councils/);
 
-    let result = await jsonRequest('/api/crowns-and-councils/bootstrap');
+    let result = await jsonRequest('/api/crowns-and-councils/servers');
+    assert.equal(result.response.status, 200);
+    assert.equal(result.payload.servers.length, 3);
+    assert.ok(result.payload.servers.every(item => item.day === 1 && item.totalDays === 60 && item.aiCount === 10));
+
+    result = await jsonRequest('/api/crowns-and-councils/bootstrap');
     assert.equal(result.response.status, 200);
     assert.equal(result.payload.map.regionCount, 801);
     assert.equal(result.payload.regions.length, 801);
     assert.equal(result.payload.map.countryCount, 59);
+    assert.match(result.payload.map.contextTopologyUrl, /world-context/);
     assert.match(result.payload.map.theatre, /Norte da África/);
     assert.ok(result.payload.regions.some(region => region.name === 'Jerusalém' && region.iso3Code === 'ISR'));
     assert.ok(result.payload.regions.some(region => region.countryCode === 'UK'));
@@ -101,18 +107,21 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     assert.ok(result.payload.regions.every(region => region.neighborIds.length > 0));
     assert.equal(result.payload.world.aiRealmCount, 10);
     assert.equal(result.payload.world.realmCount, 10);
-    assert.equal(result.payload.customization.availableColors.length, 20);
+    assert.ok(result.payload.customization.availableColors.length >= 30);
     assert.equal(result.payload.regions.find(region => region.id === 'EL30').name, 'Ática');
     assert.equal(result.payload.regions.find(region => region.id === 'BG31').name, 'Noroeste da Bulgária');
     assert.ok(result.payload.regions.find(region => region.id === 'IS00').routeNeighborIds.includes('UKM6'));
     assert.ok(result.payload.regions.find(region => region.id === 'IS00').routeNeighborIds.includes('IE04'));
     assert.equal(result.payload.realm, null);
+    assert.equal(result.payload.season.day, 1);
+    assert.equal(result.payload.season.totalDays, 60);
+    assert.ok(result.payload.customization.religions.includes('Cristianismo ortodoxo'));
     const capital = result.payload.regions.find(region => !region.ownerRealmId && region.neighborIds.length > 2);
     assert.ok(capital);
 
     result = await jsonRequest('/api/crowns-and-councils/realm/create', {
       method: 'POST',
-      body: JSON.stringify({ name: 'Reino do Teste', houseName: 'Casa Veritas', color: result.payload.customization.availableColors[0], regionId: capital.id })
+      body: JSON.stringify({ name: 'Reino do Teste', houseName: 'Casa Veritas', religion: 'Cristianismo ortodoxo', color: result.payload.customization.availableColors[0], regionId: capital.id })
     });
     assert.equal(result.response.status, 201);
     assert.equal(result.payload.realm.capitalRegionId, capital.id);
@@ -124,6 +133,9 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     assert.equal(result.payload.realm.court.diplomacy.aiRealmCount, 10);
     assert.equal(result.payload.realm.court.diplomacy.knownRealms.length, 10);
     assert.equal(result.payload.realm.court.internal.canRevolt, false);
+    assert.equal(result.payload.realm.religion, 'Cristianismo ortodoxo');
+    assert.equal(result.payload.buildings.length, 2);
+    assert.equal(result.payload.armies.length, 1);
 
     socket = io(`${origin}/crowns-and-councils`, {
       transports: ['websocket'],
@@ -136,6 +148,8 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     result = await jsonRequest('/api/crowns-and-councils/territory/claim', { method: 'POST', body: JSON.stringify({ regionId: adjacentId }) });
     assert.equal(result.response.status, 202);
     assert.ok(result.payload.action.id.startsWith('action_'));
+    const reserved = await jsonRequest('/api/crowns-and-councils/bootstrap');
+    assert.equal(reserved.payload.regions.find(region => region.id === adjacentId).reservedByName, 'Reino do Teste');
     const completedPayload = await completed;
     assert.equal(completedPayload.regionId, adjacentId);
 
@@ -155,6 +169,21 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     await secondCompleted;
     result = await jsonRequest('/api/crowns-and-councils/bootstrap');
     assert.equal(result.payload.realm.regionCount, 3);
+
+    let orderCompleted = waitSocket(socket, 'action.completed');
+    result = await jsonRequest('/api/crowns-and-councils/buildings/queue', { method: 'POST', body: JSON.stringify({ regionId: capital.id, buildingType: 'mercado' }) });
+    assert.equal(result.response.status, 202);
+    await orderCompleted;
+    result = await jsonRequest('/api/crowns-and-councils/bootstrap');
+    assert.ok(result.payload.buildings.some(item => item.regionId === capital.id && item.type === 'mercado' && item.level === 1));
+
+    orderCompleted = waitSocket(socket, 'action.completed');
+    const armyBefore = result.payload.armies[0].total;
+    result = await jsonRequest('/api/crowns-and-councils/armies/recruit', { method: 'POST', body: JSON.stringify({ regionId: capital.id }) });
+    assert.equal(result.response.status, 202);
+    await orderCompleted;
+    result = await jsonRequest('/api/crowns-and-councils/bootstrap');
+    assert.equal(result.payload.armies[0].total, armyBefore + 320);
 
     const revoltEvent = waitSocket(socket, 'world.patch', 5_000);
     const testDb = new DatabaseSync(path.join(tempRoot, 'crowns-test.sqlite'));
@@ -183,6 +212,24 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
 
     result = await jsonRequest('/api/games');
     assert.ok(result.payload.games.some(game => game.id === 'crowns-and-councils' && game.playUrl === '/crowns-and-councils'));
+
+    let lifecycleDb = new DatabaseSync(path.join(tempRoot, 'crowns-test.sqlite'));
+    lifecycleDb.prepare('UPDATE cc_seasons SET ends_at = ? WHERE id = ?').run(new Date(Date.now() - 1_000).toISOString(), 'cc-world-1');
+    lifecycleDb.close();
+    result = await jsonRequest('/api/crowns-and-councils/bootstrap');
+    assert.equal(result.payload.season.phase, 'ended');
+    assert.ok(result.payload.winners.length >= 1);
+
+    lifecycleDb = new DatabaseSync(path.join(tempRoot, 'crowns-test.sqlite'));
+    const lifecycleSeason = lifecycleDb.prepare('SELECT config_json FROM cc_seasons WHERE id = ?').get('cc-world-1');
+    const lifecycleConfig = { ...JSON.parse(lifecycleSeason.config_json), resetDelayMs: 1 };
+    lifecycleDb.prepare('UPDATE cc_seasons SET config_json = ? WHERE id = ?').run(JSON.stringify(lifecycleConfig), 'cc-world-1');
+    lifecycleDb.close();
+    result = await jsonRequest('/api/crowns-and-councils/servers');
+    assert.equal(result.payload.servers[0].phase, 'open');
+    result = await jsonRequest('/api/crowns-and-councils/bootstrap');
+    assert.equal(result.payload.realm, null);
+    assert.equal(result.payload.world.aiRealmCount, 10);
     console.log('Crowns and Councils integration: PASS');
   } finally {
     socket?.disconnect();

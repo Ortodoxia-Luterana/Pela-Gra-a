@@ -11,6 +11,13 @@ const PUBLIC_DIR = path.join(ROOT, 'public');
 const DB_PATH = process.env.DB_PATH || path.join(ROOT, 'data', 'cultivando.sqlite');
 const QUIZ_QUESTIONS_PATH = path.join(ROOT, 'data', 'quiz-questions.json');
 const CROWNS_REGION_CATALOG_PATH = path.join(PUBLIC_DIR, 'crowns-and-councils', 'data', 'regions.json');
+const CARD_CATALOG_PATH = path.join(PUBLIC_DIR, 'cards', 'catalog.json');
+const CARD_CATALOG = JSON.parse(fs.readFileSync(CARD_CATALOG_PATH, 'utf8'));
+const CARD_PACKS = {
+  comum: { name: 'Pacote Comum', cost: 100, size: 5, weights: { 'Comum': 45, 'Rara': 25, 'Épica': 20, 'Lendária': 7, 'Deluxe': 3 } },
+  raro: { name: 'Pacote Raro', cost: 250, size: 5, guarantee: ['Rara', 'Épica', 'Lendária', 'Deluxe'], weights: { 'Comum': 15, 'Rara': 35, 'Épica': 28, 'Lendária': 14, 'Deluxe': 8 } },
+  lendario: { name: 'Pacote Lendário', cost: 600, size: 5, guarantee: ['Lendária', 'Deluxe'], weights: { 'Comum': 4, 'Rara': 11, 'Épica': 35, 'Lendária': 28, 'Deluxe': 22 } }
+};
 const PORT = Number(process.env.PORT || 3000);
 const COOKIE_NAME = 'cultivando_session';
 const LAUNCH_COOKIE_NAME = 'cultivando_game_launch';
@@ -85,7 +92,7 @@ const CROWNS_AI_REALMS = [
   { key: 'andalus', name: 'Reino de Al-Andalus', house: 'Casa de Córdova', ruler: 'Isidoro de Córdova', heir: 'Leandro', countries: ['ES'], terms: ['Andalucía', 'Andaluzia'], color: '#cf7732' },
   { key: 'escandinavia', name: 'Reino da Escandinávia', house: 'Casa de Uppsala', ruler: 'Erik do Norte', heir: 'Haroldo', countries: ['SE', 'NO', 'DK'], terms: ['Stockholm', 'Oslo', 'Hovedstaden'], color: '#4b9b89' }
 ];
-const GAME_VERSION = 'v3.39.0';
+const GAME_VERSION = 'v3.40.0';
 const GAME_ID = 'pela-graca-1904';
 const HEROI_GAME_ID = 'heroi-ortodoxo';
 const CRONICAS_GAME_ID = 'cronicas-do-levante';
@@ -218,6 +225,10 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS concordium_gba_saves (user_id TEXT PRIMARY KEY, save_json TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS platform_presence (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, avatar_data TEXT, location TEXT NOT NULL, game_id TEXT NOT NULL, last_seen TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS hub_chat_messages (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, user_name TEXT NOT NULL, message TEXT NOT NULL, created_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
+  CREATE TABLE IF NOT EXISTS user_cards (user_id TEXT NOT NULL, card_id TEXT NOT NULL, quantity INTEGER NOT NULL DEFAULT 1, unlocked_at TEXT NOT NULL, PRIMARY KEY (user_id, card_id), FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
+  CREATE TABLE IF NOT EXISTS card_pack_spend (user_id TEXT PRIMARY KEY, points_spent INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
+  CREATE TABLE IF NOT EXISTS card_pack_openings (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, pack_id TEXT NOT NULL, cards_json TEXT NOT NULL, opened_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
+  CREATE INDEX IF NOT EXISTS card_pack_openings_user_idx ON card_pack_openings (user_id, opened_at DESC);
   CREATE TABLE IF NOT EXISTS quiz_presence (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, last_seen TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS quiz_queue (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, mode TEXT NOT NULL, joined_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS quiz_matches (id TEXT PRIMARY KEY, mode TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, started_at TEXT NOT NULL, question_ids_json TEXT NOT NULL, round_seconds INTEGER NOT NULL, finalized INTEGER NOT NULL DEFAULT 0, round_index INTEGER NOT NULL DEFAULT 0, round_started_at TEXT, reveal_until TEXT);
@@ -315,6 +326,18 @@ repairCrownsRealmColors();
 const getUserByName = db.prepare('SELECT * FROM users WHERE name = ? COLLATE NOCASE');
 const getUserById = db.prepare('SELECT * FROM users WHERE id = ?');
 const getAllUsers = db.prepare('SELECT id, name, avatar_data, created_at FROM users ORDER BY created_at ASC');
+const getUserCards = db.prepare('SELECT card_id, quantity, unlocked_at FROM user_cards WHERE user_id = ?');
+const upsertUserCard = db.prepare(`
+  INSERT INTO user_cards (user_id, card_id, quantity, unlocked_at) VALUES (?, ?, 1, ?)
+  ON CONFLICT(user_id, card_id) DO UPDATE SET quantity = quantity + 1
+`);
+const getCardPackSpend = db.prepare('SELECT points_spent FROM card_pack_spend WHERE user_id = ?');
+const upsertCardPackSpend = db.prepare(`
+  INSERT INTO card_pack_spend (user_id, points_spent, updated_at) VALUES (?, ?, ?)
+  ON CONFLICT(user_id) DO UPDATE SET points_spent = points_spent + excluded.points_spent, updated_at = excluded.updated_at
+`);
+const insertCardPackOpening = db.prepare('INSERT INTO card_pack_openings (id, user_id, pack_id, cards_json, opened_at) VALUES (?, ?, ?, ?, ?)');
+const getCardPackOpening = db.prepare('SELECT * FROM card_pack_openings WHERE id = ? AND user_id = ?');
 const insertUser = db.prepare('INSERT INTO users (id, name, pin_hash, salt, created_at) VALUES (?, ?, ?, ?, ?)');
 const updateUserProfile = db.prepare('UPDATE users SET name = ?, avatar_data = ? WHERE id = ?');
 const updateRankingUserName = db.prepare('UPDATE rankings SET user_name = ? WHERE user_id = ?');
@@ -1396,6 +1419,102 @@ function accountAchievementSummary(userId) {
   const xp = achievementXp(medals);
   const points = achievementPoints(medals);
   return { medals, xp, points };
+}
+
+function hubPointsForUser(user) {
+  const mainSave = getSaveSlot.get(user.id, 1);
+  const player = playerStatsFromSave(mainSave, user.id);
+  const cronicasState = safeJsonParse(getCronicasSave.get(user.id)?.state_json, null);
+  const reformaState = safeJsonParse(getReformaSave.get(user.id)?.state_json, null);
+  const lutherMatchRow = getLutherMatchRanking.get(user.id);
+  const medals = [
+    ...player.medals,
+    ...achievementsForState(cronicasState, {}, user.id, CRONICAS_GAME_ID, CRONICAS_ACHIEVEMENTS),
+    ...achievementsForState(reformaState, {}, user.id, REFORMA_GAME_ID, REFORMA_ACHIEVEMENTS),
+    ...achievementsForState({}, lutherMatchStats(lutherMatchRow || {}), user.id, LUTHER_MATCH_GAME_ID, LUTHER_MATCH_ACHIEVEMENTS)
+  ];
+  const lutherChest = lutherMatchChestRewards(lutherMatchStats(lutherMatchRow || {}).completedLevels);
+  const quizReward = quizRewards(getQuizRanking.get(user.id));
+  const xp = achievementXp(medals) + lutherChest.xp + quizReward.xp;
+  return achievementPoints(medals) + rankPointBonus(titleProgress(xp)) + lutherChest.points + quizReward.points;
+}
+
+function cardWalletForUser(user, earnedPoints = hubPointsForUser(user)) {
+  const spent = Number(getCardPackSpend.get(user.id)?.points_spent || 0);
+  return { earned: earnedPoints, spent, balance: Math.max(0, earnedPoints - spent) };
+}
+
+function weightedCard(pack, allowedRarities = null) {
+  const weights = Object.entries(pack.weights).filter(([rarity, weight]) => weight > 0 && (!allowedRarities || allowedRarities.includes(rarity)));
+  const total = weights.reduce((sum, [, weight]) => sum + weight, 0);
+  let roll = crypto.randomInt(total);
+  let rarity = weights[weights.length - 1][0];
+  for (const [candidate, weight] of weights) {
+    if (roll < weight) { rarity = candidate; break; }
+    roll -= weight;
+  }
+  const pool = CARD_CATALOG.cards.filter(card => card.rarity === rarity);
+  return pool[crypto.randomInt(pool.length)];
+}
+
+function openCardPackForUser(user, packId) {
+  const pack = CARD_PACKS[packId];
+  if (!pack) return { error: 'pacote' };
+  const cards = [];
+  if (pack.guarantee) cards.push(weightedCard(pack, pack.guarantee));
+  while (cards.length < pack.size) cards.push(weightedCard(pack));
+  const now = new Date().toISOString();
+  const openingId = crypto.randomUUID();
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    const wallet = cardWalletForUser(user);
+    if (wallet.balance < pack.cost) {
+      db.exec('ROLLBACK');
+      return { error: 'saldo' };
+    }
+    upsertCardPackSpend.run(user.id, pack.cost, now);
+    cards.forEach(card => upsertUserCard.run(user.id, card.id, now));
+    insertCardPackOpening.run(openingId, user.id, packId, JSON.stringify(cards.map(card => card.id)), now);
+    db.exec('COMMIT');
+    return { openingId };
+  } catch (error) {
+    try { db.exec('ROLLBACK'); } catch {}
+    throw error;
+  }
+}
+
+function rarityClass(rarity) {
+  return String(rarity).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+}
+
+function cardCollectionForUser(user) {
+  const owned = new Map(getUserCards.all(user.id).map(row => [row.card_id, row]));
+  return CARD_CATALOG.cards.map(card => ({ ...card, quantity: Number(owned.get(card.id)?.quantity || 0) }));
+}
+
+function renderCardAlbum(user) {
+  const cards = cardCollectionForUser(user);
+  const ownedCount = cards.filter(card => card.quantity > 0).length;
+  const categories = [...new Set(cards.map(card => card.category))];
+  const filters = categories.map(category => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join('');
+  const grid = cards.map(card => {
+    const owned = card.quantity > 0;
+    return `<article class="album-card rarity-${rarityClass(card.rarity)} ${owned ? 'owned' : 'locked'}" data-card-title="${escapeHtml(card.title.toLowerCase())}" data-card-category="${escapeHtml(card.category)}">
+      <div class="album-card-art"><img src="/assets/cards/${encodeURIComponent(card.image)}" alt="${owned ? escapeHtml(card.title) : 'Figurinha bloqueada'}" loading="lazy"><span class="album-card-lock" aria-hidden="true">✦</span>${card.quantity > 1 ? `<b class="album-card-quantity">×${card.quantity}</b>` : ''}</div>
+      <div class="album-card-copy"><strong>${owned ? escapeHtml(card.title) : `Figurinha ${String(card.page).padStart(2, '0')}`}</strong><span>${escapeHtml(card.category)} · ${escapeHtml(card.rarity)}</span></div>
+    </article>`;
+  }).join('');
+  return `<section class="ol-panel album-panel" id="album"><div class="panel-head"><div><p>Coleção Ortodoxia Luterana</p><h3>Álbum</h3></div><span>${ownedCount}/${cards.length} figurinhas</span></div><div class="album-toolbar"><label>Buscar<input id="album-search" type="search" placeholder="Nome da figurinha"></label><label>Categoria<select id="album-category"><option value="">Todas</option>${filters}</select></label></div><div class="album-grid" id="album-grid">${grid}</div></section>`;
+}
+
+function renderCardShop(user, earnedPoints, openingId = '') {
+  const wallet = cardWalletForUser(user, earnedPoints);
+  const opening = openingId ? getCardPackOpening.get(openingId, user.id) : null;
+  const openedIds = safeJsonParse(opening?.cards_json, []);
+  const openedCards = openedIds.map(id => CARD_CATALOG.cards.find(card => card.id === id)).filter(Boolean);
+  const reveal = openedCards.length ? `<section class="pack-reveal"><div class="pack-reveal-head"><div><p>Pacote aberto</p><h4>${escapeHtml(CARD_PACKS[opening.pack_id]?.name || 'Suas figurinhas')}</h4></div><a href="/?section=album">Ver álbum</a></div><div class="pack-reveal-grid">${openedCards.map((card, index) => `<article style="--reveal-delay:${index * 90}ms" class="rarity-${rarityClass(card.rarity)}"><img src="/assets/cards/${encodeURIComponent(card.image)}" alt="${escapeHtml(card.title)}"><strong>${escapeHtml(card.title)}</strong><span>${escapeHtml(card.rarity)}</span></article>`).join('')}</div></section>` : '';
+  const packs = Object.entries(CARD_PACKS).map(([id, pack]) => `<article class="shop-pack shop-pack-${id}"><span class="shop-pack-kicker">5 figurinhas</span><h4>${escapeHtml(pack.name)}</h4><p>${pack.cost} pontos</p><small>${id === 'comum' ? 'Chances equilibradas para começar a coleção.' : id === 'raro' ? 'Garante ao menos uma figurinha rara ou superior.' : 'Garante ao menos uma figurinha lendária ou Deluxe.'}</small><form method="POST" action="/cards/open-pack"><input type="hidden" name="pack" value="${id}"><button ${wallet.balance < pack.cost ? 'disabled' : ''}>Abrir pacote</button></form></article>`).join('');
+  return `<section class="ol-panel shop-panel" id="loja"><div class="panel-head"><div><p>Use os pontos conquistados nos jogos</p><h3>Loja de pacotes</h3></div><span class="card-wallet">${wallet.balance} pontos</span></div>${reveal}<div class="shop-grid">${packs}</div><p class="shop-footnote">Figurinhas repetidas ficam registradas no álbum. Seu saldo é salvo na conta.</p></section>`;
 }
 
 function pageShell(title, body, musicMode = '') {
@@ -3430,7 +3549,7 @@ function renderAuth(mode, error = '') {
 </main>`, 'login');
 }
 
-function renderDashboard(user, error = '', section = 'inicio', selectedGame = '') {
+function renderDashboard(user, error = '', section = 'inicio', selectedGame = '', openingId = '') {
   const activeSection = ['inicio', 'jogos', 'ranking', 'medalhas', 'album', 'loja', 'configuracoes'].includes(section) ? section : 'inicio';
   const saves = new Map(getSavesByUser.all(user.id).map(save => [save.slot, save]));
   const mainSave = saves.get(1);
@@ -3451,8 +3570,8 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   const xp = achievementXp(medals) + lutherChest.xp + quizReward.xp;
   const rank = titleProgress(xp);
   const points = achievementPoints(medals) + rankPointBonus(rank) + lutherChest.points + quizReward.points;
+  const cardWallet = cardWalletForUser(user, points);
   const unlockedMedals = medals.filter(medal => medal.unlocked).length;
-  const stickers = [];
   const ranking = rankingPayload();
   const rankingRows = (items, score, suffix = '') => items.length ? items.slice(0, 8).map((item, index) => `<div class="hub-rank-row"><b>${index + 1}</b><span>${escapeHtml(item.player)}</span><strong>${escapeHtml(score(item))}${suffix}</strong></div>`).join('') : '<p>Nenhum registro ainda.</p>';
   const onlinePlayers = platformOnlinePlayers();
@@ -3512,8 +3631,8 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     jogos: `${gameCard}`,
     ranking: rankingSection,
     medalhas: `<section class="ol-panel" id="medalhas"><div class="panel-head"><h3>Medalhas</h3><span>${unlockedMedals}/${medals.length}</span></div><div class="medal-grid">${medals.map(medal => `<article class="${medal.unlocked ? '' : 'locked'}">${renderAchievementIcon(medal)}<span>${escapeHtml(medal.title)}</span><p>${escapeHtml(medal.description)}</p><small>+${medal.xp} XP · +${medal.points} pontos</small></article>`).join('')}</div></section>`,
-    album: `<section class="ol-panel" id="album"><div class="panel-head"><h3>Álbum</h3><span>0/0 figurinhas</span></div><p>Nenhuma figurinha foi criada ainda.</p></section>`,
-    loja: `<section class="ol-panel" id="loja"><div class="panel-head"><h3>Loja</h3></div><div class="shop-grid"><article><h4>Pacote Comum</h4><p>100 pontos</p><small>Maior chance de figurinhas comuns.</small><button disabled>Comprar em breve</button></article><article><h4>Pacote Raro</h4><p>250 pontos</p><small>Chance melhor de raras e especiais.</small><button disabled>Comprar em breve</button></article><article><h4>Pacote Lendario</h4><p>600 pontos</p><small>Chance alta de figurinhas raras e lendarias.</small><button disabled>Comprar em breve</button></article></div><div class="daily-wheel"><h4>Roleta diaria</h4><p>A cada 24h, o jogador podera tentar ganhar um pacote comum, raro ou lendario de graca.</p><button disabled>Disponivel em breve</button></div></section>`,
+    album: renderCardAlbum(user),
+    loja: renderCardShop(user, points, openingId),
     configuracoes: `<section class="ol-panel ol-settings" id="configuracoes"><div class="panel-head"><h3>Configurações</h3></div><form method="POST" action="/profile" class="profile-edit"><div class="profile-box">${renderAvatar(user, 'profile-avatar')}<div><label>Nome público<input name="name" maxlength="40" value="${escapeHtml(user.name)}" required></label><label>Foto do perfil<input id="avatar-file" type="file" accept="image/png,image/jpeg,image/webp"></label><input id="avatar-data" type="hidden" name="avatar_data" value="${escapeHtml(user.avatar_data || '')}"><button type="submit">Salvar perfil</button></div></div></form><hr><div class="saved-games-head"><h4>Campanhas por jogo</h4><p>Medalhas, campanhas e saves principais ficam salvos na conta.</p></div><div class="saved-game-list"><article class="saved-game-row"><div><span>Pela Graça 1904</span><strong>${mainSave ? escapeHtml(mainSave.name) : 'Nenhuma campanha atual'}</strong><small>${mainSave ? 'Apaga só esta campanha atual.' : 'Crie uma campanha para jogar novamente.'}</small></div>${mainSave ? `<form method="POST" action="/saves/${encodeURIComponent(mainSave.id)}/delete" onsubmit="return confirm('Apagar a campanha atual de Pela Graça 1904? Medalhas e melhor ranking serão mantidos.')"><button>Apagar campanha</button></form>` : '<a href="/play">Criar campanha</a>'}</article><article class="saved-game-row"><div><span>Crônicas do Levante</span><strong>${cronicasSave ? 'Campanha em andamento' : 'Nenhuma campanha atual'}</strong><small>${cronicasSave ? 'Apaga só o progresso narrativo. Medalhas futuras serão mantidas.' : 'Comece uma jornada para criar o save automático.'}</small></div>${cronicasSave ? `<form method="POST" action="/cronicas-do-levante/delete" onsubmit="return confirm('Apagar a campanha atual de Crônicas do Levante? Medalhas futuras serão mantidas.')"><button>Apagar campanha</button></form>` : '<a href="/cronicas-do-levante">Criar campanha</a>'}</article><article class="saved-game-row"><div><span>Herói Ortodoxo</span><strong>Save automático na conta</strong><small>Heróis, campanha, check-in e invocações acompanham seu perfil do hub.</small></div><a href="/heroi-ortodoxo">Abrir</a></article><article class="saved-game-row"><div><span>Luther Metch</span><strong>Save local automático</strong><small>Fase, objetivos, pontos e tabuleiro ficam salvos neste navegador.</small></div><a href="/luther-metch">Abrir</a></article><article class="saved-game-row"><div><span>Quiz Ortodoxia</span><strong>Multiplayer online</strong><small>Duelo, convite e competição geral rodam com pareamento pelo servidor.</small></div><a href="/quiz-ortodoxia">Abrir</a></article><article class="saved-game-row"><div><span>A Queda de Babel</span><strong>${babelSave ? 'Jornada em andamento' : 'Nenhuma jornada atual'}</strong><small>Herói, equipamento, pet e progresso da região acompanham seu perfil do hub.</small></div>${babelSave ? `<form method="POST" action="/a-queda-de-babel/delete" onsubmit="return confirm('Apagar a jornada atual de A Queda de Babel?')"><button>Apagar jornada</button></form>` : '<a href="/a-queda-de-babel">Criar jornada</a>'}</article></div></section>`
   };
   const reformaSettingsRow = `<article class="saved-game-row"><div><span>A Confissão</span><strong>${reformaSave ? 'Jornada em andamento' : 'Nenhuma jornada atual'}</strong><small>Decisões, finais, códice e medalhas acompanham seu perfil.</small></div>${reformaSave ? `<form method="POST" action="/a-confissao/delete" onsubmit="return confirm('Apagar a jornada atual de A Confissão? As medalhas serão mantidas.')"><button>Apagar jornada</button></form>` : '<a href="/a-confissao">Criar jornada</a>'}</article>`;
@@ -3530,7 +3649,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   <section class="ol-hub-main">
     <header class="ol-topbar">
       <div><p>Painel de acesso</p><h2>Bem-vindo, ${escapeHtml(user.name)}</h2></div>
-      <div class="ol-stats"><article><span>Pontos</span><b>${points}</b></article><article><span>XP</span><b>${xp}</b></article><article><span>Medalhas</span><b>${unlockedMedals}</b></article></div>
+      <div class="ol-stats"><article><span>Pontos</span><b>${cardWallet.balance}</b></article><article><span>XP</span><b>${xp}</b></article><article><span>Medalhas</span><b>${unlockedMedals}</b></article></div>
       <a class="top-profile" href="/?section=configuracoes">${renderAvatar(user, 'top-avatar')}<span>${escapeHtml(user.name)}<small>Ver perfil</small></span></a>
       <form method="POST" action="/logout"><button>Sair</button></form>
     </header>
@@ -3629,6 +3748,19 @@ if (avatarFile) {
     reader.readAsDataURL(file);
   });
 }
+const albumSearch = document.getElementById('album-search');
+const albumCategory = document.getElementById('album-category');
+function filterAlbum() {
+  const query = String(albumSearch?.value || '').trim().toLocaleLowerCase('pt-BR');
+  const category = String(albumCategory?.value || '');
+  document.querySelectorAll('#album-grid .album-card').forEach(card => {
+    const matchesName = !query || String(card.dataset.cardTitle || '').includes(query);
+    const matchesCategory = !category || card.dataset.cardCategory === category;
+    card.hidden = !(matchesName && matchesCategory);
+  });
+}
+albumSearch?.addEventListener('input', filterAlbum);
+albumCategory?.addEventListener('change', filterAlbum);
 </script>`);
 }
 
@@ -3645,7 +3777,20 @@ const server = http.createServer(async (req, res) => {
     }
     if (url.pathname.startsWith('/api/')) { await handleApi(req, res, url, user); return; }
     if (!user) { redirect(res, '/login'); return; }
-    if (req.method === 'GET' && url.pathname === '/') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end(renderDashboard(user, '', url.searchParams.get('section') || 'inicio', url.searchParams.get('game') || '')); return; }
+    if (req.method === 'GET' && url.pathname === '/') {
+      const notice = url.searchParams.get('notice');
+      const message = notice === 'saldo' ? 'Você ainda não tem pontos suficientes para esse pacote.' : notice === 'pacote' ? 'Esse pacote não existe.' : '';
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(renderDashboard(user, message, url.searchParams.get('section') || 'inicio', url.searchParams.get('game') || '', url.searchParams.get('opening') || ''));
+      return;
+    }
+    if (req.method === 'POST' && url.pathname === '/cards/open-pack') {
+      const form = await readForm(req);
+      const result = openCardPackForUser(user, String(form.get('pack') || ''));
+      if (result.error) redirect(res, `/?section=loja&notice=${encodeURIComponent(result.error)}`);
+      else redirect(res, `/?section=loja&opening=${encodeURIComponent(result.openingId)}`);
+      return;
+    }
     if (req.method === 'POST' && url.pathname === '/profile') {
       const form = await readForm(req);
       const name = String(form.get('name') || '').trim();

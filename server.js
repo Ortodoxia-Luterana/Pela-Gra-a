@@ -201,6 +201,7 @@ fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 const db = new DatabaseSync(DB_PATH);
 db.exec(`
   PRAGMA foreign_keys = ON;
+  PRAGMA busy_timeout = 5000;
   CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, name TEXT NOT NULL UNIQUE COLLATE NOCASE, pin_hash TEXT NOT NULL, salt TEXT NOT NULL, created_at TEXT NOT NULL);
   CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, created_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS saves (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, slot INTEGER NOT NULL CHECK (slot IN (1, 2)), name TEXT NOT NULL, state_json TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE (user_id, slot), FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
@@ -280,6 +281,37 @@ try { db.exec('ALTER TABLE cc_realms ADD COLUMN heresy_pressure INTEGER NOT NULL
 try { db.exec('ALTER TABLE cc_realms ADD COLUMN last_economy_at TEXT'); } catch {}
 try { db.exec('ALTER TABLE cc_realms ADD COLUMN last_ai_action_at TEXT'); } catch {}
 
+function crownsGeneratedColor(seed, attempt = 0) {
+  const digest = crypto.createHash('sha256').update(`${seed}:${attempt}`).digest();
+  const channel = value => 55 + (value % 146);
+  return `#${[channel(digest[0]), channel(digest[1]), channel(digest[2])].map(value => value.toString(16).padStart(2, '0')).join('')}`;
+}
+
+function repairCrownsRealmColors() {
+  const rows = db.prepare('SELECT id, season_id, color FROM cc_realms ORDER BY season_id, created_at, id').all();
+  const usedBySeason = new Map();
+  const updateColor = db.prepare('UPDATE cc_realms SET color = ? WHERE id = ?');
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    rows.forEach(realm => {
+      const used = usedBySeason.get(realm.season_id) || new Set();
+      usedBySeason.set(realm.season_id, used);
+      const current = /^#[0-9a-f]{6}$/i.test(realm.color || '') ? String(realm.color).toLowerCase() : '';
+      let replacement = current && !used.has(current) ? current : CROWNS_REALM_COLORS.find(color => !used.has(color));
+      for (let attempt = 0; !replacement || used.has(replacement); attempt += 1) replacement = crownsGeneratedColor(`${realm.season_id}:${realm.id}`, attempt);
+      if (realm.color !== replacement) updateColor.run(replacement, realm.id);
+      used.add(replacement);
+    });
+    db.exec('COMMIT');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+  db.exec('CREATE UNIQUE INDEX IF NOT EXISTS cc_realms_season_color_unique_idx ON cc_realms (season_id, color COLLATE NOCASE)');
+}
+
+repairCrownsRealmColors();
+
 const getUserByName = db.prepare('SELECT * FROM users WHERE name = ? COLLATE NOCASE');
 const getUserById = db.prepare('SELECT * FROM users WHERE id = ?');
 const getAllUsers = db.prepare('SELECT id, name, avatar_data, created_at FROM users ORDER BY created_at ASC');
@@ -344,6 +376,16 @@ const getCcSeason = db.prepare('SELECT * FROM cc_seasons WHERE id = ?');
 const getCcRealmByUser = db.prepare('SELECT * FROM cc_realms WHERE season_id = ? AND user_id = ?');
 const getCcRealmById = db.prepare('SELECT * FROM cc_realms WHERE id = ? AND season_id = ?');
 const getCcRealmByColor = db.prepare('SELECT id FROM cc_realms WHERE season_id = ? AND color = ? COLLATE NOCASE LIMIT 1');
+function crownsUnusedRealmColor(serverId, preferred, seed) {
+  const normalized = /^#[0-9a-f]{6}$/i.test(preferred || '') ? String(preferred).toLowerCase() : '';
+  const paletteChoice = [normalized, ...CROWNS_REALM_COLORS].find(color => color && !getCcRealmByColor.get(serverId, color));
+  if (paletteChoice) return paletteChoice;
+  for (let attempt = 0; attempt < 4096; attempt += 1) {
+    const generated = crownsGeneratedColor(`${serverId}:${seed}`, attempt);
+    if (!getCcRealmByColor.get(serverId, generated)) return generated;
+  }
+  throw new Error('N\u00e3o foi poss\u00edvel reservar uma cor exclusiva para esta coroa.');
+}
 const getCcRealms = db.prepare(`
   SELECT realm.*, region.name AS capital_name, COUNT(owned.region_id) AS region_count
   FROM cc_realms realm
@@ -536,7 +578,7 @@ function seedCcAiRealms(serverId, now, seed) {
       insertUser.run(userId, `IA — ${blueprint.name}`, hashPin(crypto.randomInt(1000, 9999).toString(), salt), salt, now);
     }
     insertCcAiRealm.run(
-      realmId, serverId, userId, blueprint.name, blueprint.house, colors[index], capital.id,
+      realmId, serverId, userId, blueprint.name, blueprint.house, crownsUnusedRealmColor(serverId, colors[index], realmId), capital.id,
       1500 + index * 45, 950 + index * 30, 20 + index, 'ai', null, blueprint.ruler, blueprint.heir,
       68 + (index % 4) * 4, 58 + (index % 5) * 5, 52 + (index % 6) * 5,
       crownsAiReligion(blueprint), 65 + (index % 4) * 5, 7 + (index % 3) * 3, now, now, now, now
@@ -2126,6 +2168,9 @@ function createCrownsRealm(user, payload, requestedServerId) {
     db.exec('COMMIT');
   } catch (error) {
     db.exec('ROLLBACK');
+    if (/UNIQUE constraint failed: cc_realms\.season_id, cc_realms\.color/i.test(error.message || '')) {
+      throw new Error('Essa cor de estandarte j\u00e1 pertence a outra coroa. Escolha uma cor livre.');
+    }
     throw error;
   }
   if (entryPhase === 'waiting') activateCrownsSeason(serverId);
@@ -2624,8 +2669,9 @@ function processCrownsSeparatistRevolts(serverId) {
     try {
       const salt = crypto.randomBytes(16).toString('hex');
       insertUser.run(userId, `IA — ${realmName} — ${revoltKey.slice(0, 6)}`, hashPin(crypto.randomInt(1000, 9999).toString(), salt), salt, now);
+      const separatistColor = crownsUnusedRealmColor(serverId, null, realmId);
       insertCcAiRealm.run(
-        realmId, serverId, userId, realmName, houseName, CROWNS_REALM_COLORS.find(color => !getCcRealmByColor.get(serverId, color)) || '#e06b46', region.region_id,
+        realmId, serverId, userId, realmName, houseName, separatistColor, region.region_id,
         720, 520, 12, 'separatist', origin.id, `Conselho de ${region.name}`, null,
         44, 56, 72, origin.religion || 'Cristianismo', 48, 34, now, now, now, now
       );

@@ -109,6 +109,12 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     assert.equal(result.payload.world.aiRealmCount, 10);
     assert.equal(result.payload.world.realmCount, 10);
     assert.ok(result.payload.customization.availableColors.length >= 30);
+    const initialColorDb = new DatabaseSync(path.join(tempRoot, 'crowns-test.sqlite'));
+    const initialColorAudit = initialColorDb.prepare("SELECT COUNT(*) AS total, COUNT(DISTINCT lower(color)) AS distinct_colors FROM cc_realms WHERE season_id = 'cc-world-1'").get();
+    assert.equal(initialColorAudit.total, 10);
+    assert.equal(initialColorAudit.distinct_colors, initialColorAudit.total);
+    assert.ok(initialColorDb.prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'cc_realms_season_color_unique_idx'").get());
+    initialColorDb.close();
     assert.equal(result.payload.regions.find(region => region.id === 'EL30').name, 'Ática');
     assert.equal(result.payload.regions.find(region => region.id === 'BG31').name, 'Noroeste da Bulgária');
     assert.ok(result.payload.regions.find(region => region.id === 'IS00').routeNeighborIds.includes('UKM6'));
@@ -119,10 +125,11 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     assert.deepEqual(result.payload.customization.religions, ['Cristianismo']);
     const capital = result.payload.regions.find(region => !region.ownerRealmId && region.neighborIds.length > 2);
     assert.ok(capital);
+    const selectedColor = result.payload.customization.availableColors[0];
 
     result = await jsonRequest('/api/crowns-and-councils/realm/create', {
       method: 'POST',
-      body: JSON.stringify({ name: 'Reino do Teste', houseName: 'Casa Veritas', religion: 'Islã sunita', color: result.payload.customization.availableColors[0], regionId: capital.id })
+      body: JSON.stringify({ name: 'Reino do Teste', houseName: 'Casa Veritas', religion: 'Islã sunita', color: selectedColor, regionId: capital.id })
     });
     assert.equal(result.response.status, 201);
     assert.equal(result.payload.realm.capitalRegionId, capital.id);
@@ -135,6 +142,11 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     assert.equal(result.payload.realm.court.diplomacy.knownRealms.length, 10);
     assert.equal(result.payload.realm.court.internal.canRevolt, false);
     assert.equal(result.payload.season.phase, 'open');
+    assert.ok(!result.payload.customization.availableColors.includes(selectedColor));
+    const conflictColorDb = new DatabaseSync(path.join(tempRoot, 'crowns-test.sqlite'));
+    const anotherRealm = conflictColorDb.prepare("SELECT id FROM cc_realms WHERE season_id = 'cc-world-1' AND id <> ? LIMIT 1").get(result.payload.realm.id);
+    assert.throws(() => conflictColorDb.prepare('UPDATE cc_realms SET color = ? WHERE id = ?').run(selectedColor.toUpperCase(), anotherRealm.id), /UNIQUE constraint failed/);
+    conflictColorDb.close();
     assert.equal(result.payload.realm.religion, 'Cristianismo');
     assert.ok(result.payload.realm.court.diplomacy.knownRealms.every(realm => realm.religion === 'Cristianismo'));
     assert.equal(result.payload.regionReligions[0].heresyShare, 0);
@@ -200,6 +212,10 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     assert.equal(result.payload.world.aiRealmCount, 11);
     assert.equal(result.payload.realm.regionCount, 2);
     assert.ok(result.payload.journal.some(item => item.eventType === 'revolution.separatist'));
+    const finalColorDb = new DatabaseSync(path.join(tempRoot, 'crowns-test.sqlite'));
+    const finalColorAudit = finalColorDb.prepare("SELECT COUNT(*) AS total, COUNT(DISTINCT lower(color)) AS distinct_colors FROM cc_realms WHERE season_id = 'cc-world-1'").get();
+    assert.equal(finalColorAudit.distinct_colors, finalColorAudit.total);
+    finalColorDb.close();
 
     const published = waitSocket(socket, 'journal.published');
     result = await jsonRequest('/api/crowns-and-councils/journal/articles', {

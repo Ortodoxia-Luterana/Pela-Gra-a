@@ -78,6 +78,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .cc-capital-choice strong { margin-top: 3px; }
 .cc-capital-choice.chosen { border-style: solid; border-color: #7f393f; }
 .cc-modal fieldset { padding: 8px 0 12px; border: 0; }
+.cc-color-note { display: block; margin: 3px 0 7px; color: #75654e; font-size: 10px; font-weight: 500; letter-spacing: 0; text-transform: none; }
 .cc-color-row { display: flex; flex-wrap: wrap; gap: 8px; max-height: 92px; overflow: auto; padding: 3px; }
 .cc-color-row button { width: 34px; height: 34px; border: 3px solid #fff9df; border-radius: 50%; background: var(--swatch); box-shadow: 0 0 0 1px #6d5736; cursor: pointer; }
 .cc-color-row button.active { box-shadow: 0 0 0 3px #7d3940; }

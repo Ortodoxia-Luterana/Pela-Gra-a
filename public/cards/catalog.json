@@ -29,7 +29,7 @@
     { "id": "card-025", "page": 25, "title": "Johann Gerhard", "category": "Teólogos", "rarity": "Lendária", "image": "card-025-johann-gerhard.webp" },
     { "id": "card-026", "page": 26, "title": "Abraham Calov", "category": "Reformadores", "rarity": "Lendária", "image": "card-026-abraham-calov.webp" },
     { "id": "card-027", "page": 27, "title": "Livro de Concórdia", "category": "Confissões", "rarity": "Épica", "image": "card-027-livro-de-concordia.webp" },
-    { "id": "card-028", "page": 28, "title": "Rosa de Lutero", "category": "Símbolos", "rarity": "Rara", "image": "card-028-rosa-de-lutero-rara.webp" },
+    { "id": "card-028", "page": 28, "title": "Rosa de Lutero", "category": "Símbolos", "rarity": "Incomum", "image": "card-028-rosa-de-lutero-rara.webp" },
     { "id": "card-029", "page": 29, "title": "A pedra sobre a qual Jacó dormiu", "category": "Bíblia", "rarity": "Épica", "image": "card-029-pedra-de-jaco.webp" },
     { "id": "card-030", "page": 30, "title": "Batismo de Jesus", "category": "Bíblia", "rarity": "Épica", "image": "card-030-batismo-de-jesus.webp" },
     { "id": "card-031", "page": 31, "title": "João Calvino", "category": "Reformadores", "rarity": "Comum", "image": "card-031-joao-calvino.webp" },

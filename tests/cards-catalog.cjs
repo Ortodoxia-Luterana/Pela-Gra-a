@@ -5,12 +5,12 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const catalogPath = path.join(root, 'public', 'cards', 'catalog.json');
 const catalog = JSON.parse(fs.readFileSync(catalogPath, 'utf8'));
-const allowedRarities = new Set(['Comum', 'Rara', 'Épica', 'Lendária', 'Deluxe']);
+const allowedRarities = new Set(['Comum', 'Incomum', 'Rara', 'Épica', 'Lendária', 'Deluxe']);
 
 assert.equal(catalog.sourceCanvaDesignId, 'DAHHY_9luKs');
-assert.equal(catalog.cards.length, 59);
-assert.equal(new Set(catalog.cards.map(card => card.id)).size, 59);
-assert.equal(new Set(catalog.cards.map(card => card.page)).size, 59);
+assert.equal(catalog.cards.length, 70);
+assert.equal(new Set(catalog.cards.map(card => card.id)).size, 70);
+assert.equal(new Set(catalog.cards.map(card => card.page)).size, 70);
 
 for (const card of catalog.cards) {
   assert.ok(card.title && card.category, `${card.id} precisa de título e categoria`);

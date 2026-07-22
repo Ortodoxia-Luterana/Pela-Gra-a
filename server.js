@@ -14,9 +14,35 @@ const CROWNS_REGION_CATALOG_PATH = path.join(PUBLIC_DIR, 'crowns-and-councils', 
 const CARD_CATALOG_PATH = path.join(PUBLIC_DIR, 'cards', 'catalog.json');
 const CARD_CATALOG = JSON.parse(fs.readFileSync(CARD_CATALOG_PATH, 'utf8'));
 const CARD_PACKS = {
-  comum: { name: 'Pacote Comum', cost: 100, size: 5, weights: { 'Comum': 45, 'Rara': 25, 'Épica': 20, 'Lendária': 7, 'Deluxe': 3 } },
-  raro: { name: 'Pacote Raro', cost: 250, size: 5, guarantee: ['Rara', 'Épica', 'Lendária', 'Deluxe'], weights: { 'Comum': 15, 'Rara': 35, 'Épica': 28, 'Lendária': 14, 'Deluxe': 8 } },
-  lendario: { name: 'Pacote Lendário', cost: 600, size: 5, guarantee: ['Lendária', 'Deluxe'], weights: { 'Comum': 4, 'Rara': 11, 'Épica': 35, 'Lendária': 28, 'Deluxe': 22 } }
+  comum: {
+    name: 'Pacote Comum',
+    cost: 100,
+    size: 3,
+    summary: '3 figurinhas',
+    description: 'Bom para completar o começo do álbum.',
+    odds: '62% Comum · 25% Incomum · 11% Épica · 2% Lendária',
+    weights: { 'Comum': 62, 'Incomum': 25, 'Épica': 11, 'Lendária': 2 }
+  },
+  incomum: {
+    name: 'Pacote Incomum',
+    cost: 250,
+    size: 3,
+    summary: '3 figurinhas',
+    description: 'Garante uma Incomum ou melhor.',
+    odds: '30% Comum · 42% Incomum · 22% Épica · 6% Lendária',
+    guarantee: ['Incomum', 'Épica', 'Lendária'],
+    weights: { 'Comum': 30, 'Incomum': 42, 'Épica': 22, 'Lendária': 6 }
+  },
+  lendario: {
+    name: 'Pacote Lendário',
+    cost: 600,
+    size: 3,
+    summary: '3 figurinhas',
+    description: 'Garante uma Épica ou Lendária.',
+    odds: '10% Comum · 25% Incomum · 45% Épica · 20% Lendária',
+    guarantee: ['Épica', 'Lendária'],
+    weights: { 'Comum': 10, 'Incomum': 25, 'Épica': 45, 'Lendária': 20 }
+  }
 };
 const PORT = Number(process.env.PORT || 3000);
 const COOKIE_NAME = 'cultivando_session';
@@ -1447,6 +1473,7 @@ function cardWalletForUser(user, earnedPoints = hubPointsForUser(user)) {
 function weightedCard(pack, allowedRarities = null) {
   const weights = Object.entries(pack.weights).filter(([rarity, weight]) => weight > 0 && (!allowedRarities || allowedRarities.includes(rarity)));
   const total = weights.reduce((sum, [, weight]) => sum + weight, 0);
+  if (!total) return CARD_CATALOG.cards[crypto.randomInt(CARD_CATALOG.cards.length)];
   let roll = crypto.randomInt(total);
   let rarity = weights[weights.length - 1][0];
   for (const [candidate, weight] of weights) {
@@ -1454,7 +1481,8 @@ function weightedCard(pack, allowedRarities = null) {
     roll -= weight;
   }
   const pool = CARD_CATALOG.cards.filter(card => card.rarity === rarity);
-  return pool[crypto.randomInt(pool.length)];
+  const safePool = pool.length ? pool : CARD_CATALOG.cards;
+  return safePool[crypto.randomInt(safePool.length)];
 }
 
 function openCardPackForUser(user, packId) {
@@ -1499,8 +1527,11 @@ function renderCardAlbum(user) {
   const filters = categories.map(category => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join('');
   const grid = cards.map(card => {
     const owned = card.quantity > 0;
+    const art = owned
+      ? `<img src="/assets/cards/${encodeURIComponent(card.image)}" alt="${escapeHtml(card.title)}" loading="lazy">`
+      : '<span class="album-card-placeholder" aria-hidden="true">?</span>';
     return `<article class="album-card rarity-${rarityClass(card.rarity)} ${owned ? 'owned' : 'locked'}" data-card-title="${escapeHtml(card.title.toLowerCase())}" data-card-category="${escapeHtml(card.category)}">
-      <div class="album-card-art"><img src="/assets/cards/${encodeURIComponent(card.image)}" alt="${owned ? escapeHtml(card.title) : 'Figurinha bloqueada'}" loading="lazy"><span class="album-card-lock" aria-hidden="true">✦</span>${card.quantity > 1 ? `<b class="album-card-quantity">×${card.quantity}</b>` : ''}</div>
+      <div class="album-card-art">${art}<span class="album-card-lock" aria-hidden="true">✦</span>${card.quantity > 1 ? `<b class="album-card-quantity">×${card.quantity}</b>` : ''}</div>
       <div class="album-card-copy"><strong>${owned ? escapeHtml(card.title) : `Figurinha ${String(card.page).padStart(2, '0')}`}</strong><span>${escapeHtml(card.category)} · ${escapeHtml(card.rarity)}</span></div>
     </article>`;
   }).join('');
@@ -1512,8 +1543,8 @@ function renderCardShop(user, earnedPoints, openingId = '') {
   const opening = openingId ? getCardPackOpening.get(openingId, user.id) : null;
   const openedIds = safeJsonParse(opening?.cards_json, []);
   const openedCards = openedIds.map(id => CARD_CATALOG.cards.find(card => card.id === id)).filter(Boolean);
-  const reveal = openedCards.length ? `<section class="pack-reveal"><div class="pack-reveal-head"><div><p>Pacote aberto</p><h4>${escapeHtml(CARD_PACKS[opening.pack_id]?.name || 'Suas figurinhas')}</h4></div><a href="/?section=album">Ver álbum</a></div><div class="pack-reveal-grid">${openedCards.map((card, index) => `<article style="--reveal-delay:${index * 90}ms" class="rarity-${rarityClass(card.rarity)}"><img src="/assets/cards/${encodeURIComponent(card.image)}" alt="${escapeHtml(card.title)}"><strong>${escapeHtml(card.title)}</strong><span>${escapeHtml(card.rarity)}</span></article>`).join('')}</div></section>` : '';
-  const packs = Object.entries(CARD_PACKS).map(([id, pack]) => `<article class="shop-pack shop-pack-${id}"><span class="shop-pack-kicker">5 figurinhas</span><h4>${escapeHtml(pack.name)}</h4><p>${pack.cost} pontos</p><small>${id === 'comum' ? 'Chances equilibradas para começar a coleção.' : id === 'raro' ? 'Garante ao menos uma figurinha rara ou superior.' : 'Garante ao menos uma figurinha lendária ou Deluxe.'}</small><form method="POST" action="/cards/open-pack"><input type="hidden" name="pack" value="${id}"><button ${wallet.balance < pack.cost ? 'disabled' : ''}>Abrir pacote</button></form></article>`).join('');
+  const reveal = openedCards.length ? `<section class="pack-reveal pack-opening"><div class="pack-reveal-head"><div><p>Pacote aberto</p><h4>${escapeHtml(CARD_PACKS[opening.pack_id]?.name || 'Suas figurinhas')}</h4></div><a href="/?section=album">Ver álbum</a></div><div class="pack-reveal-grid">${openedCards.map((card, index) => `<article style="--reveal-delay:${index * 150}ms" class="rarity-${rarityClass(card.rarity)}"><span class="pack-card-glow" aria-hidden="true"></span><img src="/assets/cards/${encodeURIComponent(card.image)}" alt="${escapeHtml(card.title)}"><strong>${escapeHtml(card.title)}</strong><span>${escapeHtml(card.rarity)}</span></article>`).join('')}</div></section>` : '';
+  const packs = Object.entries(CARD_PACKS).map(([id, pack]) => `<article class="shop-pack shop-pack-${id}"><span class="shop-pack-kicker">${escapeHtml(pack.summary)}</span><h4>${escapeHtml(pack.name)}</h4><p>${pack.cost} pontos</p><small>${escapeHtml(pack.description)}</small><b class="shop-pack-odds">${escapeHtml(pack.odds)}</b><form method="POST" action="/cards/open-pack"><input type="hidden" name="pack" value="${id}"><button ${wallet.balance < pack.cost ? 'disabled' : ''}>Abrir pacote</button></form></article>`).join('');
   return `<section class="ol-panel shop-panel" id="loja"><div class="panel-head"><div><p>Use os pontos conquistados nos jogos</p><h3>Loja de pacotes</h3></div><span class="card-wallet">${wallet.balance} pontos</span></div>${reveal}<div class="shop-grid">${packs}</div><p class="shop-footnote">Figurinhas repetidas ficam registradas no álbum. Seu saldo é salvo na conta.</p></section>`;
 }
 

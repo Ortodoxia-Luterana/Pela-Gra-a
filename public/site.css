@@ -2044,6 +2044,21 @@ img.feed-avatar {
   transform:scale(1.035);
 }
 
+.album-card-placeholder{
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  background:
+    linear-gradient(135deg,rgba(255,255,255,.08),transparent 32%,rgba(0,0,0,.22)),
+    radial-gradient(circle at 50% 18%,rgba(242,199,95,.2),transparent 36%),
+    repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 10px,rgba(255,255,255,0) 10px 20px),
+    #101922;
+  color:rgba(242,199,95,.78);
+  font-size:3rem;
+  font-weight:900;
+}
+
 .album-card-lock{
   display:none;
   position:absolute;
@@ -2100,14 +2115,14 @@ img.feed-avatar {
   font-size:.7rem;
 }
 
-.album-card.rarity-rara,
-.pack-reveal-grid .rarity-rara{border-color:rgba(83,167,255,.48)}
+.album-card.rarity-comum,
+.pack-reveal-grid .rarity-comum{border-color:rgba(205,181,151,.42)}
+.album-card.rarity-incomum,
+.pack-reveal-grid .rarity-incomum{border-color:rgba(126,177,91,.5)}
 .album-card.rarity-epica,
-.pack-reveal-grid .rarity-epica{border-color:rgba(183,104,255,.52)}
+.pack-reveal-grid .rarity-epica{border-color:rgba(108,176,255,.58)}
 .album-card.rarity-lendaria,
 .pack-reveal-grid .rarity-lendaria{border-color:rgba(242,199,95,.58)}
-.album-card.rarity-deluxe,
-.pack-reveal-grid .rarity-deluxe{border-color:rgba(81,222,190,.55)}
 
 .card-wallet{
   border:1px solid rgba(242,199,95,.36);
@@ -2163,8 +2178,16 @@ img.feed-avatar {
 
 .shop-grid .shop-pack small{
   display:block;
-  min-height:48px;
+  min-height:42px;
   color:#b8b0a4;
+  line-height:1.45;
+}
+
+.shop-pack-odds{
+  display:block;
+  margin-top:.8rem;
+  color:#f2c75f;
+  font-size:.72rem;
   line-height:1.45;
 }
 
@@ -2203,6 +2226,20 @@ img.feed-avatar {
   background:radial-gradient(circle at 50% 0,rgba(197,138,32,.17),transparent 44%),rgba(7,14,22,.62);
 }
 
+.pack-opening{
+  position:relative;
+  overflow:hidden;
+}
+
+.pack-opening::before{
+  content:'';
+  position:absolute;
+  inset:-35%;
+  background:conic-gradient(from 0deg,transparent,rgba(242,199,95,.18),transparent 36%);
+  animation:pack-shine 1.9s ease-out both;
+  pointer-events:none;
+}
+
 .pack-reveal-head{
   display:flex;
   align-items:center;
@@ -2219,11 +2256,12 @@ img.feed-avatar {
 
 .pack-reveal-grid{
   display:grid;
-  grid-template-columns:repeat(5,minmax(0,1fr));
+  grid-template-columns:repeat(3,minmax(0,1fr));
   gap:.7rem;
 }
 
 .pack-reveal-grid article{
+  position:relative;
   display:grid;
   gap:.3rem;
   overflow:hidden;
@@ -2231,8 +2269,19 @@ img.feed-avatar {
   border-radius:9px;
   background:#101b27;
   padding:.45rem;
-  animation:card-reveal .5s both;
+  transform-style:preserve-3d;
+  animation:card-reveal .68s cubic-bezier(.17,.84,.32,1.18) both;
   animation-delay:var(--reveal-delay);
+}
+
+.pack-card-glow{
+  position:absolute;
+  inset:-20%;
+  background:radial-gradient(circle,rgba(242,199,95,.28),transparent 58%);
+  opacity:0;
+  animation:pack-card-glow .7s ease-out both;
+  animation-delay:calc(var(--reveal-delay) + 170ms);
+  pointer-events:none;
 }
 
 .pack-reveal-grid img{
@@ -2246,8 +2295,21 @@ img.feed-avatar {
 .pack-reveal-grid span{color:#a99e8d;font-size:.64rem}
 
 @keyframes card-reveal{
-  from{opacity:0;transform:translateY(16px) rotateY(35deg)}
-  to{opacity:1;transform:none}
+  0%{opacity:0;transform:translateY(26px) rotateY(86deg) scale(.86)}
+  58%{opacity:1;transform:translateY(-6px) rotateY(-8deg) scale(1.03)}
+  100%{opacity:1;transform:none}
+}
+
+@keyframes pack-shine{
+  from{opacity:0;transform:rotate(0deg) scale(.7)}
+  38%{opacity:1}
+  to{opacity:0;transform:rotate(110deg) scale(1.1)}
+}
+
+@keyframes pack-card-glow{
+  0%{opacity:0;transform:scale(.72)}
+  45%{opacity:1}
+  100%{opacity:0;transform:scale(1.05)}
 }
 
 @media (max-width:760px){
@@ -2259,6 +2321,8 @@ img.feed-avatar {
 
 @media (prefers-reduced-motion:reduce){
   .album-grid .album-card,
-  .pack-reveal-grid article{animation:none;transition:none}
+  .pack-reveal-grid article,
+  .pack-opening::before,
+  .pack-card-glow{animation:none;transition:none}
 }
 

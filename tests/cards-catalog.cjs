@@ -5,7 +5,7 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const catalogPath = path.join(root, 'public', 'cards', 'catalog.json');
 const catalog = JSON.parse(fs.readFileSync(catalogPath, 'utf8'));
-const allowedRarities = new Set(['Comum', 'Incomum', 'Rara', 'Épica', 'Lendária', 'Deluxe']);
+const allowedRarities = new Set(['Comum', 'Incomum', 'Épica', 'Lendária']);
 
 assert.equal(catalog.sourceCanvaDesignId, 'DAHHY_9luKs');
 assert.equal(catalog.cards.length, 70);

@@ -210,13 +210,13 @@ const CRONICAS_ACHIEVEMENTS = [
   { id: 'cronicas-final-cedros-futuro', title: 'Cedros para o Futuro', description: 'Alcançou o final Cedros para o Futuro em Crônicas do Levante.', xp: 120, points: 25, file: '/assets/achievements/cronicas-cedros-futuro-v1.png' }
 ];
 const REFORMA_ACHIEVEMENTS = [
-  { id: 'confissao-primeira-jornada', title: 'À Porta da História', description: 'Iniciou a primeira jornada em A Confissão.', xp: 25, points: 5, file: '/a-confissao/assets/chapter-luther.webp' },
-  { id: 'confissao-95-teses', title: 'Noventa e Cinco', description: 'Tornou públicas as 95 Teses em 1517.', xp: 70, points: 15, file: '/a-confissao/assets/chapter-luther.webp' },
-  { id: 'confissao-worms', title: 'Aqui Permaneço', description: 'Recusou a retratação na Dieta de Worms.', xp: 100, points: 20, file: '/a-confissao/assets/chapter-worms.webp' },
-  { id: 'confissao-wartburg', title: 'Cavaleiro Jorge', description: 'Chegou a Wartburg e iniciou a tradução do Novo Testamento.', xp: 85, points: 15, file: '/a-confissao/assets/chapter-worms.webp' },
-  { id: 'confissao-livro-concordia', title: 'Concórdia de 1580', description: 'Publicou o Livro de Concórdia na linha histórica.', xp: 220, points: 45, file: '/a-confissao/assets/chapter-concord.webp' },
-  { id: 'confissao-exilio', title: 'Livros na Estrada', description: 'Preservou a confissão no exílio após a Montanha Branca.', xp: 180, points: 35, file: '/a-confissao/assets/chapter-exile.webp' },
-  { id: 'confissao-vitoria', title: 'A Confissão Permanece', description: 'Concluiu a jornada histórica de 1483 a 1648.', xp: 350, points: 70, file: '/a-confissao/assets/chapter-exile.webp' }
+  { id: 'confissao-primeira-jornada', title: 'À Porta da História', description: 'Iniciou a primeira jornada em A Confissão.', xp: 25, points: 5, file: '/assets/a-confissao/assets/chapter-luther.webp' },
+  { id: 'confissao-95-teses', title: 'Noventa e Cinco', description: 'Tornou públicas as 95 Teses em 1517.', xp: 70, points: 15, file: '/assets/a-confissao/assets/chapter-luther.webp' },
+  { id: 'confissao-worms', title: 'Aqui Permaneço', description: 'Recusou a retratação na Dieta de Worms.', xp: 100, points: 20, file: '/assets/a-confissao/assets/chapter-worms.webp' },
+  { id: 'confissao-wartburg', title: 'Cavaleiro Jorge', description: 'Chegou a Wartburg e iniciou a tradução do Novo Testamento.', xp: 85, points: 15, file: '/assets/a-confissao/assets/chapter-worms.webp' },
+  { id: 'confissao-livro-concordia', title: 'Concórdia de 1580', description: 'Publicou o Livro de Concórdia na linha histórica.', xp: 220, points: 45, file: '/assets/a-confissao/assets/chapter-concord.webp' },
+  { id: 'confissao-exilio', title: 'Livros na Estrada', description: 'Preservou a confissão no exílio após a Montanha Branca.', xp: 180, points: 35, file: '/assets/a-confissao/assets/chapter-exile.webp' },
+  { id: 'confissao-vitoria', title: 'A Confissão Permanece', description: 'Concluiu a jornada histórica de 1483 a 1648.', xp: 350, points: 70, file: '/assets/a-confissao/assets/chapter-exile.webp' }
 ];
 const LUTHER_MATCH_ACHIEVEMENTS = [
   { id: 'luther-match-primeiro-acesso', title: 'Primeiro Match', description: 'Entrou pela primeira vez em Luther Metch.', xp: 20, points: 5, file: `${RAW_PUBLIC_URL}/achievements/luther-match-primeiro-acesso-v2.png`, condition: stats => Boolean(stats.entered) },

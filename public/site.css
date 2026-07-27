@@ -845,7 +845,7 @@ img.feed-avatar {
 }
 
 .ol-game-card.reforma-cover {
-  background: linear-gradient(90deg, rgba(0, 0, 0, .05), rgba(0, 0, 0, .82)), url("/a-confissao/assets/chapter-concord.webp") center 44%/cover;
+  background: linear-gradient(90deg, rgba(0, 0, 0, .12), rgba(0, 0, 0, .88)), url("/assets/a-confissao/a-confissao-hub-banner.webp?v=20260727") center/cover;
 }
 
 .ol-game-card.match3-cover {
@@ -1934,7 +1934,7 @@ img.feed-avatar {
 }
 
 .ol-game-card.reforma-cover{
-  background:linear-gradient(90deg, rgba(0,0,0,.05), rgba(0,0,0,.82)), url("/a-confissao/assets/chapter-concord.webp?v=cards-20260714") center 44%/cover !important;
+  background:linear-gradient(90deg, rgba(0,0,0,.12), rgba(0,0,0,.88)), url("/assets/a-confissao/a-confissao-hub-banner.webp?v=20260727") center/cover !important;
 }
 
 .ol-game-card.match3-cover{

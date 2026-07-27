@@ -3,12 +3,12 @@
   const API = '/api/a-confissao/save';
   let TOTAL_CORE_CARDS = 47;
   const ART = {
-    youth: 'assets/chapter-luther.webp',
-    student: 'assets/scene-student-v2.webp',
-    monk: 'assets/scene-monk-v2.webp',
-    reform: 'assets/chapter-worms.webp',
-    concord: 'assets/chapter-concord.webp',
-    exile: 'assets/chapter-exile.webp'
+    youth: '/assets/a-confissao/assets/chapter-luther.webp',
+    student: '/assets/a-confissao/assets/scene-student-v2.webp',
+    monk: '/assets/a-confissao/assets/scene-monk-v2.webp',
+    reform: '/assets/a-confissao/assets/chapter-worms.webp',
+    concord: '/assets/a-confissao/assets/chapter-concord.webp',
+    exile: '/assets/a-confissao/assets/chapter-exile.webp'
   };
   const chapters = {
     youth: 'O jovem Martinho', reform: 'A Palavra em público', confession: 'Uma Igreja confessa',

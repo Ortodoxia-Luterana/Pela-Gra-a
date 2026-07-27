@@ -5,14 +5,14 @@ const DESIGN_WIDTH = 1600;
 const DESIGN_HEIGHT = 980;
 const MAP_PADDING = 70;
 const COLORS = {
-  neutral: [0xe9e5d9, 0xdce7e2, 0xe9ddd2, 0xdce5ec, 0xeee7d3, 0xd7e5dc],
-  neutralHover: 0xffffff,
+  neutral: [0xd9d1bd, 0xc9d0bd, 0xd7c4ad, 0xc5c8b6, 0xe1d3b1, 0xbfc9b5],
+  neutralHover: 0xffe7a8,
   own: 0xc9485b,
-  foreign: 0x6f83a7,
-  pending: 0xe7ad45,
-  selected: 0xf3c84b,
-  border: 0x728b98,
-  coast: 0x9fcde5
+  foreign: 0x6f7866,
+  pending: 0xd29339,
+  selected: 0xf0bd4e,
+  border: 0x5b6156,
+  coast: 0x788d87
 };
 
 function polygonRings(geometry) {
@@ -133,7 +133,7 @@ export class CrownsMapStage {
     (this.contextFeatures || []).forEach(geoFeature => {
       const graphics = new Graphics();
       graphics.eventMode = 'none';
-      drawFeature(graphics, geoFeature, this.project, 0xd7e3e1, .72, 0x88a6ad);
+      drawFeature(graphics, geoFeature, this.project, 0x9eaaa2, .68, 0x66736d);
       this.contextLayer.addChild(graphics);
     });
   }

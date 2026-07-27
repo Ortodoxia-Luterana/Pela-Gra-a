@@ -330,6 +330,36 @@ try { db.exec('ALTER TABLE quiz_rankings ADD COLUMN general_wins INTEGER NOT NUL
 try { db.exec('ALTER TABLE quiz_rankings ADD COLUMN invite_wins INTEGER NOT NULL DEFAULT 0'); } catch {}
 try { db.exec('ALTER TABLE quiz_rankings ADD COLUMN reward_points INTEGER NOT NULL DEFAULT 0'); } catch {}
 try { db.exec('ALTER TABLE quiz_rankings ADD COLUMN reward_xp INTEGER NOT NULL DEFAULT 0'); } catch {}
+try {
+  db.exec(`
+    UPDATE quiz_invites
+    SET status = 'superseded'
+    WHERE status = 'pending'
+      AND EXISTS (
+        SELECT 1
+        FROM quiz_invites AS newer
+        WHERE newer.status = 'pending'
+          AND (
+            (newer.from_user_id = quiz_invites.from_user_id AND newer.to_user_id = quiz_invites.to_user_id)
+            OR (newer.from_user_id = quiz_invites.to_user_id AND newer.to_user_id = quiz_invites.from_user_id)
+          )
+          AND (
+            newer.created_at > quiz_invites.created_at
+            OR (newer.created_at = quiz_invites.created_at AND newer.id > quiz_invites.id)
+          )
+      )
+  `);
+} catch {}
+try {
+  db.exec(`
+    CREATE UNIQUE INDEX IF NOT EXISTS quiz_invites_pending_pair_idx
+    ON quiz_invites (
+      CASE WHEN from_user_id < to_user_id THEN from_user_id ELSE to_user_id END,
+      CASE WHEN from_user_id < to_user_id THEN to_user_id ELSE from_user_id END
+    )
+    WHERE status = 'pending'
+  `);
+} catch {}
 try { db.exec('ALTER TABLE cc_regions ADD COLUMN active INTEGER NOT NULL DEFAULT 1'); } catch {}
 try { db.exec('ALTER TABLE cc_realms ADD COLUMN is_ai INTEGER NOT NULL DEFAULT 0'); } catch {}
 try { db.exec("ALTER TABLE cc_realms ADD COLUMN realm_kind TEXT NOT NULL DEFAULT 'player'"); } catch {}
@@ -865,8 +895,11 @@ const finalizeQuizMatchRow = db.prepare('UPDATE quiz_matches SET finalized = 1 W
 const insertQuizInvite = db.prepare('INSERT INTO quiz_invites (id, from_user_id, from_user_name, to_user_id, to_user_name, status, created_at, match_id) VALUES (?, ?, ?, ?, ?, ?, ?, NULL)');
 const getQuizInvite = db.prepare('SELECT * FROM quiz_invites WHERE id = ?');
 const getQuizIncomingInvites = db.prepare("SELECT * FROM quiz_invites WHERE to_user_id = ? AND status = 'pending' AND created_at >= ? ORDER BY created_at DESC");
+const getQuizOutgoingInvites = db.prepare("SELECT * FROM quiz_invites WHERE from_user_id = ? AND status = 'pending' AND created_at >= ? ORDER BY created_at DESC");
+const getQuizPendingInviteBetween = db.prepare("SELECT * FROM quiz_invites WHERE status = 'pending' AND created_at >= ? AND ((from_user_id = ? AND to_user_id = ?) OR (from_user_id = ? AND to_user_id = ?)) ORDER BY created_at DESC LIMIT 1");
 const updateQuizInvite = db.prepare('UPDATE quiz_invites SET status = ?, match_id = ? WHERE id = ?');
-const deleteOldQuizInvites = db.prepare("DELETE FROM quiz_invites WHERE created_at < ? OR status <> 'pending'");
+const supersedeOtherQuizInvites = db.prepare("UPDATE quiz_invites SET status = 'superseded' WHERE status = 'pending' AND id <> ? AND (from_user_id IN (?, ?) OR to_user_id IN (?, ?))");
+const deleteOldQuizInvites = db.prepare('DELETE FROM quiz_invites WHERE created_at < ?');
 const getQuizRanking = db.prepare('SELECT * FROM quiz_rankings WHERE user_id = ?');
 const getQuizRankings = db.prepare('SELECT * FROM quiz_rankings ORDER BY wins DESC, general_wins DESC, duel_wins DESC, best_score DESC, matches_played ASC, updated_at ASC LIMIT 20');
 const upsertQuizRanking = db.prepare('INSERT INTO quiz_rankings (user_id, user_name, best_score, wins, duel_wins, general_wins, invite_wins, matches_played, reward_points, reward_xp, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET user_name = excluded.user_name, best_score = max(quiz_rankings.best_score, excluded.best_score), wins = quiz_rankings.wins + excluded.wins, duel_wins = quiz_rankings.duel_wins + excluded.duel_wins, general_wins = quiz_rankings.general_wins + excluded.general_wins, invite_wins = quiz_rankings.invite_wins + excluded.invite_wins, matches_played = quiz_rankings.matches_played + excluded.matches_played, reward_points = quiz_rankings.reward_points + excluded.reward_points, reward_xp = quiz_rankings.reward_xp + excluded.reward_xp, updated_at = excluded.updated_at');
@@ -886,6 +919,7 @@ try {
 function isoNow() { return new Date().toISOString(); }
 function isoSecondsAgo(seconds) { return new Date(Date.now() - seconds * 1000).toISOString(); }
 function msUntil(iso) { return Math.max(0, new Date(iso).getTime() - Date.now()); }
+function quizShortCode(id) { return String(id || '').replace(/-/g, '').slice(0, 6).toUpperCase(); }
 function quizQuestionsReady() { return QUIZ_QUESTIONS.length >= QUIZ_QUESTION_COUNT; }
 function quizQuestion(id) { return QUIZ_QUESTIONS[Number(id) % QUIZ_QUESTIONS.length]; }
 function publicQuizQuestion(id) {
@@ -1087,6 +1121,8 @@ function publicQuizMatch(match, userId, options = {}) {
   const activePlayers = quizActivePlayers(match);
   const eliminatedPlayers = new Set(getQuizMatchEliminations.all(match.id).map(row => row.user_id));
   const answers = quizAnswerMap(match.id);
+  const presence = new Map(getQuizMatchPresenceRows.all(match.id).map(row => [row.user_id, row.last_seen]));
+  const onlineCutoff = Date.now() - 5_000;
   const allAnswered = activePlayers.length > 0 && activePlayers.every(player => answers.has(`${player.user_id}:${round.index}`));
   const reveal = match.status === 'complete' || round.complete || Boolean(match.reveal_until) || round.msLeft <= 250 || allAnswered;
   const qid = round.questionIds[round.index];
@@ -1094,6 +1130,7 @@ function publicQuizMatch(match, userId, options = {}) {
   const userAnswer = answers.get(`${userId}:${round.index}`) || null;
   return {
     id: match.id,
+    roomCode: quizShortCode(match.id),
     mode: match.mode,
     status: match.status,
     round: Math.min(round.index + 1, round.questionIds.length),
@@ -1111,7 +1148,8 @@ function publicQuizMatch(match, userId, options = {}) {
     players: players.map(player => {
       const answered = answers.has(`${player.user_id}:${round.index}`);
       const score = getQuizAnswers.all(match.id).filter(row => row.user_id === player.user_id && row.correct).length * 10;
-      return { id: player.user_id, name: player.user_name, score, answered, eliminated: eliminatedPlayers.has(player.user_id), left: !activePlayers.some(active => active.user_id === player.user_id) && !eliminatedPlayers.has(player.user_id) };
+      const lastSeen = presence.get(player.user_id);
+      return { id: player.user_id, name: player.user_name, score, answered, online: Boolean(lastSeen && new Date(lastSeen).getTime() >= onlineCutoff), eliminated: eliminatedPlayers.has(player.user_id), left: !activePlayers.some(active => active.user_id === player.user_id) && !eliminatedPlayers.has(player.user_id) };
     })
   };
 }
@@ -3564,8 +3602,9 @@ async function handleApi(req, res, url, user) {
           waitSeconds: QUIZ_GENERAL_WAIT_SECONDS,
           joined: generalQueued.some(item => item.user_id === user.id)
         } : null,
-        activeMatch: active ? publicQuizMatch(active, user.id) : null,
-        invites: getQuizIncomingInvites.all(user.id, isoSecondsAgo(180)).map(item => ({ id: item.id, from: { id: item.from_user_id, name: item.from_user_name }, createdAt: item.created_at }))
+        activeMatch: active ? publicQuizMatch(active, user.id, { heartbeat: true }) : null,
+        invites: getQuizIncomingInvites.all(user.id, isoSecondsAgo(180)).map(item => ({ id: item.id, code: quizShortCode(item.id), from: { id: item.from_user_id, name: item.from_user_name }, createdAt: item.created_at })),
+        outgoingInvites: getQuizOutgoingInvites.all(user.id, isoSecondsAgo(180)).map(item => ({ id: item.id, code: quizShortCode(item.id), to: { id: item.to_user_id, name: item.to_user_name }, createdAt: item.created_at }))
       });
       return;
     }
@@ -3632,28 +3671,73 @@ async function handleApi(req, res, url, user) {
       const payload = safeJsonParse(await readBody(req) || '{}', {});
       const target = getUserById.get(String(payload.toUserId || ''));
       if (!target || target.id === user.id) { json(res, 400, { error: 'Jogador inválido.' }); return; }
+      if (getActiveQuizMatchForUser.get(user.id)) { json(res, 409, { error: 'Você já está em uma partida.' }); return; }
+      if (getActiveQuizMatchForUser.get(target.id)) { json(res, 409, { error: `${target.name} já está em uma partida.` }); return; }
+      const existing = getQuizPendingInviteBetween.get(isoSecondsAgo(180), user.id, target.id, target.id, user.id);
+      if (existing) {
+        const direction = existing.from_user_id === user.id ? 'outgoing' : 'incoming';
+        json(res, 200, { ok: true, duplicate: true, direction, inviteId: existing.id, code: quizShortCode(existing.id) });
+        return;
+      }
       const id = crypto.randomUUID();
       insertQuizInvite.run(id, user.id, user.name, target.id, target.name, 'pending', isoNow());
-      json(res, 200, { ok: true, inviteId: id });
+      json(res, 200, { ok: true, duplicate: false, direction: 'outgoing', inviteId: id, code: quizShortCode(id) });
       return;
     }
     if (req.method === 'POST' && url.pathname === '/api/quiz/invite/respond') {
       const payload = safeJsonParse(await readBody(req) || '{}', {});
       const invite = getQuizInvite.get(String(payload.inviteId || ''));
-      if (!invite || invite.to_user_id !== user.id || invite.status !== 'pending') { json(res, 404, { error: 'Convite não encontrado.' }); return; }
+      if (!invite || invite.to_user_id !== user.id) { json(res, 404, { error: 'Convite não encontrado.' }); return; }
+      if (invite.status === 'accepted' && invite.match_id) {
+        const acceptedMatch = getQuizMatch.get(invite.match_id);
+        const acceptedPlayers = acceptedMatch ? getQuizMatchPlayers.all(acceptedMatch.id) : [];
+        if (acceptedMatch && acceptedPlayers.some(player => player.user_id === user.id)) {
+          json(res, 200, { ok: true, duplicate: true, match: publicQuizMatch(acceptedMatch, user.id) });
+          return;
+        }
+      }
+      if (invite.status !== 'pending') { json(res, 409, { error: 'Este convite não está mais ativo.' }); return; }
       if (!payload.accept) {
         updateQuizInvite.run('declined', null, invite.id);
         json(res, 200, { ok: true });
         return;
       }
       if (!quizQuestionsReady()) { json(res, 409, { error: 'Banco de perguntas em revisão. Aguarde as novas perguntas aprovadas.' }); return; }
-      const match = createQuizMatch('invite', [
-        { user_id: invite.from_user_id, user_name: invite.from_user_name },
-        { user_id: invite.to_user_id, user_name: invite.to_user_name }
-      ]);
-      updateQuizInvite.run('accepted', match.id, invite.id);
-      deleteQuizQueueUser.run(invite.from_user_id);
-      deleteQuizQueueUser.run(invite.to_user_id);
+      if (getActiveQuizMatchForUser.get(invite.to_user_id)) {
+        updateQuizInvite.run('superseded', null, invite.id);
+        json(res, 409, { error: 'Você já entrou em outra partida.' });
+        return;
+      }
+      if (getActiveQuizMatchForUser.get(invite.from_user_id)) {
+        updateQuizInvite.run('superseded', null, invite.id);
+        json(res, 409, { error: `${invite.from_user_name} já entrou em outra partida.` });
+        return;
+      }
+      let match;
+      db.exec('BEGIN IMMEDIATE');
+      try {
+        const currentInvite = getQuizInvite.get(invite.id);
+        if (!currentInvite || currentInvite.status !== 'pending') throw new Error('INVITE_ALREADY_HANDLED');
+        match = createQuizMatch('invite', [
+          { user_id: currentInvite.from_user_id, user_name: currentInvite.from_user_name },
+          { user_id: currentInvite.to_user_id, user_name: currentInvite.to_user_name }
+        ]);
+        updateQuizInvite.run('accepted', match.id, currentInvite.id);
+        supersedeOtherQuizInvites.run(currentInvite.id, currentInvite.from_user_id, currentInvite.to_user_id, currentInvite.from_user_id, currentInvite.to_user_id);
+        deleteQuizQueueUser.run(currentInvite.from_user_id);
+        deleteQuizQueueUser.run(currentInvite.to_user_id);
+        db.exec('COMMIT');
+      } catch (error) {
+        try { db.exec('ROLLBACK'); } catch {}
+        if (error?.message === 'INVITE_ALREADY_HANDLED') {
+          const handled = getQuizInvite.get(invite.id);
+          const handledMatch = handled?.match_id ? getQuizMatch.get(handled.match_id) : null;
+          if (handledMatch) { json(res, 200, { ok: true, duplicate: true, match: publicQuizMatch(handledMatch, user.id) }); return; }
+          json(res, 409, { error: 'Este convite não está mais ativo.' });
+          return;
+        }
+        throw error;
+      }
       json(res, 200, { ok: true, match: publicQuizMatch(match, user.id) });
       return;
     }
@@ -3985,8 +4069,9 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     ['configuracoes', 'Configurações', '/?section=configuracoes', 'configuracoes']
   ].map(([key, label, href, icon]) => `<a class="${activeSection === key ? 'active' : ''}" href="${href}"><img class="nav-icon" src="/assets/nav-icons/nav-${icon}.png?v=${GAME_VERSION}" alt="">${label}</a>`).join('');
   const gameCard = `<section class="ol-panel ol-games">
-    <article class="ol-game-card cores-da-rosa-cover"><div><span>CARTAS EM TEMPO REAL</span><h4>Cores da Rosa</h4><p>Complete a mão em mesas para 2 ou 4 jogadores, convide quem está online e domine as cores litúrgicas.</p></div><a href="/cores-da-rosa">Jogar</a></article>
-    <article class="ol-game-card crowns-cover"><div><span>GRAND STRATEGY ONLINE</span><h4>Crowns and Councils</h4><p>Funde um reino e uma dinastia sobre um mapa europeu real, com expansão assíncrona e autoridade do servidor.</p></div><a href="/crowns-and-councils">Jogar</a></article>
+    <article class="ol-game-card cores-da-rosa-cover"><div><h4>Cores da Rosa</h4><p>Complete a mão em mesas para 2 ou 4 jogadores, convide quem está online e domine as cores litúrgicas.</p></div><a href="/cores-da-rosa">Jogar</a></article>
+    <article class="ol-game-card lutheran-idle-cover"><div><h4>Lutheran Idle</h4><p>Comece em uma pequena sala, acolha visitantes e construa uma congregação viva, ilustrada e cooperativa.</p></div><a href="/lutheran-idle">Jogar</a></article>
+    <article class="ol-game-card crowns-cover"><div><h4>Crowns and Councils</h4><p>Funde um reino e uma dinastia sobre um mapa europeu real, com expansão assíncrona e autoridade do servidor.</p></div><a href="/crowns-and-councils">Jogar</a></article>
     <article class="ol-game-card pela-cover"><div><h4>Pela Graça 1904</h4><p>Gerencie igrejas, forme pastores, responda perguntas doutrinárias e acompanhe a história da IELB no Brasil.</p></div><a href="/play">Jogar</a></article>
     <article class="ol-game-card reforma-cover"><div><h4>A Confissão</h4><p>Conduza a Reforma de 1483 a 1648 por decisões históricas, da vida de Lutero ao Livro de Concórdia e ao exílio boêmio.</p></div><a href="/a-confissao">${reformaSave ? 'Continuar' : 'Jogar'}</a></article>
     <article class="ol-game-card cronicas-cover"><div><h4>Crônicas do Levante</h4><p>Uma narrativa bíblica interativa nos dias do rei Davi, com escolhas, descobertas, relações e consequências pelo caminho.</p></div><a href="/cronicas-do-levante">${cronicasSave ? 'Continuar' : 'Jogar'}</a></article>
@@ -3994,7 +4079,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     <article class="ol-game-card match3-cover"><div><h4>Luther Metch</h4><p>Junte 3 ou mais peças iguais para cumprir objetivos e avançar de fase.</p></div><a href="/luther-metch">Jogar</a></article>
     <article class="ol-game-card quiz-cover"><div><h4>Quiz Ortodoxia</h4><p>Dispute perguntas de Bíblia, Reforma e luteranismo em modo solo, duelo online, convite ou competição geral.</p></div><a href="/quiz-ortodoxia">Jogar</a></article>
     <article class="ol-game-card guardioes-cover"><div><h4>Sola Torre</h4><p>Defenda a fortaleza com torres, estratégia e fé. Escolha sua formação, enfrente as ondas e avance pela campanha.</p></div><a href="/caminho-dos-guardioes">Jogar</a></article>
-    <article class="ol-game-card babel-cover"><div><span>RPG IDLE ONLINE</span><h4>A Queda de Babel</h4><p>Explore a Grande Estrada ao lado de outros aventureiros, monte sua build e enfrente o Senhor das Estacas em um mundo contínuo.</p></div><a href="/a-queda-de-babel">Jogar</a></article>
+    <article class="ol-game-card babel-cover"><div><h4>A Queda de Babel</h4><p>Explore a Grande Estrada ao lado de outros aventureiros, monte sua build e enfrente o Senhor das Estacas em um mundo contínuo.</p></div><a href="/a-queda-de-babel">Jogar</a></article>
   </section>`;
   const rankCard = `<aside class="ol-panel ol-rank"><p>Seu rank geral</p><img class="rank-badge" src="${rank.current.file}?v=${GAME_VERSION}" alt="${escapeHtml(rank.current.title)}"><div class="rank-xp"><strong>${xp} XP</strong><span>${rank.next ? `${Math.max(0, rank.next.xp - rank.currentXp)} XP para ${escapeHtml(rank.next.title)}` : 'Rank maximo alcancado'}</span><div class="rank-bar"><span style="width:${Math.round(rank.progress)}%"></span></div></div><a href="/?section=ranking">Ver ranking geral</a><div class="hub-online-panel"><div class="panel-head"><h3>Online agora</h3></div><div id="hub-online-list" class="hub-online-list">${renderOnlinePlayers(onlinePlayers)}</div></div></aside>`;
   const chatWidget = `<section class="hub-chat" id="hub-chat" aria-label="Chat geral"><div class="hub-chat-head"><strong>Chat geral</strong><button type="button" id="hub-chat-toggle" aria-label="Minimizar chat">-</button></div><div class="hub-chat-messages" id="hub-chat-messages"></div><form id="hub-chat-form" class="hub-chat-form"><input id="hub-chat-input" name="message" maxlength="${CHAT_MAX_LENGTH}" autocomplete="off" placeholder="Mensagem"><button type="submit">Enviar</button></form></section>`;

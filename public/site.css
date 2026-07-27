@@ -889,16 +889,6 @@ img.feed-avatar {
   cursor: not-allowed;
 }
 
-.ol-game-card span {
-  display: inline-flex;
-  border: 1px solid rgba(205, 148, 46, .45);
-  border-radius: 999px;
-  color: #f2c75f;
-  background: rgba(0, 0, 0, .28);
-  padding: .25rem .55rem;
-  font-size: .8rem;
-}
-
 .ol-game-card h4 {
   margin: .5rem 0;
   font-family: Georgia, "Times New Roman", serif;

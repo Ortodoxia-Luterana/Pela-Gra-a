@@ -1,2 +1,10 @@
 games/lutheran-idle/index.html text eol=lf
 public/lutheran-idle/index.html text eol=lf
+games/cores-da-rosa/*.html text eol=lf
+games/cores-da-rosa/*.json text eol=lf
+games/cores-da-rosa/*.mjs text eol=lf
+games/cores-da-rosa/src/*.ts text eol=lf
+games/cores-da-rosa/src/*.css text eol=lf
+public/cores-da-rosa/*.html text eol=lf
+public/cores-da-rosa/assets/*.css text eol=lf
+public/cores-da-rosa/assets/*.js text eol=lf

@@ -8,14 +8,17 @@
     "dev": "node --no-warnings start.js",
     "build:crowns": "node --no-warnings tools/build-crowns-region-catalog.cjs && vite build --config games/crowns-and-councils/vite.config.mjs && node --no-warnings tools/clean-crowns-build.cjs",
     "build:lutheran-idle": "vite build --config games/lutheran-idle/vite.config.mjs",
+    "build:cores-da-rosa": "vite build --config games/cores-da-rosa/vite.config.mjs",
     "preview:crowns": "node --no-warnings tools/preview-crowns.cjs",
     "preview:lutheran-idle": "node --no-warnings tools/preview-lutheran-idle.cjs",
+    "preview:cores-da-rosa": "node --no-warnings tools/preview-cores-da-rosa.cjs",
     "test:crowns": "node --no-warnings tests/crowns-and-councils.cjs",
     "test:crowns:preview": "node --no-warnings tests/crowns-preview.cjs",
     "test:babel-realtime": "node --no-warnings tests/babel-realtime.cjs",
     "test:lutheran-idle": "node --no-warnings tests/lutheran-idle.cjs",
     "test:lutheran-idle:preview": "node --no-warnings tests/lutheran-idle-preview.cjs",
-    "test:lutheran-idle:balance": "node --no-warnings tools/simulate-lutheran-progression.cjs"
+    "test:lutheran-idle:balance": "node --no-warnings tools/simulate-lutheran-progression.cjs",
+    "test:cores-da-rosa": "node --no-warnings tests/cores-da-rosa.cjs"
   },
   "dependencies": {
     "phaser": "^3.90.0",

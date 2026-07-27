@@ -5,6 +5,7 @@ const crypto = require('node:crypto');
 const { DatabaseSync } = require('node:sqlite');
 const { Server: SocketIOServer } = require('socket.io');
 const { createLutheranIdleService } = require('./lutheran-idle-server');
+const { createCoresDaRosaService } = require('./cores-da-rosa-server');
 
 const ROOT = __dirname;
 const PUBLIC_DIR = path.join(ROOT, 'public');
@@ -58,6 +59,8 @@ const CROWNS_LOCAL_PREVIEW_USER_NAME = 'Conselheiro local';
 const LUTHERAN_IDLE_LOCAL_PREVIEW = process.env.LUTHERAN_IDLE_LOCAL_PREVIEW === '1';
 const LUTHERAN_IDLE_LOCAL_PREVIEW_USER_ID = 'lutheran-idle-local-preview';
 const LUTHERAN_IDLE_LOCAL_PREVIEW_USER_NAME = 'Jogador Local';
+const CORES_DA_ROSA_LOCAL_PREVIEW = process.env.CORES_DA_ROSA_LOCAL_PREVIEW === '1';
+const CORES_DA_ROSA_LOCAL_PREVIEW_USER_PREFIX = 'cores-da-rosa-local-';
 const CROWNS_ARTICLE_TITLE_MAX = 90;
 const CROWNS_ARTICLE_BODY_MAX = 1600;
 const CROWNS_ARTICLE_COOLDOWN_MS = 2 * 60 * 1000;
@@ -133,6 +136,9 @@ const CROWNS_COUNCILS_GAME_ID = 'crowns-and-councils';
 const LUTHERAN_IDLE_GAME_ID = 'lutheran-idle';
 const LUTHERAN_IDLE_LAUNCH_COOKIE_NAME = 'cultivando_li_launch';
 const LUTHERAN_IDLE_LAUNCH_MAX_AGE_SECONDS = 12 * 60 * 60;
+const CORES_DA_ROSA_GAME_ID = 'cores-da-rosa';
+const CORES_DA_ROSA_LAUNCH_COOKIE_NAME = 'cultivando_cdr_launch';
+const CORES_DA_ROSA_LAUNCH_MAX_AGE_SECONDS = 12 * 60 * 60;
 const CONCORDIUM_ACCESS_COOKIE = 'concordium_access';
 const CONCORDIUM_ACCESS_PIN = process.env.CONCORDIUM_ACCESS_PIN || '5892';
 const CONCORDIUM_ROM_PATH = process.env.CONCORDIUM_ROM_PATH || path.join(PUBLIC_DIR, 'concordium.gba');
@@ -841,6 +847,7 @@ function normalizeGamePresence(input) {
   if (value === BABEL_GAME_ID) return { gameId: BABEL_GAME_ID, location: 'A Queda de Babel' };
   if (value === CROWNS_COUNCILS_GAME_ID) return { gameId: CROWNS_COUNCILS_GAME_ID, location: 'Crowns and Councils' };
   if (value === LUTHERAN_IDLE_GAME_ID) return { gameId: LUTHERAN_IDLE_GAME_ID, location: 'Lutheran Idle' };
+  if (value === CORES_DA_ROSA_GAME_ID) return { gameId: CORES_DA_ROSA_GAME_ID, location: 'Cores da Rosa' };
   if (value === GAME_ID) return { gameId: GAME_ID, location: 'Pela Graca 1904' };
   return { gameId: 'hub', location: 'Hub' };
 }
@@ -855,6 +862,7 @@ function presenceForPath(pathname) {
   if (pathname === '/a-queda-de-babel' || pathname.startsWith('/api/babel')) return normalizeGamePresence(BABEL_GAME_ID);
   if (pathname === '/crowns-and-councils' || pathname.startsWith('/api/crowns-and-councils')) return normalizeGamePresence(CROWNS_COUNCILS_GAME_ID);
   if (pathname === '/lutheran-idle' || pathname.startsWith('/api/lutheran-idle')) return normalizeGamePresence(LUTHERAN_IDLE_GAME_ID);
+  if (pathname === '/cores-da-rosa' || pathname.startsWith('/api/cores-da-rosa')) return normalizeGamePresence(CORES_DA_ROSA_GAME_ID);
   if (pathname === '/play' || pathname === '/game' || pathname.startsWith('/api/saves')) return normalizeGamePresence(GAME_ID);
   return normalizeGamePresence('hub');
 }
@@ -1111,6 +1119,14 @@ if (LUTHERAN_IDLE_LOCAL_PREVIEW && !getUserById.get(LUTHERAN_IDLE_LOCAL_PREVIEW_
     new Date().toISOString()
   );
 }
+if (CORES_DA_ROSA_LOCAL_PREVIEW) {
+  for (let index = 1; index <= 4; index += 1) {
+    const id = `${CORES_DA_ROSA_LOCAL_PREVIEW_USER_PREFIX}${index}`;
+    if (getUserById.get(id)) continue;
+    const salt = crypto.randomBytes(16).toString('hex');
+    insertUser.run(id, `Jogador Local ${index}`, hashPin(crypto.randomBytes(4).toString('hex'), salt), salt, new Date().toISOString());
+  }
+}
 
 function parseCookies(req) {
   return Object.fromEntries((req.headers.cookie || '').split(';').filter(Boolean).map(part => {
@@ -1127,6 +1143,12 @@ function currentUser(req) {
   if (sessionId) {
     const session = getSession.get(sessionId);
     if (session) return getUserById.get(session.user_id);
+  }
+  if (CORES_DA_ROSA_LOCAL_PREVIEW && isLoopbackRequest(req)) {
+    const requestUrl = new URL(req.url || '/', 'http://localhost');
+    const requested = Number(requestUrl.searchParams.get('localPlayer') || 1);
+    const player = Math.max(1, Math.min(4, Number.isInteger(requested) ? requested : 1));
+    return getUserById.get(`${CORES_DA_ROSA_LOCAL_PREVIEW_USER_PREFIX}${player}`);
   }
   if (LUTHERAN_IDLE_LOCAL_PREVIEW && isLoopbackRequest(req)) return getUserById.get(LUTHERAN_IDLE_LOCAL_PREVIEW_USER_ID);
   if (CROWNS_LOCAL_PREVIEW && isLoopbackRequest(req)) return getUserById.get(CROWNS_LOCAL_PREVIEW_USER_ID);
@@ -1190,6 +1212,26 @@ function hasValidLutheranIdleLaunch(req, userId) {
   return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
 }
 const lutheranIdle = createLutheranIdleService({ db, gameId: LUTHERAN_IDLE_GAME_ID });
+function signCoresDaRosaLaunch(userId, expiresAt) {
+  return crypto.createHmac('sha256', LAUNCH_SECRET).update(`${CORES_DA_ROSA_GAME_ID}:${userId}:${expiresAt}`).digest('hex');
+}
+function setCoresDaRosaLaunchCookie(res, userId) {
+  const expiresAt = Date.now() + CORES_DA_ROSA_LAUNCH_MAX_AGE_SECONDS * 1000;
+  const token = `${userId}.${expiresAt}.${signCoresDaRosaLaunch(userId, expiresAt)}`;
+  res.setHeader('Set-Cookie', `${CORES_DA_ROSA_LAUNCH_COOKIE_NAME}=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${CORES_DA_ROSA_LAUNCH_MAX_AGE_SECONDS}`);
+}
+function hasValidCoresDaRosaLaunch(req, userId) {
+  if (CORES_DA_ROSA_LOCAL_PREVIEW && isLoopbackRequest(req)) return true;
+  const token = parseCookies(req)[CORES_DA_ROSA_LAUNCH_COOKIE_NAME];
+  if (!token) return false;
+  const [tokenUserId, rawExpiresAt, signature] = token.split('.');
+  const expiresAt = Number(rawExpiresAt);
+  if (tokenUserId !== userId || !Number.isFinite(expiresAt) || expiresAt < Date.now() || !signature) return false;
+  const expected = signCoresDaRosaLaunch(tokenUserId, expiresAt);
+  if (signature.length !== expected.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+}
+const coresDaRosa = createCoresDaRosaService({ db, gameId: CORES_DA_ROSA_GAME_ID });
 function redirect(res, location) { res.writeHead(302, { Location: location }); res.end(); }
 function json(res, status, payload) {
   const body = JSON.stringify(payload);
@@ -3039,10 +3081,10 @@ async function handleApi(req, res, url, user) {
     json(res, 200, {
       games: [
         {
-          id: 'lutheran-idle',
-          title: 'Lutheran Idle',
-          status: 'vertical-slice',
-          playUrl: '/lutheran-idle',
+          id: 'cores-da-rosa',
+          title: 'Cores da Rosa',
+          status: 'playable',
+          playUrl: '/cores-da-rosa',
           rankingUrl: null
         },
         {
@@ -3644,7 +3686,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     ['configuracoes', 'Configurações', '/?section=configuracoes', 'configuracoes']
   ].map(([key, label, href, icon]) => `<a class="${activeSection === key ? 'active' : ''}" href="${href}"><img class="nav-icon" src="/assets/nav-icons/nav-${icon}.png?v=${GAME_VERSION}" alt="">${label}</a>`).join('');
   const gameCard = `<section class="ol-panel ol-games">
-    <article class="ol-game-card lutheran-idle-cover"><div><span>IDLE TYCOON ONLINE</span><h4>Lutheran Idle</h4><p>Comece em uma pequena sala, acolha visitantes e construa uma congregação viva, ilustrada e cooperativa.</p></div><a href="/lutheran-idle">Jogar</a></article>
+    <article class="ol-game-card cores-da-rosa-cover"><div><span>CARTAS EM TEMPO REAL</span><h4>Cores da Rosa</h4><p>Complete a mão em mesas para 2 ou 4 jogadores, convide quem está online e domine as cores litúrgicas.</p></div><a href="/cores-da-rosa">Jogar</a></article>
     <article class="ol-game-card crowns-cover"><div><span>GRAND STRATEGY ONLINE</span><h4>Crowns and Councils</h4><p>Funde um reino e uma dinastia sobre um mapa europeu real, com expansão assíncrona e autoridade do servidor.</p></div><a href="/crowns-and-councils">Jogar</a></article>
     <article class="ol-game-card pela-cover"><div><h4>Pela Graça 1904</h4><p>Gerencie igrejas, forme pastores, responda perguntas doutrinárias e acompanhe a história da IELB no Brasil.</p></div><a href="/play">Jogar</a></article>
     <article class="ol-game-card reforma-cover"><div><h4>A Confissão</h4><p>Conduza a Reforma de 1483 a 1648 por decisões históricas, da vida de Lutero ao Livro de Concórdia e ao exílio boêmio.</p></div><a href="/a-confissao">${reformaSave ? 'Continuar' : 'Jogar'}</a></article>
@@ -3668,8 +3710,8 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   };
   const reformaSettingsRow = `<article class="saved-game-row"><div><span>A Confissão</span><strong>${reformaSave ? 'Jornada em andamento' : 'Nenhuma jornada atual'}</strong><small>Decisões, finais, códice e medalhas acompanham seu perfil.</small></div>${reformaSave ? `<form method="POST" action="/a-confissao/delete" onsubmit="return confirm('Apagar a jornada atual de A Confissão? As medalhas serão mantidas.')"><button>Apagar jornada</button></form>` : '<a href="/a-confissao">Criar jornada</a>'}</article>`;
   const crownsSettingsRow = `<article class="saved-game-row"><div><span>Crowns and Councils</span><strong>Temporada online vinculada</strong><small>Reino, recursos e ordens acompanham sua conta do Hub.</small></div><a href="/crowns-and-councils">Abrir</a></article>`;
-  const lutheranIdleSettingsRow = `<article class="saved-game-row"><div><span>Lutheran Idle</span><strong>Save autoritativo na conta</strong><small>Congregação, estações, economia, offline e distrito acompanham seu perfil do Hub.</small></div><a href="/lutheran-idle">Abrir</a></article>`;
-  sections.configuracoes = sections.configuracoes.replace('<div class="saved-game-list">', `<div class="saved-game-list">${lutheranIdleSettingsRow}${crownsSettingsRow}${reformaSettingsRow}`);
+  const coresDaRosaSettingsRow = `<article class="saved-game-row"><div><span>Cores da Rosa</span><strong>Multiplayer e ranking na conta</strong><small>Partidas, vitórias e pontuação acompanham seu perfil do Hub.</small></div><a href="/cores-da-rosa">Abrir</a></article>`;
+  sections.configuracoes = sections.configuracoes.replace('<div class="saved-game-list">', `<div class="saved-game-list">${coresDaRosaSettingsRow}${crownsSettingsRow}${reformaSettingsRow}`);
   return pageShell('Ortodoxia Luterana Gaming', `
 <main class="ol-hub">
   <aside class="ol-sidebar">
@@ -3845,6 +3887,13 @@ const server = http.createServer(async (req, res) => {
       if (!save) { redirect(res, '/'); return; }
       setLaunchCookie(res, user.id);
       redirect(res, `/game?save=${encodeURIComponent(save.id)}`);
+      return;
+    }
+    if (req.method === 'GET' && url.pathname === '/cores-da-rosa') {
+      setCoresDaRosaLaunchCookie(res, user.id);
+      const body = fs.readFileSync(path.join(PUBLIC_DIR, 'cores-da-rosa', 'index.html'), 'utf8');
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store, max-age=0' });
+      res.end(body);
       return;
     }
     if (req.method === 'GET' && url.pathname === '/lutheran-idle') {
@@ -4031,6 +4080,7 @@ const server = http.createServer(async (req, res) => {
 function initRealtimeMultiplayer(httpServer) {
   const io = new SocketIOServer(httpServer, { cors: { origin: false } });
   lutheranIdle.attachRealtime(io, { currentUser, hasValidLaunch: hasValidLutheranIdleLaunch });
+  coresDaRosa.attachRealtime(io, { currentUser, hasValidLaunch: hasValidCoresDaRosaLaunch });
   const crowns = io.of('/crowns-and-councils');
   crownsRealtimeNamespace = crowns;
   crowns.use((socket, next) => {
@@ -4622,5 +4672,6 @@ server.listen(PORT, () => {
   console.log(`Cultivando SSR rodando em http://localhost:${PORT}`);
   if (CROWNS_LOCAL_PREVIEW) console.log(`[crowns] prévia local sem login: http://localhost:${PORT}/crowns-and-councils`);
   if (LUTHERAN_IDLE_LOCAL_PREVIEW) console.log(`[lutheran-idle] prévia local sem login: http://localhost:${PORT}/lutheran-idle`);
+  if (CORES_DA_ROSA_LOCAL_PREVIEW) console.log(`[cores-da-rosa] prévia local sem login: http://localhost:${PORT}/cores-da-rosa`);
 });
 

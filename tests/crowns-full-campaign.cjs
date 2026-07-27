@@ -19,7 +19,7 @@ const server = spawn(process.execPath, ['--no-warnings', 'server.js'], {
     DB_PATH: databasePath,
     CROWNS_LOCAL_PREVIEW: '1',
     CROWNS_GAME_DAY_MS: String(gameDayMs),
-    CROWNS_ACTION_MS: String(Math.max(250, Math.min(700, Math.floor(gameDayMs / 2)))),
+    CROWNS_ACTION_MS: '700',
     CROWNS_RESET_DELAY_MS: '60000',
     CROWNS_REVOLT_CHECK_MS: '250',
     CROWNS_FORCE_REVOLTS: '1'
@@ -95,6 +95,21 @@ async function waitUntil(predicate, timeoutMs, label) {
   throw new Error(`Tempo excedido: ${label}`);
 }
 async function waitActions() { return waitUntil(state => state.actions.length === 0, 12_000, 'conclusão da ordem'); }
+async function declareWarWhenPossible(selectTarget, label) {
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const state = await waitUntil(item => !item.wars.some(war => war.status === 'active'), Math.max(12_000, gameDayMs * 5), `fronteira livre para ${label}`);
+    const target = selectTarget(state);
+    if (!target) return { state, target: null };
+    try {
+      await api('/war/declare', { serverId: 'cc-world-1', regionId: target.regionId });
+      return { state, target };
+    } catch (error) {
+      if (!error.message.includes('já conduz uma guerra ativa')) throw error;
+      await sleep(250);
+    }
+  }
+  throw new Error(`A IA manteve a fronteira ocupada durante ${label}.`);
+}
 
 let qaDb;
 (async () => {
@@ -120,7 +135,7 @@ let qaDb;
 
     qaDb = new DatabaseSync(databasePath);
     qaDb.exec('PRAGMA busy_timeout = 5000');
-    qaDb.prepare('UPDATE cc_realms SET treasury = 20000, provisions = 20000, prestige = 50 WHERE id = ?').run(state.realm.id);
+    qaDb.prepare('UPDATE cc_realms SET treasury = 20000, provisions = 20000, wood = 20000, stone = 20000, prestige = 50 WHERE id = ?').run(state.realm.id);
     const sameFaith = state.realm.court.diplomacy.knownRealms.find(item => item.religion === state.realm.religion) || state.realm.court.diplomacy.knownRealms[0];
     const treaty = await api('/diplomacy/propose', { serverId: 'cc-world-1', targetRealmId: sameFaith.id, treatyType: 'alliance' });
     assert.equal(treaty.treaty.status, 'accepted');
@@ -128,13 +143,15 @@ let qaDb;
     assert.equal(marriage.marriage.status, 'accepted');
     console.log('QA: aliança e casamento dinástico aceitos.');
 
-    for (let count = 0; count < 2; count += 1) {
-      state = await bootstrap();
-      const target = state.regions.find(region => capital.neighborIds.includes(region.id) && !region.ownerRealmId && region.status === 'neutral');
-      assert.ok(target, 'fronteira neutra ausente');
-      await api('/territory/claim', { serverId: 'cc-world-1', regionId: target.id });
-      await waitActions();
-    }
+    state = await bootstrap();
+    const expeditionTargets = state.regions.filter(region => region.isAdjacentToRealm && !region.ownerRealmId && region.status === 'neutral').slice(0, 2);
+    assert.equal(expeditionTargets.length, 2, 'duas fronteiras neutras deveriam estar disponíveis');
+    await api('/territory/claim', { serverId: 'cc-world-1', regionId: expeditionTargets[0].id });
+    await api('/territory/claim', { serverId: 'cc-world-1', regionId: expeditionTargets[1].id });
+    state = await bootstrap();
+    assert.equal(state.expedition.capacity, 2);
+    assert.equal(state.expedition.active, 2);
+    await waitActions();
     state = await bootstrap();
     assert.ok(state.realm.regionCount >= 3);
     console.log(`QA: colonização concluída; ${state.realm.regionCount} regiões.`);
@@ -156,29 +173,45 @@ let qaDb;
 
     await api('/journal/articles', { serverId: 'cc-world-1', title: 'Proclamação da Campanha Total', body: 'A Casa Veritas anuncia suas alianças, sua missão religiosa e a defesa das fronteiras.' });
     state = await waitUntil(item => item.season.day >= 5, Math.max(12_000, gameDayMs * 7), 'dia 5');
-    const hostile = state.attackTargets.find(item => item.realmId !== sameFaith.id);
-    if (hostile) {
-      state = await waitUntil(item => !item.wars.some(war => war.status === 'active'), Math.max(12_000, gameDayMs * 5), 'fim de guerra anterior');
-      await api('/war/declare', { serverId: 'cc-world-1', regionId: hostile.regionId });
+    const campaign = await declareWarWhenPossible(item => item.attackTargets.find(target => target.realmId !== sameFaith.id), 'campanha militar');
+    state = campaign.state;
+    if (campaign.target) {
       await waitActions();
-      console.log(`QA: campanha militar resolvida contra ${hostile.realmName}.`);
+      console.log(`QA: campanha militar resolvida contra ${campaign.target.realmName}.`);
     }
 
+    state = await bootstrap();
+    for (let attempt = 0; state.realm.regionCount < 3 && attempt < 4; attempt += 1) {
+      const frontier = state.regions.find(region => region.isAdjacentToRealm && !region.ownerRealmId && region.status === 'neutral');
+      assert.ok(frontier, 'uma fronteira neutra é necessária para preparar o teste separatista');
+      await api('/territory/claim', { serverId: 'cc-world-1', regionId: frontier.id });
+      state = await waitActions();
+    }
+    assert.ok(state.realm.regionCount >= 3, 'o reino precisa de três províncias para testar separatismo');
+    qaDb.prepare("UPDATE cc_realms SET last_ai_action_at = ? WHERE season_id = 'cc-world-1' AND is_ai = 1").run(new Date(Date.now() + 60_000).toISOString());
     qaDb.prepare('UPDATE cc_realms SET stability = 25 WHERE id = ?').run(state.realm.id);
     const revoltAudit = qaDb.prepare("SELECT r.id, r.realm_kind, r.stability, COUNT(sr.region_id) AS regions, (SELECT COUNT(*) FROM cc_realms child WHERE child.season_id = r.season_id AND child.origin_realm_id = r.id) AS children FROM cc_realms r JOIN cc_season_regions sr ON sr.season_id = r.season_id AND sr.owner_realm_id = r.id WHERE r.id = ? GROUP BY r.id").get(state.realm.id);
     console.log(`QA: candidato à revolta com ${revoltAudit.regions} regiões, estabilidade ${revoltAudit.stability}, filhos ${revoltAudit.children}.`);
     state = await waitUntil(item => item.world.aiRealmCount > 10, Math.max(10_000, gameDayMs * 8), 'revolta separatista');
+    qaDb.prepare("UPDATE cc_realms SET last_ai_action_at = ? WHERE season_id = 'cc-world-1' AND is_ai = 1").run(new Date().toISOString());
     const separatist = state.attackTargets.find(target => state.regions.find(region => region.id === target.regionId)?.ownerRealmKind === 'separatist');
     assert.ok(separatist, 'o novo reino separatista deveria tocar a fronteira');
-    qaDb.prepare('UPDATE cc_realms SET treasury = 20000, provisions = 20000 WHERE id = ?').run(state.realm.id);
+    qaDb.prepare('UPDATE cc_realms SET treasury = 20000, provisions = 20000, wood = 20000, stone = 20000 WHERE id = ?').run(state.realm.id);
     state = await waitUntil(item => !item.wars.some(war => war.status === 'active'), Math.max(12_000, gameDayMs * 5), 'fim de guerra antes dos separatistas');
-    if (!state.armies.some(army => army.total >= 350)) {
-      await api('/armies/recruit', { serverId: 'cc-world-1', regionId: state.realm.capitalRegionId });
+    const recruitRegion = state.armies[0]?.regionId;
+    if (recruitRegion && !state.buildings.some(item => item.regionId === recruitRegion && item.type === 'quartel')) {
+      await api('/buildings/queue', { serverId: 'cc-world-1', regionId: recruitRegion, buildingType: 'quartel' });
       state = await waitActions();
     }
-    await api('/war/declare', { serverId: 'cc-world-1', regionId: separatist.regionId });
+    if (!state.armies.some(army => army.total >= 350)) {
+      await api('/armies/recruit', { serverId: 'cc-world-1', regionId: state.armies[0].regionId, unitType: 'spearmen', groups: 3 });
+      state = await waitActions();
+    }
+    const separatistCampaign = await declareWarWhenPossible(item => item.attackTargets.find(target => item.regions.find(region => region.id === target.regionId)?.ownerRealmKind === 'separatist'), 'ataque aos separatistas');
+    assert.ok(separatistCampaign.target, 'os separatistas deveriam permanecer alcançáveis');
+    state = separatistCampaign.state;
     await waitActions();
-    console.log(`QA: separatistas de ${separatist.regionName} foram atacados.`);
+    console.log(`QA: separatistas de ${separatistCampaign.target.regionName} foram atacados.`);
 
     let lastReported = 0;
     while (true) {

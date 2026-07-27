@@ -108,6 +108,11 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     assert.ok(result.payload.regions.every(region => region.neighborIds.length > 0));
     assert.equal(result.payload.world.aiRealmCount, 10);
     assert.equal(result.payload.world.realmCount, 10);
+    assert.equal(result.payload.expedition.capacity, 2);
+    assert.deepEqual(Object.keys(result.payload.resourceCatalog).sort(), ['grain', 'stone', 'treasury', 'wood']);
+    assert.deepEqual(Object.keys(result.payload.unitCatalog).sort(), ['archers', 'cavalry', 'siege', 'spearmen']);
+    assert.ok(result.payload.regions.every(region => ['grain', 'wood', 'stone', 'treasury'].includes(region.resourceType)));
+    assert.ok(result.payload.marketOrders.length >= 8);
     assert.ok(result.payload.customization.availableColors.length >= 30);
     const initialColorDb = new DatabaseSync(path.join(tempRoot, 'crowns-test.sqlite'));
     const initialColorAudit = initialColorDb.prepare("SELECT COUNT(*) AS total, COUNT(DISTINCT lower(color)) AS distinct_colors FROM cc_realms WHERE season_id = 'cc-world-1'").get();
@@ -153,6 +158,9 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     assert.equal(result.payload.religiousMovements.length, 0);
     assert.equal(result.payload.buildings.length, 2);
     assert.equal(result.payload.armies.length, 1);
+    assert.equal(result.payload.realm.wood, 650);
+    assert.equal(result.payload.realm.stone, 520);
+    assert.ok(result.payload.realm.economy.daily.provisions > 0);
 
     socket = io(`${origin}/crowns-and-councils`, {
       transports: ['websocket'],
@@ -194,13 +202,37 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     result = await jsonRequest('/api/crowns-and-councils/bootstrap');
     assert.ok(result.payload.buildings.some(item => item.regionId === capital.id && item.type === 'mercado' && item.level === 1));
 
+    result = await jsonRequest('/api/crowns-and-councils/market/orders', {
+      method: 'POST',
+      body: JSON.stringify({ sellResource: 'wood', sellAmount: 50, buyResource: 'stone', buyAmount: 50 })
+    });
+    assert.equal(result.response.status, 201);
+    const ownMarketOrderId = result.payload.order.id;
+    result = await jsonRequest('/api/crowns-and-councils/market/cancel', {
+      method: 'POST',
+      body: JSON.stringify({ orderId: ownMarketOrderId })
+    });
+    assert.equal(result.response.status, 200);
+    assert.equal(result.payload.order.status, 'cancelled');
+
+    result = await jsonRequest('/api/crowns-and-councils/bootstrap');
+    const aiOffer = result.payload.marketOrders.find(order => order.status === 'open' && order.realmId !== result.payload.realm.id);
+    assert.ok(aiOffer);
+    result = await jsonRequest('/api/crowns-and-councils/market/accept', {
+      method: 'POST',
+      body: JSON.stringify({ orderId: aiOffer.id })
+    });
+    assert.equal(result.response.status, 200);
+    assert.equal(result.payload.order.status, 'accepted');
+
+    result = await jsonRequest('/api/crowns-and-councils/bootstrap');
     orderCompleted = waitSocket(socket, 'action.completed');
     const armyBefore = result.payload.armies[0].total;
-    result = await jsonRequest('/api/crowns-and-councils/armies/recruit', { method: 'POST', body: JSON.stringify({ regionId: capital.id }) });
+    result = await jsonRequest('/api/crowns-and-councils/armies/recruit', { method: 'POST', body: JSON.stringify({ regionId: capital.id, unitType: 'spearmen', groups: 1 }) });
     assert.equal(result.response.status, 202);
     await orderCompleted;
     result = await jsonRequest('/api/crowns-and-councils/bootstrap');
-    assert.equal(result.payload.armies[0].total, armyBefore + 320);
+    assert.equal(result.payload.armies[0].total, armyBefore + 80);
 
     const revoltEvent = waitSocket(socket, 'world.patch', 5_000);
     const testDb = new DatabaseSync(path.join(tempRoot, 'crowns-test.sqlite'));

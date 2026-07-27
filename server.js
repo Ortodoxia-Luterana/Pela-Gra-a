@@ -90,12 +90,31 @@ const CROWNS_RELIGIOUS_MOVEMENTS = [
   { key: 'iconoclasmo', day: 44, name: 'Iconoclasmo', description: 'Um movimento exige a retirada das imagens sagradas e divide o povo.' },
   { key: 'pelagianismo', day: 52, name: 'Pelagianismo', description: 'Mestres itinerantes minimizam o pecado original e exaltam a capacidade moral humana.' }
 ];
+const CROWNS_RESOURCES = {
+  grain: { name: 'Trigo', icon: 'wheat', color: '#c69a45' },
+  wood: { name: 'Madeira', icon: 'wood', color: '#6f8356' },
+  stone: { name: 'Pedra', icon: 'stone', color: '#8b8981' },
+  treasury: { name: 'Moedas', icon: 'coin', color: '#d1aa50' }
+};
 const CROWNS_BUILDINGS = {
-  fazenda: { name: 'Fazenda', treasury: 180, provisions: 60, hours: 8, description: 'Aumenta a produção diária de provisões.' },
-  mercado: { name: 'Mercado', treasury: 260, provisions: 40, hours: 12, description: 'Amplia a arrecadação diária de ouro.' },
-  quartel: { name: 'Quartel', treasury: 320, provisions: 120, hours: 16, description: 'Permite recrutar e sustentar forças maiores.' },
-  templo: { name: 'Templo', treasury: 240, provisions: 80, hours: 14, description: 'Fortalece a unidade religiosa e contém heresias.' },
-  fortaleza: { name: 'Fortaleza', treasury: 480, provisions: 180, hours: 24, description: 'Prepara a província para resistir a invasões.' }
+  fazenda: { name: 'Campos de trigo', category: 'produção', treasury: 80, provisions: 0, wood: 70, stone: 25, hours: 4, maxLevel: 5, effect: '+45 trigo/dia por nível', description: 'Celeiros, moinhos e lavouras sustentam obras e exércitos.' },
+  serraria: { name: 'Serraria', category: 'produção', treasury: 90, provisions: 45, wood: 0, stone: 35, hours: 5, maxLevel: 5, effect: '+38 madeira/dia por nível', description: 'Amplia o corte e o preparo de madeira para obras e armas.' },
+  pedreira: { name: 'Pedreira', category: 'produção', treasury: 110, provisions: 55, wood: 45, stone: 0, hours: 6, maxLevel: 5, effect: '+34 pedra/dia por nível', description: 'Extrai pedra para muralhas, templos e fortalezas.' },
+  mercado: { name: 'Mercado', category: 'economia', treasury: 130, provisions: 35, wood: 65, stone: 45, hours: 7, maxLevel: 5, effect: '+28 moedas/dia e +1.000 de capacidade', description: 'Abre ofertas entre jogadores e aumenta a arrecadação local.' },
+  armazem: { name: 'Armazém', category: 'economia', treasury: 120, provisions: 40, wood: 95, stone: 60, hours: 7, maxLevel: 5, effect: '+1.500 de capacidade por nível', description: 'Protege estoques e evita desperdício de produção.' },
+  quartel: { name: 'Quartel', category: 'militar', treasury: 180, provisions: 100, wood: 100, stone: 70, hours: 8, maxLevel: 5, effect: 'libera infantaria e acelera o treino', description: 'Treina lanceiros e arqueiros; níveis maiores reduzem as filas.' },
+  estabulo: { name: 'Estábulo', category: 'militar', treasury: 260, provisions: 160, wood: 130, stone: 80, hours: 10, maxLevel: 3, requires: { quartel: 2 }, effect: 'libera cavaleiros', description: 'Cria montarias de guerra e alojamentos para a cavalaria.' },
+  oficina_cerco: { name: 'Oficina de cerco', category: 'militar', treasury: 340, provisions: 130, wood: 220, stone: 170, hours: 14, maxLevel: 3, requires: { quartel: 3 }, effect: 'libera manganelas', description: 'Constrói máquinas lentas, decisivas contra fortificações.' },
+  muralha: { name: 'Muralha', category: 'defesa', treasury: 170, provisions: 60, wood: 85, stone: 190, hours: 9, maxLevel: 5, effect: '+16% defesa local por nível', description: 'Protege a guarnição e aumenta o custo de uma invasão.' },
+  torre_vigia: { name: 'Torre de vigia', category: 'defesa', treasury: 140, provisions: 55, wood: 100, stone: 110, hours: 7, maxLevel: 3, effect: '+8% defesa e reconhecimento', description: 'Antecipa movimentos inimigos e melhora a resposta da guarnição.' },
+  templo: { name: 'Templo', category: 'fé', treasury: 180, provisions: 80, wood: 70, stone: 150, hours: 9, maxLevel: 5, effect: '+1 unidade religiosa/dia', description: 'Fortalece a unidade cristã e reduz a pressão de heresias.' },
+  fortaleza: { name: 'Fortaleza', category: 'defesa', treasury: 440, provisions: 190, wood: 180, stone: 360, hours: 18, maxLevel: 3, requires: { muralha: 2 }, effect: '+35% defesa local por nível', description: 'Um núcleo militar preparado para resistir a campanhas longas.' }
+};
+const CROWNS_UNITS = {
+  spearmen: { name: 'Lanceiros', role: 'linha defensiva', icon: 'spearman', quantity: 80, treasury: 70, provisions: 110, wood: 35, stone: 0, hours: 3, requires: { quartel: 1 }, attack: 8, defense: 15, speed: 7, upkeep: 2, description: 'Baratos, resistentes e fortes contra cargas de cavalaria.' },
+  archers: { name: 'Arqueiros', role: 'tiro à distância', icon: 'archer', quantity: 50, treasury: 105, provisions: 90, wood: 80, stone: 0, hours: 4, requires: { quartel: 2 }, attack: 14, defense: 7, speed: 8, upkeep: 2, description: 'Causam dano antes do contato, mas dependem da linha de frente.' },
+  cavalry: { name: 'Cavaleiros', role: 'choque e perseguição', icon: 'cavalry', quantity: 24, treasury: 190, provisions: 170, wood: 45, stone: 0, hours: 6, requires: { estabulo: 1 }, attack: 25, defense: 11, speed: 16, upkeep: 5, description: 'Rápidos e letais em campo aberto; caros para manter.' },
+  siege: { name: 'Manganelas', role: 'cerco', icon: 'siege', quantity: 8, treasury: 260, provisions: 80, wood: 180, stone: 120, hours: 8, requires: { oficina_cerco: 1 }, attack: 32, defense: 4, speed: 3, upkeep: 6, description: 'Reduzem a proteção de muralhas e fortalezas inimigas.' }
 };
 const CROWNS_REALM_COLORS = [
   '#c9485b', '#3f72c4', '#d79b2e', '#6f55a6', '#3f9a63', '#8a56c2', '#2f9b9b', '#d4b13e', '#4b83a8', '#b96b3d',
@@ -273,13 +292,14 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS quiz_rankings (user_id TEXT PRIMARY KEY, user_name TEXT NOT NULL, best_score INTEGER NOT NULL DEFAULT 0, wins INTEGER NOT NULL DEFAULT 0, duel_wins INTEGER NOT NULL DEFAULT 0, general_wins INTEGER NOT NULL DEFAULT 0, invite_wins INTEGER NOT NULL DEFAULT 0, matches_played INTEGER NOT NULL DEFAULT 0, reward_points INTEGER NOT NULL DEFAULT 0, reward_xp INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS cc_seasons (id TEXT PRIMARY KEY, name TEXT NOT NULL, status TEXT NOT NULL, starts_at TEXT NOT NULL, ends_at TEXT NOT NULL, geographic_version TEXT NOT NULL, config_json TEXT NOT NULL, created_at TEXT NOT NULL);
   CREATE TABLE IF NOT EXISTS cc_regions (id TEXT PRIMARY KEY, name TEXT NOT NULL, country_code TEXT NOT NULL, iso3_code TEXT NOT NULL, centroid_x INTEGER NOT NULL, centroid_y INTEGER NOT NULL, neighbor_ids_json TEXT NOT NULL, geographic_version TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1);
-  CREATE TABLE IF NOT EXISTS cc_realms (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, user_id TEXT NOT NULL, name TEXT NOT NULL, house_name TEXT NOT NULL, color TEXT NOT NULL, capital_region_id TEXT NOT NULL, treasury INTEGER NOT NULL DEFAULT 1200, provisions INTEGER NOT NULL DEFAULT 800, prestige INTEGER NOT NULL DEFAULT 15, is_ai INTEGER NOT NULL DEFAULT 0, realm_kind TEXT NOT NULL DEFAULT 'player', origin_realm_id TEXT, ruler_name TEXT NOT NULL DEFAULT '', heir_name TEXT, legitimacy INTEGER NOT NULL DEFAULT 70, stability INTEGER NOT NULL DEFAULT 65, popular_support INTEGER NOT NULL DEFAULT 60, religion TEXT NOT NULL DEFAULT 'Cristianismo', religious_unity INTEGER NOT NULL DEFAULT 70, heresy_pressure INTEGER NOT NULL DEFAULT 8, last_economy_at TEXT, last_ai_action_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE (season_id, user_id), FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, FOREIGN KEY (capital_region_id) REFERENCES cc_regions(id));
-  CREATE TABLE IF NOT EXISTS cc_season_regions (season_id TEXT NOT NULL, region_id TEXT NOT NULL, owner_realm_id TEXT, status TEXT NOT NULL DEFAULT 'neutral', development INTEGER NOT NULL DEFAULT 1, claim_action_id TEXT, version INTEGER NOT NULL DEFAULT 1, PRIMARY KEY (season_id, region_id), FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE, FOREIGN KEY (region_id) REFERENCES cc_regions(id), FOREIGN KEY (owner_realm_id) REFERENCES cc_realms(id) ON DELETE SET NULL);
+  CREATE TABLE IF NOT EXISTS cc_realms (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, user_id TEXT NOT NULL, name TEXT NOT NULL, house_name TEXT NOT NULL, color TEXT NOT NULL, capital_region_id TEXT NOT NULL, treasury INTEGER NOT NULL DEFAULT 1200, provisions INTEGER NOT NULL DEFAULT 800, wood INTEGER NOT NULL DEFAULT 650, stone INTEGER NOT NULL DEFAULT 520, prestige INTEGER NOT NULL DEFAULT 15, is_ai INTEGER NOT NULL DEFAULT 0, realm_kind TEXT NOT NULL DEFAULT 'player', origin_realm_id TEXT, ruler_name TEXT NOT NULL DEFAULT '', heir_name TEXT, legitimacy INTEGER NOT NULL DEFAULT 70, stability INTEGER NOT NULL DEFAULT 65, popular_support INTEGER NOT NULL DEFAULT 60, religion TEXT NOT NULL DEFAULT 'Cristianismo', religious_unity INTEGER NOT NULL DEFAULT 70, heresy_pressure INTEGER NOT NULL DEFAULT 8, last_economy_at TEXT, last_ai_action_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE (season_id, user_id), FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, FOREIGN KEY (capital_region_id) REFERENCES cc_regions(id));
+  CREATE TABLE IF NOT EXISTS cc_season_regions (season_id TEXT NOT NULL, region_id TEXT NOT NULL, owner_realm_id TEXT, status TEXT NOT NULL DEFAULT 'neutral', development INTEGER NOT NULL DEFAULT 1, resource_type TEXT NOT NULL DEFAULT 'grain', resource_yield INTEGER NOT NULL DEFAULT 60, claim_action_id TEXT, version INTEGER NOT NULL DEFAULT 1, PRIMARY KEY (season_id, region_id), FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE, FOREIGN KEY (region_id) REFERENCES cc_regions(id), FOREIGN KEY (owner_realm_id) REFERENCES cc_realms(id) ON DELETE SET NULL);
   CREATE TABLE IF NOT EXISTS cc_actions (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, realm_id TEXT NOT NULL, user_id TEXT NOT NULL, type TEXT NOT NULL, region_id TEXT NOT NULL, status TEXT NOT NULL, completes_at TEXT NOT NULL, cost_json TEXT NOT NULL, created_at TEXT NOT NULL, completed_at TEXT, FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE, FOREIGN KEY (realm_id) REFERENCES cc_realms(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, FOREIGN KEY (region_id) REFERENCES cc_regions(id));
   CREATE TABLE IF NOT EXISTS cc_events (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, event_type TEXT NOT NULL, actor_realm_id TEXT, region_id TEXT, payload_json TEXT NOT NULL, created_at TEXT NOT NULL, FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS cc_articles (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, user_id TEXT NOT NULL, realm_id TEXT NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL, published_at TEXT NOT NULL, FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, FOREIGN KEY (realm_id) REFERENCES cc_realms(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS cc_region_buildings (season_id TEXT NOT NULL, region_id TEXT NOT NULL, building_type TEXT NOT NULL, level INTEGER NOT NULL DEFAULT 1, updated_at TEXT NOT NULL, PRIMARY KEY (season_id, region_id, building_type), FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE, FOREIGN KEY (region_id) REFERENCES cc_regions(id));
-  CREATE TABLE IF NOT EXISTS cc_armies (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, realm_id TEXT NOT NULL, region_id TEXT NOT NULL, infantry INTEGER NOT NULL DEFAULT 0, archers INTEGER NOT NULL DEFAULT 0, cavalry INTEGER NOT NULL DEFAULT 0, morale INTEGER NOT NULL DEFAULT 70, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE, FOREIGN KEY (realm_id) REFERENCES cc_realms(id) ON DELETE CASCADE, FOREIGN KEY (region_id) REFERENCES cc_regions(id));
+  CREATE TABLE IF NOT EXISTS cc_armies (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, realm_id TEXT NOT NULL, region_id TEXT NOT NULL, infantry INTEGER NOT NULL DEFAULT 0, archers INTEGER NOT NULL DEFAULT 0, cavalry INTEGER NOT NULL DEFAULT 0, siege INTEGER NOT NULL DEFAULT 0, morale INTEGER NOT NULL DEFAULT 70, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE, FOREIGN KEY (realm_id) REFERENCES cc_realms(id) ON DELETE CASCADE, FOREIGN KEY (region_id) REFERENCES cc_regions(id));
+  CREATE TABLE IF NOT EXISTS cc_market_orders (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, realm_id TEXT NOT NULL, sell_resource TEXT NOT NULL, sell_amount INTEGER NOT NULL, buy_resource TEXT NOT NULL, buy_amount INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'open', created_at TEXT NOT NULL, accepted_by_realm_id TEXT, accepted_at TEXT, FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE, FOREIGN KEY (realm_id) REFERENCES cc_realms(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS cc_season_results (season_id TEXT NOT NULL, rank INTEGER NOT NULL, realm_name TEXT NOT NULL, house_name TEXT NOT NULL, score INTEGER NOT NULL, regions INTEGER NOT NULL, prestige INTEGER NOT NULL, recorded_at TEXT NOT NULL, PRIMARY KEY (season_id, rank));
   CREATE TABLE IF NOT EXISTS cc_treaties (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, proposer_realm_id TEXT NOT NULL, target_realm_id TEXT NOT NULL, treaty_type TEXT NOT NULL, status TEXT NOT NULL, expires_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
   CREATE TABLE IF NOT EXISTS cc_marriages (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, proposer_realm_id TEXT NOT NULL, target_realm_id TEXT NOT NULL, proposer_spouse TEXT NOT NULL, target_spouse TEXT NOT NULL, child_religion TEXT NOT NULL, inheritance_clause TEXT NOT NULL, dowry INTEGER NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
@@ -296,6 +316,7 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS cc_armies_realm_idx ON cc_armies (season_id, realm_id);
   CREATE INDEX IF NOT EXISTS cc_wars_season_idx ON cc_wars (season_id, status);
   CREATE INDEX IF NOT EXISTS cc_treaties_season_idx ON cc_treaties (season_id, status);
+  CREATE INDEX IF NOT EXISTS cc_market_orders_season_idx ON cc_market_orders (season_id, status, created_at DESC);
 `);
 try { db.exec('ALTER TABLE users ADD COLUMN avatar_data TEXT'); } catch {}
 try { db.exec('ALTER TABLE luther_match_rankings ADD COLUMN max_combo INTEGER NOT NULL DEFAULT 0'); } catch {}
@@ -323,6 +344,11 @@ try { db.exec('ALTER TABLE cc_realms ADD COLUMN religious_unity INTEGER NOT NULL
 try { db.exec('ALTER TABLE cc_realms ADD COLUMN heresy_pressure INTEGER NOT NULL DEFAULT 8'); } catch {}
 try { db.exec('ALTER TABLE cc_realms ADD COLUMN last_economy_at TEXT'); } catch {}
 try { db.exec('ALTER TABLE cc_realms ADD COLUMN last_ai_action_at TEXT'); } catch {}
+try { db.exec('ALTER TABLE cc_realms ADD COLUMN wood INTEGER NOT NULL DEFAULT 650'); } catch {}
+try { db.exec('ALTER TABLE cc_realms ADD COLUMN stone INTEGER NOT NULL DEFAULT 520'); } catch {}
+try { db.exec("ALTER TABLE cc_season_regions ADD COLUMN resource_type TEXT NOT NULL DEFAULT 'grain'"); } catch {}
+try { db.exec('ALTER TABLE cc_season_regions ADD COLUMN resource_yield INTEGER NOT NULL DEFAULT 60'); } catch {}
+try { db.exec('ALTER TABLE cc_armies ADD COLUMN siege INTEGER NOT NULL DEFAULT 0'); } catch {}
 
 function crownsGeneratedColor(seed, attempt = 0) {
   const digest = crypto.createHash('sha256').update(`${seed}:${attempt}`).digest();
@@ -418,6 +444,12 @@ const insertUserAchievement = db.prepare(`
 `);
 const crownsRegionCatalog = JSON.parse(fs.readFileSync(CROWNS_REGION_CATALOG_PATH, 'utf8'));
 const crownsRegionMetadataById = new Map(crownsRegionCatalog.regions.map(region => [region.id, region]));
+function crownsRegionResource(region, serverId) {
+  const digest = crypto.createHash('sha256').update(`${serverId}:${region.id}:${region.countryCode}`).digest();
+  const types = ['grain', 'wood', 'stone', 'treasury'];
+  const type = types[digest[0] % types.length];
+  return { type, yield: 52 + (digest[1] % 29) };
+}
 const insertCcSeason = db.prepare('INSERT OR IGNORE INTO cc_seasons (id, name, status, starts_at, ends_at, geographic_version, config_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
 const updateCcSeasonGeography = db.prepare('UPDATE cc_seasons SET geographic_version = ?, config_json = ? WHERE id = ?');
 const deactivateCcRegions = db.prepare('UPDATE cc_regions SET active = 0');
@@ -426,7 +458,8 @@ const upsertCcRegion = db.prepare(`
   VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
   ON CONFLICT(id) DO UPDATE SET name = excluded.name, country_code = excluded.country_code, iso3_code = excluded.iso3_code, centroid_x = excluded.centroid_x, centroid_y = excluded.centroid_y, neighbor_ids_json = excluded.neighbor_ids_json, geographic_version = excluded.geographic_version, active = 1
 `);
-const insertCcSeasonRegion = db.prepare('INSERT OR IGNORE INTO cc_season_regions (season_id, region_id, status, development, version) VALUES (?, ?, \'neutral\', 1, 1)');
+const insertCcSeasonRegion = db.prepare("INSERT OR IGNORE INTO cc_season_regions (season_id, region_id, status, development, resource_type, resource_yield, version) VALUES (?, ?, 'neutral', 1, ?, ?, 1)");
+const updateCcSeasonRegionResource = db.prepare('UPDATE cc_season_regions SET resource_type = ?, resource_yield = ? WHERE season_id = ? AND region_id = ?');
 const getCcSeason = db.prepare('SELECT * FROM cc_seasons WHERE id = ?');
 const getCcRealmByUser = db.prepare('SELECT * FROM cc_realms WHERE season_id = ? AND user_id = ?');
 const getCcRealmById = db.prepare('SELECT * FROM cc_realms WHERE id = ? AND season_id = ?');
@@ -453,7 +486,7 @@ const getCcRealms = db.prepare(`
 const getCcSeasonRegion = db.prepare('SELECT sr.*, r.name, r.country_code, r.iso3_code, r.neighbor_ids_json FROM cc_season_regions sr JOIN cc_regions r ON r.id = sr.region_id AND r.active = 1 WHERE sr.season_id = ? AND sr.region_id = ?');
 const getCcSeasonRegions = db.prepare(`
   SELECT r.id, r.name, r.country_code, r.iso3_code, r.centroid_x, r.centroid_y, r.neighbor_ids_json,
-         sr.owner_realm_id, sr.status, sr.development, sr.claim_action_id, sr.version,
+         sr.owner_realm_id, sr.status, sr.development, sr.resource_type, sr.resource_yield, sr.claim_action_id, sr.version,
          owner.name AS owner_name, owner.color AS owner_color, owner.is_ai AS owner_is_ai, owner.realm_kind AS owner_realm_kind,
          reserver.name AS reserved_by_name, reservation.completes_at AS reserved_until
   FROM cc_regions r
@@ -465,14 +498,17 @@ const getCcSeasonRegions = db.prepare(`
   ORDER BY r.id
 `);
 const getCcOwnedRegions = db.prepare('SELECT sr.region_id FROM cc_season_regions sr JOIN cc_regions r ON r.id = sr.region_id AND r.active = 1 WHERE sr.season_id = ? AND sr.owner_realm_id = ? ORDER BY sr.region_id');
+const getCcOwnedRegionEconomy = db.prepare('SELECT sr.region_id, sr.resource_type, sr.resource_yield, sr.development FROM cc_season_regions sr JOIN cc_regions r ON r.id = sr.region_id AND r.active = 1 WHERE sr.season_id = ? AND sr.owner_realm_id = ? ORDER BY sr.region_id');
 const getCcPendingActionsForRealm = db.prepare('SELECT * FROM cc_actions WHERE season_id = ? AND realm_id = ? AND status = \'pending\' ORDER BY completes_at');
-const getCcPendingClaimForRealm = db.prepare("SELECT * FROM cc_actions WHERE season_id = ? AND realm_id = ? AND type = 'territory.claim' AND status = 'pending' LIMIT 1");
+const getCcPendingClaimsForRealm = db.prepare("SELECT * FROM cc_actions WHERE season_id = ? AND realm_id = ? AND type = 'territory.claim' AND status = 'pending' ORDER BY completes_at");
 const getCcDueActions = db.prepare('SELECT * FROM cc_actions WHERE status = \'pending\' AND completes_at <= ? ORDER BY completes_at LIMIT 100');
 const getCcAction = db.prepare('SELECT * FROM cc_actions WHERE id = ?');
 const insertCcRealm = db.prepare("INSERT INTO cc_realms (id, season_id, user_id, name, house_name, color, capital_region_id, treasury, provisions, prestige, is_ai, realm_kind, ruler_name, heir_name, legitimacy, stability, popular_support, religion, religious_unity, heresy_pressure, last_economy_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 1200, 800, 15, 0, 'player', ?, ?, 72, 68, 64, ?, 78, 0, ?, ?, ?)");
 const insertCcAiRealm = db.prepare("INSERT INTO cc_realms (id, season_id, user_id, name, house_name, color, capital_region_id, treasury, provisions, prestige, is_ai, realm_kind, origin_realm_id, ruler_name, heir_name, legitimacy, stability, popular_support, religion, religious_unity, heresy_pressure, last_economy_at, last_ai_action_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 const assignCcCapital = db.prepare('UPDATE cc_season_regions SET owner_realm_id = ?, status = \'controlled\', version = version + 1 WHERE season_id = ? AND region_id = ? AND owner_realm_id IS NULL AND status = \'neutral\'');
 const transferCcRegion = db.prepare("UPDATE cc_season_regions SET owner_realm_id = ?, status = 'controlled', claim_action_id = NULL, version = version + 1 WHERE season_id = ? AND region_id = ? AND owner_realm_id = ?");
+const relocateCcRealmCapital = db.prepare('UPDATE cc_realms SET capital_region_id = ?, stability = max(10, stability - 6), updated_at = ? WHERE id = ? AND season_id = ? AND capital_region_id = ?');
+const retreatCcArmiesFromRegion = db.prepare('UPDATE cc_armies SET region_id = ?, morale = max(25, morale - 12), updated_at = ? WHERE season_id = ? AND realm_id = ? AND region_id = ?');
 const insertCcAction = db.prepare('INSERT INTO cc_actions (id, season_id, realm_id, user_id, type, region_id, status, completes_at, cost_json, created_at) VALUES (?, ?, ?, ?, ?, ?, \'pending\', ?, ?, ?)');
 const markCcRegionClaiming = db.prepare('UPDATE cc_season_regions SET status = \'claiming\', claim_action_id = ?, version = version + 1 WHERE season_id = ? AND region_id = ? AND owner_realm_id IS NULL AND status = \'neutral\'');
 const spendCcClaimResources = db.prepare('UPDATE cc_realms SET treasury = treasury - ?, provisions = provisions - ?, updated_at = ? WHERE id = ? AND season_id = ? AND treasury >= ? AND provisions >= ?');
@@ -483,7 +519,9 @@ const releaseCcClaim = db.prepare('UPDATE cc_season_regions SET status = \'neutr
 const rewardCcClaim = db.prepare('UPDATE cc_realms SET prestige = prestige + 2, stability = max(10, stability - 2), updated_at = ? WHERE id = ? AND season_id = ?');
 const refundCcClaim = db.prepare('UPDATE cc_realms SET treasury = treasury + ?, provisions = provisions + ?, updated_at = ? WHERE id = ? AND season_id = ?');
 const spendCcResources = db.prepare('UPDATE cc_realms SET treasury = treasury - ?, provisions = provisions - ?, updated_at = ? WHERE id = ? AND season_id = ? AND treasury >= ? AND provisions >= ?');
-const applyCcEconomy = db.prepare('UPDATE cc_realms SET treasury = treasury + ?, provisions = provisions + ?, last_economy_at = ?, updated_at = ? WHERE id = ? AND season_id = ?');
+const spendCcStrategicResources = db.prepare('UPDATE cc_realms SET treasury = treasury - ?, provisions = provisions - ?, wood = wood - ?, stone = stone - ?, updated_at = ? WHERE id = ? AND season_id = ? AND treasury >= ? AND provisions >= ? AND wood >= ? AND stone >= ?');
+const refundCcStrategicResources = db.prepare('UPDATE cc_realms SET treasury = treasury + ?, provisions = provisions + ?, wood = wood + ?, stone = stone + ?, updated_at = ? WHERE id = ? AND season_id = ?');
+const applyCcEconomy = db.prepare('UPDATE cc_realms SET treasury = max(0, treasury + ?), provisions = max(0, provisions + ?), wood = max(0, wood + ?), stone = max(0, stone + ?), last_economy_at = ?, updated_at = ? WHERE id = ? AND season_id = ?');
 const updateCcAiDecisionAt = db.prepare('UPDATE cc_realms SET last_ai_action_at = ?, updated_at = ? WHERE id = ? AND season_id = ?');
 const insertCcEvent = db.prepare('INSERT INTO cc_events (id, season_id, event_type, actor_realm_id, region_id, payload_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)');
 const getCcJournalEvents = db.prepare(`
@@ -522,6 +560,10 @@ const upsertCcBuilding = db.prepare('INSERT INTO cc_region_buildings (season_id,
 const insertCcArmy = db.prepare('INSERT OR IGNORE INTO cc_armies (id, season_id, realm_id, region_id, infantry, archers, cavalry, morale, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
 const getCcArmiesForRealm = db.prepare('SELECT army.*, region.name AS region_name FROM cc_armies army JOIN cc_regions region ON region.id = army.region_id WHERE army.season_id = ? AND army.realm_id = ? ORDER BY army.created_at');
 const reinforceCcArmy = db.prepare('UPDATE cc_armies SET infantry = infantry + ?, archers = archers + ?, cavalry = cavalry + ?, updated_at = ? WHERE id = ? AND season_id = ?');
+const reinforceCcSpearmen = db.prepare('UPDATE cc_armies SET infantry = infantry + ?, updated_at = ? WHERE id = ? AND season_id = ?');
+const reinforceCcArchers = db.prepare('UPDATE cc_armies SET archers = archers + ?, updated_at = ? WHERE id = ? AND season_id = ?');
+const reinforceCcCavalry = db.prepare('UPDATE cc_armies SET cavalry = cavalry + ?, updated_at = ? WHERE id = ? AND season_id = ?');
+const reinforceCcSiege = db.prepare('UPDATE cc_armies SET siege = siege + ?, updated_at = ? WHERE id = ? AND season_id = ?');
 const getCcArmyById = db.prepare('SELECT * FROM cc_armies WHERE id = ? AND season_id = ?');
 const updateCcArmyAfterBattle = db.prepare('UPDATE cc_armies SET infantry = ?, archers = ?, cavalry = ?, morale = ?, region_id = ?, updated_at = ? WHERE id = ? AND season_id = ?');
 const insertCcTreaty = db.prepare('INSERT INTO cc_treaties (id, season_id, proposer_realm_id, target_realm_id, treaty_type, status, expires_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
@@ -550,6 +592,19 @@ const getCcReligiousMovements = db.prepare('SELECT * FROM cc_religious_movements
 const getCcReligiousMovement = db.prepare('SELECT * FROM cc_religious_movements WHERE id = ? AND season_id = ?');
 const getCcReligiousResponse = db.prepare('SELECT * FROM cc_religious_responses WHERE movement_id = ? AND realm_id = ?');
 const insertCcReligiousResponse = db.prepare('INSERT INTO cc_religious_responses (movement_id, realm_id, response_key, created_at) VALUES (?, ?, ?, ?)');
+const getCcMarketOrders = db.prepare(`
+  SELECT orders.*, seller.name AS seller_name, buyer.name AS buyer_name
+  FROM cc_market_orders orders
+  JOIN cc_realms seller ON seller.id = orders.realm_id
+  LEFT JOIN cc_realms buyer ON buyer.id = orders.accepted_by_realm_id
+  WHERE orders.season_id = ?
+  ORDER BY CASE orders.status WHEN 'open' THEN 0 ELSE 1 END, orders.created_at DESC
+  LIMIT 80
+`);
+const getCcMarketOrder = db.prepare('SELECT * FROM cc_market_orders WHERE id = ? AND season_id = ?');
+const insertCcMarketOrder = db.prepare("INSERT OR IGNORE INTO cc_market_orders (id, season_id, realm_id, sell_resource, sell_amount, buy_resource, buy_amount, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?)");
+const acceptCcMarketOrder = db.prepare("UPDATE cc_market_orders SET status = 'accepted', accepted_by_realm_id = ?, accepted_at = ? WHERE id = ? AND season_id = ? AND status = 'open'");
+const cancelCcMarketOrder = db.prepare("UPDATE cc_market_orders SET status = 'cancelled', accepted_at = ? WHERE id = ? AND season_id = ? AND realm_id = ? AND status = 'open'");
 const getCcSeasonResults = db.prepare('SELECT * FROM cc_season_results WHERE season_id = ? ORDER BY rank');
 const insertCcSeasonResult = db.prepare('INSERT OR REPLACE INTO cc_season_results (season_id, rank, realm_name, house_name, score, regions, prestige, recorded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
 const updateCcSeasonTiming = db.prepare('UPDATE cc_seasons SET status = ?, starts_at = ?, ends_at = ?, config_json = ? WHERE id = ?');
@@ -560,6 +615,7 @@ const deleteCcArticlesForSeason = db.prepare('DELETE FROM cc_articles WHERE seas
 const deleteCcEventsForSeason = db.prepare('DELETE FROM cc_events WHERE season_id = ?');
 const deleteCcBuildingsForSeason = db.prepare('DELETE FROM cc_region_buildings WHERE season_id = ?');
 const deleteCcArmiesForSeason = db.prepare('DELETE FROM cc_armies WHERE season_id = ?');
+const deleteCcMarketOrdersForSeason = db.prepare('DELETE FROM cc_market_orders WHERE season_id = ?');
 const deleteCcResultsForSeason = db.prepare('DELETE FROM cc_season_results WHERE season_id = ?');
 const deleteCcTreatiesForSeason = db.prepare('DELETE FROM cc_treaties WHERE season_id = ?');
 const deleteCcMarriagesForSeason = db.prepare('DELETE FROM cc_marriages WHERE season_id = ?');
@@ -646,6 +702,19 @@ function seedCcAiRealms(serverId, now, seed) {
   });
 }
 
+function seedCcAiMarket(serverId, now) {
+  const resources = ['grain', 'wood', 'stone', 'treasury'];
+  getCcRealms.all(serverId).filter(realm => realm.is_ai).slice(0, 8).forEach((realm, index) => {
+    const sellResource = resources[index % resources.length];
+    const buyResource = resources[(index + 1 + (index % 2)) % resources.length];
+    const sellAmount = 180 + (index % 3) * 40;
+    const buyAmount = 150 + (index % 2) * 35;
+    upsertCcBuilding.run(serverId, realm.capital_region_id, 'mercado', now);
+    const inserted = insertCcMarketOrder.run(`market_${serverId}_${realm.id}_${sellResource}`, serverId, realm.id, sellResource, sellAmount, buyResource, buyAmount, now);
+    if (inserted.changes) crownsAdjustResource(realm.id, serverId, sellResource, -sellAmount, true);
+  });
+}
+
 function seedCrownsAndCouncils() {
   const now = new Date();
   db.exec('BEGIN IMMEDIATE');
@@ -663,8 +732,13 @@ function seedCrownsAndCouncils() {
       const config = { ...existingConfig, seed, serverNumber: index + 1, totalDays: CROWNS_SEASON_DAYS, gameDayMs: CROWNS_GAME_DAY_MS, resetDelayMs: CROWNS_RESET_DELAY_MS, theatre: crownsRegionCatalog.theatre, mode: CROWNS_LOCAL_PREVIEW ? 'teste-acelerado' : 'persistente' };
       insertCcSeason.run(serverId, `Servidor ${index + 1} — Era dos Concílios`, 'waiting', starts, ends, crownsRegionCatalog.geographicVersion, JSON.stringify(config), now.toISOString());
       updateCcSeasonGeography.run(crownsRegionCatalog.geographicVersion, JSON.stringify(config), serverId);
-      crownsRegionCatalog.regions.forEach(region => insertCcSeasonRegion.run(serverId, region.id));
+      crownsRegionCatalog.regions.forEach(region => {
+        const resource = crownsRegionResource(region, serverId);
+        insertCcSeasonRegion.run(serverId, region.id, resource.type, resource.yield);
+        updateCcSeasonRegionResource.run(resource.type, resource.yield, serverId, region.id);
+      });
       seedCcAiRealms(serverId, now.toISOString(), seed);
+      seedCcAiMarket(serverId, now.toISOString());
       const humanCount = getCcRealms.all(serverId).filter(realm => !realm.is_ai).length;
       if (!humanCount && getCcSeason.get(serverId)?.status !== 'ended') {
         const waitingConfig = { ...config };
@@ -1992,6 +2066,7 @@ function processCrownsSeasonLifecycle(requestedServerId) {
       deleteCcEventsForSeason.run(serverId);
       deleteCcBuildingsForSeason.run(serverId);
       deleteCcArmiesForSeason.run(serverId);
+      deleteCcMarketOrdersForSeason.run(serverId);
       deleteCcResultsForSeason.run(serverId);
       deleteCcTreatiesForSeason.run(serverId);
       deleteCcMarriagesForSeason.run(serverId);
@@ -2011,6 +2086,7 @@ function processCrownsSeasonLifecycle(requestedServerId) {
       throw error;
     }
     seedCcAiRealms(serverId, now.toISOString(), seed);
+    seedCcAiMarket(serverId, now.toISOString());
     emitCrownsEvent('season.reset', { seasonId: serverId, version: Date.now() });
     season = getCcSeason.get(serverId);
   }
@@ -2055,15 +2131,21 @@ function processCrownsEconomy(requestedServerId) {
     if (!ticks) return;
     const buildings = getCcBuildingsForRealm.all(serverId, realm.id);
     const armies = getCcArmiesForRealm.all(serverId, realm.id);
-    const farms = buildings.filter(item => item.building_type === 'fazenda').reduce((sum, item) => sum + item.level, 0);
-    const markets = buildings.filter(item => item.building_type === 'mercado').reduce((sum, item) => sum + item.level, 0);
+    const levels = type => buildings.filter(item => item.building_type === type).reduce((sum, item) => sum + item.level, 0);
+    const farms = levels('fazenda');
+    const sawmills = levels('serraria');
+    const quarries = levels('pedreira');
+    const markets = levels('mercado');
     const temples = buildings.filter(item => item.building_type === 'templo').reduce((sum, item) => sum + item.level, 0);
-    const soldiers = armies.reduce((sum, army) => sum + army.infantry + army.archers + army.cavalry, 0);
-    const regionCount = Number(realm.region_count || 1);
-    const treasuryDelta = ticks * (55 * regionCount + 35 * markets);
-    const provisionsDelta = ticks * (70 * regionCount + 55 * farms - Math.ceil(soldiers / 35));
+    const provinces = getCcOwnedRegionEconomy.all(serverId, realm.id);
+    const provinceYield = resource => provinces.filter(region => region.resource_type === resource).reduce((sum, region) => sum + Math.round(Number(region.resource_yield || 60) * (1 + Math.max(0, Number(region.development || 1) - 1) * 0.08)), 0);
+    const upkeep = armies.reduce((sum, army) => sum + Math.ceil(army.infantry / 45) * 2 + Math.ceil(army.archers / 35) * 2 + Math.ceil(army.cavalry / 20) * 5 + Math.ceil(Number(army.siege || 0) / 5) * 6, 0);
+    const treasuryDelta = ticks * (provinceYield('treasury') + 18 * provinces.length + 28 * markets);
+    const provisionsDelta = ticks * (provinceYield('grain') + 45 * farms - upkeep);
+    const woodDelta = ticks * (provinceYield('wood') + 38 * sawmills);
+    const stoneDelta = ticks * (provinceYield('stone') + 34 * quarries);
     const nextEconomy = new Date(lastMs + ticks * CROWNS_GAME_DAY_MS).toISOString();
-    applyCcEconomy.run(treasuryDelta, provisionsDelta, nextEconomy, new Date().toISOString(), realm.id, serverId);
+    applyCcEconomy.run(treasuryDelta, provisionsDelta, woodDelta, stoneDelta, nextEconomy, new Date().toISOString(), realm.id, serverId);
     if (temples && Number(realm.heresy_pressure || 0) > 0) {
       db.prepare('UPDATE cc_realms SET religious_unity = min(100, religious_unity + ?), heresy_pressure = max(0, heresy_pressure - ?), updated_at = ? WHERE id = ? AND season_id = ?').run(ticks * temples, ticks * temples, new Date().toISOString(), realm.id, serverId);
     }
@@ -2084,6 +2166,46 @@ function crownsActionDuration(hours) {
   return CROWNS_LOCAL_PREVIEW || process.env.CROWNS_ACTION_MS ? CROWNS_ACTION_MS : hours * 60 * 60 * 1000;
 }
 
+function crownsExpeditionDuration(distanceKm, maritime) {
+  if (CROWNS_LOCAL_PREVIEW || process.env.CROWNS_ACTION_MS) return CROWNS_ACTION_MS;
+  const minutes = distanceKm <= 180 ? 5 : distanceKm <= 520 ? 20 : distanceKm <= 1100 ? 60 : 120;
+  return Math.min(120, maritime ? Math.max(20, minutes) : minutes) * 60 * 1000;
+}
+
+function preserveCrownsRealmAfterConquest(serverId, defeatedRealmId, lostRegionId, now) {
+  const defeated = getCcRealmById.get(defeatedRealmId, serverId);
+  const replacement = getCcSeasonRegions.all(serverId)
+    .filter(region => region.owner_realm_id === defeatedRealmId && region.id !== lostRegionId)
+    .sort((a, b) => Number(b.development || 1) - Number(a.development || 1) || String(a.name).localeCompare(String(b.name), 'pt-BR'))[0];
+  if (!replacement) return;
+  retreatCcArmiesFromRegion.run(replacement.id, now, serverId, defeatedRealmId, lostRegionId);
+  if (defeated?.capital_region_id === lostRegionId) {
+    relocateCcRealmCapital.run(replacement.id, now, defeatedRealmId, serverId, lostRegionId);
+    insertCcEvent.run(crypto.randomUUID(), serverId, 'realm.capital_relocated', defeatedRealmId, replacement.id, JSON.stringify({
+      lostRegionId,
+      summary: `${defeated.name} transferiu sua corte para ${replacement.name} depois da queda da antiga capital.`
+    }), now);
+  }
+}
+
+function crownsEconomySummary(serverId, realm) {
+  if (!realm) return null;
+  const buildings = getCcBuildingsForRealm.all(serverId, realm.id);
+  const levels = type => buildings.filter(item => item.building_type === type).reduce((sum, item) => sum + item.level, 0);
+  const provinces = getCcOwnedRegionEconomy.all(serverId, realm.id);
+  const provinceYield = resource => provinces.filter(region => region.resource_type === resource).reduce((sum, region) => sum + Math.round(Number(region.resource_yield || 60) * (1 + Math.max(0, Number(region.development || 1) - 1) * 0.08)), 0);
+  const armies = getCcArmiesForRealm.all(serverId, realm.id);
+  const upkeep = armies.reduce((sum, army) => sum + Math.ceil(army.infantry / 45) * 2 + Math.ceil(army.archers / 35) * 2 + Math.ceil(army.cavalry / 20) * 5 + Math.ceil(Number(army.siege || 0) / 5) * 6, 0);
+  const daily = {
+    treasury: provinceYield('treasury') + 18 * provinces.length + 28 * levels('mercado'),
+    provisions: provinceYield('grain') + 45 * levels('fazenda') - upkeep,
+    wood: provinceYield('wood') + 38 * levels('serraria'),
+    stone: provinceYield('stone') + 34 * levels('pedreira')
+  };
+  const storage = 3500 + levels('armazem') * 1500;
+  return { daily, upkeep, storage, provinceCount: provinces.length };
+}
+
 function publicCcRealm(realm) {
   if (!realm) return null;
   return {
@@ -2094,6 +2216,8 @@ function publicCcRealm(realm) {
     capitalRegionId: realm.capital_region_id,
     treasury: realm.treasury,
     provisions: realm.provisions,
+    wood: Number(realm.wood || 0),
+    stone: Number(realm.stone || 0),
     prestige: realm.prestige,
     isAi: Boolean(realm.is_ai),
     realmKind: realm.realm_kind || 'player',
@@ -2157,7 +2281,9 @@ function publicCrownsJournalEvent(row) {
   const regionName = row.region_name || 'terras desconhecidas';
   const templates = {
     'building.completed': { category: 'economy', headline: `${payload.buildingName || 'Uma obra'} é concluída em ${regionName}`, summary: `Os oficiais de ${realmName} confirmaram o término da construção.` },
-    'army.recruited': { category: 'army', headline: `${realmName} reúne novos soldados`, summary: `${payload.units || 0} combatentes foram incorporados em ${regionName}.` },
+    'army.recruited': { category: 'army', headline: `${realmName} treina ${payload.unitName || 'novos soldados'}`, summary: `${payload.units || 0} combatentes foram incorporados em ${regionName}.` },
+    'market.offer.created': { category: 'economy', headline: `${realmName} abre uma oferta no mercado`, summary: `Mercadores oferecem ${payload.sellAmount || 0} de ${CROWNS_RESOURCES[payload.sellResource]?.name || payload.sellResource} em troca de ${payload.buyAmount || 0} de ${CROWNS_RESOURCES[payload.buyResource]?.name || payload.buyResource}.` },
+    'market.trade.completed': { category: 'economy', headline: `Uma troca é concluída no mercado`, summary: `${realmName} adquiriu ${payload.sellAmount || 0} de ${CROWNS_RESOURCES[payload.sellResource]?.name || payload.sellResource}.` },
     'season.ended': { category: 'world', headline: `${payload.winner || realmName} vence a temporada`, summary: 'O sexagésimo dia terminou e os arautos publicaram a classificação final.' },
     'realm.created': { category: 'realm', headline: `${realmName} ergue seu estandarte`, summary: `${payload.houseName || row.actor_house_name || 'Uma nova casa'} fundou um reino com capital em ${regionName}.` },
     'territory.claim.started': { category: 'campaign', headline: `${realmName} envia uma expedição`, summary: `Mensageiros confirmam uma reivindicação em marcha sobre ${regionName}.` },
@@ -2253,6 +2379,9 @@ function crownsBootstrap(user, requestedServerId) {
       reservedUntil: row.reserved_until || null,
       status: row.status,
       development: row.development,
+      resourceType: row.resource_type,
+      resourceName: CROWNS_RESOURCES[row.resource_type]?.name || 'Trigo',
+      resourceYield: Number(row.resource_yield || 60),
       version: row.version,
       countryName: metadata.countryName || row.country_code,
       levelLabel: metadata.levelLabel || 'Região',
@@ -2268,7 +2397,7 @@ function crownsBootstrap(user, requestedServerId) {
     return {
       id: action.id,
       type: action.type,
-      label: action.type === 'territory.claim' ? 'Expedição territorial' : action.type === 'army.recruit' ? 'Recrutamento' : action.type === 'army.defend' ? 'Preparação defensiva' : action.type === 'army.attack' ? 'Marcha de invasão' : action.type === 'religion.mission' ? 'Missão religiosa' : action.type === 'religion.suppress' ? 'Combate à heresia' : CROWNS_BUILDINGS[buildingType]?.name || 'Ordem do conselho',
+      label: action.type === 'territory.claim' ? 'Expedição territorial' : action.type === 'army.recruit' ? `Treinamento: ${CROWNS_UNITS[cost.unitType]?.name || 'recrutas'}` : action.type === 'army.defend' ? 'Preparação defensiva' : action.type === 'army.attack' ? 'Marcha de invasão' : action.type === 'religion.mission' ? 'Missão religiosa' : action.type === 'religion.suppress' ? 'Combate à heresia' : CROWNS_BUILDINGS[buildingType]?.name || 'Ordem do conselho',
       regionId: action.region_id,
       status: action.status,
       completesAt: action.completes_at,
@@ -2277,7 +2406,7 @@ function crownsBootstrap(user, requestedServerId) {
     };
   }) : [];
   const buildings = realm ? getCcBuildingsForRealm.all(serverId, realm.id).map(item => ({ regionId: item.region_id, type: item.building_type, level: item.level, ...CROWNS_BUILDINGS[item.building_type] })) : [];
-  const armies = realm ? getCcArmiesForRealm.all(serverId, realm.id).map(item => ({ id: item.id, regionId: item.region_id, regionName: item.region_name, infantry: item.infantry, archers: item.archers, cavalry: item.cavalry, morale: item.morale, total: item.infantry + item.archers + item.cavalry })) : [];
+  const armies = realm ? getCcArmiesForRealm.all(serverId, realm.id).map(item => ({ id: item.id, regionId: item.region_id, regionName: item.region_name, infantry: item.infantry, spearmen: item.infantry, archers: item.archers, cavalry: item.cavalry, siege: Number(item.siege || 0), morale: item.morale, total: item.infantry + item.archers + item.cavalry + Number(item.siege || 0) })) : [];
   const treaties = realm ? getCcTreaties.all(serverId).filter(item => item.proposer_realm_id === realm.id || item.target_realm_id === realm.id).map(item => ({ id: item.id, treatyType: item.treaty_type, status: item.status, proposerRealmId: item.proposer_realm_id, proposerName: item.proposer_name, targetRealmId: item.target_realm_id, targetName: item.target_name, expiresAt: item.expires_at })) : [];
   const marriages = realm ? getCcMarriages.all(serverId).filter(item => item.proposer_realm_id === realm.id || item.target_realm_id === realm.id).map(item => ({ id: item.id, status: item.status, proposerName: item.proposer_name, targetName: item.target_name, proposerSpouse: item.proposer_spouse, targetSpouse: item.target_spouse, childReligion: item.child_religion, inheritanceClause: item.inheritance_clause, dowry: item.dowry })) : [];
   const wars = realm ? getCcWars.all(serverId).filter(item => item.attacker_realm_id === realm.id || item.defender_realm_id === realm.id).map(item => ({ id: item.id, status: item.status, attackerRealmId: item.attacker_realm_id, attackerName: item.attacker_name, defenderRealmId: item.defender_realm_id, defenderName: item.defender_name, objectiveRegionId: item.objective_region_id, objectiveName: item.objective_name, score: item.score, result: safeJsonParse(item.result_json, {}) })) : [];
@@ -2301,7 +2430,7 @@ function crownsBootstrap(user, requestedServerId) {
       endsAt: season.ends_at,
       geographicVersion: season.geographic_version
     },
-    realm: realm ? { ...publicCcRealm(realm), regionCount: ownedIds.size, court: crownsRealmCourt(realm, serverId) } : null,
+    realm: realm ? { ...publicCcRealm(realm), regionCount: ownedIds.size, court: crownsRealmCourt(realm, serverId), economy: crownsEconomySummary(serverId, realm) } : null,
     world: {
       realmCount: getCcRealms.all(serverId).length,
       aiRealmCount: getCcRealms.all(serverId).filter(item => item.is_ai).length
@@ -2311,7 +2440,23 @@ function crownsBootstrap(user, requestedServerId) {
     actions,
     buildings,
     buildingCatalog: CROWNS_BUILDINGS,
+    resourceCatalog: CROWNS_RESOURCES,
+    unitCatalog: CROWNS_UNITS,
     armies,
+    marketOrders: getCcMarketOrders.all(serverId).map(order => ({
+      id: order.id,
+      realmId: order.realm_id,
+      sellerName: order.seller_name,
+      sellResource: order.sell_resource,
+      sellAmount: order.sell_amount,
+      buyResource: order.buy_resource,
+      buyAmount: order.buy_amount,
+      status: order.status,
+      isOwn: order.realm_id === realm?.id,
+      createdAt: order.created_at,
+      buyerName: order.buyer_name || null
+    })),
+    expedition: { active: actions.filter(action => action.type === 'territory.claim').length, capacity: 2 },
     treaties,
     marriages,
     wars,
@@ -2373,7 +2518,7 @@ function claimCrownsTerritory(user, payload, requestedServerId) {
   const serverId = crownsServerId(requestedServerId);
   const realm = getCcRealmByUser.get(serverId, user.id);
   if (!realm) throw new Error('Funde um reino antes de ordenar uma colonização.');
-  if (getCcPendingClaimForRealm.get(serverId, realm.id)) throw new Error('Seu conselho já conduz uma expedição territorial.');
+  if (getCcPendingClaimsForRealm.all(serverId, realm.id).length >= 2) throw new Error('Seus dois grupos de exploradores já estão em marcha.');
   const regionId = String(payload?.regionId || '').trim().slice(0, 32);
   const region = getCcSeasonRegion.get(serverId, regionId);
   if (!region || region.owner_realm_id || region.status !== 'neutral') throw new Error('A região não está disponível para colonização.');
@@ -2385,12 +2530,12 @@ function claimCrownsTerritory(user, payload, requestedServerId) {
   const destination = crownsRegionMetadataById.get(regionId);
   const distanceKm = origin?.centroid && destination?.centroid ? Math.round(Math.hypot(destination.centroid[0] - origin.centroid[0], destination.centroid[1] - origin.centroid[1]) / 1000) : 180;
   const maritime = Boolean(origin?.routeNeighborIds?.includes(regionId) || destination?.routeNeighborIds?.includes(originId));
-  const travelHours = Math.max(2, Math.min(36, Math.round(2 + distanceKm / (maritime ? 45 : 70))));
-  const cost = { treasury: 120, provisions: 80, travelHours, distanceKm, maritime };
+  const travelMinutes = distanceKm <= 180 ? 5 : distanceKm <= 520 ? 20 : distanceKm <= 1100 ? 60 : 120;
+  const cost = { treasury: 120, provisions: 80, travelMinutes: maritime ? Math.max(20, travelMinutes) : travelMinutes, distanceKm, maritime };
   if (realm.treasury < cost.treasury || realm.provisions < cost.provisions) throw new Error('O tesouro não cobre a expedição.');
   const actionId = `action_${crypto.randomUUID()}`;
   const now = new Date();
-  const completesAt = new Date(now.getTime() + crownsActionDuration(travelHours)).toISOString();
+  const completesAt = new Date(now.getTime() + crownsExpeditionDuration(distanceKm, maritime)).toISOString();
   db.exec('BEGIN IMMEDIATE');
   try {
     const latest = getCcSeasonRegion.get(serverId, regionId);
@@ -2423,16 +2568,31 @@ function queueCrownsBuilding(user, payload, requestedServerId) {
   const pending = getCcPendingActionsForRealm.all(serverId, realm.id);
   if (pending.length >= 3) throw new Error('Seu conselho já conduz três ordens simultâneas.');
   if (pending.some(action => action.region_id === regionId && action.type === `building.${buildingType}`)) throw new Error('Esta melhoria já está em construção nessa região.');
-  const current = getCcBuildingsForRegion.all(serverId, regionId).find(item => item.building_type === buildingType);
-  if (Number(current?.level || 0) >= 5) throw new Error('Essa construção já alcançou o nível máximo.');
-  const cost = { treasury: definition.treasury, provisions: definition.provisions, buildingType, buildingName: definition.name, nextLevel: Number(current?.level || 0) + 1 };
+  const regionBuildings = getCcBuildingsForRegion.all(serverId, regionId);
+  const current = regionBuildings.find(item => item.building_type === buildingType);
+  const currentLevel = Number(current?.level || 0);
+  if (currentLevel >= Number(definition.maxLevel || 5)) throw new Error('Essa construção já alcançou o nível máximo.');
+  for (const [requiredType, requiredLevel] of Object.entries(definition.requires || {})) {
+    const actualLevel = Number(regionBuildings.find(item => item.building_type === requiredType)?.level || 0);
+    if (actualLevel < requiredLevel) throw new Error(`Esta obra exige ${CROWNS_BUILDINGS[requiredType]?.name || requiredType} no nível ${requiredLevel}.`);
+  }
+  const multiplier = 1 + currentLevel * 0.65;
+  const cost = {
+    treasury: Math.round(definition.treasury * multiplier),
+    provisions: Math.round(definition.provisions * multiplier),
+    wood: Math.round((definition.wood || 0) * multiplier),
+    stone: Math.round((definition.stone || 0) * multiplier),
+    buildingType,
+    buildingName: definition.name,
+    nextLevel: currentLevel + 1
+  };
   const now = new Date();
   const actionId = `action_${crypto.randomUUID()}`;
-  const completesAt = new Date(now.getTime() + crownsActionDuration(definition.hours)).toISOString();
+  const completesAt = new Date(now.getTime() + crownsActionDuration(definition.hours * (1 + currentLevel * 0.2))).toISOString();
   db.exec('BEGIN IMMEDIATE');
   try {
-    const spent = spendCcResources.run(cost.treasury, cost.provisions, now.toISOString(), realm.id, serverId, cost.treasury, cost.provisions);
-    if (Number(spent.changes) !== 1) throw new Error('O tesouro não cobre essa construção.');
+    const spent = spendCcStrategicResources.run(cost.treasury, cost.provisions, cost.wood, cost.stone, now.toISOString(), realm.id, serverId, cost.treasury, cost.provisions, cost.wood, cost.stone);
+    if (Number(spent.changes) !== 1) throw new Error('Faltam moedas, trigo, madeira ou pedra para essa obra.');
     insertCcAction.run(actionId, serverId, realm.id, user.id, `building.${buildingType}`, regionId, completesAt, JSON.stringify(cost), now.toISOString());
     db.exec('COMMIT');
   } catch (error) {
@@ -2450,19 +2610,36 @@ function queueCrownsRecruitment(user, payload, requestedServerId) {
   const regionId = String(payload?.regionId || realm.capital_region_id).trim().slice(0, 32);
   const region = getCcSeasonRegion.get(serverId, regionId);
   if (!region || region.owner_realm_id !== realm.id) throw new Error('O recrutamento precisa ocorrer em uma região do seu reino.');
-  const barracks = getCcBuildingsForRegion.all(serverId, regionId).find(item => item.building_type === 'quartel');
-  if (!barracks) throw new Error('Construa um quartel nessa região antes de recrutar.');
+  const unitType = CROWNS_UNITS[payload?.unitType] ? String(payload.unitType) : 'spearmen';
+  const definition = CROWNS_UNITS[unitType];
+  const groups = Math.max(1, Math.min(5, Number(payload?.groups || 1)));
+  const regionBuildings = getCcBuildingsForRegion.all(serverId, regionId);
+  for (const [requiredType, requiredLevel] of Object.entries(definition.requires || {})) {
+    const actualLevel = Number(regionBuildings.find(item => item.building_type === requiredType)?.level || 0);
+    if (actualLevel < requiredLevel) throw new Error(`${definition.name} exigem ${CROWNS_BUILDINGS[requiredType]?.name || requiredType} no nível ${requiredLevel}.`);
+  }
   const army = getCcArmiesForRealm.all(serverId, realm.id).find(item => item.region_id === regionId) || getCcArmiesForRealm.all(serverId, realm.id)[0];
   if (!army) throw new Error('Nenhum exército está disponível para receber os recrutas.');
   const pending = getCcPendingActionsForRealm.all(serverId, realm.id);
   if (pending.length >= 3) throw new Error('Seu conselho já conduz três ordens simultâneas.');
-  const cost = { treasury: 240, provisions: 320, armyId: army.id, infantry: 250, archers: 50, cavalry: 20, units: 320 };
+  const cost = {
+    treasury: definition.treasury * groups,
+    provisions: definition.provisions * groups,
+    wood: definition.wood * groups,
+    stone: definition.stone * groups,
+    armyId: army.id,
+    unitType,
+    unitName: definition.name,
+    units: definition.quantity * groups
+  };
   const now = new Date();
   const actionId = `action_${crypto.randomUUID()}`;
-  const completesAt = new Date(now.getTime() + crownsActionDuration(12)).toISOString();
+  const barracksLevel = Number(regionBuildings.find(item => item.building_type === 'quartel')?.level || 1);
+  const trainingHours = Math.max(1, definition.hours * groups * (1 - Math.min(0.4, (barracksLevel - 1) * 0.1)));
+  const completesAt = new Date(now.getTime() + crownsActionDuration(trainingHours)).toISOString();
   db.exec('BEGIN IMMEDIATE');
   try {
-    const spent = spendCcResources.run(cost.treasury, cost.provisions, now.toISOString(), realm.id, serverId, cost.treasury, cost.provisions);
+    const spent = spendCcStrategicResources.run(cost.treasury, cost.provisions, cost.wood, cost.stone, now.toISOString(), realm.id, serverId, cost.treasury, cost.provisions, cost.wood, cost.stone);
     if (Number(spent.changes) !== 1) throw new Error('Recursos insuficientes para levantar essa tropa.');
     insertCcAction.run(actionId, serverId, realm.id, user.id, 'army.recruit', regionId, completesAt, JSON.stringify(cost), now.toISOString());
     db.exec('COMMIT');
@@ -2484,7 +2661,7 @@ function cancelCrownsAction(user, payload, requestedServerId) {
   try {
     cancelCcAction.run(now, action.id, realm.id);
     if (action.type === 'territory.claim') releaseCcClaim.run(serverId, action.id);
-    refundCcClaim.run(Number(cost.treasury || 0), Number(cost.provisions || 0), now, realm.id, serverId);
+    refundCcStrategicResources.run(Number(cost.treasury || 0), Number(cost.provisions || 0), Number(cost.wood || 0), Number(cost.stone || 0), now, realm.id, serverId);
     insertCcEvent.run(crypto.randomUUID(), serverId, action.type === 'territory.claim' ? 'territory.claim.cancelled' : 'action.cancelled', realm.id, action.region_id, JSON.stringify({ actionId: action.id, type: action.type }), now);
     db.exec('COMMIT');
   } catch (error) {
@@ -2492,6 +2669,93 @@ function cancelCrownsAction(user, payload, requestedServerId) {
     throw error;
   }
   emitCrownsEvent('world.patch', { seasonId: serverId, type: 'territory.claim.cancelled', regionIds: [action.region_id], version: Date.now() });
+}
+
+function crownsResourceColumn(resource) {
+  const columns = { treasury: 'treasury', grain: 'provisions', wood: 'wood', stone: 'stone' };
+  return columns[resource] || null;
+}
+
+function crownsAdjustResource(realmId, serverId, resource, amount, requireBalance = false) {
+  const column = crownsResourceColumn(resource);
+  if (!column || !Number.isFinite(amount)) throw new Error('Recurso de mercado desconhecido.');
+  const requirement = requireBalance && amount < 0 ? ` AND ${column} >= ?` : '';
+  const statement = db.prepare(`UPDATE cc_realms SET ${column} = ${column} + ?, updated_at = ? WHERE id = ? AND season_id = ?${requirement}`);
+  const params = [Math.trunc(amount), new Date().toISOString(), realmId, serverId];
+  if (requirement) params.push(Math.abs(Math.trunc(amount)));
+  return statement.run(...params);
+}
+
+function createCrownsMarketOrder(user, payload, requestedServerId) {
+  const serverId = crownsServerId(requestedServerId);
+  const realm = getCcRealmByUser.get(serverId, user.id);
+  if (!realm) throw new Error('Funde um reino antes de negociar.');
+  const sellResource = String(payload?.sellResource || '');
+  const buyResource = String(payload?.buyResource || '');
+  const sellAmount = Math.max(50, Math.min(2000, Math.trunc(Number(payload?.sellAmount || 0))));
+  const buyAmount = Math.max(50, Math.min(2000, Math.trunc(Number(payload?.buyAmount || 0))));
+  if (!crownsResourceColumn(sellResource) || !crownsResourceColumn(buyResource) || sellResource === buyResource) throw new Error('Escolha dois recursos diferentes para a oferta.');
+  const capitalMarket = getCcBuildingsForRegion.all(serverId, realm.capital_region_id).find(item => item.building_type === 'mercado');
+  if (!capitalMarket) throw new Error('Construa um mercado na capital para publicar ofertas.');
+  const openOwn = getCcMarketOrders.all(serverId).filter(order => order.realm_id === realm.id && order.status === 'open');
+  if (openOwn.length >= Math.max(2, Number(capitalMarket.level) + 1)) throw new Error('Seu mercado já atingiu o limite de ofertas abertas.');
+  const id = `market_${crypto.randomUUID()}`;
+  const now = new Date().toISOString();
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    const reserved = crownsAdjustResource(realm.id, serverId, sellResource, -sellAmount, true);
+    if (!reserved.changes) throw new Error(`Você não possui ${sellAmount} de ${CROWNS_RESOURCES[sellResource]?.name || sellResource}.`);
+    insertCcMarketOrder.run(id, serverId, realm.id, sellResource, sellAmount, buyResource, buyAmount, now);
+    insertCcEvent.run(crypto.randomUUID(), serverId, 'market.offer.created', realm.id, realm.capital_region_id, JSON.stringify({ sellResource, sellAmount, buyResource, buyAmount }), now);
+    db.exec('COMMIT');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+  emitCrownsEvent('world.patch', { seasonId: serverId, type: 'market.offer.created', version: Date.now() });
+  return getCcMarketOrder.get(id, serverId);
+}
+
+function acceptCrownsMarketOffer(user, payload, requestedServerId) {
+  const serverId = crownsServerId(requestedServerId);
+  const realm = getCcRealmByUser.get(serverId, user.id);
+  const order = getCcMarketOrder.get(String(payload?.orderId || ''), serverId);
+  if (!realm || !order || order.status !== 'open' || order.realm_id === realm.id) throw new Error('Esta oferta não pode ser aceita.');
+  const now = new Date().toISOString();
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    const paid = crownsAdjustResource(realm.id, serverId, order.buy_resource, -Number(order.buy_amount), true);
+    if (!paid.changes) throw new Error(`Faltam ${CROWNS_RESOURCES[order.buy_resource]?.name || order.buy_resource} para aceitar a oferta.`);
+    if (!acceptCcMarketOrder.run(realm.id, now, order.id, serverId).changes) throw new Error('Outra coroa aceitou esta oferta primeiro.');
+    crownsAdjustResource(order.realm_id, serverId, order.buy_resource, Number(order.buy_amount));
+    crownsAdjustResource(realm.id, serverId, order.sell_resource, Number(order.sell_amount));
+    insertCcEvent.run(crypto.randomUUID(), serverId, 'market.trade.completed', realm.id, realm.capital_region_id, JSON.stringify({ orderId: order.id, sellerRealmId: order.realm_id, sellResource: order.sell_resource, sellAmount: order.sell_amount, buyResource: order.buy_resource, buyAmount: order.buy_amount }), now);
+    db.exec('COMMIT');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+  emitCrownsEvent('world.patch', { seasonId: serverId, type: 'market.trade.completed', version: Date.now() });
+  return { orderId: order.id, status: 'accepted' };
+}
+
+function cancelCrownsMarketOffer(user, payload, requestedServerId) {
+  const serverId = crownsServerId(requestedServerId);
+  const realm = getCcRealmByUser.get(serverId, user.id);
+  const order = realm && getCcMarketOrder.get(String(payload?.orderId || ''), serverId);
+  if (!realm || !order || order.realm_id !== realm.id || order.status !== 'open') throw new Error('Esta oferta não pode ser cancelada.');
+  const now = new Date().toISOString();
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    if (!cancelCcMarketOrder.run(now, order.id, serverId, realm.id).changes) throw new Error('A oferta já foi encerrada.');
+    crownsAdjustResource(realm.id, serverId, order.sell_resource, Number(order.sell_amount));
+    db.exec('COMMIT');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+  emitCrownsEvent('world.patch', { seasonId: serverId, type: 'market.offer.cancelled', version: Date.now() });
+  return { orderId: order.id, status: 'cancelled' };
 }
 
 function crownsTargetRealm(user, serverId, targetRealmId) {
@@ -2576,7 +2840,7 @@ function declareCrownsWar(user, payload, requestedServerId) {
   if (!region || !target || target.id === realm.id || !safeJsonParse(region.neighbor_ids_json, []).some(id => owned.has(id))) throw new Error('Escolha uma província inimiga na sua fronteira.');
   if (getCcActiveTreatyBetween.get(serverId, realm.id, target.id, target.id, realm.id)) throw new Error('Um tratado ativo impede esta declaração de guerra.');
   const army = getCcArmiesForRealm.all(serverId, realm.id)[0];
-  if (!army || army.infantry + army.archers + army.cavalry < 350) throw new Error('Sua hoste ainda é pequena demais para uma invasão.');
+  if (!army || army.infantry + army.archers + army.cavalry + Number(army.siege || 0) * 6 < 350) throw new Error('Sua hoste ainda é pequena demais para uma invasão.');
   const now = new Date();
   const cost = { treasury: 180, provisions: 220, armyId: army.id, defenderRealmId: target.id, warId: `war_${crypto.randomUUID()}` };
   const spent = spendCcResources.run(cost.treasury, cost.provisions, now.toISOString(), realm.id, serverId, cost.treasury, cost.provisions);
@@ -2750,10 +3014,17 @@ function processCrownsActions() {
         eventType = 'building.completed';
         eventPayload = { buildingType, buildingName: CROWNS_BUILDINGS[buildingType].name, level: cost.nextLevel };
       } else if (action.type === 'army.recruit') {
-        const reinforced = reinforceCcArmy.run(Number(cost.infantry || 0), Number(cost.archers || 0), Number(cost.cavalry || 0), now, cost.armyId, action.season_id);
+        const reinforcementByType = {
+          spearmen: reinforceCcSpearmen,
+          archers: reinforceCcArchers,
+          cavalry: reinforceCcCavalry,
+          siege: reinforceCcSiege
+        };
+        const unitType = reinforcementByType[cost.unitType] ? cost.unitType : 'spearmen';
+        const reinforced = reinforcementByType[unitType].run(Number(cost.units || 0), now, cost.armyId, action.season_id);
         if (Number(reinforced.changes) !== 1) throw new Error('Army unavailable');
         eventType = 'army.recruited';
-        eventPayload = { units: Number(cost.units || 0) };
+        eventPayload = { units: Number(cost.units || 0), unitType, unitName: CROWNS_UNITS[unitType]?.name };
       } else if (action.type === 'army.defend') {
         const army = getCcArmyById.get(cost.armyId, action.season_id);
         if (!army) throw new Error('Army unavailable');
@@ -2774,10 +3045,15 @@ function processCrownsActions() {
         const defenders = getCcArmiesForRealm.all(action.season_id, cost.defenderRealmId);
         const defender = defenders[0];
         if (!war || !attacker) throw new Error('Campaign unavailable');
-        const fort = getCcBuildingsForRegion.all(action.season_id, action.region_id).filter(item => item.building_type === 'fortaleza').reduce((sum, item) => sum + item.level, 0);
+        const defenses = getCcBuildingsForRegion.all(action.season_id, action.region_id);
+        const fort = defenses.filter(item => item.building_type === 'fortaleza').reduce((sum, item) => sum + item.level, 0);
+        const walls = defenses.filter(item => item.building_type === 'muralha').reduce((sum, item) => sum + item.level, 0);
+        const towers = defenses.filter(item => item.building_type === 'torre_vigia').reduce((sum, item) => sum + item.level, 0);
         const random = seededCrownsRandom(`${war.id}:${action.id}`);
-        const attackPower = (attacker.infantry + attacker.archers * 1.15 + attacker.cavalry * 1.4) * (attacker.morale / 100) * (0.88 + random() * 0.24);
-        const defensePower = ((defender?.infantry || 180) + (defender?.archers || 40) * 1.2 + (defender?.cavalry || 10) * 1.25) * ((defender?.morale || 62) / 100) * (1 + fort * 0.22) * (0.9 + random() * 0.2);
+        const siegeBreach = Math.min(0.65, Number(attacker.siege || 0) * 0.025);
+        const fortification = Math.max(1, 1 + fort * 0.35 + walls * 0.16 + towers * 0.08 - siegeBreach);
+        const attackPower = (attacker.infantry + attacker.archers * 1.15 + attacker.cavalry * 1.4 + Number(attacker.siege || 0) * 2.8) * (attacker.morale / 100) * (0.88 + random() * 0.24);
+        const defensePower = ((defender?.infantry || 180) + (defender?.archers || 40) * 1.2 + (defender?.cavalry || 10) * 1.25 + Number(defender?.siege || 0) * 0.35) * ((defender?.morale || 62) / 100) * fortification * (0.9 + random() * 0.2);
         const victory = attackPower > defensePower;
         const attackerLoss = victory ? 0.22 : 0.43;
         updateCcArmyAfterBattle.run(Math.max(40, Math.floor(attacker.infantry * (1 - attackerLoss))), Math.floor(attacker.archers * (1 - attackerLoss)), Math.floor(attacker.cavalry * (1 - attackerLoss)), Math.max(30, attacker.morale + (victory ? 8 : -18)), victory ? action.region_id : attacker.region_id, now, attacker.id, action.season_id);
@@ -2785,7 +3061,10 @@ function processCrownsActions() {
           const defenderLoss = victory ? 0.48 : 0.25;
           updateCcArmyAfterBattle.run(Math.max(20, Math.floor(defender.infantry * (1 - defenderLoss))), Math.floor(defender.archers * (1 - defenderLoss)), Math.floor(defender.cavalry * (1 - defenderLoss)), Math.max(25, defender.morale + (victory ? -20 : 7)), defender.region_id, now, defender.id, action.season_id);
         }
-        if (victory) transferCcRegion.run(action.realm_id, action.season_id, action.region_id, cost.defenderRealmId);
+        if (victory) {
+          transferCcRegion.run(action.realm_id, action.season_id, action.region_id, cost.defenderRealmId);
+          preserveCrownsRealmAfterConquest(action.season_id, cost.defenderRealmId, action.region_id, now);
+        }
         finishCcWar.run(victory ? 100 : -45, JSON.stringify({ victory, attackPower: Math.round(attackPower), defensePower: Math.round(defensePower) }), now, war.id, action.season_id);
         db.prepare('UPDATE cc_realms SET prestige = max(0, prestige + ?), stability = max(10, stability + ?), updated_at = ? WHERE id = ? AND season_id = ?').run(victory ? 10 : -4, victory ? 3 : -4, now, action.realm_id, action.season_id);
         eventType = victory ? 'war.victory' : 'war.defeat';
@@ -2869,6 +3148,7 @@ function processCrownsSeparatistRevolts(serverId) {
       );
       const transferred = transferCcRegion.run(realmId, serverId, region.region_id, origin.id);
       if (Number(transferred.changes) !== 1) throw new Error('A província separatista mudou de domínio.');
+      preserveCrownsRealmAfterConquest(serverId, origin.id, region.region_id, now);
       seedCcStartingAssets(serverId, realmId, region.region_id, now, true);
       stabilizeCcRealmAfterRevolt.run(now, origin.id, serverId);
       insertCcEvent.run(crypto.randomUUID(), serverId, 'revolution.separatist', realmId, region.region_id, JSON.stringify({
@@ -2974,6 +3254,21 @@ async function handleApi(req, res, url, user) {
         const payload = safeJsonParse(await readBody(req) || '{}', {});
         const action = queueCrownsRecruitment(user, payload, payload.serverId);
         json(res, 202, { ok: true, action: { id: action.id, regionId: action.region_id, completesAt: action.completes_at } });
+        return;
+      }
+      if (req.method === 'POST' && url.pathname === '/api/crowns-and-councils/market/orders') {
+        const payload = safeJsonParse(await readBody(req) || '{}', {});
+        json(res, 201, { ok: true, order: createCrownsMarketOrder(user, payload, payload.serverId) });
+        return;
+      }
+      if (req.method === 'POST' && url.pathname === '/api/crowns-and-councils/market/accept') {
+        const payload = safeJsonParse(await readBody(req) || '{}', {});
+        json(res, 200, { ok: true, order: acceptCrownsMarketOffer(user, payload, payload.serverId) });
+        return;
+      }
+      if (req.method === 'POST' && url.pathname === '/api/crowns-and-councils/market/cancel') {
+        const payload = safeJsonParse(await readBody(req) || '{}', {});
+        json(res, 200, { ok: true, order: cancelCrownsMarketOffer(user, payload, payload.serverId) });
         return;
       }
       if (req.method === 'POST' && url.pathname === '/api/crowns-and-councils/armies/defend') {

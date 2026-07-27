@@ -1,6 +1,7 @@
 const crypto = require('node:crypto');
 
 const COLORS = ['branco', 'vermelho', 'verde', 'roxo'];
+const DRAW_KINDS = new Set(['mais2', 'mais4']);
 const TABLES = Object.freeze([
   { id: 'dupla-1', name: 'Mesa Melanchthon', capacity: 2, mode: 'Dupla' },
   { id: 'dupla-2', name: 'Mesa Catarina', capacity: 2, mode: 'Dupla' },
@@ -9,8 +10,9 @@ const TABLES = Object.freeze([
   { id: 'comunidade-2', name: 'Mesa Augsburgo', capacity: 4, mode: 'Comunidade' }
 ]);
 const TABLE_BY_ID = new Map(TABLES.map(table => [table.id, table]));
+const BOT_NAMES = ['Käthe', 'Felipe', 'Johann', 'Elisabeth'];
 
-function createCoresDaRosaService({ db, gameId = 'cores-da-rosa' }) {
+function createCoresDaRosaService({ db, gameId = 'cores-da-rosa', allowBots = false }) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS cdr_room_members (
       room_id TEXT NOT NULL,
@@ -45,18 +47,17 @@ function createCoresDaRosaService({ db, gameId = 'cores-da-rosa' }) {
     );
   `);
 
-  // Mesas são sessões ao vivo. Reiniciar o processo encerra partidas antigas,
-  // enquanto vitórias e pontuação continuam persistidas.
+  // Partidas ao vivo são reiniciadas com o processo. O histórico da conta permanece.
   db.exec('DELETE FROM cdr_room_members; DELETE FROM cdr_room_games;');
   db.prepare("DELETE FROM cdr_invites WHERE status = 'pending'").run();
 
-  const listMembers = db.prepare('SELECT room_id, user_id, user_name, seat, joined_at FROM cdr_room_members ORDER BY room_id, seat');
   const listRoomMembers = db.prepare('SELECT room_id, user_id, user_name, seat, joined_at FROM cdr_room_members WHERE room_id = ? ORDER BY seat');
   const findMembership = db.prepare('SELECT room_id, user_id, user_name, seat, joined_at FROM cdr_room_members WHERE user_id = ? LIMIT 1');
   const findRoomMembership = db.prepare('SELECT room_id, user_id, user_name, seat, joined_at FROM cdr_room_members WHERE room_id = ? AND user_id = ?');
   const insertMember = db.prepare('INSERT INTO cdr_room_members (room_id, user_id, user_name, seat, joined_at) VALUES (?, ?, ?, ?, ?)');
   const deleteMember = db.prepare('DELETE FROM cdr_room_members WHERE room_id = ? AND user_id = ?');
   const deleteUserMembership = db.prepare('DELETE FROM cdr_room_members WHERE user_id = ?');
+  const deleteRoomBots = db.prepare("DELETE FROM cdr_room_members WHERE room_id = ? AND user_id LIKE 'cdr-bot:%'");
   const getGameRow = db.prepare('SELECT state_json FROM cdr_room_games WHERE room_id = ?');
   const putGame = db.prepare(`
     INSERT INTO cdr_room_games (room_id, state_json, updated_at) VALUES (?, ?, ?)
@@ -79,15 +80,15 @@ function createCoresDaRosaService({ db, gameId = 'cores-da-rosa' }) {
       updated_at = excluded.updated_at
   `);
   const getStats = db.prepare('SELECT user_id, user_name, matches, wins, points FROM cdr_stats WHERE user_id = ?');
-  const ranking = db.prepare('SELECT user_id, user_name, matches, wins, points FROM cdr_stats ORDER BY wins DESC, points DESC, matches ASC LIMIT 10');
+  const ranking = db.prepare("SELECT user_id, user_name, matches, wins, points FROM cdr_stats WHERE user_id NOT LIKE 'cdr-bot:%' ORDER BY wins DESC, points DESC, matches ASC LIMIT 10");
 
   const onlineSockets = new Map();
   const disconnectTimers = new Map();
+  const botTimers = new Map();
   let namespace = null;
 
-  function now() {
-    return new Date().toISOString();
-  }
+  const now = () => new Date().toISOString();
+  const isBotId = userId => String(userId || '').startsWith('cdr-bot:');
 
   function parseState(roomId) {
     const row = getGameRow.get(roomId);
@@ -118,20 +119,21 @@ function createCoresDaRosaService({ db, gameId = 'cores-da-rosa' }) {
     let serial = 0;
     const deck = [];
     for (const color of COLORS) {
+      deck.push({ id: `${color}-0-${serial++}`, color, kind: 'numero', value: 0 });
       for (let value = 1; value <= 9; value += 1) {
         for (let copy = 0; copy < 2; copy += 1) {
           deck.push({ id: `${color}-${value}-${copy}-${serial++}`, color, kind: 'numero', value });
         }
       }
-      for (const kind of ['cantico', 'procissao', 'partilha']) {
+      for (const kind of ['pular', 'inverter', 'mais2']) {
         for (let copy = 0; copy < 2; copy += 1) {
           deck.push({ id: `${color}-${kind}-${copy}-${serial++}`, color, kind, value: null });
         }
       }
     }
     for (let copy = 0; copy < 4; copy += 1) {
-      deck.push({ id: `rosa-${copy}-${serial++}`, color: null, kind: 'rosa', value: null });
-      deck.push({ id: `concilio-${copy}-${serial++}`, color: null, kind: 'concilio', value: null });
+      deck.push({ id: `coringa-${copy}-${serial++}`, color: null, kind: 'coringa', value: null });
+      deck.push({ id: `mais4-${copy}-${serial++}`, color: null, kind: 'mais4', value: null });
     }
     return shuffle(deck);
   }
@@ -145,22 +147,30 @@ function createCoresDaRosaService({ db, gameId = 'cores-da-rosa' }) {
     return state.deck.pop() || null;
   }
 
+  function drawMany(state, userId, amount) {
+    for (let count = 0; count < amount; count += 1) {
+      const card = drawOne(state);
+      if (card) state.hands[userId].push(card);
+    }
+  }
+
   function scoreCard(card) {
     if (card.kind === 'numero') return Number(card.value || 0);
-    if (card.kind === 'rosa' || card.kind === 'concilio') return 18;
-    return 12;
+    if (card.kind === 'coringa' || card.kind === 'mais4') return 50;
+    return 20;
   }
 
   function nextIndex(state, from = state.turnIndex, steps = 1) {
     const size = state.players.length;
-    return (from + state.direction * steps + size * 10) % size;
+    return (from + state.direction * steps + size * 20) % size;
   }
 
-  function canPlay(card, state) {
+  function canPlayFirst(card, state) {
     if (!card) return false;
-    if (card.kind === 'rosa' || card.kind === 'concilio') return true;
-    const top = state.discard[state.discard.length - 1];
+    if (state.pendingDraw > 0) return DRAW_KINDS.has(card.kind);
+    if (card.kind === 'coringa' || card.kind === 'mais4') return true;
     if (card.color === state.activeColor) return true;
+    const top = state.discard[state.discard.length - 1];
     if (card.kind === 'numero') return top?.kind === 'numero' && card.value === top.value;
     return card.kind === top?.kind;
   }
@@ -168,7 +178,7 @@ function createCoresDaRosaService({ db, gameId = 'cores-da-rosa' }) {
   function createMatch(roomId, members) {
     const deck = createDeck();
     const hands = Object.fromEntries(members.map(member => [member.user_id, []]));
-    for (let round = 0; round < 6; round += 1) {
+    for (let round = 0; round < 7; round += 1) {
       members.forEach(member => hands[member.user_id].push(deck.pop()));
     }
     let opening = deck.pop();
@@ -181,11 +191,11 @@ function createCoresDaRosaService({ db, gameId = 'cores-da-rosa' }) {
       id: crypto.randomUUID(),
       roomId,
       status: 'playing',
-      round: 1,
       players: members.map(member => ({
         userId: member.user_id,
         name: member.user_name,
-        seat: member.seat
+        seat: member.seat,
+        isBot: isBotId(member.user_id)
       })),
       hands,
       deck,
@@ -193,6 +203,7 @@ function createCoresDaRosaService({ db, gameId = 'cores-da-rosa' }) {
       activeColor: opening.color,
       turnIndex: first,
       direction: 1,
+      pendingDraw: 0,
       drawnCardId: null,
       message: `A vez é de ${members[first].user_name}.`,
       winnerId: null,
@@ -223,14 +234,21 @@ function createCoresDaRosaService({ db, gameId = 'cores-da-rosa' }) {
       topCard: publicCard(top),
       deckCount: state.deck.length,
       direction: state.direction,
+      pendingDraw: state.pendingDraw,
       currentUserId: current?.userId || null,
       isMyTurn: state.status === 'playing' && current?.userId === userId,
       mayPass: current?.userId === userId && Boolean(state.drawnCardId),
-      hand: hand.map(card => ({ ...publicCard(card), playable: current?.userId === userId && canPlay(card, state) })),
+      drawnCardId: current?.userId === userId ? state.drawnCardId : null,
+      hand: hand.map(card => ({
+        ...publicCard(card),
+        playable: current?.userId === userId
+          && (!state.drawnCardId || state.drawnCardId === card.id)
+          && canPlayFirst(card, state)
+      })),
       players: state.players.map(player => ({
         ...player,
         cardCount: state.hands[player.userId]?.length || 0,
-        connected: onlineSockets.has(player.userId)
+        connected: player.isBot || onlineSockets.has(player.userId)
       })),
       message: state.message,
       winnerId: state.winnerId,
@@ -254,7 +272,8 @@ function createCoresDaRosaService({ db, gameId = 'cores-da-rosa' }) {
         userId: member.user_id,
         name: member.user_name,
         seat: member.seat,
-        connected: onlineSockets.has(member.user_id)
+        isBot: isBotId(member.user_id),
+        connected: isBotId(member.user_id) || onlineSockets.has(member.user_id)
       }))
     };
   }
@@ -267,6 +286,7 @@ function createCoresDaRosaService({ db, gameId = 'cores-da-rosa' }) {
       .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
     return {
       gameId,
+      localPreview: allowBots,
       me: { id: user.id, name: user.name },
       tables: TABLES.map(table => tableView(table, user.id)),
       online,
@@ -296,13 +316,15 @@ function createCoresDaRosaService({ db, gameId = 'cores-da-rosa' }) {
 
   function emitRoom(roomId) {
     if (!namespace) return;
+    const table = TABLE_BY_ID.get(roomId);
     const members = listRoomMembers.all(roomId);
     const state = parseState(roomId);
     members.forEach(member => emitUser(member.user_id, 'game:state', {
-      table: tableView(TABLE_BY_ID.get(roomId), member.user_id),
+      table: tableView(table, member.user_id),
       game: gameView(state, member.user_id)
     }));
     emitLobby();
+    scheduleBot(roomId);
   }
 
   function maybeStart(roomId) {
@@ -337,6 +359,23 @@ function createCoresDaRosaService({ db, gameId = 'cores-da-rosa' }) {
     emitRoom(roomId);
   }
 
+  function fillWithBots(user) {
+    if (!allowBots) throw new Error('Jogadores de teste só estão disponíveis na prévia local.');
+    const member = findMembership.get(user.id);
+    if (!member) throw new Error('Entre em uma mesa antes de adicionar jogadores de teste.');
+    if (parseState(member.room_id)?.status === 'playing') throw new Error('A partida já começou.');
+    const table = TABLE_BY_ID.get(member.room_id);
+    const members = listRoomMembers.all(member.room_id);
+    const occupied = new Set(members.map(item => item.seat));
+    for (let seat = 0; seat < table.capacity; seat += 1) {
+      if (occupied.has(seat)) continue;
+      const botId = `cdr-bot:${member.room_id}:${seat}`;
+      insertMember.run(member.room_id, botId, `Bot ${BOT_NAMES[seat] || seat + 1}`, seat, now());
+    }
+    maybeStart(member.room_id);
+    emitRoom(member.room_id);
+  }
+
   function finishMatch(state, winnerId, message) {
     if (state.status !== 'playing') return;
     const winner = state.players.find(player => player.userId === winnerId);
@@ -349,7 +388,7 @@ function createCoresDaRosaService({ db, gameId = 'cores-da-rosa' }) {
     state.winnerName = winner?.name || 'Jogador';
     state.pointsAwarded = points;
     state.message = message || `${state.winnerName} completou a mão!`;
-    state.players.forEach(player => {
+    state.players.filter(player => !player.isBot).forEach(player => {
       upsertStats.run(player.userId, player.name, player.userId === winnerId ? 1 : 0, player.userId === winnerId ? points : 0, now());
     });
     saveState(state);
@@ -360,82 +399,107 @@ function createCoresDaRosaService({ db, gameId = 'cores-da-rosa' }) {
     if (!member) return;
     const state = parseState(member.room_id);
     if (state?.status === 'playing') {
-      const contenders = state.players.filter(player => player.userId !== user.id);
+      const contenders = state.players.filter(player => player.userId !== user.id && !player.isBot);
       if (contenders.length) finishMatch(state, contenders[0].userId, `${user.name} saiu; ${contenders[0].name} venceu por permanência.`);
     }
     deleteMember.run(member.room_id, user.id);
-    if (!listRoomMembers.all(member.room_id).length) deleteGame.run(member.room_id);
+    if (allowBots) deleteRoomBots.run(member.room_id);
+    if (!listRoomMembers.all(member.room_id).length || allowBots) deleteGame.run(member.room_id);
+    clearTimeout(botTimers.get(member.room_id));
+    botTimers.delete(member.room_id);
     emitRoom(member.room_id);
   }
 
-  function applyCard(user, cardId, chosenColor) {
+  function validatePlay(state, userId, cardIds, chosenColor) {
+    if (!Array.isArray(cardIds) || !cardIds.length) throw new Error('Escolha pelo menos uma carta.');
+    if (new Set(cardIds).size !== cardIds.length) throw new Error('A mesma carta não pode aparecer duas vezes.');
+    const hand = state.hands[userId];
+    const cards = cardIds.map(cardId => hand.find(card => card.id === cardId));
+    if (cards.some(card => !card)) throw new Error('Uma das cartas não está na sua mão.');
+    const first = cards[0];
+    if (!canPlayFirst(first, state)) {
+      throw new Error(state.pendingDraw > 0 ? `Responda com +2 ou +4, ou compre ${state.pendingDraw}.` : 'A primeira carta não combina com a mesa.');
+    }
+    if (state.drawnCardId && (cards.length !== 1 || first.id !== state.drawnCardId)) {
+      throw new Error('Depois de comprar, apenas a carta comprada pode ser jogada.');
+    }
+    if (cards.length > 1) {
+      if (state.pendingDraw > 0 || first.kind !== 'numero') throw new Error('Somente números iguais podem ser baixados em sequência.');
+      if (cards.some(card => card.kind !== 'numero' || card.value !== first.value)) {
+        throw new Error('Todas as cartas da sequência precisam ter o mesmo número.');
+      }
+    }
+    if ((first.kind === 'coringa' || first.kind === 'mais4') && !COLORS.includes(chosenColor)) {
+      throw new Error('Escolha a próxima cor.');
+    }
+    return cards;
+  }
+
+  function applyCards(user, cardIds, chosenColor) {
     const member = findMembership.get(user.id);
     if (!member) throw new Error('Você não está em uma mesa.');
     const state = parseState(member.room_id);
     if (!state || state.status !== 'playing') throw new Error('A partida ainda não começou.');
     const current = state.players[state.turnIndex];
     if (current?.userId !== user.id) throw new Error('Aguarde a sua vez.');
+    const cards = validatePlay(state, user.id, cardIds, chosenColor);
     const hand = state.hands[user.id];
-    const index = hand.findIndex(card => card.id === cardId);
-    const card = hand[index];
-    if (!card || !canPlay(card, state)) throw new Error('Esta carta não pode ser jogada agora.');
-    if ((card.kind === 'rosa' || card.kind === 'concilio') && !COLORS.includes(chosenColor)) {
-      throw new Error('Escolha a próxima cor.');
-    }
-
-    hand.splice(index, 1);
-    state.discard.push(card);
+    cards.forEach(card => {
+      hand.splice(hand.findIndex(item => item.id === card.id), 1);
+      state.discard.push(card);
+    });
     state.drawnCardId = null;
-    state.activeColor = card.color || chosenColor;
 
-    if (!hand.length) {
-      finishMatch(state, user.id);
-      emitRoom(member.room_id);
-      return;
-    }
+    const first = cards[0];
+    const last = cards[cards.length - 1];
+    state.activeColor = last.color || chosenColor;
 
-    if (card.kind === 'procissao') {
+    if (first.kind === 'mais2' || first.kind === 'mais4') {
+      state.pendingDraw += first.kind === 'mais2' ? 2 : 4;
+      state.turnIndex = nextIndex(state);
+      state.message = `${user.name} acumulou +${state.pendingDraw}. ${state.players[state.turnIndex].name} precisa responder ou comprar.`;
+    } else if (first.kind === 'inverter') {
       state.direction *= -1;
-      state.turnIndex = nextIndex(state);
-      state.message = `A procissão mudou de direção. Vez de ${state.players[state.turnIndex].name}.`;
-    } else if (card.kind === 'cantico') {
+      state.turnIndex = state.players.length === 2 ? nextIndex(state, state.turnIndex, 2) : nextIndex(state);
+      state.message = `A direção mudou. Vez de ${state.players[state.turnIndex].name}.`;
+    } else if (first.kind === 'pular') {
+      const skipped = state.players[nextIndex(state)];
       state.turnIndex = nextIndex(state, state.turnIndex, 2);
-      state.message = `O cântico segurou uma vez. Agora joga ${state.players[state.turnIndex].name}.`;
-    } else if (card.kind === 'partilha') {
-      const targetIndex = nextIndex(state);
-      const target = state.players[targetIndex];
-      for (let count = 0; count < 2; count += 1) {
-        const drawn = drawOne(state);
-        if (drawn) state.hands[target.userId].push(drawn);
-      }
-      state.turnIndex = nextIndex(state, targetIndex);
-      state.message = `${target.name} recebeu duas cartas na partilha. Vez de ${state.players[state.turnIndex].name}.`;
-    } else if (card.kind === 'concilio') {
-      state.players.forEach(player => {
-        if (player.userId === user.id) return;
-        const drawn = drawOne(state);
-        if (drawn) state.hands[player.userId].push(drawn);
-      });
-      state.turnIndex = nextIndex(state);
-      state.message = `O concílio reuniu a mesa em ${state.activeColor}. Vez de ${state.players[state.turnIndex].name}.`;
+      state.message = `${skipped?.name || 'Um jogador'} perdeu a vez. Vez de ${state.players[state.turnIndex].name}.`;
     } else {
       state.turnIndex = nextIndex(state);
-      state.message = `Vez de ${state.players[state.turnIndex].name}.`;
+      state.message = cards.length > 1
+        ? `${user.name} baixou ${cards.length} cartas de número ${first.value}. Vez de ${state.players[state.turnIndex].name}.`
+        : `Vez de ${state.players[state.turnIndex].name}.`;
     }
-    saveState(state);
+
+    if (!hand.length) finishMatch(state, user.id);
+    else saveState(state);
     emitRoom(member.room_id);
   }
 
-  function drawCard(user) {
+  function drawCards(user) {
     const member = findMembership.get(user.id);
     const state = member && parseState(member.room_id);
     if (!state || state.status !== 'playing') throw new Error('A partida ainda não começou.');
     if (state.players[state.turnIndex]?.userId !== user.id) throw new Error('Aguarde a sua vez.');
     if (state.drawnCardId) throw new Error('Você já comprou uma carta. Jogue-a ou passe.');
+
+    if (state.pendingDraw > 0) {
+      const amount = state.pendingDraw;
+      drawMany(state, user.id, amount);
+      state.pendingDraw = 0;
+      state.turnIndex = nextIndex(state);
+      state.message = `${user.name} comprou ${amount} cartas. Vez de ${state.players[state.turnIndex].name}.`;
+      saveState(state);
+      emitRoom(member.room_id);
+      return;
+    }
+
     const card = drawOne(state);
     if (!card) throw new Error('O monte está vazio.');
     state.hands[user.id].push(card);
-    if (canPlay(card, state)) {
+    if (canPlayFirst(card, state)) {
       state.drawnCardId = card.id;
       state.message = `${user.name} comprou uma carta jogável.`;
     } else {
@@ -456,6 +520,52 @@ function createCoresDaRosaService({ db, gameId = 'cores-da-rosa' }) {
     state.message = `${user.name} passou. Vez de ${state.players[state.turnIndex].name}.`;
     saveState(state);
     emitRoom(member.room_id);
+  }
+
+  function bestBotColor(hand) {
+    return COLORS
+      .map(color => ({ color, count: hand.filter(card => card.color === color).length }))
+      .sort((a, b) => b.count - a.count)[0]?.color || COLORS[crypto.randomInt(COLORS.length)];
+  }
+
+  function scheduleBot(roomId) {
+    clearTimeout(botTimers.get(roomId));
+    botTimers.delete(roomId);
+    const state = parseState(roomId);
+    const current = state?.players[state.turnIndex];
+    if (!state || state.status !== 'playing' || !current?.isBot) return;
+    const timer = setTimeout(() => {
+      botTimers.delete(roomId);
+      playBotTurn(roomId);
+    }, 850);
+    timer.unref?.();
+    botTimers.set(roomId, timer);
+  }
+
+  function playBotTurn(roomId) {
+    const state = parseState(roomId);
+    const bot = state?.players[state.turnIndex];
+    if (!state || state.status !== 'playing' || !bot?.isBot) return;
+    const hand = state.hands[bot.userId];
+    const playable = hand.filter(card => canPlayFirst(card, state) && (!state.drawnCardId || card.id === state.drawnCardId));
+
+    if (!playable.length) {
+      drawCards({ id: bot.userId, name: bot.name });
+      return;
+    }
+
+    const first = playable.find(card => DRAW_KINDS.has(card.kind))
+      || playable.find(card => card.kind !== 'coringa')
+      || playable[0];
+    const sequence = first.kind === 'numero' && !state.drawnCardId
+      ? hand.filter(card => card.kind === 'numero' && card.value === first.value).slice(0, 4)
+      : [first];
+    if (sequence[0].id !== first.id) {
+      sequence.splice(sequence.findIndex(card => card.id === first.id), 1);
+      sequence.unshift(first);
+    }
+    const chosenColor = first.kind === 'coringa' || first.kind === 'mais4' ? bestBotColor(hand.filter(card => card.id !== first.id)) : '';
+    applyCards({ id: bot.userId, name: bot.name }, sequence.map(card => card.id), chosenColor);
   }
 
   function sendInvite(user, toUserId, roomId) {
@@ -494,10 +604,11 @@ function createCoresDaRosaService({ db, gameId = 'cores-da-rosa' }) {
     state.rematchVotes ||= [];
     if (!state.rematchVotes.includes(user.id)) state.rematchVotes.push(user.id);
     const members = listRoomMembers.all(member.room_id);
-    if (members.length === TABLE_BY_ID.get(member.room_id).capacity && state.rematchVotes.length === members.length) {
+    const humans = members.filter(item => !isBotId(item.user_id));
+    if (members.length === TABLE_BY_ID.get(member.room_id).capacity && state.rematchVotes.length >= humans.length) {
       createMatch(member.room_id, members);
     } else {
-      state.message = `${state.rematchVotes.length}/${members.length} confirmaram a revanche.`;
+      state.message = `${state.rematchVotes.length}/${humans.length} jogadores confirmaram a revanche.`;
       saveState(state);
     }
     emitRoom(member.room_id);
@@ -539,6 +650,7 @@ function createCoresDaRosaService({ db, gameId = 'cores-da-rosa' }) {
 
       socket.on('lobby:join', (payload, ack) => safeAck(ack, () => joinRoom(user, String(payload?.roomId || ''))));
       socket.on('lobby:leave', (_payload, ack) => safeAck(ack, () => leaveRoom(user)));
+      socket.on('lobby:fill-bots', (_payload, ack) => safeAck(ack, () => fillWithBots(user)));
       socket.on('invite:send', (payload, ack) => safeAck(ack, () => sendInvite(user, String(payload?.toUserId || ''), String(payload?.roomId || ''))));
       socket.on('invite:accept', (payload, ack) => safeAck(ack, () => acceptInvite(user, String(payload?.inviteId || ''))));
       socket.on('invite:decline', (payload, ack) => safeAck(ack, () => {
@@ -547,8 +659,11 @@ function createCoresDaRosaService({ db, gameId = 'cores-da-rosa' }) {
         updateInvite.run('declined', invite.id);
         emitLobby();
       }));
-      socket.on('game:play', (payload, ack) => safeAck(ack, () => applyCard(user, String(payload?.cardId || ''), String(payload?.chosenColor || ''))));
-      socket.on('game:draw', (_payload, ack) => safeAck(ack, () => drawCard(user)));
+      socket.on('game:play', (payload, ack) => safeAck(ack, () => {
+        const cardIds = Array.isArray(payload?.cardIds) ? payload.cardIds.map(String) : [String(payload?.cardId || '')].filter(Boolean);
+        applyCards(user, cardIds, String(payload?.chosenColor || ''));
+      }));
+      socket.on('game:draw', (_payload, ack) => safeAck(ack, () => drawCards(user)));
       socket.on('game:pass', (_payload, ack) => safeAck(ack, () => passTurn(user)));
       socket.on('game:rematch', (_payload, ack) => safeAck(ack, () => requestRematch(user)));
       socket.on('lobby:refresh', () => socket.emit('lobby:state', lobbyView(user)));

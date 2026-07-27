@@ -1,9 +1,8 @@
-import Phaser from 'phaser';
 import { io, type Socket } from 'socket.io-client';
 import './styles.css';
 
 type LiturgicalColor = 'branco' | 'vermelho' | 'verde' | 'roxo';
-type CardKind = 'numero' | 'cantico' | 'procissao' | 'partilha' | 'rosa' | 'concilio';
+type CardKind = 'numero' | 'pular' | 'inverter' | 'mais2' | 'coringa' | 'mais4';
 
 interface Card {
   id: string;
@@ -18,6 +17,7 @@ interface Player {
   name: string;
   seat: number;
   connected: boolean;
+  isBot?: boolean;
   cardCount?: number;
 }
 
@@ -43,6 +43,7 @@ interface Invite {
 }
 
 interface Lobby {
+  localPreview: boolean;
   me: { id: string; name: string };
   tables: Table[];
   online: Array<{ userId: string; name: string; inRoom: boolean }>;
@@ -59,9 +60,11 @@ interface GameState {
   topCard: Card;
   deckCount: number;
   direction: number;
+  pendingDraw: number;
   currentUserId: string | null;
   isMyTurn: boolean;
   mayPass: boolean;
+  drawnCardId: string | null;
   hand: Card[];
   players: Player[];
   message: string;
@@ -74,39 +77,6 @@ interface RoomState {
   table: Table;
   game: GameState | null;
 }
-
-class TableGlowScene extends Phaser.Scene {
-  create(): void {
-    const width = this.scale.width;
-    const height = this.scale.height;
-    const graphics = this.add.graphics();
-    graphics.fillGradientStyle(0x241437, 0x180d28, 0x0a1720, 0x0a1119, 1);
-    graphics.fillRect(0, 0, width, height);
-    graphics.fillStyle(0x234c42, 0.78);
-    graphics.fillEllipse(width / 2, height * 0.54, width * 0.86, height * 0.66);
-    graphics.lineStyle(4, 0xb9974b, 0.28);
-    graphics.strokeEllipse(width / 2, height * 0.54, width * 0.86, height * 0.66);
-    graphics.lineStyle(1, 0xf3dc9d, 0.12);
-    graphics.strokeEllipse(width / 2, height * 0.54, width * 0.8, height * 0.6);
-    for (let index = 0; index < 22; index += 1) {
-      const x = (index * 173) % width;
-      const y = (index * 271) % height;
-      this.add.circle(x, y, 2 + (index % 3), 0xe6c66d, 0.08);
-    }
-  }
-}
-
-new Phaser.Game({
-  type: Phaser.AUTO,
-  parent: 'phaser-layer',
-  width: 1440,
-  height: 900,
-  transparent: true,
-  antialias: true,
-  scene: TableGlowScene,
-  scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.CENTER_BOTH },
-  render: { powerPreference: 'low-power', antialias: true }
-});
 
 const app = document.querySelector<HTMLElement>('#app')!;
 const toastLayer = document.querySelector<HTMLElement>('#toast-layer')!;
@@ -121,8 +91,10 @@ const socket: Socket = io('/cores-da-rosa', {
 let lobby: Lobby | null = null;
 let room: RoomState | null = null;
 let rulesOpen = false;
+let playersOpen = false;
 let inviteOpen = false;
-let pendingWild: Card | null = null;
+let pendingColorCard: Card | null = null;
+let selectedCardIds: string[] = [];
 
 const colorNames: Record<LiturgicalColor, string> = {
   branco: 'Branco',
@@ -133,20 +105,20 @@ const colorNames: Record<LiturgicalColor, string> = {
 
 const kindNames: Record<CardKind, string> = {
   numero: 'Número',
-  cantico: 'Cântico',
-  procissao: 'Procissão',
-  partilha: 'Partilha',
-  rosa: 'Rosa Livre',
-  concilio: 'Concílio'
+  pular: 'Pular',
+  inverter: 'Inverter',
+  mais2: 'Comprar 2',
+  coringa: 'Escolher cor',
+  mais4: 'Comprar 4 e escolher cor'
 };
 
 const kindSymbols: Record<CardKind, string> = {
   numero: '',
-  cantico: '♪',
-  procissao: '↶',
-  partilha: '+2',
-  rosa: '✣',
-  concilio: '✦'
+  pular: '⊘',
+  inverter: '↻',
+  mais2: '+2',
+  coringa: 'COR',
+  mais4: '+4'
 };
 
 function escapeHtml(value: unknown): string {
@@ -159,17 +131,35 @@ function escapeHtml(value: unknown): string {
   }[character] || character));
 }
 
+function roseSvg(className = 'rose-mark'): string {
+  return `
+    <svg class="${className}" viewBox="0 0 100 100" aria-hidden="true">
+      <circle cx="50" cy="50" r="47" fill="#d8ae47"/>
+      <circle cx="50" cy="50" r="42" fill="#2379a5"/>
+      <g fill="#fff8e7" stroke="#e5d8b9" stroke-width="1.3">
+        <ellipse cx="50" cy="25" rx="14" ry="23"/>
+        <ellipse cx="73.8" cy="42.3" rx="14" ry="23" transform="rotate(72 73.8 42.3)"/>
+        <ellipse cx="64.7" cy="70.2" rx="14" ry="23" transform="rotate(144 64.7 70.2)"/>
+        <ellipse cx="35.3" cy="70.2" rx="14" ry="23" transform="rotate(216 35.3 70.2)"/>
+        <ellipse cx="26.2" cy="42.3" rx="14" ry="23" transform="rotate(288 26.2 42.3)"/>
+      </g>
+      <path d="M50 72C43 63 30 56 30 43c0-9 6-15 14-15 4 0 7 2 10 5 3-3 6-5 10-5 8 0 14 6 14 15 0 13-14 21-28 29Z" fill="#b62e36" stroke="#722027" stroke-width="2"/>
+      <path d="M47 35h8v13h9v8h-9v18h-8V56h-9v-8h9Z" fill="#151317"/>
+    </svg>
+  `;
+}
+
 function toast(message: string, tone: 'normal' | 'error' | 'success' = 'normal'): void {
   const item = document.createElement('div');
   item.className = `toast ${tone}`;
   item.textContent = message;
   toastLayer.append(item);
-  window.setTimeout(() => item.remove(), 3600);
+  window.setTimeout(() => item.remove(), 3400);
 }
 
 function action<T extends object>(event: string, payload = {}): Promise<T> {
   return new Promise((resolve, reject) => {
-    socket.timeout(5000).emit(event, payload, (error: Error | null, response: { ok: boolean; error?: string } & T) => {
+    socket.timeout(6000).emit(event, payload, (error: Error | null, response: { ok: boolean; error?: string } & T) => {
       if (error) return reject(new Error('O servidor não respondeu. Tente novamente.'));
       if (!response?.ok) return reject(new Error(response?.error || 'A ação foi recusada.'));
       resolve(response);
@@ -186,221 +176,305 @@ async function run(event: string, payload = {}, success = ''): Promise<void> {
   }
 }
 
-function shell(content: string, mode: 'lobby' | 'table'): string {
-  const name = lobby?.me.name || 'Jogador';
+function gameHeader(mode: 'lobby' | 'table'): string {
   return `
-    <header class="game-header">
-      <a class="hub-link" href="/" aria-label="Voltar ao Hub">← <span>Hub</span></a>
-      <div class="brand"><span class="brand-mark">✣</span><div><strong>Cores da Rosa</strong><small>cartas em comunidade</small></div></div>
-      <div class="header-actions">
-        ${mode === 'table' ? '<button id="leave-room" class="quiet-button" type="button">Sair da mesa</button>' : ''}
-        <button id="rules-button" class="icon-button" type="button" aria-label="Como jogar">?</button>
-        <span class="player-chip"><i></i>${escapeHtml(name)}</span>
+    <header class="game-hud">
+      <a class="hud-button hub-button" href="/" aria-label="Voltar ao Hub">← <span>Hub</span></a>
+      <div class="game-brand">${roseSvg('brand-rose')}<div><strong>Cores da Rosa</strong><small>Jogo de cartas litúrgico</small></div></div>
+      <div class="hud-actions">
+        ${mode === 'table' ? '<button id="leave-room" class="hud-button" type="button">Sair</button>' : ''}
+        <button id="players-button" class="hud-button" type="button" aria-label="Jogadores online">♟ <span>${(lobby?.online.length || 0) + 1}</span></button>
+        <button id="rules-button" class="hud-button" type="button" aria-label="Como jogar">?</button>
       </div>
     </header>
-    ${content}
+  `;
+}
+
+function overlays(): string {
+  return `
     ${rulesOpen ? rulesDrawer() : ''}
+    ${playersOpen ? playersDrawer() : ''}
   `;
 }
 
 function rulesDrawer(): string {
   return `
-    <aside class="rules-drawer" role="dialog" aria-label="Como jogar">
-      <button id="close-rules" class="drawer-close" type="button" aria-label="Fechar">×</button>
-      <span class="eyebrow">REGRAS ORIGINAIS</span>
-      <h2>Como completar a mão</h2>
-      <p>Na sua vez, jogue uma carta da mesma cor, número ou símbolo da carta central. Se não puder, compre uma.</p>
-      <ul>
-        <li><b>♪ Cântico</b><span>segura a vez do próximo jogador.</span></li>
-        <li><b>↶ Procissão</b><span>muda a direção da mesa.</span></li>
-        <li><b>+2 Partilha</b><span>o próximo recebe duas cartas e perde a vez.</span></li>
-        <li><b>✣ Rosa Livre</b><span>você escolhe a nova cor.</span></li>
-        <li><b>✦ Concílio</b><span>todos os demais compram uma; você escolhe a cor.</span></li>
-      </ul>
-      <p class="rule-note">A rodada só começa quando todos os lugares da mesa estão ocupados. Vence quem esvaziar a mão primeiro.</p>
+    <aside class="side-drawer" role="dialog" aria-label="Como jogar">
+      <button id="close-rules" class="close-button" type="button" aria-label="Fechar">×</button>
+      <span class="drawer-kicker">108 CARTAS</span>
+      <h2>Regras do Cores da Rosa</h2>
+      <p>Combine a cor, o número ou a ação da carta no centro. Vence quem esvaziar a mão.</p>
+      <div class="rule-block">
+        <b>Sequência numérica</b>
+        <span>Depois de uma primeira carta válida, você pode baixar juntas outras cartas do mesmo número, mesmo que sejam de cores diferentes.</span>
+      </div>
+      <div class="rule-block">
+        <b>Pilha de compra</b>
+        <span><code>+2</code> e <code>+4</code> acumulam entre si. Quem não responder compra toda a pilha e perde a vez.</span>
+      </div>
+      <div class="action-key">
+        <span><i>⊘</i><b>Pular</b></span>
+        <span><i>↻</i><b>Inverter</b></span>
+        <span><i>+2</i><b>Acumula 2</b></span>
+        <span><i>+4</i><b>Acumula 4 e escolhe a cor</b></span>
+      </div>
+      <p class="fine-print">Baralho: 19 números e seis ações por cor, quatro coringas e quatro cartas <code>+4</code>.</p>
+    </aside>
+  `;
+}
+
+function playersDrawer(): string {
+  const online = lobby?.online.length ? lobby.online.map(player => `
+    <li><span><i></i><b>${escapeHtml(player.name)}</b><small>${player.inRoom ? 'Em uma mesa' : 'No salão'}</small></span></li>
+  `).join('') : '<li class="empty-row">Nenhum outro jogador conectado.</li>';
+  const ranking = lobby?.ranking.length ? lobby.ranking.slice(0, 6).map((player, index) => `
+    <li class="rank-row"><em>${index + 1}</em><span>${escapeHtml(player.user_name)}</span><b>${player.wins} vit.</b></li>
+  `).join('') : '<li class="empty-row">Ainda não há vitórias registradas.</li>';
+  return `
+    <aside class="side-drawer players-drawer" role="dialog" aria-label="Jogadores">
+      <button id="close-players" class="close-button" type="button" aria-label="Fechar">×</button>
+      <span class="drawer-kicker">SALÃO ONLINE</span>
+      <h2>Jogadores</h2>
+      <ul class="players-list">${online}</ul>
+      <h3>Mais vitórias</h3>
+      <ol class="ranking-list">${ranking}</ol>
     </aside>
   `;
 }
 
 function renderLobby(): void {
   if (!lobby) return;
-  const inviteCards = lobby.invites.length ? `
-    <section class="invite-strip" aria-label="Convites recebidos">
-      ${lobby.invites.map(invite => `
-        <article>
-          <span>Convite de <b>${escapeHtml(invite.fromUserName)}</b></span>
-          <small>${escapeHtml(invite.roomName)}</small>
-          <div><button data-accept="${invite.id}" type="button">Entrar</button><button data-decline="${invite.id}" class="quiet-button" type="button">Agora não</button></div>
-        </article>
-      `).join('')}
-    </section>
-  ` : '';
-  const tableCards = lobby.tables.map(table => {
-    const seats = Array.from({ length: table.capacity }, (_, index) => {
-      const player = table.players.find(item => item.seat === index);
-      return player
-        ? `<span class="seat filled"><i></i>${escapeHtml(player.name)}</span>`
-        : '<span class="seat">Lugar livre</span>';
+  const tableTokens = lobby.tables.map((table, index) => {
+    const status = table.status === 'playing' ? 'Em partida' : table.playerCount ? 'Aguardando' : 'Livre';
+    const seats = Array.from({ length: table.capacity }, (_, seat) => {
+      const occupied = table.players.some(player => player.seat === seat);
+      return `<i class="${occupied ? 'occupied' : ''}"></i>`;
     }).join('');
-    const label = table.isMember ? 'Voltar à mesa' : table.full ? 'Mesa cheia' : table.playerCount ? 'Entrar agora' : 'Abrir mesa';
     return `
-      <article class="table-card ${table.capacity === 4 ? 'large' : ''} ${table.isMember ? 'mine' : ''}">
-        <div class="table-card-head"><span>${escapeHtml(table.mode)}</span><b>${table.playerCount}/${table.capacity}</b></div>
-        <h3>${escapeHtml(table.name)}</h3>
-        <div class="seat-list">${seats}</div>
-        <div class="table-card-foot">
-          <small>${table.status === 'playing' ? 'Partida em andamento' : table.playerCount ? 'Aguardando a mesa lotar' : 'Disponível agora'}</small>
-          <button data-join="${table.id}" type="button" ${table.full && !table.isMember ? 'disabled' : ''}>${label}</button>
+      <button class="table-token table-${index + 1} ${table.isMember ? 'mine' : ''}" data-join="${table.id}" type="button" ${table.full && !table.isMember ? 'disabled' : ''}>
+        <span class="token-number">${index + 1}</span>
+        <span class="token-copy"><small>${escapeHtml(table.mode)}</small><b>${escapeHtml(table.name.replace('Mesa ', ''))}</b><em>${status}</em></span>
+        <span class="token-seats">${seats}</span>
+        <strong>${table.playerCount}/${table.capacity}</strong>
+      </button>
+    `;
+  }).join('');
+  const inviteNotice = lobby.invites.length ? `
+    <div class="incoming-invite">
+      <span><small>CONVITE RECEBIDO</small><b>${escapeHtml(lobby.invites[0].fromUserName)} chamou você para ${escapeHtml(lobby.invites[0].roomName)}</b></span>
+      <button data-accept="${lobby.invites[0].id}" type="button">Sentar à mesa</button>
+      <button data-decline="${lobby.invites[0].id}" class="decline" type="button">×</button>
+    </div>
+  ` : '';
+
+  app.innerHTML = `
+    <main class="game-scene lobby-scene">
+      ${gameHeader('lobby')}
+      <section class="lobby-tabletop">
+        <div class="title-plaque">
+          ${roseSvg('plaque-rose')}
+          <div><span>ESCOLHA SUA MESA</span><h1>O salão está aberto</h1><p>A partida começa quando todos os lugares estiverem ocupados.</p></div>
         </div>
+        <div class="table-map">${tableTokens}</div>
+        <div class="lobby-score">
+          <span><b>${lobby.stats.wins}</b> vitórias</span>
+          <span><b>${lobby.stats.matches}</b> partidas</span>
+          <span><b>${lobby.stats.points}</b> pontos</span>
+          <span class="current-player"><i></i>${escapeHtml(lobby.me.name)}</span>
+        </div>
+      </section>
+      ${inviteNotice}
+      ${overlays()}
+    </main>
+  `;
+  bindShared();
+  document.querySelectorAll<HTMLElement>('[data-join]').forEach(button => button.addEventListener('click', () => {
+    void run('lobby:join', { roomId: button.dataset.join });
+  }));
+  document.querySelectorAll<HTMLElement>('[data-accept]').forEach(button => button.addEventListener('click', () => {
+    void run('invite:accept', { inviteId: button.dataset.accept }, 'Convite aceito.');
+  }));
+  document.querySelectorAll<HTMLElement>('[data-decline]').forEach(button => button.addEventListener('click', () => {
+    void run('invite:decline', { inviteId: button.dataset.decline });
+  }));
+}
+
+function renderWaiting(): void {
+  if (!lobby || !room) return;
+  const { table } = room;
+  const seatMarkup = Array.from({ length: table.capacity }, (_, index) => {
+    const player = table.players.find(item => item.seat === index);
+    return `
+      <article class="physical-seat seat-${index + 1} ${player ? 'filled' : ''}">
+        <span>${player ? escapeHtml(player.name).slice(0, 2).toUpperCase() : '+'}</span>
+        <b>${player ? escapeHtml(player.name) : 'Lugar livre'}</b>
+        <small>${player ? player.isBot ? 'Jogador de teste' : 'Pronto' : 'Aguardando'}</small>
       </article>
     `;
   }).join('');
-  const onlineRows = lobby.online.length ? lobby.online.map(player => `
-    <li><span><i></i>${escapeHtml(player.name)}${player.inRoom ? '<small>em uma mesa</small>' : '<small>no lobby</small>'}</span>
-      <button data-quick-invite="${player.userId}" type="button">Convidar</button></li>
-  `).join('') : '<li class="empty-online">Ninguém além de você está no jogo agora.</li>';
-  const rankingRows = lobby.ranking.length ? lobby.ranking.slice(0, 5).map((player, index) => `
-    <li><b>${index + 1}</b><span>${escapeHtml(player.user_name)}</span><strong>${player.wins} vit.</strong></li>
-  `).join('') : '<li class="empty-online">A primeira vitória pode ser sua.</li>';
-
-  app.innerHTML = shell(`
-    <div class="lobby-layout">
-      <section class="lobby-main">
-        <div class="lobby-title">
-          <span class="eyebrow">MESAS PÚBLICAS · TEMPO REAL</span>
-          <h1>Escolha um lugar à mesa.</h1>
-          <p>Entre direto ou convide alguém online. A rodada começa automaticamente quando todos os lugares estiverem ocupados.</p>
-          <div class="personal-stats">
-            <span><b>${lobby.stats.wins}</b> vitórias</span>
-            <span><b>${lobby.stats.matches}</b> partidas</span>
-            <span><b>${lobby.stats.points}</b> pontos</span>
-          </div>
+  app.innerHTML = `
+    <main class="game-scene waiting-scene">
+      ${gameHeader('table')}
+      <section class="waiting-table">
+        <div class="waiting-title"><small>${escapeHtml(table.mode)} · ${table.playerCount}/${table.capacity}</small><h1>${escapeHtml(table.name)}</h1><p>A rodada começa automaticamente com a mesa cheia.</p></div>
+        <div class="seat-ring capacity-${table.capacity}">${seatMarkup}</div>
+        <div class="waiting-actions">
+          <button id="open-invites" class="game-button" type="button">Convidar jogador online</button>
+          ${lobby.localPreview ? '<button id="fill-bots" class="game-button bot-button" type="button">Jogar agora contra bots</button>' : ''}
         </div>
-        ${inviteCards}
-        <div class="table-grid">${tableCards}</div>
       </section>
-      <aside class="lobby-side">
-        <section class="side-panel">
-          <div class="side-heading"><div><span class="live-dot"></span><b>Online agora</b></div><small>${lobby.online.length + 1}</small></div>
-          <ul class="online-list">${onlineRows}</ul>
-        </section>
-        <section class="side-panel ranking-panel">
-          <div class="side-heading"><b>Mais vitórias</b></div>
-          <ol>${rankingRows}</ol>
-        </section>
-      </aside>
-    </div>
-  `, 'lobby');
+      ${inviteOpen ? invitePanel(table.id) : ''}
+      ${overlays()}
+    </main>
+  `;
   bindShared();
-  bindLobby();
+  bindRoomCommon();
+  document.querySelector('#open-invites')?.addEventListener('click', () => {
+    inviteOpen = true;
+    renderWaiting();
+  });
+  document.querySelector('#fill-bots')?.addEventListener('click', () => void run('lobby:fill-bots', {}, 'Jogadores de teste sentaram à mesa.'));
 }
 
-function cardTemplate(card: Card, compact = false): string {
-  const template = card.kind === 'rosa' || card.kind === 'concilio'
-    ? 'rose'
-    : ({ branco: 'white', vermelho: 'red', verde: 'green', roxo: 'purple' }[card.color || 'branco']);
-  const main = card.kind === 'numero' ? String(card.value) : kindSymbols[card.kind];
-  const label = card.kind === 'numero' ? colorNames[card.color!] : kindNames[card.kind];
+function cardCenter(card: Card): string {
+  if (card.kind === 'numero') return `<strong class="number-value">${card.value}</strong>`;
+  if (card.kind === 'coringa') return `${roseSvg('card-rose')}<strong class="action-word">COR</strong>`;
+  if (card.kind === 'mais4') return `<strong class="draw-value">+4</strong><span class="four-colors"><i></i><i></i><i></i><i></i></span><small>ESCOLHA A COR</small>`;
+  if (card.kind === 'mais2') return `<strong class="draw-value">+2</strong><span class="mini-cards"><i></i><i></i></span>`;
+  if (card.kind === 'pular') return '<strong class="action-symbol">⊘</strong><small>PULAR</small>';
+  return '<strong class="action-symbol">↻</strong><small>INVERTER</small>';
+}
+
+function cardMarkup(card: Card, options: { compact?: boolean; back?: boolean } = {}): string {
+  if (options.back) return `
+    <span class="card-face card-back ${options.compact ? 'compact' : ''}">
+      <span class="back-pattern"></span>${roseSvg('back-rose')}
+    </span>
+  `;
+  const wild = card.kind === 'coringa' || card.kind === 'mais4';
+  const tone = wild ? 'multicolor' : card.color;
+  const corner = card.kind === 'numero' ? String(card.value) : kindSymbols[card.kind];
   return `
-    <span class="card-art ${compact ? 'compact' : ''}" style="--card-image:url('/assets/cores-da-rosa/assets/cards/card-${template}.png')">
-      <span class="card-corner">${escapeHtml(main)}</span>
-      <strong>${escapeHtml(main)}</strong>
-      <small>${escapeHtml(label)}</small>
+    <span class="card-face tone-${tone} kind-${card.kind} ${options.compact ? 'compact' : ''}">
+      <span class="inner-border"></span>
+      <span class="card-corner top">${escapeHtml(corner)}</span>
+      <span class="card-center">${cardCenter(card)}</span>
+      <span class="card-corner bottom">${escapeHtml(corner)}</span>
     </span>
   `;
 }
 
-function renderTable(): void {
-  if (!lobby || !room) return;
-  const { table, game } = room;
-  if (!game) {
-    const seats = Array.from({ length: table.capacity }, (_, index) => {
-      const player = table.players.find(item => item.seat === index);
-      return `
-        <article class="waiting-seat ${player ? 'filled' : ''}">
-          <span>${player ? escapeHtml(player.name).slice(0, 2).toUpperCase() : '+'}</span>
-          <b>${player ? escapeHtml(player.name) : 'Lugar livre'}</b>
-          <small>${player ? 'Pronto' : 'Aguardando jogador'}</small>
-        </article>
-      `;
-    }).join('');
-    app.innerHTML = shell(`
-      <section class="waiting-room">
-        <span class="eyebrow">${escapeHtml(table.mode)} · ${table.playerCount}/${table.capacity}</span>
-        <h1>${escapeHtml(table.name)}</h1>
-        <p>A partida começa sozinha quando a mesa estiver completa.</p>
-        <div class="waiting-seats">${seats}</div>
-        <button id="open-invites" class="primary-button" type="button">Convidar quem está online</button>
-        ${inviteOpen ? invitePanel(table.id) : ''}
-      </section>
-    `, 'table');
-    bindShared();
-    bindTable();
-    return;
-  }
+function selectionFirst(): Card | null {
+  if (!room?.game || !selectedCardIds.length) return null;
+  return room.game.hand.find(card => card.id === selectedCardIds[0]) || null;
+}
 
+function isCardSelectable(card: Card): boolean {
+  const game = room?.game;
+  if (!game?.isMyTurn || game.status !== 'playing') return false;
+  if (selectedCardIds.includes(card.id)) return true;
+  const first = selectionFirst();
+  if (!first) return Boolean(card.playable);
+  if (game.drawnCardId || game.pendingDraw > 0) return false;
+  return first.kind === 'numero' && card.kind === 'numero' && card.value === first.value;
+}
+
+function renderGame(): void {
+  if (!lobby || !room?.game) return;
+  const { table, game } = room;
   const me = game.players.find(player => player.userId === lobby!.me.id);
-  const others = game.players.filter(player => player.userId !== lobby!.me.id);
-  const opponents = others.map((player, index) => `
-    <article class="opponent opponent-${index + 1} ${game.currentUserId === player.userId ? 'active' : ''}">
-      <div class="opponent-avatar">${escapeHtml(player.name).slice(0, 2).toUpperCase()}<i class="${player.connected ? '' : 'offline'}"></i></div>
-      <div><b>${escapeHtml(player.name)}</b><span>${player.cardCount} cartas</span></div>
-      <div class="opponent-cards">${Array.from({ length: Math.min(player.cardCount || 0, 7) }, () => '<img src="/assets/cores-da-rosa/assets/cards/card-back.png" alt="">').join('')}</div>
+  const opponents = game.players.filter(player => player.userId !== lobby!.me.id);
+  const opponentMarkup = opponents.map((player, index) => `
+    <article class="opponent-seat opponent-${index + 1} ${game.currentUserId === player.userId ? 'turn' : ''}">
+      <span class="avatar">${player.isBot ? '⚙' : escapeHtml(player.name).slice(0, 2).toUpperCase()}<i class="${player.connected ? '' : 'offline'}"></i></span>
+      <div><b>${escapeHtml(player.name)}</b><small>${player.cardCount} cartas</small></div>
+      <span class="opponent-hand">${Array.from({ length: Math.min(player.cardCount || 0, 8) }, () => cardMarkup({} as Card, { compact: true, back: true })).join('')}</span>
+      ${player.cardCount === 1 ? '<em class="last-card">ÚLTIMA!</em>' : ''}
     </article>
   `).join('');
-  const hand = game.hand.map((card, index) => `
-    <button class="hand-card ${card.playable ? 'playable' : ''}" data-card="${card.id}" style="--card-index:${index};--card-count:${game.hand.length}" type="button" ${!card.playable ? 'disabled' : ''} aria-label="${kindNames[card.kind]} ${card.value || ''} ${card.color ? colorNames[card.color] : ''}">
-      ${cardTemplate(card)}
-    </button>
-  `).join('');
-  const status = game.status === 'finished'
-    ? `${escapeHtml(game.winnerName)} venceu a rodada`
-    : game.isMyTurn ? 'Sua vez' : `Vez de ${escapeHtml(game.players.find(player => player.userId === game.currentUserId)?.name || '')}`;
+  const handMarkup = game.hand.map((card, index) => {
+    const selected = selectedCardIds.includes(card.id);
+    const selectable = isCardSelectable(card);
+    return `
+      <button class="hand-card ${selected ? 'selected' : ''} ${selectable ? 'selectable' : ''}" data-card="${card.id}" style="--angle:${(index - (game.hand.length - 1) / 2) * 2.1}deg;--lift:${Math.abs(index - (game.hand.length - 1) / 2) * 2}px" type="button" ${!selectable ? 'disabled' : ''} aria-label="${kindNames[card.kind]} ${card.value ?? ''} ${card.color ? colorNames[card.color] : ''}">
+        ${cardMarkup(card)}
+        ${selected ? `<span class="selection-order">${selectedCardIds.indexOf(card.id) + 1}</span>` : ''}
+      </button>
+    `;
+  }).join('');
+  const currentName = game.players.find(player => player.userId === game.currentUserId)?.name || '';
+  const turnText = game.isMyTurn ? 'SUA VEZ' : `VEZ DE ${currentName.toUpperCase()}`;
+  const penalty = game.pendingDraw > 0 ? `
+    <div class="penalty-banner"><small>PILHA ACUMULADA</small><strong>+${game.pendingDraw}</strong><span>Jogue +2 ou +4<br>ou compre tudo</span></div>
+  ` : '';
+  const selectionText = selectedCardIds.length > 1
+    ? `${selectedCardIds.length} cartas de número ${selectionFirst()?.value}`
+    : selectedCardIds.length ? kindNames[selectionFirst()!.kind] : 'Escolha uma carta';
 
-  app.innerHTML = shell(`
-    <section class="game-table" data-color="${game.activeColor}">
-      <div class="table-status"><span class="active-color"></span><div><b>${status}</b><small>${escapeHtml(game.message)}</small></div></div>
-      <div class="opponents">${opponents}</div>
-      <div class="center-piles">
-        <button id="draw-card" class="deck-pile" type="button" ${!game.isMyTurn || game.mayPass || game.status !== 'playing' ? 'disabled' : ''}>
-          <img src="/assets/cores-da-rosa/assets/cards/card-back.png" alt="Monte de compra">
-          <span>${game.deckCount}<small>Comprar</small></span>
-        </button>
-        <div class="discard-pile">${cardTemplate(game.topCard, true)}</div>
-        <div class="direction" aria-label="${game.direction > 0 ? 'Sentido horário' : 'Sentido anti-horário'}">${game.direction > 0 ? '↻' : '↺'}</div>
-      </div>
-      <div class="my-seat ${game.isMyTurn ? 'active' : ''}">
-        <span>${escapeHtml(me?.name || lobby.me.name).slice(0, 2).toUpperCase()}</span>
-        <b>${escapeHtml(me?.name || lobby.me.name)}</b>
-        <small>${game.hand.length} cartas</small>
-      </div>
-      <div class="hand-label"><span>Minha mão</span>${game.mayPass ? '<button id="pass-turn" type="button">Passar a vez</button>' : ''}</div>
-      <div class="hand">${hand}</div>
-      ${game.status === 'finished' ? `
-        <div class="round-result">
-          <span class="result-rose">✣</span>
-          <h2>${game.winnerId === lobby.me.id ? 'Você completou a mão!' : `${escapeHtml(game.winnerName)} venceu`}</h2>
-          <p>${game.winnerId === lobby.me.id ? `+${game.pointsAwarded} pontos` : 'A mesa pode jogar outra rodada.'}</p>
-          <button id="rematch" type="button">Quero revanche</button>
+  app.innerHTML = `
+    <main class="game-scene match-scene" data-active-color="${game.activeColor}">
+      ${gameHeader('table')}
+      <section class="match-surface">
+        <div class="turn-ribbon"><i></i><div><b>${turnText}</b><small>${escapeHtml(game.message)}</small></div></div>
+        <div class="opponents">${opponentMarkup}</div>
+        <div class="center-play">
+          ${penalty}
+          <button id="draw-card" class="deck-stack" type="button" ${!game.isMyTurn || game.mayPass || game.status !== 'playing' ? 'disabled' : ''}>
+            ${cardMarkup({} as Card, { back: true })}
+            <span>${game.pendingDraw > 0 ? `COMPRAR ${game.pendingDraw}` : 'COMPRAR'}<small>${game.deckCount} no monte</small></span>
+          </button>
+          <div class="discard-stack">${cardMarkup(game.topCard)}<span class="active-color-name">${colorNames[game.activeColor]}</span></div>
+          <span class="play-direction" aria-label="${game.direction > 0 ? 'Sentido horário' : 'Sentido anti-horário'}">${game.direction > 0 ? '↻' : '↺'}</span>
         </div>
-      ` : ''}
-      ${pendingWild ? colorPicker() : ''}
+        <div class="my-player ${game.isMyTurn ? 'turn' : ''}">
+          <span>${escapeHtml(me?.name || lobby.me.name).slice(0, 2).toUpperCase()}</span>
+          <div><b>${escapeHtml(me?.name || lobby.me.name)}</b><small>${game.hand.length} cartas</small></div>
+          ${game.hand.length === 1 ? '<em>ÚLTIMA CARTA!</em>' : ''}
+        </div>
+        <div class="hand-command">
+          <span>${selectionText}</span>
+          <div>
+            ${game.mayPass ? '<button id="pass-turn" class="secondary-action" type="button">Passar</button>' : ''}
+            <button id="play-selected" class="primary-action" type="button" ${!selectedCardIds.length ? 'disabled' : ''}>${selectedCardIds.length > 1 ? `Jogar ${selectedCardIds.length} cartas` : 'Jogar carta'}</button>
+          </div>
+        </div>
+        <div class="player-hand">${handMarkup}</div>
+      </section>
+      ${game.status === 'finished' ? resultPanel(game) : ''}
+      ${pendingColorCard ? colorPicker() : ''}
       ${inviteOpen ? invitePanel(table.id) : ''}
-    </section>
-  `, 'table');
+      ${overlays()}
+    </main>
+  `;
   bindShared();
-  bindTable();
+  bindRoomCommon();
+  bindGame();
+}
+
+function resultPanel(game: GameState): string {
+  const winner = game.winnerId === lobby?.me.id;
+  return `
+    <div class="modal-layer">
+      <section class="result-panel">
+        ${roseSvg('result-rose')}
+        <small>RODADA ENCERRADA</small>
+        <h2>${winner ? 'Você esvaziou a mão!' : `${escapeHtml(game.winnerName)} venceu`}</h2>
+        <p>${winner ? `Você recebeu ${game.pointsAwarded} pontos.` : 'A mesa pode começar outra rodada.'}</p>
+        <button id="rematch" class="game-button" type="button">Pedir revanche</button>
+      </section>
+    </div>
+  `;
 }
 
 function colorPicker(): string {
   return `
-    <div class="modal-backdrop">
-      <section class="color-picker" role="dialog" aria-label="Escolher nova cor">
-        <button id="close-color" class="drawer-close" type="button">×</button>
-        <span class="eyebrow">${pendingWild?.kind === 'concilio' ? 'CONCÍLIO' : 'ROSA LIVRE'}</span>
+    <div class="modal-layer">
+      <section class="color-picker">
+        <button id="close-color" class="close-button" type="button">×</button>
+        <small>${pendingColorCard?.kind === 'mais4' ? '+4 E NOVA COR' : 'NOVA COR'}</small>
         <h2>Qual cor continua?</h2>
-        <div>${(['branco', 'vermelho', 'verde', 'roxo'] as LiturgicalColor[]).map(color => `
-          <button data-color="${color}" class="color-choice ${color}" type="button"><i></i>${colorNames[color]}</button>
+        <div class="color-grid">${(['branco', 'vermelho', 'verde', 'roxo'] as LiturgicalColor[]).map(color => `
+          <button data-color="${color}" class="color-choice tone-${color}" type="button"><i></i><b>${colorNames[color]}</b></button>
         `).join('')}</div>
       </section>
     </div>
@@ -411,12 +485,12 @@ function invitePanel(roomId: string): string {
   const rows = lobby?.online.length ? lobby.online.map(player => `
     <li><span><i></i><b>${escapeHtml(player.name)}</b><small>${player.inRoom ? 'Já está em uma mesa' : 'Disponível'}</small></span>
       <button data-invite="${player.userId}" data-room="${roomId}" type="button" ${player.inRoom ? 'disabled' : ''}>Convidar</button></li>
-  `).join('') : '<li class="empty-online">Ninguém disponível agora.</li>';
+  `).join('') : '<li class="empty-row">Ninguém disponível agora.</li>';
   return `
-    <div class="modal-backdrop">
-      <section class="invite-panel" role="dialog" aria-label="Convidar jogadores">
-        <button id="close-invites" class="drawer-close" type="button">×</button>
-        <span class="eyebrow">CONVITES EM TEMPO REAL</span>
+    <div class="modal-layer">
+      <section class="invite-panel">
+        <button id="close-invites" class="close-button" type="button">×</button>
+        <small>CONVITE EM TEMPO REAL</small>
         <h2>Chame alguém para a mesa</h2>
         <ul>${rows}</ul>
       </section>
@@ -427,89 +501,82 @@ function invitePanel(roomId: string): string {
 function bindShared(): void {
   document.querySelector('#rules-button')?.addEventListener('click', () => {
     rulesOpen = true;
-    room ? renderTable() : renderLobby();
+    renderCurrent();
   });
   document.querySelector('#close-rules')?.addEventListener('click', () => {
     rulesOpen = false;
-    room ? renderTable() : renderLobby();
+    renderCurrent();
+  });
+  document.querySelector('#players-button')?.addEventListener('click', () => {
+    playersOpen = true;
+    renderCurrent();
+  });
+  document.querySelector('#close-players')?.addEventListener('click', () => {
+    playersOpen = false;
+    renderCurrent();
   });
 }
 
-function bindLobby(): void {
-  document.querySelectorAll<HTMLElement>('[data-join]').forEach(button => button.addEventListener('click', async () => {
-    await run('lobby:join', { roomId: button.dataset.join });
-  }));
-  document.querySelectorAll<HTMLElement>('[data-accept]').forEach(button => button.addEventListener('click', async () => {
-    await run('invite:accept', { inviteId: button.dataset.accept }, 'Convite aceito.');
-  }));
-  document.querySelectorAll<HTMLElement>('[data-decline]').forEach(button => button.addEventListener('click', async () => {
-    await run('invite:decline', { inviteId: button.dataset.decline });
-  }));
-  document.querySelectorAll<HTMLElement>('[data-quick-invite]').forEach(button => button.addEventListener('click', () => {
-    const available = lobby?.tables.find(table => table.isMember && !table.full)
-      || lobby?.tables.find(table => !table.full && table.playerCount > 0)
-      || lobby?.tables.find(table => !table.full);
-    if (!available) return toast('Não há mesa com lugar livre.', 'error');
-    const toUserId = button.dataset.quickInvite;
-    const playerName = button.closest('li')?.querySelector('span')?.textContent?.trim() || 'o jogador';
-    void (async () => {
-      try {
-        if (!available.isMember) await action('lobby:join', { roomId: available.id });
-        await action('invite:send', { toUserId, roomId: available.id });
-        toast(`Convite enviado para ${playerName}.`, 'success');
-      } catch (error) {
-        toast(error instanceof Error ? error.message : 'Não foi possível enviar o convite.', 'error');
-      }
-    })();
-  }));
-}
-
-function bindTable(): void {
+function bindRoomCommon(): void {
   document.querySelector('#leave-room')?.addEventListener('click', async () => {
     await run('lobby:leave');
     room = null;
+    selectedCardIds = [];
     inviteOpen = false;
     renderLobby();
   });
-  document.querySelector('#open-invites')?.addEventListener('click', () => {
-    inviteOpen = true;
-    renderTable();
-  });
   document.querySelector('#close-invites')?.addEventListener('click', () => {
     inviteOpen = false;
-    renderTable();
+    renderCurrent();
   });
-  document.querySelectorAll<HTMLElement>('[data-invite]').forEach(button => button.addEventListener('click', async () => {
-    await run('invite:send', { toUserId: button.dataset.invite, roomId: button.dataset.room }, 'Convite enviado.');
+  document.querySelectorAll<HTMLElement>('[data-invite]').forEach(button => button.addEventListener('click', () => {
+    void run('invite:send', { toUserId: button.dataset.invite, roomId: button.dataset.room }, 'Convite enviado.');
   }));
+}
+
+function bindGame(): void {
   document.querySelectorAll<HTMLElement>('[data-card]').forEach(button => button.addEventListener('click', () => {
-    const card = room?.game?.hand.find(item => item.id === button.dataset.card);
-    if (!card) return;
-    if (card.kind === 'rosa' || card.kind === 'concilio') {
-      pendingWild = card;
-      renderTable();
+    const cardId = String(button.dataset.card || '');
+    if (selectedCardIds.includes(cardId)) {
+      const position = selectedCardIds.indexOf(cardId);
+      selectedCardIds = position === 0 ? [] : selectedCardIds.filter(id => id !== cardId);
+    } else {
+      selectedCardIds.push(cardId);
+    }
+    renderGame();
+  }));
+  document.querySelector('#play-selected')?.addEventListener('click', () => {
+    const first = selectionFirst();
+    if (!first) return;
+    if (first.kind === 'coringa' || first.kind === 'mais4') {
+      pendingColorCard = first;
+      renderGame();
       return;
     }
-    void run('game:play', { cardId: card.id });
-  }));
-  document.querySelector('#close-color')?.addEventListener('click', () => {
-    pendingWild = null;
-    renderTable();
+    void run('game:play', { cardIds: selectedCardIds });
   });
-  document.querySelectorAll<HTMLElement>('[data-color]').forEach(button => button.addEventListener('click', async () => {
-    if (!pendingWild) return;
-    const card = pendingWild;
-    pendingWild = null;
-    await run('game:play', { cardId: card.id, chosenColor: button.dataset.color });
-  }));
   document.querySelector('#draw-card')?.addEventListener('click', () => void run('game:draw'));
   document.querySelector('#pass-turn')?.addEventListener('click', () => void run('game:pass'));
   document.querySelector('#rematch')?.addEventListener('click', () => void run('game:rematch', {}, 'Revanche confirmada.'));
+  document.querySelector('#close-color')?.addEventListener('click', () => {
+    pendingColorCard = null;
+    renderGame();
+  });
+  document.querySelectorAll<HTMLElement>('[data-color]').forEach(button => button.addEventListener('click', () => {
+    const chosenColor = button.dataset.color;
+    pendingColorCard = null;
+    void run('game:play', { cardIds: selectedCardIds, chosenColor });
+  }));
+}
+
+function renderCurrent(): void {
+  if (!room) renderLobby();
+  else if (!room.game) renderWaiting();
+  else renderGame();
 }
 
 socket.on('connect', () => {
   document.body.classList.add('connected');
-  toast('Conectado à mesa.', 'success');
 });
 socket.on('disconnect', () => {
   document.body.classList.remove('connected');
@@ -518,7 +585,7 @@ socket.on('disconnect', () => {
 socket.on('connect_error', error => {
   document.body.classList.remove('connected');
   if (error.message === 'launch_required') {
-    app.innerHTML = '<section class="boot-card"><span class="boot-rose">!</span><strong>Abra o jogo pelo Hub</strong><small>O acesso seguro desta sessão expirou.</small><a href="/">Voltar ao Hub</a></section>';
+    app.innerHTML = '<section class="boot-card"><span>!</span><strong>Abra o jogo pelo Hub</strong><small>O acesso seguro desta sessão expirou.</small><a href="/">Voltar ao Hub</a></section>';
   }
 });
 socket.on('lobby:state', (next: Lobby) => {
@@ -529,12 +596,14 @@ socket.on('lobby:state', (next: Lobby) => {
     renderLobby();
   } else if (!room) {
     room = { table: membership, game: null };
-    renderTable();
+    renderWaiting();
   }
 });
 socket.on('game:state', (next: RoomState) => {
   room = next;
-  renderTable();
+  selectedCardIds = [];
+  pendingColorCard = null;
+  renderCurrent();
 });
 socket.on('invite:new', (invite: Invite) => {
   toast(`${invite.fromUserName} convidou você para ${invite.roomName}.`, 'success');

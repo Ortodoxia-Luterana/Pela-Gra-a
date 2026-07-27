@@ -1305,7 +1305,11 @@ function hasValidCoresDaRosaLaunch(req, userId) {
   if (signature.length !== expected.length) return false;
   return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
 }
-const coresDaRosa = createCoresDaRosaService({ db, gameId: CORES_DA_ROSA_GAME_ID });
+const coresDaRosa = createCoresDaRosaService({
+  db,
+  gameId: CORES_DA_ROSA_GAME_ID,
+  allowBots: CORES_DA_ROSA_LOCAL_PREVIEW
+});
 function redirect(res, location) { res.writeHead(302, { Location: location }); res.end(); }
 function json(res, status, payload) {
   const body = JSON.stringify(payload);

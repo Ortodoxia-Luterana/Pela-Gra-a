@@ -1927,10 +1927,10 @@ img.feed-avatar {
 
 .ol-game-card.cores-da-rosa-cover{
   background:
-    linear-gradient(90deg, rgba(11,7,17,.08), rgba(11,7,17,.88)),
-    radial-gradient(circle at 20% 50%, rgba(194,151,60,.34), transparent 36%),
-    url("/assets/cores-da-rosa/assets/cards/card-back.png?v=cdr-1") 13% 50%/auto 160% no-repeat,
-    #26143f !important;
+    linear-gradient(90deg, rgba(11,7,17,.08), rgba(11,7,17,.82)),
+    radial-gradient(circle at 50% 60%, rgba(194,151,60,.2), transparent 46%),
+    url("/assets/cores-da-rosa/assets/environment/game-room-v2.webp?v=cdr-2") center 48%/cover no-repeat,
+    #170f12 !important;
 }
 
 .ol-game-card.pela-cover{

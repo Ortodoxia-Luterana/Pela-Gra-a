@@ -180,7 +180,7 @@ function gameHeader(mode: 'lobby' | 'table'): string {
   return `
     <header class="game-hud">
       <a class="hud-button hub-button" href="/" aria-label="Voltar ao Hub">← <span>Hub</span></a>
-      <div class="game-brand">${roseSvg('brand-rose')}<div><strong>Cores da Rosa</strong><small>Jogo de cartas litúrgico</small></div></div>
+      <div class="game-brand">${roseSvg('brand-rose')}<div><strong>Uno Luterano</strong><small>Jogo de cartas litúrgico</small></div></div>
       <div class="hud-actions">
         ${mode === 'table' ? '<button id="leave-room" class="hud-button" type="button">Sair</button>' : ''}
         <button id="players-button" class="hud-button" type="button" aria-label="Jogadores online">♟ <span>${(lobby?.online.length || 0) + 1}</span></button>
@@ -202,7 +202,7 @@ function rulesDrawer(): string {
     <aside class="side-drawer" role="dialog" aria-label="Como jogar">
       <button id="close-rules" class="close-button" type="button" aria-label="Fechar">×</button>
       <span class="drawer-kicker">108 CARTAS</span>
-      <h2>Regras do Cores da Rosa</h2>
+      <h2>Regras do Uno Luterano</h2>
       <p>Combine a cor, o número ou a ação da carta no centro. Vence quem esvaziar a mão.</p>
       <div class="rule-block">
         <b>Sequência numérica</b>

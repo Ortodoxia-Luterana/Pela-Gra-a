@@ -1,4 +1,4 @@
-# Cores da Rosa
+# Uno Luterano
 
 Jogo original de descarte em tempo real para o Hub Pela Graça, com identidade visual luterana e regras de mesa próprias.
 

@@ -209,7 +209,7 @@ function actionCard(id, color, kind) {
     assert.equal(fourState.game.players.length, 4);
     assert.equal(fourState.game.hand.length, 7);
 
-    console.log('Cores da Rosa: baralho, mesas cheias, mãos privadas, sequência, pilha +2/+4, bots e convites OK.');
+    console.log('Uno Luterano: baralho, mesas cheias, mãos privadas, sequência, pilha +2/+4, bots e convites OK.');
   } finally {
     qaDb?.close();
     sockets.forEach(socket => socket.disconnect());

@@ -4,7 +4,6 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { DatabaseSync } = require('node:sqlite');
 const { Server: SocketIOServer } = require('socket.io');
-const { createLutheranIdleService } = require('./lutheran-idle-server');
 const { createCoresDaRosaService } = require('./cores-da-rosa-server');
 
 const ROOT = __dirname;
@@ -56,9 +55,6 @@ const CROWNS_ACTION_MS = Math.max(250, Number(process.env.CROWNS_ACTION_MS || 20
 const CROWNS_LOCAL_PREVIEW = process.env.CROWNS_LOCAL_PREVIEW === '1';
 const CROWNS_LOCAL_PREVIEW_USER_ID = 'crowns-local-preview';
 const CROWNS_LOCAL_PREVIEW_USER_NAME = 'Conselheiro local';
-const LUTHERAN_IDLE_LOCAL_PREVIEW = process.env.LUTHERAN_IDLE_LOCAL_PREVIEW === '1';
-const LUTHERAN_IDLE_LOCAL_PREVIEW_USER_ID = 'lutheran-idle-local-preview';
-const LUTHERAN_IDLE_LOCAL_PREVIEW_USER_NAME = 'Jogador Local';
 const CORES_DA_ROSA_LOCAL_PREVIEW = process.env.CORES_DA_ROSA_LOCAL_PREVIEW === '1';
 const CORES_DA_ROSA_LOCAL_PREVIEW_USER_PREFIX = 'cores-da-rosa-local-';
 const CROWNS_ARTICLE_TITLE_MAX = 90;
@@ -140,7 +136,7 @@ const CROWNS_AI_REALMS = [
   { key: 'andalus', name: 'Reino de Al-Andalus', house: 'Casa de Córdova', ruler: 'Isidoro de Córdova', heir: 'Leandro', countries: ['ES'], terms: ['Andalucía', 'Andaluzia'], color: '#cf7732' },
   { key: 'escandinavia', name: 'Reino da Escandinávia', house: 'Casa de Uppsala', ruler: 'Erik do Norte', heir: 'Haroldo', countries: ['SE', 'NO', 'DK'], terms: ['Stockholm', 'Oslo', 'Hovedstaden'], color: '#4b9b89' }
 ];
-const GAME_VERSION = 'v3.40.0';
+const GAME_VERSION = 'v3.41.0';
 const GAME_ID = 'pela-graca-1904';
 const HEROI_GAME_ID = 'heroi-ortodoxo';
 const CRONICAS_GAME_ID = 'cronicas-do-levante';
@@ -152,9 +148,6 @@ const CONCORDIUM_EXPLORACAO_GAME_ID = 'concordium-exploracao';
 const GUARDIOES_GAME_ID = 'caminho-dos-guardioes';
 const BABEL_GAME_ID = 'a-queda-de-babel';
 const CROWNS_COUNCILS_GAME_ID = 'crowns-and-councils';
-const LUTHERAN_IDLE_GAME_ID = 'lutheran-idle';
-const LUTHERAN_IDLE_LAUNCH_COOKIE_NAME = 'cultivando_li_launch';
-const LUTHERAN_IDLE_LAUNCH_MAX_AGE_SECONDS = 12 * 60 * 60;
 const CORES_DA_ROSA_GAME_ID = 'cores-da-rosa';
 const CORES_DA_ROSA_LAUNCH_COOKIE_NAME = 'cultivando_cdr_launch';
 const CORES_DA_ROSA_LAUNCH_MAX_AGE_SECONDS = 12 * 60 * 60;
@@ -954,8 +947,7 @@ function normalizeGamePresence(input) {
   if (value === GUARDIOES_GAME_ID) return { gameId: GUARDIOES_GAME_ID, location: 'Sola Torre' };
   if (value === BABEL_GAME_ID) return { gameId: BABEL_GAME_ID, location: 'A Queda de Babel' };
   if (value === CROWNS_COUNCILS_GAME_ID) return { gameId: CROWNS_COUNCILS_GAME_ID, location: 'Crowns and Councils' };
-  if (value === LUTHERAN_IDLE_GAME_ID) return { gameId: LUTHERAN_IDLE_GAME_ID, location: 'Lutheran Idle' };
-  if (value === CORES_DA_ROSA_GAME_ID) return { gameId: CORES_DA_ROSA_GAME_ID, location: 'Cores da Rosa' };
+  if (value === CORES_DA_ROSA_GAME_ID) return { gameId: CORES_DA_ROSA_GAME_ID, location: 'Uno Luterano' };
   if (value === GAME_ID) return { gameId: GAME_ID, location: 'Pela Graca 1904' };
   return { gameId: 'hub', location: 'Hub' };
 }
@@ -969,7 +961,6 @@ function presenceForPath(pathname) {
   if (pathname === '/caminho-dos-guardioes' || pathname.startsWith('/api/guardioes')) return normalizeGamePresence(GUARDIOES_GAME_ID);
   if (pathname === '/a-queda-de-babel' || pathname.startsWith('/api/babel')) return normalizeGamePresence(BABEL_GAME_ID);
   if (pathname === '/crowns-and-councils' || pathname.startsWith('/api/crowns-and-councils')) return normalizeGamePresence(CROWNS_COUNCILS_GAME_ID);
-  if (pathname === '/lutheran-idle' || pathname.startsWith('/api/lutheran-idle')) return normalizeGamePresence(LUTHERAN_IDLE_GAME_ID);
   if (pathname === '/cores-da-rosa' || pathname.startsWith('/api/cores-da-rosa')) return normalizeGamePresence(CORES_DA_ROSA_GAME_ID);
   if (pathname === '/play' || pathname === '/game' || pathname.startsWith('/api/saves')) return normalizeGamePresence(GAME_ID);
   return normalizeGamePresence('hub');
@@ -1221,16 +1212,6 @@ if (CROWNS_LOCAL_PREVIEW && !getUserById.get(CROWNS_LOCAL_PREVIEW_USER_ID)) {
     new Date().toISOString()
   );
 }
-if (LUTHERAN_IDLE_LOCAL_PREVIEW && !getUserById.get(LUTHERAN_IDLE_LOCAL_PREVIEW_USER_ID)) {
-  const salt = crypto.randomBytes(16).toString('hex');
-  insertUser.run(
-    LUTHERAN_IDLE_LOCAL_PREVIEW_USER_ID,
-    LUTHERAN_IDLE_LOCAL_PREVIEW_USER_NAME,
-    hashPin(crypto.randomBytes(4).toString('hex'), salt),
-    salt,
-    new Date().toISOString()
-  );
-}
 if (CORES_DA_ROSA_LOCAL_PREVIEW) {
   for (let index = 1; index <= 4; index += 1) {
     const id = `${CORES_DA_ROSA_LOCAL_PREVIEW_USER_PREFIX}${index}`;
@@ -1262,7 +1243,6 @@ function currentUser(req) {
     const player = Math.max(1, Math.min(4, Number.isInteger(requested) ? requested : 1));
     return getUserById.get(`${CORES_DA_ROSA_LOCAL_PREVIEW_USER_PREFIX}${player}`);
   }
-  if (LUTHERAN_IDLE_LOCAL_PREVIEW && isLoopbackRequest(req)) return getUserById.get(LUTHERAN_IDLE_LOCAL_PREVIEW_USER_ID);
   if (CROWNS_LOCAL_PREVIEW && isLoopbackRequest(req)) return getUserById.get(CROWNS_LOCAL_PREVIEW_USER_ID);
   return null;
 }
@@ -1305,25 +1285,6 @@ function hasValidCrownsLaunch(req, userId) {
   if (signature.length !== expected.length) return false;
   return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
 }
-function signLutheranIdleLaunch(userId, expiresAt) {
-  return crypto.createHmac('sha256', LAUNCH_SECRET).update(`${LUTHERAN_IDLE_GAME_ID}:${userId}:${expiresAt}`).digest('hex');
-}
-function setLutheranIdleLaunchCookie(res, userId) {
-  const expiresAt = Date.now() + LUTHERAN_IDLE_LAUNCH_MAX_AGE_SECONDS * 1000;
-  const token = `${userId}.${expiresAt}.${signLutheranIdleLaunch(userId, expiresAt)}`;
-  res.setHeader('Set-Cookie', `${LUTHERAN_IDLE_LAUNCH_COOKIE_NAME}=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${LUTHERAN_IDLE_LAUNCH_MAX_AGE_SECONDS}`);
-}
-function hasValidLutheranIdleLaunch(req, userId) {
-  const token = parseCookies(req)[LUTHERAN_IDLE_LAUNCH_COOKIE_NAME];
-  if (!token) return false;
-  const [tokenUserId, rawExpiresAt, signature] = token.split('.');
-  const expiresAt = Number(rawExpiresAt);
-  if (tokenUserId !== userId || !Number.isFinite(expiresAt) || expiresAt < Date.now() || !signature) return false;
-  const expected = signLutheranIdleLaunch(tokenUserId, expiresAt);
-  if (signature.length !== expected.length) return false;
-  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
-}
-const lutheranIdle = createLutheranIdleService({ db, gameId: LUTHERAN_IDLE_GAME_ID });
 function signCoresDaRosaLaunch(userId, expiresAt) {
   return crypto.createHmac('sha256', LAUNCH_SECRET).update(`${CORES_DA_ROSA_GAME_ID}:${userId}:${expiresAt}`).digest('hex');
 }
@@ -3419,7 +3380,7 @@ async function handleApi(req, res, url, user) {
       games: [
         {
           id: 'cores-da-rosa',
-          title: 'Cores da Rosa',
+          title: 'Uno Luterano',
           status: 'playable',
           playUrl: '/cores-da-rosa',
           rankingUrl: null
@@ -4069,8 +4030,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
     ['configuracoes', 'Configurações', '/?section=configuracoes', 'configuracoes']
   ].map(([key, label, href, icon]) => `<a class="${activeSection === key ? 'active' : ''}" href="${href}"><img class="nav-icon" src="/assets/nav-icons/nav-${icon}.png?v=${GAME_VERSION}" alt="">${label}</a>`).join('');
   const gameCard = `<section class="ol-panel ol-games">
-    <article class="ol-game-card cores-da-rosa-cover"><div><h4>Cores da Rosa</h4><p>Complete a mão em mesas para 2 ou 4 jogadores, convide quem está online e domine as cores litúrgicas.</p></div><a href="/cores-da-rosa">Jogar</a></article>
-    <article class="ol-game-card lutheran-idle-cover"><div><h4>Lutheran Idle</h4><p>Comece em uma pequena sala, acolha visitantes e construa uma congregação viva, ilustrada e cooperativa.</p></div><a href="/lutheran-idle">Jogar</a></article>
+    <article class="ol-game-card cores-da-rosa-cover"><div><h4>Uno Luterano</h4><p>Complete a mão em mesas para 2 ou 4 jogadores, convide quem está online e domine as cores litúrgicas.</p></div><a href="/cores-da-rosa">Jogar</a></article>
     <article class="ol-game-card crowns-cover"><div><h4>Crowns and Councils</h4><p>Funde um reino e uma dinastia sobre um mapa europeu real, com expansão assíncrona e autoridade do servidor.</p></div><a href="/crowns-and-councils">Jogar</a></article>
     <article class="ol-game-card pela-cover"><div><h4>Pela Graça 1904</h4><p>Gerencie igrejas, forme pastores, responda perguntas doutrinárias e acompanhe a história da IELB no Brasil.</p></div><a href="/play">Jogar</a></article>
     <article class="ol-game-card reforma-cover"><div><h4>A Confissão</h4><p>Conduza a Reforma de 1483 a 1648 por decisões históricas, da vida de Lutero ao Livro de Concórdia e ao exílio boêmio.</p></div><a href="/a-confissao">${reformaSave ? 'Continuar' : 'Jogar'}</a></article>
@@ -4094,7 +4054,7 @@ function renderDashboard(user, error = '', section = 'inicio', selectedGame = ''
   };
   const reformaSettingsRow = `<article class="saved-game-row"><div><span>A Confissão</span><strong>${reformaSave ? 'Jornada em andamento' : 'Nenhuma jornada atual'}</strong><small>Decisões, finais, códice e medalhas acompanham seu perfil.</small></div>${reformaSave ? `<form method="POST" action="/a-confissao/delete" onsubmit="return confirm('Apagar a jornada atual de A Confissão? As medalhas serão mantidas.')"><button>Apagar jornada</button></form>` : '<a href="/a-confissao">Criar jornada</a>'}</article>`;
   const crownsSettingsRow = `<article class="saved-game-row"><div><span>Crowns and Councils</span><strong>Temporada online vinculada</strong><small>Reino, recursos e ordens acompanham sua conta do Hub.</small></div><a href="/crowns-and-councils">Abrir</a></article>`;
-  const coresDaRosaSettingsRow = `<article class="saved-game-row"><div><span>Cores da Rosa</span><strong>Multiplayer e ranking na conta</strong><small>Partidas, vitórias e pontuação acompanham seu perfil do Hub.</small></div><a href="/cores-da-rosa">Abrir</a></article>`;
+  const coresDaRosaSettingsRow = `<article class="saved-game-row"><div><span>Uno Luterano</span><strong>Multiplayer e ranking na conta</strong><small>Partidas, vitórias e pontuação acompanham seu perfil do Hub.</small></div><a href="/cores-da-rosa">Abrir</a></article>`;
   sections.configuracoes = sections.configuracoes.replace('<div class="saved-game-list">', `<div class="saved-game-list">${coresDaRosaSettingsRow}${crownsSettingsRow}${reformaSettingsRow}`);
   return pageShell('Ortodoxia Luterana Gaming', `
 <main class="ol-hub">
@@ -4228,10 +4188,6 @@ const server = http.createServer(async (req, res) => {
     if (await handleAuth(req, res, url)) return;
     const user = currentUser(req);
     if (user) touchPlatformPresence(user, presenceForPath(url.pathname).gameId);
-    if (url.pathname.startsWith('/api/lutheran-idle')) {
-      await lutheranIdle.handleApi(req, res, url, user, { json, readBody, hasValidLaunch: hasValidLutheranIdleLaunch });
-      return;
-    }
     if (url.pathname.startsWith('/api/')) { await handleApi(req, res, url, user); return; }
     if (!user) { redirect(res, '/login'); return; }
     if (req.method === 'GET' && url.pathname === '/') {
@@ -4276,14 +4232,6 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && url.pathname === '/cores-da-rosa') {
       setCoresDaRosaLaunchCookie(res, user.id);
       const body = fs.readFileSync(path.join(PUBLIC_DIR, 'cores-da-rosa', 'index.html'), 'utf8');
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store, max-age=0' });
-      res.end(body);
-      return;
-    }
-    if (req.method === 'GET' && url.pathname === '/lutheran-idle') {
-      setLutheranIdleLaunchCookie(res, user.id);
-      lutheranIdle.ensurePlayer(user);
-      const body = fs.readFileSync(path.join(PUBLIC_DIR, 'lutheran-idle', 'index.html'), 'utf8');
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store, max-age=0' });
       res.end(body);
       return;
@@ -4463,7 +4411,6 @@ const server = http.createServer(async (req, res) => {
 
 function initRealtimeMultiplayer(httpServer) {
   const io = new SocketIOServer(httpServer, { cors: { origin: false } });
-  lutheranIdle.attachRealtime(io, { currentUser, hasValidLaunch: hasValidLutheranIdleLaunch });
   coresDaRosa.attachRealtime(io, { currentUser, hasValidLaunch: hasValidCoresDaRosaLaunch });
   const crowns = io.of('/crowns-and-councils');
   crownsRealtimeNamespace = crowns;
@@ -5055,7 +5002,6 @@ initRealtimeMultiplayer(server);
 server.listen(PORT, () => {
   console.log(`Cultivando SSR rodando em http://localhost:${PORT}`);
   if (CROWNS_LOCAL_PREVIEW) console.log(`[crowns] prévia local sem login: http://localhost:${PORT}/crowns-and-councils`);
-  if (LUTHERAN_IDLE_LOCAL_PREVIEW) console.log(`[lutheran-idle] prévia local sem login: http://localhost:${PORT}/lutheran-idle`);
   if (CORES_DA_ROSA_LOCAL_PREVIEW) console.log(`[cores-da-rosa] prévia local sem login: http://localhost:${PORT}/cores-da-rosa`);
 });
 

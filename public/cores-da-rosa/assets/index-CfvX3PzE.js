@@ -15,7 +15,7 @@ var e=Object.defineProperty,t=(t,n)=>{let r={};for(var i in t)e(r,i,{get:t[i],en
   `}function J(e,t=`normal`){let n=document.createElement(`div`);n.className=`toast ${t}`,n.textContent=e,ut.append(n),window.setTimeout(()=>n.remove(),3400)}function pt(e,t={}){return new Promise((n,r)=>{L.timeout(6e3).emit(e,t,(e,t)=>{if(e)return r(Error(`O servidor não respondeu. Tente novamente.`));if(!t?.ok)return r(Error(t?.error||`A ação foi recusada.`));n(t)})})}async function Y(e,t={},n=``){try{await pt(e,t),n&&J(n,`success`)}catch(e){J(e instanceof Error?e.message:`Não foi possível concluir.`,`error`)}}function mt(e){return`
     <header class="game-hud">
       <a class="hud-button hub-button" href="/" aria-label="Voltar ao Hub">← <span>Hub</span></a>
-      <div class="game-brand">${q(`brand-rose`)}<div><strong>Cores da Rosa</strong><small>Jogo de cartas litúrgico</small></div></div>
+      <div class="game-brand">${q(`brand-rose`)}<div><strong>Uno Luterano</strong><small>Jogo de cartas litúrgico</small></div></div>
       <div class="hud-actions">
         ${e===`table`?`<button id="leave-room" class="hud-button" type="button">Sair</button>`:``}
         <button id="players-button" class="hud-button" type="button" aria-label="Jogadores online">♟ <span>${(R?.online.length||0)+1}</span></button>
@@ -29,7 +29,7 @@ var e=Object.defineProperty,t=(t,n)=>{let r={};for(var i in t)e(r,i,{get:t[i],en
     <aside class="side-drawer" role="dialog" aria-label="Como jogar">
       <button id="close-rules" class="close-button" type="button" aria-label="Fechar">×</button>
       <span class="drawer-kicker">108 CARTAS</span>
-      <h2>Regras do Cores da Rosa</h2>
+      <h2>Regras do Uno Luterano</h2>
       <p>Combine a cor, o número ou a ação da carta no centro. Vence quem esvaziar a mão.</p>
       <div class="rule-block">
         <b>Sequência numérica</b>

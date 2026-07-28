@@ -1911,10 +1911,6 @@ img.feed-avatar {
 }
 
 /* Final hub card art overrides: keep each game visually distinct on mobile and desktop. */
-.ol-game-card.lutheran-idle-cover{
-  background:linear-gradient(90deg, rgba(0,0,0,.08), rgba(0,0,0,.80)), url("/assets/lutheran-idle/assets/game/banner_lutheran_idle.webp?v=li-vertical-slice-1") center/cover !important;
-}
-
 .ol-game-card.cores-da-rosa-cover{
   background:
     linear-gradient(90deg, rgba(11,7,17,.08), rgba(11,7,17,.82)),

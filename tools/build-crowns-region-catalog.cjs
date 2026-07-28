@@ -45,7 +45,10 @@ const portugueseRegionNames = {
   ME00: 'Montenegro', MK00: 'Macedônia do Norte', RS11: 'Região de Belgrado', RS12: 'Voivodina',
   RS21: 'Šumadija e Sérvia Ocidental', RS22: 'Sérvia Meridional e Oriental', IS00: 'Islândia',
   IE04: 'Norte e Oeste da Irlanda', IE05: 'Sul da Irlanda', IE06: 'Leste e Centro da Irlanda',
-  UKM6: 'Terras Altas e Ilhas', UKN0: 'Irlanda do Norte', UKI3: 'Londres Central-Oeste', UKI4: 'Londres Central-Leste'
+  UKM6: 'Terras Altas e Ilhas', UKN0: 'Irlanda do Norte', UKI3: 'Londres Central-Oeste', UKI4: 'Londres Central-Leste',
+  UKI5: 'Londres Exterior — Leste e Nordeste', UKI6: 'Londres Exterior — Sul', UKI7: 'Londres Exterior — Oeste e Noroeste',
+  PL92: 'Mazóvia', SE11: 'Estocolmo', ES30: 'Comunidade de Madri', ITI4: 'Lácio',
+  LT01: 'Região da Capital da Lituânia', LT02: 'Lituânia Central e Ocidental', FI1B: 'Helsinque-Uusimaa'
 };
 
 const curatedMaritimeRoutes = [

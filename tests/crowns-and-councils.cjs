@@ -115,6 +115,7 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     assert.ok(result.payload.marketOrders.length >= 8);
     assert.ok(result.payload.customization.availableColors.length >= 30);
     const initialColorDb = new DatabaseSync(path.join(tempRoot, 'crowns-test.sqlite'));
+    initialColorDb.exec('PRAGMA busy_timeout = 5000');
     const initialColorAudit = initialColorDb.prepare("SELECT COUNT(*) AS total, COUNT(DISTINCT lower(color)) AS distinct_colors FROM cc_realms WHERE season_id = 'cc-world-1'").get();
     assert.equal(initialColorAudit.total, 10);
     assert.equal(initialColorAudit.distinct_colors, initialColorAudit.total);
@@ -127,14 +128,15 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     assert.equal(result.payload.realm, null);
     assert.equal(result.payload.season.day, 1);
     assert.equal(result.payload.season.totalDays, 60);
-    assert.deepEqual(result.payload.customization.religions, ['Cristianismo']);
+    assert.deepEqual(result.payload.customization.religions, ['Cristianismo', 'Paganismo nórdico', 'Paganismo romano', 'Islamismo']);
+    assert.ok(result.payload.regions.every(region => result.payload.customization.religions.includes(region.suggestedReligion)));
     const capital = result.payload.regions.find(region => !region.ownerRealmId && region.neighborIds.length > 2);
     assert.ok(capital);
     const selectedColor = result.payload.customization.availableColors[0];
 
     result = await jsonRequest('/api/crowns-and-councils/realm/create', {
       method: 'POST',
-      body: JSON.stringify({ name: 'Reino do Teste', houseName: 'Casa Veritas', religion: 'Islã sunita', color: selectedColor, regionId: capital.id })
+      body: JSON.stringify({ name: 'Reino do Teste', houseName: 'Casa Veritas', religion: 'Islamismo', color: selectedColor, regionId: capital.id })
     });
     assert.equal(result.response.status, 201);
     assert.equal(result.payload.realm.capitalRegionId, capital.id);
@@ -149,11 +151,13 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     assert.equal(result.payload.season.phase, 'open');
     assert.ok(!result.payload.customization.availableColors.includes(selectedColor));
     const conflictColorDb = new DatabaseSync(path.join(tempRoot, 'crowns-test.sqlite'));
+    conflictColorDb.exec('PRAGMA busy_timeout = 5000');
     const anotherRealm = conflictColorDb.prepare("SELECT id FROM cc_realms WHERE season_id = 'cc-world-1' AND id <> ? LIMIT 1").get(result.payload.realm.id);
     assert.throws(() => conflictColorDb.prepare('UPDATE cc_realms SET color = ? WHERE id = ?').run(selectedColor.toUpperCase(), anotherRealm.id), /UNIQUE constraint failed/);
     conflictColorDb.close();
-    assert.equal(result.payload.realm.religion, 'Cristianismo');
-    assert.ok(result.payload.realm.court.diplomacy.knownRealms.every(realm => realm.religion === 'Cristianismo'));
+    assert.equal(result.payload.realm.religion, 'Islamismo');
+    assert.ok(new Set(result.payload.realm.court.diplomacy.knownRealms.map(realm => realm.religion)).size >= 2);
+    assert.ok(result.payload.realm.court.diplomacy.knownRealms.every(realm => realm.houseName && realm.rulerName));
     assert.equal(result.payload.regionReligions[0].heresyShare, 0);
     assert.equal(result.payload.religiousMovements.length, 0);
     assert.equal(result.payload.buildings.length, 2);
@@ -161,6 +165,16 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     assert.equal(result.payload.realm.wood, 650);
     assert.equal(result.payload.realm.stone, 520);
     assert.ok(result.payload.realm.economy.daily.provisions > 0);
+
+    const diplomaticTarget = result.payload.realm.court.diplomacy.knownRealms[0];
+    result = await jsonRequest('/api/crowns-and-councils/diplomacy/gift', {
+      method: 'POST',
+      body: JSON.stringify({ targetRealmId: diplomaticTarget.id, resourceType: 'wood', amount: 50 })
+    });
+    assert.equal(result.response.status, 201);
+    result = await jsonRequest('/api/crowns-and-councils/bootstrap');
+    assert.equal(result.payload.realm.wood, 600);
+    assert.ok(result.payload.realm.court.diplomacy.knownRealms.find(realm => realm.id === diplomaticTarget.id).goodwill > 0);
 
     socket = io(`${origin}/crowns-and-councils`, {
       transports: ['websocket'],
@@ -183,7 +197,7 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     assert.equal(claimed.ownerRealmId, result.payload.realm.id);
     assert.equal(result.payload.realm.treasury, 1080);
     assert.equal(result.payload.realm.provisions, 720);
-    assert.equal(result.payload.realm.prestige, 17);
+    assert.equal(result.payload.realm.prestige, 18);
     assert.equal(result.payload.actions.length, 0);
 
     const secondAdjacent = result.payload.regions.find(region => region.isAdjacentToRealm && !region.ownerRealmId && region.status === 'neutral');
@@ -236,6 +250,7 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
 
     const revoltEvent = waitSocket(socket, 'world.patch', 5_000);
     const testDb = new DatabaseSync(path.join(tempRoot, 'crowns-test.sqlite'));
+    testDb.exec('PRAGMA busy_timeout = 5000');
     testDb.prepare('UPDATE cc_realms SET stability = 25 WHERE id = ?').run(result.payload.realm.id);
     testDb.close();
     const revoltPayload = await revoltEvent;
@@ -245,6 +260,7 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     assert.equal(result.payload.realm.regionCount, 2);
     assert.ok(result.payload.journal.some(item => item.eventType === 'revolution.separatist'));
     const finalColorDb = new DatabaseSync(path.join(tempRoot, 'crowns-test.sqlite'));
+    finalColorDb.exec('PRAGMA busy_timeout = 5000');
     const finalColorAudit = finalColorDb.prepare("SELECT COUNT(*) AS total, COUNT(DISTINCT lower(color)) AS distinct_colors FROM cc_realms WHERE season_id = 'cc-world-1'").get();
     assert.equal(finalColorAudit.distinct_colors, finalColorAudit.total);
     finalColorDb.close();
@@ -267,6 +283,7 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     assert.ok(result.payload.games.some(game => game.id === 'crowns-and-councils' && game.playUrl === '/crowns-and-councils'));
 
     let lifecycleDb = new DatabaseSync(path.join(tempRoot, 'crowns-test.sqlite'));
+    lifecycleDb.exec('PRAGMA busy_timeout = 5000');
     lifecycleDb.prepare('UPDATE cc_seasons SET ends_at = ? WHERE id = ?').run(new Date(Date.now() - 1_000).toISOString(), 'cc-world-1');
     lifecycleDb.close();
     result = await jsonRequest('/api/crowns-and-councils/bootstrap');
@@ -274,6 +291,7 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     assert.ok(result.payload.winners.length >= 1);
 
     lifecycleDb = new DatabaseSync(path.join(tempRoot, 'crowns-test.sqlite'));
+    lifecycleDb.exec('PRAGMA busy_timeout = 5000');
     const lifecycleSeason = lifecycleDb.prepare('SELECT config_json FROM cc_seasons WHERE id = ?').get('cc-world-1');
     const lifecycleConfig = { ...JSON.parse(lifecycleSeason.config_json), resetDelayMs: 1 };
     lifecycleDb.prepare('UPDATE cc_seasons SET config_json = ? WHERE id = ?').run(JSON.stringify(lifecycleConfig), 'cc-world-1');

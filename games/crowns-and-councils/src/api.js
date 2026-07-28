@@ -25,6 +25,8 @@ export const crownsApi = {
   defend: (serverId, regionId) => request('/armies/defend', { method: 'POST', body: JSON.stringify({ serverId, regionId }) }),
   declareWar: (serverId, regionId) => request('/war/declare', { method: 'POST', body: JSON.stringify({ serverId, regionId }) }),
   proposeTreaty: (serverId, targetRealmId, treatyType) => request('/diplomacy/propose', { method: 'POST', body: JSON.stringify({ serverId, targetRealmId, treatyType }) }),
+  sendDiplomaticGift: (serverId, targetRealmId, resourceType, amount) => request('/diplomacy/gift', { method: 'POST', body: JSON.stringify({ serverId, targetRealmId, resourceType, amount }) }),
+  respondDiplomaticRequest: (serverId, requestId, accept) => request('/diplomacy/request/respond', { method: 'POST', body: JSON.stringify({ serverId, requestId, accept }) }),
   proposeMarriage: (serverId, targetRealmId, payload = {}) => request('/marriage/propose', { method: 'POST', body: JSON.stringify({ serverId, targetRealmId, ...payload }) }),
   religionMission: (serverId, regionId) => request('/religion/mission', { method: 'POST', body: JSON.stringify({ serverId, regionId }) }),
   suppressHeresy: (serverId, regionId) => request('/religion/suppress', { method: 'POST', body: JSON.stringify({ serverId, regionId }) }),

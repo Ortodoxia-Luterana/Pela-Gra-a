@@ -63,6 +63,12 @@ async function waitForServer(timeoutMs = 8_000) {
     assert.equal(payload.season.mode, 'teste-acelerado');
     assert.equal(payload.realm, null);
     assert.ok(payload.customization.availableColors.length >= 20);
+    assert.deepEqual(payload.customization.religions, ['Cristianismo', 'Paganismo nórdico', 'Paganismo romano', 'Islamismo']);
+    for (const asset of ['resource-coins.png', 'resource-wheat.png', 'resource-wood.png', 'resource-stone.png', 'unit-spearmen.png', 'unit-archers.png', 'unit-cavalry.png', 'unit-siege.png']) {
+      const image = await fetch(`${origin}/assets/crowns-and-councils/assets/generated/${asset}`);
+      assert.equal(image.status, 200, `imagem pública ausente: ${asset}`);
+      assert.match(image.headers.get('content-type') || '', /image\/png/);
+    }
     console.log('Crowns and Councils local preview: PASS');
   } finally {
     server.kill('SIGTERM');

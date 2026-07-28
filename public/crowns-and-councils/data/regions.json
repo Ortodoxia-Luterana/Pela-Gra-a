@@ -2381,7 +2381,7 @@
     },
     {
       "id": "ES30",
-      "name": "Comunidad de Madrid",
+      "name": "Comunidade de Madri",
       "countryCode": "ES",
       "iso3Code": "ESP",
       "countryName": "Espanha",
@@ -2631,7 +2631,7 @@
     },
     {
       "id": "FI1B",
-      "name": "Helsinki-Uusimaa",
+      "name": "Helsinque-Uusimaa",
       "countryCode": "FI",
       "iso3Code": "FIN",
       "countryName": "Finlândia",
@@ -3959,7 +3959,7 @@
     },
     {
       "id": "ITI4",
-      "name": "Lazio",
+      "name": "Lácio",
       "countryCode": "IT",
       "iso3Code": "ITA",
       "countryName": "Itália",
@@ -3999,7 +3999,7 @@
     },
     {
       "id": "LT01",
-      "name": "Sostinės regionas",
+      "name": "Região da Capital da Lituânia",
       "countryCode": "LT",
       "iso3Code": "LTU",
       "countryName": "Lituânia",
@@ -4023,7 +4023,7 @@
     },
     {
       "id": "LT02",
-      "name": "Vidurio ir vakarų Lietuvos regionas ",
+      "name": "Lituânia Central e Ocidental",
       "countryCode": "LT",
       "iso3Code": "LTU",
       "countryName": "Lituânia",
@@ -15117,7 +15117,7 @@
     },
     {
       "id": "PL92",
-      "name": "Mazowiecki regionalny",
+      "name": "Mazóvia",
       "countryCode": "PL",
       "iso3Code": "POL",
       "countryName": "Polônia",
@@ -15621,7 +15621,7 @@
     },
     {
       "id": "SE11",
-      "name": "Stockholm",
+      "name": "Estocolmo",
       "countryCode": "SE",
       "iso3Code": "SWE",
       "countryName": "Suécia",
@@ -16998,7 +16998,7 @@
     },
     {
       "id": "UKI5",
-      "name": "Outer London - East and North East",
+      "name": "Londres Exterior — Leste e Nordeste",
       "countryCode": "UK",
       "iso3Code": "GBR",
       "countryName": "Reino Unido",
@@ -17020,7 +17020,7 @@
     },
     {
       "id": "UKI6",
-      "name": "Outer London - South",
+      "name": "Londres Exterior — Sul",
       "countryCode": "UK",
       "iso3Code": "GBR",
       "countryName": "Reino Unido",
@@ -17042,7 +17042,7 @@
     },
     {
       "id": "UKI7",
-      "name": "Outer London - West and North West",
+      "name": "Londres Exterior — Oeste e Noroeste",
       "countryCode": "UK",
       "iso3Code": "GBR",
       "countryName": "Reino Unido",

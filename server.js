@@ -68,23 +68,27 @@ const CROWNS_RESET_DELAY_MS = Math.max(10_000, Number(process.env.CROWNS_RESET_D
 const CROWNS_REVOLT_CHECK_MS = Math.max(250, Number(process.env.CROWNS_REVOLT_CHECK_MS || 30 * 1000));
 const CROWNS_FORCE_REVOLTS = process.env.CROWNS_FORCE_REVOLTS === '1';
 const CROWNS_COUNCIL_TEMPLATES = [
-  { key: 'niceia-i', day: 6, kind: 'historical', name: 'Primeiro Concílio de Niceia', theme: 'A confissão comum sobre a divindade de Cristo' },
-  { key: 'constantinopla-i', day: 16, kind: 'historical', name: 'Primeiro Concílio de Constantinopla', theme: 'A fé no Espírito Santo e a unidade da Igreja' },
-  { key: 'efeso', day: 26, kind: 'historical', name: 'Concílio de Éfeso', theme: 'A pessoa de Cristo e o título de Mãe de Deus' },
-  { key: 'calcedonia', day: 36, kind: 'historical', name: 'Concílio de Calcedônia', theme: 'As duas naturezas de Cristo' },
-  { key: 'niceia-ii', day: 50, kind: 'historical', name: 'Segundo Concílio de Niceia', theme: 'O uso e a veneração das imagens' },
-  { key: 'sinodo-da-paz', day: 11, kind: 'regional', name: 'Sínodo da Paz dos Peregrinos', theme: 'Trégua para rotas de peregrinação' },
-  { key: 'concilio-das-fronteiras', day: 31, kind: 'regional', name: 'Concílio das Fronteiras', theme: 'Disciplina, missões e resposta às novas seitas' },
-  { key: 'assembleia-dos-reinos', day: 45, kind: 'regional', name: 'Assembleia dos Reinos', theme: 'Recepção dos decretos e comunhão entre as coroas' }
+  { key: 'niceia-i', day: 3, kind: 'historical', name: 'Primeiro Concílio de Niceia', theme: 'A confissão comum sobre a divindade de Cristo' },
+  { key: 'constantinopla-i', day: 10, kind: 'historical', name: 'Primeiro Concílio de Constantinopla', theme: 'A fé no Espírito Santo e a unidade da Igreja' },
+  { key: 'efeso', day: 18, kind: 'historical', name: 'Concílio de Éfeso', theme: 'A pessoa de Cristo e o título de Mãe de Deus' },
+  { key: 'calcedonia', day: 28, kind: 'historical', name: 'Concílio de Calcedônia', theme: 'As duas naturezas de Cristo' },
+  { key: 'niceia-ii', day: 42, kind: 'historical', name: 'Segundo Concílio de Niceia', theme: 'O uso e a veneração das imagens' },
+  { key: 'sinodo-da-paz', day: 6, kind: 'regional', name: 'Sínodo da Paz dos Peregrinos', theme: 'Trégua para rotas de peregrinação entre todas as fés' },
+  { key: 'concilio-das-fronteiras', day: 22, kind: 'regional', name: 'Concílio das Fronteiras', theme: 'Disciplina, missões e resposta às novas seitas' },
+  { key: 'assembleia-dos-reinos', day: 34, kind: 'regional', name: 'Assembleia dos Reinos', theme: 'Recepção dos decretos e comunhão entre as coroas' }
 ];
-const CROWNS_RELIGIONS = ['Cristianismo'];
+const CROWNS_RELIGIONS = ['Cristianismo', 'Paganismo nórdico', 'Paganismo romano', 'Islamismo'];
 const CROWNS_RELIGIOUS_MOVEMENTS = [
-  { key: 'arianismo', day: 10, name: 'Arianismo', description: 'Pregadores questionam a plena divindade de Cristo e atraem cortes inquietas.' },
-  { key: 'donatismo', day: 18, name: 'Donatismo', description: 'Comunidades rigoristas contestam a validade dos sacramentos dos clérigos considerados indignos.' },
-  { key: 'nestorianismo', day: 27, name: 'Nestorianismo', description: 'Escolas orientais propõem uma separação mais forte entre as naturezas de Cristo.' },
-  { key: 'monofisismo', day: 35, name: 'Monofisismo', description: 'Mosteiros e bispos defendem uma única natureza em Cristo após a encarnação.' },
-  { key: 'iconoclasmo', day: 44, name: 'Iconoclasmo', description: 'Um movimento exige a retirada das imagens sagradas e divide o povo.' },
-  { key: 'pelagianismo', day: 52, name: 'Pelagianismo', description: 'Mestres itinerantes minimizam o pecado original e exaltam a capacidade moral humana.' }
+  { key: 'arianismo', day: 4, faith: 'Cristianismo', name: 'Arianismo', description: 'Pregadores questionam a plena divindade de Cristo e atraem cortes inquietas.' },
+  { key: 'culto-odin', day: 7, faith: 'Paganismo nórdico', name: 'Culto exclusivo de Odin', description: 'Guerreiros e sacerdotes exigem que Odin seja honrado acima dos demais deuses do Norte.' },
+  { key: 'donatismo', day: 10, faith: 'Cristianismo', name: 'Donatismo', description: 'Comunidades rigoristas contestam os sacramentos de clérigos considerados indignos.' },
+  { key: 'sol-invicto', day: 13, faith: 'Paganismo romano', name: 'Culto do Sol Invicto', description: 'Templos solares disputam oferendas e autoridade com os cultos tradicionais de Roma.' },
+  { key: 'carijismo', day: 16, faith: 'Islamismo', name: 'Carijismo', description: 'Pregadores radicais contestam a legitimidade dos governantes e exigem uma comunidade mais rigorosa.' },
+  { key: 'nestorianismo', day: 20, faith: 'Cristianismo', name: 'Nestorianismo', description: 'Escolas orientais propõem uma separação mais forte entre as naturezas de Cristo.' },
+  { key: 'mitraismo', day: 25, faith: 'Paganismo romano', name: 'Mistérios de Mitra', description: 'Irmandades militares secretas espalham um culto iniciático pelas guarnições.' },
+  { key: 'iconoclasmo', day: 31, faith: 'Cristianismo', name: 'Iconoclasmo', description: 'Um movimento exige a retirada das imagens sagradas e divide o povo.' },
+  { key: 'reforma-godar', day: 38, faith: 'Paganismo nórdico', name: 'Reforma dos goðar', description: 'Chefes de culto tentam unificar ritos locais sob uma autoridade religiosa comum.' },
+  { key: 'mutazilismo', day: 46, faith: 'Islamismo', name: 'Mutazilismo', description: 'Teólogos defendem uma leitura racional da fé e desafiam juristas tradicionais.' }
 ];
 const CROWNS_RESOURCES = {
   grain: { name: 'Trigo', icon: 'wheat', color: '#c69a45' },
@@ -293,6 +297,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS cc_region_buildings (season_id TEXT NOT NULL, region_id TEXT NOT NULL, building_type TEXT NOT NULL, level INTEGER NOT NULL DEFAULT 1, updated_at TEXT NOT NULL, PRIMARY KEY (season_id, region_id, building_type), FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE, FOREIGN KEY (region_id) REFERENCES cc_regions(id));
   CREATE TABLE IF NOT EXISTS cc_armies (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, realm_id TEXT NOT NULL, region_id TEXT NOT NULL, infantry INTEGER NOT NULL DEFAULT 0, archers INTEGER NOT NULL DEFAULT 0, cavalry INTEGER NOT NULL DEFAULT 0, siege INTEGER NOT NULL DEFAULT 0, morale INTEGER NOT NULL DEFAULT 70, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE, FOREIGN KEY (realm_id) REFERENCES cc_realms(id) ON DELETE CASCADE, FOREIGN KEY (region_id) REFERENCES cc_regions(id));
   CREATE TABLE IF NOT EXISTS cc_market_orders (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, realm_id TEXT NOT NULL, sell_resource TEXT NOT NULL, sell_amount INTEGER NOT NULL, buy_resource TEXT NOT NULL, buy_amount INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'open', created_at TEXT NOT NULL, accepted_by_realm_id TEXT, accepted_at TEXT, FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE, FOREIGN KEY (realm_id) REFERENCES cc_realms(id) ON DELETE CASCADE);
+  CREATE TABLE IF NOT EXISTS cc_diplomatic_exchanges (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, sender_realm_id TEXT NOT NULL, recipient_realm_id TEXT NOT NULL, exchange_kind TEXT NOT NULL, resource_type TEXT NOT NULL, amount INTEGER NOT NULL, status TEXT NOT NULL, game_day INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL, resolved_at TEXT, FOREIGN KEY (season_id) REFERENCES cc_seasons(id) ON DELETE CASCADE, FOREIGN KEY (sender_realm_id) REFERENCES cc_realms(id) ON DELETE CASCADE, FOREIGN KEY (recipient_realm_id) REFERENCES cc_realms(id) ON DELETE CASCADE);
   CREATE TABLE IF NOT EXISTS cc_season_results (season_id TEXT NOT NULL, rank INTEGER NOT NULL, realm_name TEXT NOT NULL, house_name TEXT NOT NULL, score INTEGER NOT NULL, regions INTEGER NOT NULL, prestige INTEGER NOT NULL, recorded_at TEXT NOT NULL, PRIMARY KEY (season_id, rank));
   CREATE TABLE IF NOT EXISTS cc_treaties (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, proposer_realm_id TEXT NOT NULL, target_realm_id TEXT NOT NULL, treaty_type TEXT NOT NULL, status TEXT NOT NULL, expires_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
   CREATE TABLE IF NOT EXISTS cc_marriages (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, proposer_realm_id TEXT NOT NULL, target_realm_id TEXT NOT NULL, proposer_spouse TEXT NOT NULL, target_spouse TEXT NOT NULL, child_religion TEXT NOT NULL, inheritance_clause TEXT NOT NULL, dowry INTEGER NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
@@ -310,6 +315,7 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS cc_wars_season_idx ON cc_wars (season_id, status);
   CREATE INDEX IF NOT EXISTS cc_treaties_season_idx ON cc_treaties (season_id, status);
   CREATE INDEX IF NOT EXISTS cc_market_orders_season_idx ON cc_market_orders (season_id, status, created_at DESC);
+  CREATE INDEX IF NOT EXISTS cc_diplomatic_exchanges_idx ON cc_diplomatic_exchanges (season_id, recipient_realm_id, status, game_day);
 `);
 try { db.exec('ALTER TABLE users ADD COLUMN avatar_data TEXT'); } catch {}
 try { db.exec('ALTER TABLE luther_match_rankings ADD COLUMN max_combo INTEGER NOT NULL DEFAULT 0'); } catch {}
@@ -628,6 +634,18 @@ const getCcMarketOrder = db.prepare('SELECT * FROM cc_market_orders WHERE id = ?
 const insertCcMarketOrder = db.prepare("INSERT OR IGNORE INTO cc_market_orders (id, season_id, realm_id, sell_resource, sell_amount, buy_resource, buy_amount, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?)");
 const acceptCcMarketOrder = db.prepare("UPDATE cc_market_orders SET status = 'accepted', accepted_by_realm_id = ?, accepted_at = ? WHERE id = ? AND season_id = ? AND status = 'open'");
 const cancelCcMarketOrder = db.prepare("UPDATE cc_market_orders SET status = 'cancelled', accepted_at = ? WHERE id = ? AND season_id = ? AND realm_id = ? AND status = 'open'");
+const insertCcDiplomaticExchange = db.prepare('INSERT OR IGNORE INTO cc_diplomatic_exchanges (id, season_id, sender_realm_id, recipient_realm_id, exchange_kind, resource_type, amount, status, game_day, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+const getCcDiplomaticExchanges = db.prepare(`
+  SELECT exchange.*, sender.name AS sender_name, sender.house_name AS sender_house, recipient.name AS recipient_name, recipient.house_name AS recipient_house
+  FROM cc_diplomatic_exchanges exchange
+  JOIN cc_realms sender ON sender.id = exchange.sender_realm_id
+  JOIN cc_realms recipient ON recipient.id = exchange.recipient_realm_id
+  WHERE exchange.season_id = ?
+  ORDER BY exchange.created_at DESC
+  LIMIT 120
+`);
+const getCcDiplomaticExchange = db.prepare('SELECT * FROM cc_diplomatic_exchanges WHERE id = ? AND season_id = ?');
+const resolveCcDiplomaticRequest = db.prepare("UPDATE cc_diplomatic_exchanges SET status = ?, resolved_at = ? WHERE id = ? AND season_id = ? AND recipient_realm_id = ? AND exchange_kind = 'request' AND status = 'pending'");
 const getCcSeasonResults = db.prepare('SELECT * FROM cc_season_results WHERE season_id = ? ORDER BY rank');
 const insertCcSeasonResult = db.prepare('INSERT OR REPLACE INTO cc_season_results (season_id, rank, realm_name, house_name, score, regions, prestige, recorded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
 const updateCcSeasonTiming = db.prepare('UPDATE cc_seasons SET status = ?, starts_at = ?, ends_at = ?, config_json = ? WHERE id = ?');
@@ -639,6 +657,7 @@ const deleteCcEventsForSeason = db.prepare('DELETE FROM cc_events WHERE season_i
 const deleteCcBuildingsForSeason = db.prepare('DELETE FROM cc_region_buildings WHERE season_id = ?');
 const deleteCcArmiesForSeason = db.prepare('DELETE FROM cc_armies WHERE season_id = ?');
 const deleteCcMarketOrdersForSeason = db.prepare('DELETE FROM cc_market_orders WHERE season_id = ?');
+const deleteCcDiplomaticExchangesForSeason = db.prepare('DELETE FROM cc_diplomatic_exchanges WHERE season_id = ?');
 const deleteCcResultsForSeason = db.prepare('DELETE FROM cc_season_results WHERE season_id = ?');
 const deleteCcTreatiesForSeason = db.prepare('DELETE FROM cc_treaties WHERE season_id = ?');
 const deleteCcMarriagesForSeason = db.prepare('DELETE FROM cc_marriages WHERE season_id = ?');
@@ -679,7 +698,22 @@ function shuffledCrowns(items, random) {
   return result;
 }
 
-function crownsAiReligion() { return 'Cristianismo'; }
+function baseCrownsFaith(value) {
+  const faith = String(value || '');
+  return CROWNS_RELIGIONS.find(item => faith === item || faith.startsWith(`${item} — `)) || 'Cristianismo';
+}
+
+function crownsFaithForRegion(region) {
+  const country = String(region?.countryCode || '');
+  if (['SA', 'IR', 'IQ', 'SY', 'JO', 'EG', 'MA', 'DZ', 'TN', 'LY', 'PS'].includes(country)) return 'Islamismo';
+  if (['SE', 'NO', 'DK', 'IS'].includes(country)) return 'Paganismo nórdico';
+  if (['IT', 'EL'].includes(country)) return 'Paganismo romano';
+  return 'Cristianismo';
+}
+
+function crownsAiReligion(blueprint, capital) {
+  return blueprint?.religion || crownsFaithForRegion(capital);
+}
 
 function seedCcStartingAssets(serverId, realmId, capitalId, now, isAi = false) {
   const realm = getCcRealmById.get(realmId, serverId);
@@ -715,7 +749,7 @@ function seedCcAiRealms(serverId, now, seed) {
       realmId, serverId, userId, blueprint.name, blueprint.house, crownsUnusedRealmColor(serverId, colors[index], realmId), capital.id,
       1500 + index * 45, 950 + index * 30, 20 + index, 'ai', null, blueprint.ruler, blueprint.heir,
       68 + (index % 4) * 4, 58 + (index % 5) * 5, 52 + (index % 6) * 5,
-      crownsAiReligion(blueprint), 65 + (index % 4) * 5, 7 + (index % 3) * 3, now, now, now, now
+      crownsAiReligion(blueprint, capital), 65 + (index % 4) * 5, 7 + (index % 3) * 3, now, now, now, now
     );
     const assigned = assignCcCapital.run(realmId, serverId, capital.id);
     if (Number(assigned.changes) !== 1) throw new Error(`A capital da IA ${blueprint.name} deixou de estar disponível.`);
@@ -767,8 +801,12 @@ function seedCrownsAndCouncils() {
         const waitingConfig = { ...config };
         delete waitingConfig.activatedAt;
         updateCcSeasonTiming.run('waiting', now.toISOString(), new Date(now.getTime() + CROWNS_SEASON_DAYS * CROWNS_GAME_DAY_MS).toISOString(), JSON.stringify(waitingConfig), serverId);
-        db.prepare("UPDATE cc_realms SET religion = 'Cristianismo', religious_unity = max(72, religious_unity), heresy_pressure = 0, updated_at = ? WHERE season_id = ?").run(now.toISOString(), serverId);
-        db.prepare("UPDATE cc_region_religions SET majority_religion = 'Cristianismo', majority_share = max(72, majority_share), heresy_name = 'Sem heresia organizada', heresy_share = 0, updated_at = ? WHERE season_id = ?").run(now.toISOString(), serverId);
+        for (const ai of getCcRealms.all(serverId).filter(realm => realm.is_ai)) {
+          const capital = crownsRegionCatalog.regions.find(region => region.id === ai.capital_region_id);
+          const faith = crownsAiReligion(CROWNS_AI_REALMS.find(blueprint => ai.id.endsWith(`_${blueprint.key}`)), capital);
+          db.prepare('UPDATE cc_realms SET religion = ?, religious_unity = max(72, religious_unity), heresy_pressure = 0, updated_at = ? WHERE id = ? AND season_id = ?').run(faith, now.toISOString(), ai.id, serverId);
+          upsertCcRegionReligion.run(serverId, ai.capital_region_id, faith, 76, 'Sem heresia organizada', 0, now.toISOString());
+        }
       }
     });
     db.exec('COMMIT');
@@ -2070,6 +2108,7 @@ function processCrownsSeasonLifecycle(requestedServerId) {
       deleteCcBuildingsForSeason.run(serverId);
       deleteCcArmiesForSeason.run(serverId);
       deleteCcMarketOrdersForSeason.run(serverId);
+      deleteCcDiplomaticExchangesForSeason.run(serverId);
       deleteCcResultsForSeason.run(serverId);
       deleteCcTreatiesForSeason.run(serverId);
       deleteCcMarriagesForSeason.run(serverId);
@@ -2153,8 +2192,11 @@ function processCrownsEconomy(requestedServerId) {
       db.prepare('UPDATE cc_realms SET religious_unity = min(100, religious_unity + ?), heresy_pressure = max(0, heresy_pressure - ?), updated_at = ? WHERE id = ? AND season_id = ?').run(ticks * temples, ticks * temples, new Date().toISOString(), realm.id, serverId);
     }
     const day = crownsSeasonClock(season).day;
-    const activeMovements = getCcReligiousMovements.all(serverId);
-    if (activeMovements.length && day % 9 === 0) {
+    const activeMovements = getCcReligiousMovements.all(serverId).filter(movement => {
+      const template = CROWNS_RELIGIOUS_MOVEMENTS.find(item => item.key === movement.movement_key);
+      return (template?.faith || 'Cristianismo') === baseCrownsFaith(realm.religion);
+    });
+    if (activeMovements.length && day % 6 === 0) {
       const latestMovement = activeMovements[activeMovements.length - 1];
       db.prepare('UPDATE cc_realms SET heresy_pressure = min(100, heresy_pressure + ?), religious_unity = max(0, religious_unity - ?), updated_at = ? WHERE id = ? AND season_id = ?').run(2 * ticks, ticks, new Date().toISOString(), realm.id, serverId);
       for (const owned of getCcOwnedRegions.all(serverId, realm.id)) {
@@ -2237,17 +2279,30 @@ function publicCcRealm(realm) {
   };
 }
 
+function crownsGoodwill(serverId, sourceRealmId, targetRealmId) {
+  const exchanges = getCcDiplomaticExchanges.all(serverId);
+  const gifts = exchanges
+    .filter(item => item.exchange_kind === 'gift' && item.status === 'delivered' && item.sender_realm_id === sourceRealmId && item.recipient_realm_id === targetRealmId)
+    .reduce((sum, item) => sum + Math.max(1, Math.floor(Number(item.amount) / 25)), 0);
+  const requests = exchanges
+    .filter(item => item.exchange_kind === 'request' && item.sender_realm_id === targetRealmId && item.recipient_realm_id === sourceRealmId)
+    .reduce((sum, item) => sum + (item.status === 'accepted' ? Math.max(2, Math.floor(Number(item.amount) / 20)) : item.status === 'declined' ? -4 : 0), 0);
+  return Math.max(-20, Math.min(60, gifts + requests));
+}
+
 function crownsRealmCourt(realm, serverId) {
   if (!realm) return null;
   const realms = getCcRealms.all(serverId);
   const knownRealms = realms.filter(other => other.id !== realm.id).map(other => {
     const relationSeed = [...`${realm.id}:${other.id}`].reduce((sum, char) => sum + char.charCodeAt(0), 0);
-    const relation = relationSeed % 7 === 0 ? 'cauteloso' : relationSeed % 5 === 0 ? 'cordial' : 'neutro';
+    const goodwill = crownsGoodwill(serverId, realm.id, other.id);
+    const relation = goodwill >= 28 ? 'aliado em potencial' : goodwill >= 12 ? 'cordial' : goodwill < 0 ? 'ofendido' : relationSeed % 7 === 0 ? 'cauteloso' : 'neutro';
     return {
       ...publicCcRealm(other),
       capitalName: other.capital_name,
       regionCount: Number(other.region_count || 0),
-      relation
+      relation,
+      goodwill
     };
   });
   const stability = Number(realm.stability ?? 65);
@@ -2287,6 +2342,10 @@ function publicCrownsJournalEvent(row) {
     'army.recruited': { category: 'army', headline: `${realmName} treina ${payload.unitName || 'novos soldados'}`, summary: `${payload.units || 0} combatentes foram incorporados em ${regionName}.` },
     'market.offer.created': { category: 'economy', headline: `${realmName} abre uma oferta no mercado`, summary: `Mercadores oferecem ${payload.sellAmount || 0} de ${CROWNS_RESOURCES[payload.sellResource]?.name || payload.sellResource} em troca de ${payload.buyAmount || 0} de ${CROWNS_RESOURCES[payload.buyResource]?.name || payload.buyResource}.` },
     'market.trade.completed': { category: 'economy', headline: `Uma troca é concluída no mercado`, summary: `${realmName} adquiriu ${payload.sellAmount || 0} de ${CROWNS_RESOURCES[payload.sellResource]?.name || payload.sellResource}.` },
+    'diplomacy.gift.sent': { category: 'alliance', headline: `${realmName} envia presentes a ${payload.targetName || 'outra corte'}`, summary: `${payload.amount || 0} de ${CROWNS_RESOURCES[payload.resourceType]?.name || payload.resourceType} seguiram com a embaixada para melhorar as relações.` },
+    'diplomacy.request.created': { category: 'alliance', headline: `${realmName} solicita auxílio material`, summary: `A embaixada pediu ${payload.amount || 0} de ${CROWNS_RESOURCES[payload.resourceType]?.name || payload.resourceType} a uma coroa vizinha.` },
+    'diplomacy.request.accepted': { category: 'alliance', headline: `${realmName} atende a um pedido diplomático`, summary: `${payload.amount || 0} de ${CROWNS_RESOURCES[payload.resourceType]?.name || payload.resourceType} foram enviados a ${payload.senderName || 'outra corte'}.` },
+    'diplomacy.request.declined': { category: 'alliance', headline: `${realmName} recusa um pedido de auxílio`, summary: `A corte decidiu preservar seus estoques e não enviou ${payload.amount || 0} de ${CROWNS_RESOURCES[payload.resourceType]?.name || payload.resourceType}.` },
     'season.ended': { category: 'world', headline: `${payload.winner || realmName} vence a temporada`, summary: 'O sexagésimo dia terminou e os arautos publicaram a classificação final.' },
     'realm.created': { category: 'realm', headline: `${realmName} ergue seu estandarte`, summary: `${payload.houseName || row.actor_house_name || 'Uma nova casa'} fundou um reino com capital em ${regionName}.` },
     'territory.claim.started': { category: 'campaign', headline: `${realmName} envia uma expedição`, summary: `Mensageiros confirmam uma reivindicação em marcha sobre ${regionName}.` },
@@ -2359,6 +2418,7 @@ function crownsBootstrap(user, requestedServerId) {
   processCrownsSeasonLifecycle(serverId);
   processCrownsCouncils(serverId);
   processCrownsReligiousMovements(serverId);
+  processCrownsDiplomaticRequests(serverId);
   const season = getCcSeason.get(serverId);
   const seasonClock = crownsSeasonClock(season);
   const realm = getCcRealmByUser.get(serverId, user.id);
@@ -2387,6 +2447,7 @@ function crownsBootstrap(user, requestedServerId) {
       resourceYield: Number(row.resource_yield || 60),
       version: row.version,
       countryName: metadata.countryName || row.country_code,
+      suggestedReligion: crownsFaithForRegion({ countryCode: row.country_code }),
       levelLabel: metadata.levelLabel || 'Região',
       sourceKind: metadata.sourceKind || 'UNKNOWN',
       routeNeighborIds: metadata.routeNeighborIds || [],
@@ -2415,7 +2476,27 @@ function crownsBootstrap(user, requestedServerId) {
   const wars = realm ? getCcWars.all(serverId).filter(item => item.attacker_realm_id === realm.id || item.defender_realm_id === realm.id).map(item => ({ id: item.id, status: item.status, attackerRealmId: item.attacker_realm_id, attackerName: item.attacker_name, defenderRealmId: item.defender_realm_id, defenderName: item.defender_name, objectiveRegionId: item.objective_region_id, objectiveName: item.objective_name, score: item.score, result: safeJsonParse(item.result_json, {}) })) : [];
   const regionReligions = realm ? getCcRegionReligions.all(serverId).filter(item => ownedIds.has(item.region_id)).map(item => ({ regionId: item.region_id, regionName: item.region_name, majorityReligion: item.majority_religion, majorityShare: item.majority_share, heresyName: item.heresy_name, heresyShare: item.heresy_share })) : [];
   const councils = getCcCouncils.all(serverId).map(item => { const vote = realm && getCcCouncilVote.get(item.id, realm.id); const reception = realm && getCcCouncilReception.get(item.id, realm.id); return { id: item.id, name: item.name, theme: item.theme, kind: item.council_kind, status: item.status, startsAt: item.starts_at, endsAt: item.ends_at, result: item.result_key, vote: vote?.vote_key || null, reception: reception?.reception_key || null, totals: Object.fromEntries(getCcCouncilVotes.all(item.id).map(row => [row.vote_key, Number(row.total)])) }; });
-  const religiousMovements = getCcReligiousMovements.all(serverId).map(item => { const response = realm && getCcReligiousResponse.get(item.id, realm.id); const acceptances = db.prepare("SELECT COUNT(*) AS total FROM cc_religious_responses WHERE movement_id = ? AND response_key = 'accept'").get(item.id); return { id: item.id, key: item.movement_key, name: item.name, description: item.description, startsDay: item.starts_day, status: item.status, response: response?.response_key || null, convertedRealms: Number(acceptances?.total || 0) }; });
+  const religiousMovements = getCcReligiousMovements.all(serverId).map(item => {
+    const response = realm && getCcReligiousResponse.get(item.id, realm.id);
+    const acceptances = db.prepare("SELECT COUNT(*) AS total FROM cc_religious_responses WHERE movement_id = ? AND response_key = 'accept'").get(item.id);
+    const template = CROWNS_RELIGIOUS_MOVEMENTS.find(entry => entry.key === item.movement_key);
+    return { id: item.id, key: item.movement_key, name: item.name, description: item.description, startsDay: item.starts_day, parentFaith: template?.faith || 'Cristianismo', relevant: !realm || baseCrownsFaith(realm.religion) === (template?.faith || 'Cristianismo'), status: item.status, response: response?.response_key || null, convertedRealms: Number(acceptances?.total || 0) };
+  });
+  const diplomaticExchanges = realm ? getCcDiplomaticExchanges.all(serverId).filter(item => item.sender_realm_id === realm.id || item.recipient_realm_id === realm.id).map(item => ({
+    id: item.id,
+    senderRealmId: item.sender_realm_id,
+    senderName: item.sender_name,
+    senderHouse: item.sender_house,
+    recipientRealmId: item.recipient_realm_id,
+    recipientName: item.recipient_name,
+    recipientHouse: item.recipient_house,
+    kind: item.exchange_kind,
+    resourceType: item.resource_type,
+    amount: Number(item.amount),
+    status: item.status,
+    gameDay: Number(item.game_day),
+    createdAt: item.created_at
+  })) : [];
   return {
     user: { id: user.id, name: user.name, avatarData: user.avatar_data || null },
     season: {
@@ -2462,6 +2543,8 @@ function crownsBootstrap(user, requestedServerId) {
     expedition: { active: actions.filter(action => action.type === 'territory.claim').length, capacity: 2 },
     treaties,
     marriages,
+    diplomaticRequests: diplomaticExchanges.filter(item => item.kind === 'request' && item.recipientRealmId === realm?.id && item.status === 'pending'),
+    diplomaticExchanges,
     wars,
     regionReligions,
     councils,
@@ -2488,7 +2571,7 @@ function createCrownsRealm(user, payload, requestedServerId) {
   const houseName = String(payload?.houseName || '').replace(/[<>]/g, '').trim().slice(0, 40);
   const regionId = String(payload?.regionId || '').trim().slice(0, 32);
   const color = /^#[0-9a-f]{6}$/i.test(payload?.color || '') ? String(payload.color).toLowerCase() : CROWNS_REALM_COLORS[10];
-  const religion = 'Cristianismo';
+  const religion = CROWNS_RELIGIONS.includes(payload?.religion) ? payload.religion : crownsFaithForRegion(crownsRegionCatalog.regions.find(region => region.id === regionId));
   const entryPhase = crownsSeasonClock(processCrownsSeasonLifecycle(serverId)).phase;
   if (!['open', 'waiting'].includes(entryPhase)) throw new Error('Este servidor encerrou a temporada e aguarda o reinício.');
   if (name.length < 3 || houseName.length < 3 || !regionId) throw new Error('Informe reino, casa e capital inicial.');
@@ -2769,12 +2852,91 @@ function crownsTargetRealm(user, serverId, targetRealmId) {
   return { realm, target };
 }
 
+function sendCrownsDiplomaticGift(user, payload, requestedServerId) {
+  const serverId = crownsServerId(requestedServerId);
+  const { realm, target } = crownsTargetRealm(user, serverId, payload?.targetRealmId);
+  const resourceType = String(payload?.resourceType || '');
+  const amount = Math.max(50, Math.min(500, Math.trunc(Number(payload?.amount || 0))));
+  if (!crownsResourceColumn(resourceType)) throw new Error('Escolha um recurso válido para o presente.');
+  const id = `diplomacy_${crypto.randomUUID()}`;
+  const now = new Date().toISOString();
+  const day = crownsSeasonClock(getCcSeason.get(serverId)).day;
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    const spent = crownsAdjustResource(realm.id, serverId, resourceType, -amount, true);
+    if (!spent.changes) throw new Error(`Seu reino não possui ${amount} de ${CROWNS_RESOURCES[resourceType]?.name || resourceType}.`);
+    crownsAdjustResource(target.id, serverId, resourceType, amount);
+    insertCcDiplomaticExchange.run(id, serverId, realm.id, target.id, 'gift', resourceType, amount, 'delivered', day, now);
+    db.prepare('UPDATE cc_realms SET prestige = prestige + 1, updated_at = ? WHERE id = ? AND season_id = ?').run(now, realm.id, serverId);
+    insertCcEvent.run(crypto.randomUUID(), serverId, 'diplomacy.gift.sent', realm.id, realm.capital_region_id, JSON.stringify({ targetRealmId: target.id, targetName: target.name, resourceType, amount }), now);
+    db.exec('COMMIT');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+  emitCrownsEvent('world.patch', { seasonId: serverId, type: 'diplomacy.gift.sent', version: Date.now() });
+  return { id, targetName: target.name, resourceType, amount, goodwill: crownsGoodwill(serverId, realm.id, target.id) };
+}
+
+function respondCrownsDiplomaticRequest(user, payload, requestedServerId) {
+  const serverId = crownsServerId(requestedServerId);
+  const realm = getCcRealmByUser.get(serverId, user.id);
+  const request = realm && getCcDiplomaticExchange.get(String(payload?.requestId || ''), serverId);
+  const accept = payload?.accept === true;
+  if (!realm || !request || request.recipient_realm_id !== realm.id || request.exchange_kind !== 'request' || request.status !== 'pending') throw new Error('Este pedido diplomático não está mais disponível.');
+  const status = accept ? 'accepted' : 'declined';
+  const now = new Date().toISOString();
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    if (accept) {
+      const spent = crownsAdjustResource(realm.id, serverId, request.resource_type, -Number(request.amount), true);
+      if (!spent.changes) throw new Error(`Faltam ${CROWNS_RESOURCES[request.resource_type]?.name || request.resource_type} para atender ao pedido.`);
+      crownsAdjustResource(request.sender_realm_id, serverId, request.resource_type, Number(request.amount));
+      db.prepare('UPDATE cc_realms SET prestige = prestige + 2, updated_at = ? WHERE id = ? AND season_id = ?').run(now, realm.id, serverId);
+    }
+    if (!resolveCcDiplomaticRequest.run(status, now, request.id, serverId, realm.id).changes) throw new Error('O pedido já foi respondido.');
+    const sender = getCcRealmById.get(request.sender_realm_id, serverId);
+    insertCcEvent.run(crypto.randomUUID(), serverId, accept ? 'diplomacy.request.accepted' : 'diplomacy.request.declined', realm.id, realm.capital_region_id, JSON.stringify({ senderRealmId: request.sender_realm_id, senderName: sender?.name, resourceType: request.resource_type, amount: request.amount }), now);
+    db.exec('COMMIT');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+  emitCrownsEvent('world.patch', { seasonId: serverId, type: `diplomacy.request.${status}`, version: Date.now() });
+  return { requestId: request.id, status };
+}
+
+function processCrownsDiplomaticRequests(serverId) {
+  const season = getCcSeason.get(serverId);
+  if (!season) return;
+  const clock = crownsSeasonClock(season);
+  if (clock.phase !== 'open' || clock.day < 2 || clock.day % 3 !== 2) return;
+  const realms = getCcRealms.all(serverId);
+  const ais = realms.filter(realm => realm.is_ai);
+  const exchanges = getCcDiplomaticExchanges.all(serverId);
+  for (const human of realms.filter(realm => !realm.is_ai)) {
+    if (exchanges.some(item => item.recipient_realm_id === human.id && item.exchange_kind === 'request' && (item.status === 'pending' || Number(item.game_day) === clock.day))) continue;
+    const random = seededCrownsRandom(`${serverId}:${human.id}:request:${clock.day}`);
+    const sender = ais[Math.floor(random() * ais.length)];
+    if (!sender) continue;
+    const resources = ['grain', 'wood', 'stone', 'treasury'];
+    const resourceType = resources[Math.floor(random() * resources.length)];
+    const amount = 70 + Math.floor(random() * 5) * 20;
+    const id = `diplomacy_request_${serverId}_${human.id}_${clock.day}`;
+    const now = new Date().toISOString();
+    if (insertCcDiplomaticExchange.run(id, serverId, sender.id, human.id, 'request', resourceType, amount, 'pending', clock.day, now).changes) {
+      insertCcEvent.run(crypto.randomUUID(), serverId, 'diplomacy.request.created', sender.id, sender.capital_region_id, JSON.stringify({ recipientRealmId: human.id, resourceType, amount }), now);
+      emitCrownsEvent('world.patch', { seasonId: serverId, type: 'diplomacy.request.created', version: Date.now() });
+    }
+  }
+}
+
 function proposeCrownsTreaty(user, payload, requestedServerId) {
   const serverId = crownsServerId(requestedServerId);
   const { realm, target } = crownsTargetRealm(user, serverId, payload?.targetRealmId);
   const treatyType = ['alliance', 'non_aggression'].includes(payload?.treatyType) ? payload.treatyType : 'alliance';
   if (getCcActiveTreatyBetween.get(serverId, realm.id, target.id, target.id, realm.id)) throw new Error('Já existe um tratado ativo entre essas coroas.');
-  const score = Number(realm.prestige) + Number(target.prestige) + (realm.religion === target.religion ? 22 : 0);
+  const score = Number(realm.prestige) + Number(target.prestige) + (baseCrownsFaith(realm.religion) === baseCrownsFaith(target.religion) ? 22 : 0) + crownsGoodwill(serverId, realm.id, target.id);
   const accepted = target.is_ai ? score >= 48 || seededCrownsRandom(`${serverId}:${realm.id}:${target.id}:${treatyType}`)() > 0.34 : false;
   const now = new Date().toISOString();
   const id = `treaty_${crypto.randomUUID()}`;
@@ -2795,7 +2957,7 @@ function proposeCrownsMarriage(user, payload, requestedServerId) {
   if (Number(realm.treasury) < dowry) throw new Error('O tesouro não cobre o dote proposto.');
   const existing = getCcMarriages.all(serverId).find(item => item.status === 'accepted' && [item.proposer_realm_id, item.target_realm_id].includes(realm.id) && [item.proposer_realm_id, item.target_realm_id].includes(target.id));
   if (existing) throw new Error('Essas casas já estão ligadas por casamento.');
-  const accepted = Boolean(target.is_ai) && (realm.religion === target.religion || Number(realm.prestige) + Math.floor(dowry / 20) >= 28);
+  const accepted = Boolean(target.is_ai) && (baseCrownsFaith(realm.religion) === baseCrownsFaith(target.religion) || Number(realm.prestige) + Math.floor(dowry / 20) + crownsGoodwill(serverId, realm.id, target.id) >= 28);
   const now = new Date().toISOString();
   const id = `marriage_${crypto.randomUUID()}`;
   const proposerSpouse = `${realm.heir_name || 'Herdeiro'} de ${realm.house_name}`;
@@ -2911,13 +3073,15 @@ function processCrownsReligiousMovements(serverId) {
     }
   }
   for (const movement of getCcReligiousMovements.all(serverId)) {
+    const template = CROWNS_RELIGIOUS_MOVEMENTS.find(item => item.key === movement.movement_key);
     for (const ai of getCcRealms.all(serverId).filter(realm => realm.is_ai)) {
+      if (baseCrownsFaith(ai.religion) !== (template?.faith || 'Cristianismo')) continue;
       if (getCcReligiousResponse.get(movement.id, ai.id)) continue;
       const roll = seededCrownsRandom(`${movement.id}:${ai.id}`)();
       const response = roll > 0.72 ? 'accept' : 'resist';
       insertCcReligiousResponse.run(movement.id, ai.id, response, now);
       if (response === 'accept') {
-        const convertedFaith = `Cristianismo — ${movement.name}`;
+        const convertedFaith = `${template?.faith || baseCrownsFaith(ai.religion)} — ${movement.name}`;
         db.prepare('UPDATE cc_realms SET religion = ?, religious_unity = max(35, religious_unity - 9), heresy_pressure = min(100, heresy_pressure + 8), updated_at = ? WHERE id = ? AND season_id = ?').run(convertedFaith, now, ai.id, serverId);
         const regions = getCcOwnedRegions.all(serverId, ai.id);
         for (const owned of regions.slice(0, Math.max(1, Math.ceil(regions.length / 2)))) {
@@ -2936,11 +3100,13 @@ function respondCrownsReligiousMovement(user, payload, requestedServerId) {
   const movement = getCcReligiousMovement.get(String(payload?.movementId || ''), serverId);
   const response = ['accept', 'resist'].includes(payload?.response) ? payload.response : null;
   if (!realm || !movement || !response) throw new Error('Esta decisão religiosa não pode ser registrada.');
+  const template = CROWNS_RELIGIOUS_MOVEMENTS.find(item => item.key === movement.movement_key);
+  if (baseCrownsFaith(realm.religion) !== (template?.faith || 'Cristianismo')) throw new Error('Este movimento não pertence à fé oficial da sua coroa.');
   if (getCcReligiousResponse.get(movement.id, realm.id)) throw new Error('Sua coroa já respondeu a este movimento.');
   const now = new Date().toISOString();
   insertCcReligiousResponse.run(movement.id, realm.id, response, now);
   if (response === 'accept') {
-    const convertedFaith = `Cristianismo — ${movement.name}`;
+    const convertedFaith = `${template?.faith || baseCrownsFaith(realm.religion)} — ${movement.name}`;
     db.prepare('UPDATE cc_realms SET religion = ?, religious_unity = max(25, religious_unity - 12), heresy_pressure = min(100, heresy_pressure + 10), prestige = prestige + 2, updated_at = ? WHERE id = ? AND season_id = ?').run(convertedFaith, now, realm.id, serverId);
     for (const owned of getCcOwnedRegions.all(serverId, realm.id)) {
       const current = getCcRegionReligion.get(serverId, owned.region_id) || { majority_share: 72 };
@@ -3007,7 +3173,10 @@ function processCrownsActions() {
         }
         rewardCcClaim.run(now, action.realm_id, action.season_id);
         const claimant = getCcRealmById.get(action.realm_id, action.season_id);
-        const activeMovement = getCcReligiousMovements.all(action.season_id).slice(-1)[0];
+        const activeMovement = getCcReligiousMovements.all(action.season_id).filter(movement => {
+          const template = CROWNS_RELIGIOUS_MOVEMENTS.find(item => item.key === movement.movement_key);
+          return (template?.faith || 'Cristianismo') === baseCrownsFaith(claimant?.religion);
+        }).slice(-1)[0];
         upsertCcRegionReligion.run(action.season_id, action.region_id, claimant?.religion || 'Cristianismo', activeMovement ? 64 : 78, activeMovement?.name || 'Sem heresia organizada', activeMovement ? 8 : 0, now);
         eventType = 'territory.claim.completed';
       } else if (action.type.startsWith('building.')) {
@@ -3289,6 +3458,16 @@ async function handleApi(req, res, url, user) {
       if (req.method === 'POST' && url.pathname === '/api/crowns-and-councils/diplomacy/propose') {
         const payload = safeJsonParse(await readBody(req) || '{}', {});
         json(res, 201, { ok: true, treaty: proposeCrownsTreaty(user, payload, payload.serverId) });
+        return;
+      }
+      if (req.method === 'POST' && url.pathname === '/api/crowns-and-councils/diplomacy/gift') {
+        const payload = safeJsonParse(await readBody(req) || '{}', {});
+        json(res, 201, { ok: true, gift: sendCrownsDiplomaticGift(user, payload, payload.serverId) });
+        return;
+      }
+      if (req.method === 'POST' && url.pathname === '/api/crowns-and-councils/diplomacy/request/respond') {
+        const payload = safeJsonParse(await readBody(req) || '{}', {});
+        json(res, 200, { ok: true, request: respondCrownsDiplomaticRequest(user, payload, payload.serverId) });
         return;
       }
       if (req.method === 'POST' && url.pathname === '/api/crowns-and-councils/marriage/propose') {

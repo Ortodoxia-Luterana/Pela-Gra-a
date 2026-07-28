@@ -16,6 +16,7 @@ const REALM_TABS = [
   { id: 'provinces', label: 'Províncias' },
   { id: 'construction', label: 'Construções' },
   { id: 'army', label: 'Exército' },
+  { id: 'navy', label: 'Marinha' },
   { id: 'dynasty', label: 'Dinastia' },
   { id: 'diplomacy', label: 'Diplomacia' },
   { id: 'religion', label: 'Religião' },
@@ -41,6 +42,17 @@ const UNIT_IMAGES = {
   cavalry: '/assets/crowns-and-councils/assets/generated/unit-cavalry.png',
   siege: '/assets/crowns-and-councils/assets/generated/unit-siege.png'
 };
+const SHIP_IMAGES = {
+  fishing: '/assets/crowns-and-councils/assets/generated/ship-fishing.png',
+  light: '/assets/crowns-and-councils/assets/generated/ship-light.png',
+  medium: '/assets/crowns-and-councils/assets/generated/ship-medium.png',
+  heavy: '/assets/crowns-and-councils/assets/generated/ship-heavy.png'
+};
+const SHIP_FIELDS = [
+  { key: 'light', label: 'Leves' },
+  { key: 'medium', label: 'Médios' },
+  { key: 'heavy', label: 'Longo alcance' }
+];
 const TROOP_FIELDS = [
   { key: 'spearmen', label: 'Lanceiros' },
   { key: 'archers', label: 'Arqueiros' },
@@ -49,7 +61,7 @@ const TROOP_FIELDS = [
 ];
 const emptyTroops = () => ({ spearmen: 0, archers: 0, cavalry: 0, siege: 0 });
 const troopTotal = troops => TROOP_FIELDS.reduce((sum, item) => sum + Number(troops?.[item.key] || 0), 0);
-const strategicQueueCount = actions => actions.filter(action => !['army.attack', 'army.transfer'].includes(action.type)).length;
+const strategicQueueCount = actions => actions.filter(action => !['army.attack', 'army.transfer', 'navy.attack'].includes(action.type)).length;
 
 function Icon({ name }) {
   const paths = {
@@ -210,7 +222,7 @@ function Meter({ label, value, danger = false }) {
 function Orders({ actions, regions, now, busy, onCancel }) {
   const strategic = strategicQueueCount(actions);
   const marches = actions.length - strategic;
-  return <section class="cc-orders"><header><div><span>ORDENS ATIVAS</span><strong>{strategic}/3 filas · {marches} marcha(s)</strong></div><i>{actions.length ? 'O reino trabalha mesmo quando você sai.' : 'Seu conselho aguarda uma decisão.'}</i></header>
+  return <section class="cc-orders"><header><div><span>ORDENS ATIVAS</span><strong>{strategic} obra(s) e treino(s) · {marches} marcha(s)</strong></div><i>{actions.length ? 'Cada província trabalha com autonomia enquanto houver recursos.' : 'Seu conselho aguarda uma decisão.'}</i></header>
     <div>{actions.length ? actions.map(action => <article key={action.id}><Icon name="hourglass" /><span><b>{action.label}</b><small>{regions.find(item => item.id === action.regionId)?.name || 'Província'} · {remaining(action.completesAt, now)}</small></span><button disabled={busy} onClick={() => onCancel(action.id)}>Cancelar</button></article>) : <p class="cc-muted">Nenhuma ordem está consumindo tempo agora.</p>}</div>
   </section>;
 }
@@ -223,15 +235,17 @@ function EconomyPanel({ bootstrap }) {
   const economy = bootstrap.realm.economy;
   return <div class="cc-economy-ledger">
     {RESOURCE_ORDER.map(resource => <div key={resource}><ResourceIcon resource={resource} /><span><small>{RESOURCE_META[resource].label} por dia</small><strong class={(economy.daily[resource] || 0) < 0 ? 'negative' : ''}>{(economy.daily[resource] || 0) >= 0 ? '+' : ''}{economy.daily[resource] || 0}</strong></span></div>)}
-    <p>Manutenção militar: <b>{economy.upkeep} trigo/dia</b> · Capacidade dos armazéns: <b>{economy.storage}</b></p>
+    <p>População: <b>{economy.population?.toLocaleString('pt-BR')}</b> · Manutenção militar: <b>{economy.upkeep} trigo/dia</b> · Com fome: <b>{economy.hungryProvinces}</b> · Em agitação: <b>{economy.rebelliousProvinces}</b></p>
   </div>;
 }
 
-function ProvinceList({ bootstrap, onGoMap }) {
+function ProvinceList({ bootstrap, busy, onGoMap, onTax }) {
   const owned = bootstrap.regions.filter(region => region.ownerRealmId === bootstrap.realm.id);
   return <div class="cc-province-list">{owned.map(region => {
     const regionBuildings = bootstrap.buildings.filter(item => item.regionId === region.id);
-    return <article key={region.id}><div class="cc-province-resource"><ResourceIcon resource={region.resourceType} /></div><div><h3>{region.name}</h3><p>{region.countryName} · {region.resourceName} +{region.resourceYield}/dia</p><span>{regionBuildings.length ? regionBuildings.map(item => `${item.name} ${item.level}`).join(' · ') : 'Nenhuma obra concluída'}</span></div><button onClick={() => onGoMap(region.id)}>Ver no mapa</button></article>;
+    const economy = bootstrap.provinceEconomies.find(item => item.regionId === region.id);
+    const danger = economy?.foodBalance < 0 || economy?.unrest >= 65;
+    return <article class={danger ? 'danger' : ''} key={region.id}><div class="cc-province-resource"><ResourceIcon resource={region.resourceType} /></div><div class="cc-province-copy"><h3>{region.name}</h3><p>{region.countryName} · {region.resourceName} +{region.resourceYield}/dia</p><div class="cc-province-vitals"><span>População <b>{economy?.population?.toLocaleString('pt-BR')}</b></span><span>Trigo local <b>{economy?.foodStock}/{economy?.foodCapacity}</b> ({economy?.foodBalance >= 0 ? '+' : ''}{economy?.foodBalance}/d)</span><span>Lealdade <b>{economy?.loyalty}%</b></span><span>Agitação <b>{economy?.unrest}%</b></span></div><small>{regionBuildings.length ? regionBuildings.map(item => `${item.name} ${item.level}`).join(' · ') : 'Nenhuma obra concluída'}</small></div><div class="cc-province-actions"><label>Imposto<select value={economy?.taxRate || 18} disabled={busy} onChange={event => onTax(region.id, Number(event.currentTarget.value))}>{[5, 10, 15, 18, 22, 27, 31, 35].map(value => <option value={value}>{value}%</option>)}</select></label><em>+{economy?.taxIncome || 0} moedas/dia</em><button onClick={() => onGoMap(region.id)}>Ver no mapa</button></div></article>;
   })}</div>;
 }
 
@@ -249,7 +263,9 @@ function ConstructionPanel({ bootstrap, busy, onBuild }) {
       const multiplier = 1 + currentLevel * 0.65;
       const cost = Object.fromEntries(RESOURCE_ORDER.map(key => [key, Math.round(Number(item[key] || 0) * multiplier)]));
       const requirements = Object.entries(item.requires || {}).map(([required, level]) => `${bootstrap.buildingCatalog[required]?.name || required} ${level}`).join(' · ');
-      return <article class={!unlocked ? 'locked' : ''} key={type}><header><span>{item.category}</span><b>Nível {currentLevel}/{item.maxLevel || 5}</b></header><h3>{item.name}</h3><p>{item.description}</p><strong class="cc-effect">{item.effect}</strong>{requirements ? <small>Exige: {requirements}</small> : <small>Disponível desde o início</small>}<footer><Cost item={cost} /><button disabled={busy || !unlocked || currentLevel >= (item.maxLevel || 5) || strategicQueueCount(bootstrap.actions) >= 3} onClick={() => onBuild(selectedRegion.id, type)}>{currentLevel ? 'Melhorar' : 'Construir'}</button></footer></article>;
+      const alreadyBuilding = bootstrap.actions.some(action => action.regionId === selectedRegion?.id && action.type === `building.${type}`);
+      const coastalBlocked = item.coastalOnly && !selectedRegion?.isCoastal;
+      return <article class={!unlocked || coastalBlocked ? 'locked' : ''} key={type}><header><span>{item.category}</span><b>Nível {currentLevel}/{item.maxLevel || 5}</b></header><h3>{item.name}</h3><p>{item.description}</p><strong class="cc-effect">{item.effect}</strong>{coastalBlocked ? <small>Exige uma província costeira navegável</small> : requirements ? <small>Exige: {requirements}</small> : <small>Disponível desde o início</small>}<footer><Cost item={cost} /><button disabled={busy || !unlocked || coastalBlocked || alreadyBuilding || currentLevel >= (item.maxLevel || 5)} onClick={() => onBuild(selectedRegion.id, type)}>{alreadyBuilding ? 'Em construção' : currentLevel ? 'Melhorar' : 'Construir'}</button></footer></article>;
     })}</div>
   </div>;
 }
@@ -326,6 +342,86 @@ function ArmyPanel({ bootstrap, now, busy, onRecruit, onTransfer, onDefend, onWa
   </div>;
 }
 
+function NavyPanel({ bootstrap, now, busy, onFleetBuild, onNavalRaid }) {
+  const ports = bootstrap.provinceEconomies.filter(province => province.isCoastal && province.portLevel > 0);
+  const [portId, setPortId] = useState(ports[0]?.regionId || '');
+  const [groups, setGroups] = useState(1);
+  const [targetId, setTargetId] = useState(bootstrap.navalTargets[0]?.regionId || '');
+  const [ships, setShips] = useState({ light: 0, medium: 0, heavy: 0 });
+  const port = ports.find(item => item.regionId === portId);
+  const fleet = bootstrap.fleets.find(item => item.regionId === portId) || {};
+  const origin = bootstrap.regions.find(item => item.id === portId);
+  const targets = bootstrap.navalTargets.map(target => {
+    const region = bootstrap.regions.find(item => item.id === target.regionId);
+    const distanceKm = origin?.centroid && region?.centroid ? Math.round(Math.hypot(region.centroid[0] - origin.centroid[0], region.centroid[1] - origin.centroid[1]) / 1000) : 0;
+    return { ...target, distanceKm, quadrants: Math.max(1, Math.ceil(distanceKm / 750)) };
+  });
+  const target = targets.find(item => item.regionId === targetId);
+  const selectedTotal = SHIP_FIELDS.reduce((sum, item) => sum + Number(ships[item.key] || 0), 0);
+  const selectedRange = selectedTotal ? SHIP_FIELDS.filter(item => ships[item.key] > 0).reduce((range, item) => Math.min(range, bootstrap.shipCatalog[item.key].rangeQuadrants), 99) : 0;
+  const missions = bootstrap.actions.filter(action => action.type === 'navy.attack');
+  useEffect(() => { if (!ports.some(item => item.regionId === portId)) setPortId(ports[0]?.regionId || ''); }, [ports.length, portId]);
+  useEffect(() => { if (!targets.some(item => item.regionId === targetId)) setTargetId(targets[0]?.regionId || ''); }, [portId, bootstrap.navalTargets.length, targetId]);
+  return <div class="cc-navy-command">
+    <div class="cc-command-heading"><div><span>ALMIRANTADO</span><h2>Portos, pesca e projeção marítima</h2><p>Cada frota pertence a um porto. Navios enviados deixam de defender a costa até retornarem; o menor alcance da formação limita toda a viagem.</p></div><div class="cc-army-summary"><strong>{bootstrap.fleets.reduce((sum, item) => sum + item.total, 0)}</strong><span>embarcações em {bootstrap.fleets.length} porto(s)</span></div></div>
+    {!ports.length ? <p class="cc-panel-warning">Construa um Porto em uma província costeira. O nível do porto libera pesca e navios de maior alcance.</p> : <>
+      <div class="cc-port-selector"><label>Porto de comando<select value={portId} onChange={event => { setPortId(event.currentTarget.value); setShips({ light: 0, medium: 0, heavy: 0 }); }}>{ports.map(item => <option value={item.regionId}>{item.regionName} · Porto {item.portLevel}</option>)}</select></label><div><span>Frota local</span><strong>Pesca {fleet.fishing || 0} · leves {fleet.light || 0} · médios {fleet.medium || 0} · longo alcance {fleet.heavy || 0}</strong></div></div>
+      <section class="cc-shipyard"><header><div><span>ESTALEIRO LOCAL</span><h3>Construir embarcações</h3></div><div class="cc-train-groups"><span>Lotes</span>{[1, 3, 5].map(value => <button type="button" class={groups === value ? 'active' : ''} onClick={() => setGroups(value)}>{value}</button>)}</div></header><div class="cc-ship-catalog">{Object.entries(bootstrap.shipCatalog).map(([type, ship]) => {
+        const unlocked = Number(port?.portLevel || 0) >= ship.portLevel;
+        const cost = Object.fromEntries(RESOURCE_ORDER.map(key => [key, Number(ship[key] || 0) * groups]));
+        return <article class={!unlocked ? 'locked' : ''} key={type}><div class="cc-ship-image"><img src={SHIP_IMAGES[type]} alt={ship.name} /></div><div><span>{ship.role}</span><h3>{ship.name}</h3><p>{ship.description}</p><dl><div><dt>Porto</dt><dd>{ship.portLevel}</dd></div><div><dt>Alcance</dt><dd>{ship.rangeQuadrants >= 99 ? 'Global' : `${ship.rangeQuadrants} quad.`}</dd></div><div><dt>Lote</dt><dd>{ship.quantity * groups}</dd></div></dl><footer><Cost item={cost} /><button disabled={busy || !unlocked} onClick={() => onFleetBuild(portId, type, groups)}>{unlocked ? 'Construir' : `Exige Porto ${ship.portLevel}`}</button></footer></div></article>;
+      })}</div></section>
+      <form class="cc-naval-planner" onSubmit={event => { event.preventDefault(); if (target && selectedTotal) onNavalRaid(portId, target.regionId, ships).then(result => { if (result) setShips({ light: 0, medium: 0, heavy: 0 }); }); }}>
+        <header><Icon name="swords" /><div><span>INCURSÃO NAVAL</span><h3>Atacar uma costa inimiga</h3></div></header>
+        <div class="cc-route-selectors"><label>Origem<select value={portId} disabled>{ports.map(item => <option value={item.regionId}>{item.regionName}</option>)}</select></label><i>→</i><label>Alvo costeiro<select value={targetId} onChange={event => setTargetId(event.currentTarget.value)}><option value="">Escolha uma costa</option>{targets.map(item => <option value={item.regionId}>{item.regionName} · {item.realmName} · {item.quadrants} quad.</option>)}</select></label></div>
+        <div class="cc-troop-inputs">{SHIP_FIELDS.map(item => <label><span>{item.label}<small>disponível {Number(fleet[item.key] || 0)}</small></span><input type="number" min="0" max={Number(fleet[item.key] || 0)} value={ships[item.key]} onInput={event => setShips({ ...ships, [item.key]: Math.max(0, Number(event.currentTarget.value || 0)) })} /></label>)}</div>
+        {target ? <div class="cc-target-intel"><span>INTELIGÊNCIA NAVAL</span><strong>{target.regionName} · {target.quadrants} quadrante(s) · {target.distanceKm.toLocaleString('pt-BR')} km</strong><small>Porto {target.portLevel} · defesa conhecida {target.fleet?.defense || 0} · {target.fleet?.combatTotal || 0} navios de combate</small></div> : null}
+        <footer><span><b>{selectedTotal}</b> navios · alcance {selectedRange >= 99 ? 'global' : `${selectedRange} quadrante(s)`}. Vitória saqueia moedas, mas não conquista a província.</span><button disabled={busy || !target || !selectedTotal || target.quadrants > selectedRange}>Lançar incursão</button></footer>
+      </form>
+      {missions.length ? <section class="cc-active-marches"><h3>Frotas em campanha</h3>{missions.map(action => <article><Icon name="swords" /><div><strong>{bootstrap.regions.find(item => item.id === action.regionId)?.name}</strong><span>{action.cost.quadrants} quadrante(s) · {Object.values(action.cost.ships || {}).reduce((sum, value) => sum + Number(value || 0), 0)} navios</span></div><b>{remaining(action.completesAt, now)}</b></article>)}</section> : null}
+    </>}
+  </div>;
+}
+
+function ReligionPanel({ bootstrap, busy, onMission, onSuppress, onFoundFaith, onRespondReligion }) {
+  const court = bootstrap.realm.court;
+  const relevantMovements = bootstrap.religiousMovements.filter(movement => movement.relevant);
+  const temples = bootstrap.provinceEconomies.filter(province => province.templeLevel > 0);
+  const foundingTemples = temples.filter(province => province.templeLevel >= 3);
+  const [sourceId, setSourceId] = useState(temples[0]?.regionId || '');
+  const [targetId, setTargetId] = useState('');
+  const [foundingRegionId, setFoundingRegionId] = useState(foundingTemples[0]?.regionId || '');
+  const [faithName, setFaithName] = useState('');
+  const [dogmas, setDogmas] = useState([]);
+  const source = temples.find(item => item.regionId === sourceId);
+  const pilgrimage = bootstrap.customFaith?.dogmas?.includes('peregrinacao');
+  const sourceRange = source ? ([0, 1, 2, 4, 6, 99][Math.min(5, source.templeLevel)] + (pilgrimage && source.templeLevel < 5 ? 1 : 0)) : 0;
+  const sourceRegion = bootstrap.regions.find(item => item.id === sourceId);
+  const targets = bootstrap.missionTargets.map(target => {
+    const region = bootstrap.regions.find(item => item.id === target.regionId);
+    const km = sourceRegion?.centroid && region?.centroid ? Math.round(Math.hypot(region.centroid[0] - sourceRegion.centroid[0], region.centroid[1] - sourceRegion.centroid[1]) / 1000) : 0;
+    return { ...target, quadrants: Math.max(1, Math.ceil(km / 750)), km };
+  }).filter(target => target.quadrants <= sourceRange);
+  useEffect(() => { if (!temples.some(item => item.regionId === sourceId)) setSourceId(temples[0]?.regionId || ''); }, [temples.length, sourceId]);
+  useEffect(() => { if (!foundingTemples.some(item => item.regionId === foundingRegionId)) setFoundingRegionId(foundingTemples[0]?.regionId || ''); }, [foundingTemples.length, foundingRegionId]);
+  useEffect(() => { if (!targets.some(item => item.regionId === targetId)) setTargetId(targets[0]?.regionId || ''); }, [sourceId, targets.length, targetId]);
+  function toggleDogma(key) { setDogmas(current => current.includes(key) ? current.filter(item => item !== key) : current.length < 2 ? [...current, key] : current); }
+  return <div class="cc-government-panel cc-religion-command">
+    <div class="cc-command-heading"><div><span>CAPELA E DOUTRINA</span><h2>{bootstrap.customFaith?.name || court.religion.faith}</h2><p>Templos locais defendem a fé da província, ampliam alcance e formam até dois grupos missionários simultâneos.</p></div><div class="cc-army-summary"><strong>{bootstrap.missionary.active}/{bootstrap.missionary.capacity}</strong><span>missões em andamento</span></div></div>
+    <div class="cc-meter-grid"><Meter label="Unidade religiosa" value={court.religion.unity} /><Meter label="Pressão herética" value={court.religion.heresyPressure} danger /></div>
+    {!bootstrap.customFaith ? <form class="cc-faith-founder" onSubmit={event => { event.preventDefault(); onFoundFaith({ regionId: foundingRegionId, name: faithName, dogmas }); }}>
+      <div><span>SÍNODO FUNDADOR</span><h3>Criar uma religião própria</h3><p>Exige Templo 3, 600 moedas, 220 trigo e 240 pedra. A fundação será anunciada no Jornal.</p></div>
+      {!foundingTemples.length ? <p class="cc-panel-warning">Eleve um templo ao nível 3 para liberar esta decisão.</p> : <><label>Templo fundador<select value={foundingRegionId} onChange={event => setFoundingRegionId(event.currentTarget.value)}>{foundingTemples.map(item => <option value={item.regionId}>{item.regionName} · nível {item.templeLevel}</option>)}</select></label><label>Nome da nova fé<input value={faithName} onInput={event => setFaithName(event.currentTarget.value)} maxLength="44" placeholder="Ex.: Comunhão de Alexandria" /></label><div class="cc-dogma-grid">{Object.entries(bootstrap.dogmaCatalog).map(([key, dogma]) => <button type="button" class={dogmas.includes(key) ? 'active' : ''} onClick={() => toggleDogma(key)}><strong>{dogma.name}</strong><small>{dogma.effect}</small></button>)}</div><button class="cc-primary" disabled={busy || faithName.trim().length < 4 || dogmas.length !== 2}>Fundar religião com dois dogmas</button></>}
+    </form> : <div class="cc-faith-banner"><span>FÉ ORGANIZADA POR SUA COROA</span><strong>{bootstrap.customFaith.name}</strong><p>{bootstrap.customFaith.dogmas.map(key => bootstrap.dogmaCatalog[key]?.name).join(' · ')}</p></div>}
+    <form class="cc-mission-planner" onSubmit={event => { event.preventDefault(); if (sourceId && targetId) onMission(sourceId, targetId); }}>
+      <header><Icon name="cross" /><div><span>MISSÃO RELIGIOSA</span><h3>Enviar missionários</h3></div></header>
+      {!temples.length ? <p class="cc-panel-warning">Construa um templo para formar missionários.</p> : <><div class="cc-route-selectors"><label>Templo de origem<select value={sourceId} onChange={event => setSourceId(event.currentTarget.value)}>{temples.map(item => <option value={item.regionId}>{item.regionName} · nível {item.templeLevel}</option>)}</select></label><i>→</i><label>Província de destino<select value={targetId} onChange={event => setTargetId(event.currentTarget.value)}>{targets.map(item => <option value={item.regionId}>{item.regionName} · {item.ownerName || 'neutra'} · {item.quadrants} quad.</option>)}</select></label></div><footer><span>Alcance deste templo: <b>{sourceRange >= 99 ? 'todo o mapa' : `${sourceRange} quadrante(s)`}</b>. Templos inimigos reduzem a chance de conversão.</span><button disabled={busy || !targetId || bootstrap.missionary.active >= bootstrap.missionary.capacity}>Enviar missionários</button></footer></>}
+    </form>
+    <div class="cc-decision-list"><h3>Movimentos ligados à sua fé</h3>{relevantMovements.length ? relevantMovements.map(movement => <article key={movement.id}><div><strong>{movement.name}</strong><span>{movement.description}</span><small>{movement.parentFaith} · dia {movement.startsDay} · {movement.convertedRealms} coroa(s) aderiram</small></div><div>{movement.response ? <b>{movement.response === 'accept' ? 'Sua coroa aderiu' : 'Sua coroa resistiu'}</b> : <><button disabled={busy} onClick={() => onRespondReligion(movement.id, 'accept')}>Aceitar</button><button class="cc-danger" disabled={busy} onClick={() => onRespondReligion(movement.id, 'resist')}>Resistir</button></>}</div></article>) : <p class="cc-muted">Nenhuma heresia ou reforma ligada à sua tradição surgiu até agora.</p>}</div>
+    <div class="cc-decision-list"><h3>Fé por província</h3>{bootstrap.regionReligions.map(faith => <article key={faith.regionId}><div><strong>{faith.regionName}</strong><span>{faith.majorityReligion}: {faith.majorityShare}% · {faith.heresyName}: {faith.heresyShare}%</span></div><div><button class="cc-danger" disabled={busy || faith.heresyShare <= 0} onClick={() => onSuppress(faith.regionId)}>Conter heresia</button></div></article>)}</div>
+  </div>;
+}
+
 function DynastyPanel({ bootstrap, busy, onMarriage }) {
   const court = bootstrap.realm.court;
   return <div class="cc-government-panel">
@@ -361,25 +457,25 @@ function DiplomacyPanel({ bootstrap, busy, onTreaty, onGift, onRespondRequest })
   </div>;
 }
 
-function RealmSection({ bootstrap, now, busy, onGoMap, onBuild, onRecruit, onTransfer, onDefend, onWar, onTreaty, onGift, onRespondRequest, onMarriage, onMission, onSuppress, onRespondReligion, onVote, onReceive, onCancel }) {
+function RealmSection({ bootstrap, now, busy, onGoMap, onTax, onBuild, onRecruit, onTransfer, onDefend, onWar, onFleetBuild, onNavalRaid, onTreaty, onGift, onRespondRequest, onMarriage, onMission, onFoundFaith, onSuppress, onRespondReligion, onVote, onReceive, onCancel }) {
   const [tab, setTab] = useState('overview');
   const realm = bootstrap.realm;
   if (!realm) return <section class="cc-realm-board"><h1>Nenhuma coroa foi erguida</h1><button class="cc-primary" onClick={() => onGoMap()}>Escolher capital</button></section>;
   const capital = bootstrap.regions.find(region => region.id === realm.capitalRegionId);
   const frontier = bootstrap.regions.find(region => region.isAdjacentToRealm && !region.ownerRealmId && region.status === 'neutral');
   const court = realm.court;
-  const relevantMovements = bootstrap.religiousMovements.filter(movement => movement.relevant);
   return <section class="cc-realm-board">
     <header class="cc-realm-header"><div class="cc-realm-identity"><i style={{ '--realm-color': realm.color }} /><div><span>CONSELHO DA COROA</span><h1>{realm.name}</h1><p>{realm.houseName} · capital em {capital?.name}</p></div></div><div class="cc-realm-rank"><strong>{realm.regionCount}</strong><span>províncias</span></div></header>
     <nav class="cc-realm-tabs">{REALM_TABS.map(item => <button key={item.id} class={tab === item.id ? 'active' : ''} onClick={() => setTab(item.id)}>{item.label}</button>)}</nav>
     <div class="cc-realm-content">
-      {tab === 'overview' ? <div class="cc-overview-layout"><div><div class="cc-command-heading"><div><span>SITUAÇÃO DO REINO</span><h2>Decisões que mudam o próximo dia</h2><p>Seu território produz, seus exércitos consomem e cada fila adia outra escolha.</p></div></div><EconomyPanel bootstrap={bootstrap} /><Orders actions={bootstrap.actions} regions={bootstrap.regions} now={now} busy={busy} onCancel={onCancel} /></div><aside><h3>Prioridades sugeridas</h3><button onClick={() => setTab('construction')}><Icon name="wood" /><span><strong>Ampliar produção</strong>Construa onde a província já é forte.</span></button><button onClick={() => setTab('army')}><Icon name="shield" /><span><strong>Especializar a hoste</strong>Desbloqueie arqueiros, cavalaria e cerco.</span></button><button onClick={() => onGoMap(frontier?.id || capital?.id)}><Icon name="map" /><span><strong>Agir no mapa</strong>{frontier ? 'Há fronteira neutra disponível.' : 'Inspecione sua capital.'}</span></button></aside></div> : null}
-      {tab === 'provinces' ? <ProvinceList bootstrap={bootstrap} onGoMap={onGoMap} /> : null}
+      {tab === 'overview' ? <div class="cc-overview-layout"><div><div class="cc-command-heading"><div><span>SITUAÇÃO DO REINO</span><h2>Decisões que mudam o próximo dia</h2><p>Cada província alimenta sua população, recolhe seus impostos e mantém suas próprias obras, tropas, portos e templos.</p></div></div><EconomyPanel bootstrap={bootstrap} /><Orders actions={bootstrap.actions} regions={bootstrap.regions} now={now} busy={busy} onCancel={onCancel} /></div><aside><h3>Prioridades sugeridas</h3><button onClick={() => setTab('construction')}><Icon name="wood" /><span><strong>Ampliar produção</strong>Construa onde a província já é forte.</span></button><button onClick={() => setTab('army')}><Icon name="shield" /><span><strong>Especializar a hoste</strong>Desbloqueie arqueiros, cavalaria e cerco.</span></button><button onClick={() => onGoMap(frontier?.id || capital?.id)}><Icon name="map" /><span><strong>Agir no mapa</strong>{frontier ? 'Há fronteira neutra disponível.' : 'Inspecione sua capital.'}</span></button></aside></div> : null}
+      {tab === 'provinces' ? <ProvinceList bootstrap={bootstrap} busy={busy} onGoMap={onGoMap} onTax={onTax} /> : null}
       {tab === 'construction' ? <ConstructionPanel bootstrap={bootstrap} busy={busy} onBuild={onBuild} /> : null}
       {tab === 'army' ? <ArmyPanel bootstrap={bootstrap} now={now} busy={busy} onRecruit={onRecruit} onTransfer={onTransfer} onDefend={onDefend} onWar={onWar} /> : null}
+      {tab === 'navy' ? <NavyPanel bootstrap={bootstrap} now={now} busy={busy} onFleetBuild={onFleetBuild} onNavalRaid={onNavalRaid} /> : null}
       {tab === 'dynasty' ? <DynastyPanel bootstrap={bootstrap} busy={busy} onMarriage={onMarriage} /> : null}
       {tab === 'diplomacy' ? <DiplomacyPanel bootstrap={bootstrap} busy={busy} onTreaty={onTreaty} onGift={onGift} onRespondRequest={onRespondRequest} /> : null}
-      {tab === 'religion' ? <div class="cc-government-panel"><div class="cc-command-heading"><div><span>CAPELA E DOUTRINA</span><h2>{court.religion.faith}</h2></div></div><div class="cc-meter-grid"><Meter label="Unidade religiosa" value={court.religion.unity} /><Meter label="Pressão herética" value={court.religion.heresyPressure} danger /></div><div class="cc-decision-list"><h3>Movimentos ligados à sua fé</h3>{relevantMovements.length ? relevantMovements.map(movement => <article key={movement.id}><div><strong>{movement.name}</strong><span>{movement.description}</span><small>{movement.parentFaith} · dia {movement.startsDay} · {movement.convertedRealms} coroa(s) aderiram</small></div><div>{movement.response ? <b>{movement.response === 'accept' ? 'Sua coroa aderiu' : 'Sua coroa resistiu'}</b> : <><button disabled={busy} onClick={() => onRespondReligion(movement.id, 'accept')}>Aceitar</button><button class="cc-danger" disabled={busy} onClick={() => onRespondReligion(movement.id, 'resist')}>Resistir</button></>}</div></article>) : <p class="cc-muted">Nenhuma heresia ou reforma ligada à sua tradição surgiu até agora.</p>}</div><div class="cc-decision-list"><h3>Províncias</h3>{bootstrap.regionReligions.map(faith => <article key={faith.regionId}><div><strong>{faith.regionName}</strong><span>{faith.majorityReligion}: {faith.majorityShare}% · {faith.heresyName}: {faith.heresyShare}%</span></div><div><button disabled={busy} onClick={() => onMission(faith.regionId)}>Missão</button><button class="cc-danger" disabled={busy || faith.heresyShare <= 0} onClick={() => onSuppress(faith.regionId)}>Conter heresia</button></div></article>)}</div></div> : null}
+      {tab === 'religion' ? <ReligionPanel bootstrap={bootstrap} busy={busy} onMission={onMission} onFoundFaith={onFoundFaith} onSuppress={onSuppress} onRespondReligion={onRespondReligion} /> : null}
       {tab === 'councils' ? <div class="cc-government-panel"><div class="cc-command-heading"><div><span>ASSEMBLEIAS DA FÉ</span><h2>Concílios históricos e regionais</h2></div></div><div class="cc-decision-list">{bootstrap.councils.length ? bootstrap.councils.map(council => <article key={council.id}><div><strong>{council.name}</strong><span>{council.theme}</span><small>Aprovar {council.totals.accept || 0} · Rejeitar {council.totals.reject || 0}</small></div>{council.status === 'voting' ? <div><button disabled={busy || council.vote} onClick={() => onVote(council.id, 'accept')}>Aprovar</button><button disabled={busy || council.vote} onClick={() => onVote(council.id, 'reject')}>Rejeitar</button></div> : <div><button disabled={busy || council.reception} onClick={() => onReceive(council.id, 'receive')}>Receber</button><button class="cc-danger" disabled={busy || council.reception} onClick={() => onReceive(council.id, 'resist')}>Resistir</button></div>}</article>) : <p class="cc-muted">O primeiro concílio será convocado no dia 3.</p>}</div></div> : null}
       {tab === 'internal' ? <div class="cc-government-panel"><div class="cc-command-heading"><div><span>CONSELHO INTERNO</span><h2>Coesão do reino</h2></div></div><div class="cc-meter-grid"><Meter label="Estabilidade" value={court.internal.stability} /><Meter label="Apoio popular" value={court.internal.popularSupport} /><Meter label="Risco separatista" value={court.internal.separatistRisk} danger /></div><div class={`cc-revolt-warning ${court.internal.canRevolt ? 'armed' : ''}`}><strong>{court.internal.canRevolt ? 'Revoluções estão habilitadas neste domínio' : 'O domínio ainda é pequeno para uma revolução'}</strong><p>{court.internal.explanation}</p></div></div> : null}
     </div>
@@ -446,16 +542,20 @@ function Game({ serverId, onLeave }) {
   if (!bootstrap) return <main class="cc-loading"><span class="cc-brand-sigil"><Icon name="crown" /></span><p>{error || 'Convocando o conselho...'}</p><button onClick={onLeave}>Voltar aos servidores</button></main>;
   const common = {
     bootstrap, now, busy, onGoMap: goMap,
+    onTax: (regionId, taxRate) => execute(() => crownsApi.setProvinceTax(serverId, regionId, taxRate)),
     onBuild: (regionId, type) => execute(() => crownsApi.queueBuilding(serverId, regionId, type)),
     onRecruit: (regionId, type, groups) => execute(() => crownsApi.recruitArmy(serverId, regionId, type, groups)),
     onTransfer: (fromRegionId, toRegionId, troops) => execute(() => crownsApi.transferArmy(serverId, fromRegionId, toRegionId, troops)),
     onDefend: regionId => execute(() => crownsApi.defend(serverId, regionId)),
     onWar: (fromRegionId, regionId, troops) => execute(() => crownsApi.declareWar(serverId, fromRegionId, regionId, troops)),
+    onFleetBuild: (regionId, shipType, groups) => execute(() => crownsApi.buildFleet(serverId, regionId, shipType, groups)),
+    onNavalRaid: (fromRegionId, targetRegionId, ships) => execute(() => crownsApi.launchNavalRaid(serverId, fromRegionId, targetRegionId, ships)),
     onTreaty: (targetId, type) => execute(() => crownsApi.proposeTreaty(serverId, targetId, type)),
     onGift: (targetId, resourceType, amount) => execute(() => crownsApi.sendDiplomaticGift(serverId, targetId, resourceType, amount)),
     onRespondRequest: (requestId, accept) => execute(() => crownsApi.respondDiplomaticRequest(serverId, requestId, accept)),
     onMarriage: targetId => execute(() => crownsApi.proposeMarriage(serverId, targetId, { dowry: 160, childReligion: bootstrap.realm.religion })),
-    onMission: regionId => execute(() => crownsApi.religionMission(serverId, regionId)),
+    onMission: (sourceRegionId, targetRegionId) => execute(() => crownsApi.religionMission(serverId, sourceRegionId, targetRegionId)),
+    onFoundFaith: payload => execute(() => crownsApi.foundReligion(serverId, payload)),
     onSuppress: regionId => execute(() => crownsApi.suppressHeresy(serverId, regionId)),
     onRespondReligion: (movementId, response) => execute(() => crownsApi.respondReligion(serverId, movementId, response)),
     onVote: (councilId, vote) => execute(() => crownsApi.voteCouncil(serverId, councilId, vote)),

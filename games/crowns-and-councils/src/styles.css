@@ -478,6 +478,64 @@ button:disabled { cursor: not-allowed; opacity: .45; transform: none !important;
 .cc-winners li span { font-size: 10px; }
 .cc-winners li em { font-style: normal; font-weight: 800; }
 
+/* Provincial economy, navy and organized faith */
+.cc-province-list article.danger { border-left: 4px solid var(--danger); background: color-mix(in oklch, var(--danger) 7%, var(--paper)); }
+.cc-province-copy { min-width: 0; }
+.cc-province-copy small { display: block; margin-top: 7px; color: color-mix(in oklch, var(--ink) 62%, transparent); }
+.cc-province-vitals { display: grid; grid-template-columns: repeat(4, minmax(100px, 1fr)); gap: 4px; margin-top: 7px; }
+.cc-province-vitals span { padding: 5px 7px; background: var(--bone-2); color: color-mix(in oklch, var(--ink) 64%, transparent); }
+.cc-province-vitals b { color: var(--ink); }
+.cc-province-actions { display: grid; justify-items: end; gap: 4px; min-width: 118px; }
+.cc-province-actions label { color: color-mix(in oklch, var(--ink) 62%, transparent); font-size: 8px; font-weight: 800; text-transform: uppercase; }
+.cc-province-actions select { display: block; margin-top: 3px; padding: 6px; border: 1px solid var(--line-paper); background: var(--bone); color: var(--ink); }
+.cc-province-actions em { color: var(--moss); font-size: 9px; font-style: normal; font-weight: 800; }
+.cc-navy-command, .cc-religion-command { display: grid; gap: 16px; }
+.cc-port-selector { display: grid; grid-template-columns: minmax(240px, .7fr) 1fr; align-items: end; gap: 12px; padding: 13px; background: var(--ink-2); color: var(--text); }
+.cc-port-selector label, .cc-port-selector span { display: block; color: var(--bronze); font-size: 8px; font-weight: 800; text-transform: uppercase; }
+.cc-port-selector select { display: block; width: 100%; margin-top: 4px; padding: 9px; border: 1px solid var(--line-dark); background: var(--ink); color: var(--text); }
+.cc-port-selector strong { display: block; margin-top: 4px; font-family: Cinzel, serif; }
+.cc-shipyard { padding-top: 4px; }
+.cc-shipyard > header { display: flex; align-items: end; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.cc-shipyard > header span { color: var(--bronze); font-size: 9px; font-weight: 800; letter-spacing: .1em; }
+.cc-shipyard h3 { margin: 2px 0 0; font-family: Cinzel, serif; }
+.cc-ship-catalog { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.cc-ship-catalog > article { display: grid; grid-template-columns: 150px 1fr; min-height: 238px; overflow: hidden; border-top: 3px solid var(--moss); background: var(--paper); }
+.cc-ship-catalog > article.locked { border-top-color: var(--bronze); opacity: .68; }
+.cc-ship-image { position: relative; display: grid; place-items: center; overflow: hidden; background: radial-gradient(circle at 50% 40%, #586d64, var(--ink-2) 70%); }
+.cc-ship-image::after { position: absolute; right: 0; bottom: 0; left: 0; height: 35%; content: ""; background: linear-gradient(transparent, #0007); }
+.cc-ship-image img { z-index: 1; width: 100%; height: 100%; object-fit: cover; filter: drop-shadow(0 8px 7px #0008); }
+.cc-ship-catalog > article > div:last-child { display: flex; min-width: 0; flex-direction: column; padding: 13px; }
+.cc-ship-catalog article span { color: var(--bronze); font-size: 8px; font-weight: 800; text-transform: uppercase; }
+.cc-ship-catalog article p { flex: 1; margin: 5px 0; color: color-mix(in oklch, var(--ink) 69%, transparent); font-size: 10px; }
+.cc-ship-catalog dl { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin: 7px 0; background: var(--line-paper); }
+.cc-ship-catalog dl div { padding: 6px; background: var(--bone); }
+.cc-ship-catalog dt { color: color-mix(in oklch, var(--ink) 58%, transparent); font-size: 7px; text-transform: uppercase; }
+.cc-ship-catalog dd { margin: 2px 0 0; font-weight: 800; }
+.cc-ship-catalog footer { display: flex; align-items: end; justify-content: space-between; gap: 7px; }
+.cc-ship-catalog footer button { padding: 7px 9px; border: 0; background: var(--moss); color: white; font-size: 9px; font-weight: 800; cursor: pointer; }
+.cc-naval-planner, .cc-mission-planner { padding: 15px; border-top: 3px solid var(--danger); background: color-mix(in oklch, var(--danger) 4%, var(--paper)); }
+.cc-mission-planner { border-top-color: var(--bronze); }
+.cc-naval-planner > header, .cc-mission-planner > header { display: flex; align-items: center; gap: 9px; }
+.cc-naval-planner > header .cc-icon, .cc-mission-planner > header .cc-icon { width: 30px; height: 30px; color: var(--oxblood); }
+.cc-naval-planner header span, .cc-mission-planner header span, .cc-faith-founder > div > span, .cc-faith-banner span { color: var(--bronze); font-size: 8px; font-weight: 800; letter-spacing: .1em; }
+.cc-naval-planner h3, .cc-mission-planner h3, .cc-faith-founder h3 { margin: 2px 0 0; font-family: Cinzel, serif; }
+.cc-naval-planner > footer, .cc-mission-planner > footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; }
+.cc-naval-planner > footer span, .cc-mission-planner > footer span { color: color-mix(in oklch, var(--ink) 65%, transparent); font-size: 9px; }
+.cc-naval-planner > footer button, .cc-mission-planner > footer button { padding: 9px 12px; border: 0; background: var(--danger); color: white; font-size: 9px; font-weight: 800; cursor: pointer; }
+.cc-mission-planner > footer button { background: var(--oxblood); }
+.cc-faith-founder { display: grid; gap: 11px; padding: 16px; border: 1px solid var(--line-paper); background: var(--paper); }
+.cc-faith-founder p { margin: 4px 0 0; color: color-mix(in oklch, var(--ink) 68%, transparent); }
+.cc-faith-founder label { display: grid; gap: 4px; color: color-mix(in oklch, var(--ink) 62%, transparent); font-size: 9px; font-weight: 800; text-transform: uppercase; }
+.cc-faith-founder input, .cc-faith-founder select { padding: 9px; border: 1px solid var(--line-paper); background: var(--bone); color: var(--ink); }
+.cc-dogma-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.cc-dogma-grid button { padding: 10px; border: 1px solid var(--line-paper); background: var(--bone); color: var(--ink); text-align: left; cursor: pointer; }
+.cc-dogma-grid button.active { border-color: var(--oxblood); background: color-mix(in oklch, var(--oxblood) 10%, var(--bone)); }
+.cc-dogma-grid strong, .cc-dogma-grid small { display: block; }
+.cc-dogma-grid small { margin-top: 3px; color: color-mix(in oklch, var(--ink) 62%, transparent); }
+.cc-faith-banner { padding: 15px; border-left: 5px solid var(--gold); background: var(--ink-2); color: var(--text); }
+.cc-faith-banner strong { display: block; margin-top: 3px; font-family: Cinzel, serif; font-size: 20px; }
+.cc-faith-banner p { margin: 4px 0 0; color: var(--muted); }
+
 @media (max-width: 1100px) {
   .cc-topbar { grid-template-columns: minmax(150px, .65fr) minmax(140px, .55fr) minmax(480px, 1.8fr); }
   .cc-online { display: none; }
@@ -490,6 +548,7 @@ button:disabled { cursor: not-allowed; opacity: .45; transform: none !important;
   .cc-unit-image { min-height: 210px; }
   .cc-garrison-grid { grid-template-columns: repeat(2, 1fr); }
   .cc-military-planners { grid-template-columns: 1fr; }
+  .cc-ship-catalog > article { grid-template-columns: 120px 1fr; }
   .cc-gift-toolbar { grid-template-columns: auto 1fr 1fr; }
   .cc-gift-toolbar small { display: none; }
 }
@@ -570,6 +629,12 @@ button:disabled { cursor: not-allowed; opacity: .45; transform: none !important;
   .cc-overview-layout { grid-template-columns: 1fr; }
   .cc-economy-ledger { grid-template-columns: 1fr 1fr; }
   .cc-building-catalog, .cc-unit-catalog, .cc-diplomacy-list, .cc-meter-grid, .cc-house-register { grid-template-columns: 1fr; }
+  .cc-ship-catalog, .cc-dogma-grid { grid-template-columns: 1fr; }
+  .cc-ship-catalog > article { grid-template-columns: 105px 1fr; }
+  .cc-port-selector, .cc-province-vitals { grid-template-columns: 1fr; }
+  .cc-province-list article { grid-template-columns: 45px 1fr; }
+  .cc-province-actions { grid-column: 2; justify-items: start; }
+  .cc-naval-planner > footer, .cc-mission-planner > footer { align-items: stretch; flex-direction: column; }
   .cc-house-register > h3 { grid-column: auto; }
   .cc-unit-catalog > article { grid-template-columns: 105px 1fr; }
   .cc-unit-image { min-height: 200px; }

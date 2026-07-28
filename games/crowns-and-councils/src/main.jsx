@@ -41,6 +41,15 @@ const UNIT_IMAGES = {
   cavalry: '/assets/crowns-and-councils/assets/generated/unit-cavalry.png',
   siege: '/assets/crowns-and-councils/assets/generated/unit-siege.png'
 };
+const TROOP_FIELDS = [
+  { key: 'spearmen', label: 'Lanceiros' },
+  { key: 'archers', label: 'Arqueiros' },
+  { key: 'cavalry', label: 'Cavaleiros' },
+  { key: 'siege', label: 'Manganelas' }
+];
+const emptyTroops = () => ({ spearmen: 0, archers: 0, cavalry: 0, siege: 0 });
+const troopTotal = troops => TROOP_FIELDS.reduce((sum, item) => sum + Number(troops?.[item.key] || 0), 0);
+const strategicQueueCount = actions => actions.filter(action => !['army.attack', 'army.transfer'].includes(action.type)).length;
 
 function Icon({ name }) {
   const paths = {
@@ -53,6 +62,7 @@ function Icon({ name }) {
     wood: <><path d="M5 19L19 5M8 21l13-13M3 16l5 5M16 3l5 5" /><path d="M7 12l5 5" /></>,
     stone: <path d="M5 20l-2-7 5-8 8-2 5 8-3 9H5z" />,
     shield: <path d="M12 3l8 3v6c0 5-3 8-8 10-5-2-8-5-8-10V6l8-3z" />,
+    swords: <><path d="M5 3l6 6-2 2-6-6V3h2zM19 3l-6 6 2 2 6-6V3h-2z" /><path d="M8 12l-5 5 4 4 5-5M16 12l5 5-4 4-5-5" /></>,
     cross: <path d="M10 3h4v6h5v4h-5v8h-4v-8H5V9h5V3z" />,
     hourglass: <><path d="M7 3h10M7 21h10M8 3c0 5 1 6 4 9-3 3-4 4-4 9M16 3c0 5-1 6-4 9 3 3 4 4 4 9" /></>
   };
@@ -198,7 +208,9 @@ function Meter({ label, value, danger = false }) {
 }
 
 function Orders({ actions, regions, now, busy, onCancel }) {
-  return <section class="cc-orders"><header><div><span>ORDENS ATIVAS</span><strong>{actions.length}/3 filas ocupadas</strong></div><i>{actions.length ? 'O reino trabalha mesmo quando você sai.' : 'Seu conselho aguarda uma decisão.'}</i></header>
+  const strategic = strategicQueueCount(actions);
+  const marches = actions.length - strategic;
+  return <section class="cc-orders"><header><div><span>ORDENS ATIVAS</span><strong>{strategic}/3 filas · {marches} marcha(s)</strong></div><i>{actions.length ? 'O reino trabalha mesmo quando você sai.' : 'Seu conselho aguarda uma decisão.'}</i></header>
     <div>{actions.length ? actions.map(action => <article key={action.id}><Icon name="hourglass" /><span><b>{action.label}</b><small>{regions.find(item => item.id === action.regionId)?.name || 'Província'} · {remaining(action.completesAt, now)}</small></span><button disabled={busy} onClick={() => onCancel(action.id)}>Cancelar</button></article>) : <p class="cc-muted">Nenhuma ordem está consumindo tempo agora.</p>}</div>
   </section>;
 }
@@ -237,30 +249,80 @@ function ConstructionPanel({ bootstrap, busy, onBuild }) {
       const multiplier = 1 + currentLevel * 0.65;
       const cost = Object.fromEntries(RESOURCE_ORDER.map(key => [key, Math.round(Number(item[key] || 0) * multiplier)]));
       const requirements = Object.entries(item.requires || {}).map(([required, level]) => `${bootstrap.buildingCatalog[required]?.name || required} ${level}`).join(' · ');
-      return <article class={!unlocked ? 'locked' : ''} key={type}><header><span>{item.category}</span><b>Nível {currentLevel}/{item.maxLevel || 5}</b></header><h3>{item.name}</h3><p>{item.description}</p><strong class="cc-effect">{item.effect}</strong>{requirements ? <small>Exige: {requirements}</small> : <small>Disponível desde o início</small>}<footer><Cost item={cost} /><button disabled={busy || !unlocked || currentLevel >= (item.maxLevel || 5) || bootstrap.actions.length >= 3} onClick={() => onBuild(selectedRegion.id, type)}>{currentLevel ? 'Melhorar' : 'Construir'}</button></footer></article>;
+      return <article class={!unlocked ? 'locked' : ''} key={type}><header><span>{item.category}</span><b>Nível {currentLevel}/{item.maxLevel || 5}</b></header><h3>{item.name}</h3><p>{item.description}</p><strong class="cc-effect">{item.effect}</strong>{requirements ? <small>Exige: {requirements}</small> : <small>Disponível desde o início</small>}<footer><Cost item={cost} /><button disabled={busy || !unlocked || currentLevel >= (item.maxLevel || 5) || strategicQueueCount(bootstrap.actions) >= 3} onClick={() => onBuild(selectedRegion.id, type)}>{currentLevel ? 'Melhorar' : 'Construir'}</button></footer></article>;
     })}</div>
   </div>;
 }
 
-function ArmyPanel({ bootstrap, busy, onRecruit, onDefend, onWar }) {
-  const army = bootstrap.armies[0];
+function TroopInputs({ value, available, onChange }) {
+  return <div class="cc-troop-inputs">{TROOP_FIELDS.map(item => <label key={item.key}><span>{item.label}<small>disponível {Number(available?.[item.key] || 0)}</small></span><input type="number" min="0" max={Number(available?.[item.key] || 0)} value={Number(value?.[item.key] || 0)} onInput={event => onChange({ ...value, [item.key]: Math.max(0, Number(event.currentTarget.value || 0)) })} /></label>)}</div>;
+}
+
+function ArmyPanel({ bootstrap, now, busy, onRecruit, onTransfer, onDefend, onWar }) {
+  const owned = bootstrap.regions.filter(region => region.ownerRealmId === bootstrap.realm.id);
+  const totalSoldiers = bootstrap.armies.reduce((sum, army) => sum + army.total, 0);
   const [groups, setGroups] = useState(1);
-  const regionBuildings = bootstrap.buildings.filter(item => item.regionId === army?.regionId);
-  return <div>
-    <div class="cc-command-heading"><div><span>COMANDO MILITAR</span><h2>Treine a hoste que sua estratégia exige</h2><p>Cada unidade tem função, custo e pré-requisito próprios.</p></div>{army ? <div class="cc-army-summary"><strong>{army.total}</strong><span>soldados · moral {army.morale}%</span></div> : null}</div>
-    <div class="cc-unit-catalog">{Object.entries(bootstrap.unitCatalog).map(([type, unit]) => {
-      const unlocked = requirementsMet(unit.requires, regionBuildings);
-      const requirement = Object.entries(unit.requires || {}).map(([required, level]) => `${bootstrap.buildingCatalog[required]?.name || required} ${level}`).join(' · ');
-      const count = type === 'spearmen' ? army?.spearmen : army?.[type];
-      const cost = Object.fromEntries(RESOURCE_ORDER.map(key => [key, Number(unit[key] || 0) * groups]));
-      return <article class={!unlocked ? 'locked' : ''} key={type}>
-        <div class="cc-unit-image"><img src={UNIT_IMAGES[type]} alt={unit.name} /></div>
-        <div class="cc-unit-body"><header><span>{unit.role}</span><b>{count || 0} prontos</b></header><h3>{unit.name}</h3><p>{unit.description}</p><dl><div><dt>Ataque</dt><dd>{unit.attack}</dd></div><div><dt>Defesa</dt><dd>{unit.defense}</dd></div><div><dt>Velocidade</dt><dd>{unit.speed}</dd></div></dl><small>{unlocked ? `Treina ${unit.quantity * groups} · ${unit.hours * groups}h base` : `Bloqueado · exige ${requirement}`}</small><footer><Cost item={cost} /><button disabled={busy || !unlocked || !army || bootstrap.actions.length >= 3} onClick={() => onRecruit(army.regionId, type, groups)}>Treinar</button></footer></div>
-      </article>;
-    })}</div>
-    <div class="cc-train-groups"><span>Tamanho do grupo</span>{[1, 3, 5].map(value => <button class={groups === value ? 'active' : ''} onClick={() => setGroups(value)} key={value}>{value} lote{value > 1 ? 's' : ''}</button>)}</div>
-    {army ? <div class="cc-defense-order"><Icon name="shield" /><div><strong>Preparar defesa de {army.regionName}</strong><span>Reforça a linha, eleva a moral e posiciona a hoste.</span></div><button disabled={busy || bootstrap.actions.length >= 3} onClick={() => onDefend(army.regionId)}>Preparar</button></div> : null}
-    {bootstrap.attackTargets.length ? <div class="cc-war-targets"><h3>Fronteiras hostis</h3>{bootstrap.attackTargets.map(target => <article key={target.regionId}><div><strong>{target.regionName}</strong><span>Defendida por {target.realmName}</span></div><button class="cc-danger" disabled={busy || bootstrap.actions.length >= 3} onClick={() => onWar(target.regionId)}>Declarar guerra</button></article>)}</div> : null}
+  const [trainingRegionId, setTrainingRegionId] = useState(bootstrap.realm.capitalRegionId);
+  const [transferFromId, setTransferFromId] = useState(bootstrap.armies[0]?.regionId || '');
+  const [transferToId, setTransferToId] = useState(owned.find(region => region.id !== bootstrap.armies[0]?.regionId)?.id || '');
+  const [transferTroops, setTransferTroops] = useState(emptyTroops());
+  const [attackFromId, setAttackFromId] = useState(bootstrap.armies.find(army => army.total)?.regionId || '');
+  const [attackTargetId, setAttackTargetId] = useState('');
+  const [attackTroops, setAttackTroops] = useState(emptyTroops());
+  const trainingArmy = bootstrap.armies.find(army => army.regionId === trainingRegionId);
+  const transferArmy = bootstrap.armies.find(army => army.regionId === transferFromId);
+  const attackArmy = bootstrap.armies.find(army => army.regionId === attackFromId);
+  const regionBuildings = bootstrap.buildings.filter(item => item.regionId === trainingRegionId);
+  const attackTargets = bootstrap.attackTargets.filter(target => target.fromRegionIds.includes(attackFromId));
+  const selectedTarget = attackTargets.find(target => target.regionId === attackTargetId);
+  const attackStrength = TROOP_FIELDS.reduce((sum, item) => sum + Number(attackTroops[item.key] || 0) * Number(bootstrap.unitCatalog[item.key]?.attack || 1), 0);
+  const marches = bootstrap.actions.filter(action => ['army.attack', 'army.transfer'].includes(action.type));
+  useEffect(() => { if (!owned.some(region => region.id === trainingRegionId)) setTrainingRegionId(owned[0]?.id || ''); }, [owned.length, trainingRegionId]);
+  useEffect(() => { if (!bootstrap.armies.some(army => army.regionId === transferFromId && army.total)) setTransferFromId(bootstrap.armies.find(army => army.total)?.regionId || ''); }, [bootstrap.armies.length, transferFromId]);
+  useEffect(() => { if (!owned.some(region => region.id === transferToId && region.id !== transferFromId)) setTransferToId(owned.find(region => region.id !== transferFromId)?.id || ''); }, [owned.length, transferFromId, transferToId]);
+  useEffect(() => { if (!bootstrap.armies.some(army => army.regionId === attackFromId && army.total)) setAttackFromId(bootstrap.armies.find(army => army.total)?.regionId || ''); }, [bootstrap.armies.length, attackFromId]);
+  useEffect(() => { if (!attackTargets.some(target => target.regionId === attackTargetId)) setAttackTargetId(attackTargets[0]?.regionId || ''); }, [attackFromId, bootstrap.attackTargets.length, attackTargetId]);
+  return <div class="cc-military-command">
+    <div class="cc-command-heading"><div><span>COMANDO MILITAR</span><h2>Guarnições e campanhas provinciais</h2><p>Cada soldado pertence a uma província. Tropas em marcha deixam de defender a origem até retornarem.</p></div><div class="cc-army-summary"><strong>{totalSoldiers}</strong><span>soldados · {bootstrap.armies.length} guarnição(ões)</span></div></div>
+
+    <section class="cc-garrison-section"><header><div><span>DISPOSIÇÃO TERRITORIAL</span><h3>Guarnições por província</h3></div><small>Somente a força estacionada no alvo participa da defesa.</small></header><div class="cc-garrison-grid">{owned.map(region => {
+      const army = bootstrap.armies.find(item => item.regionId === region.id);
+      return <article class={!army?.total ? 'empty' : ''} key={region.id}><header><div><strong>{region.name}</strong><span>{region.countryName}</span></div><b>{army?.total || 0}</b></header><dl>{TROOP_FIELDS.map(item => <div key={item.key}><dt>{item.label}</dt><dd>{Number(army?.[item.key] || 0)}</dd></div>)}</dl><footer><span>Moral {army?.morale || 0}%</span><button disabled={busy || !army?.total || strategicQueueCount(bootstrap.actions) >= 3} onClick={() => onDefend(region.id)}>Preparar defesa</button></footer></article>;
+    })}</div></section>
+
+    <div class="cc-military-planners">
+      <form class="cc-troop-planner" onSubmit={event => { event.preventDefault(); if (troopTotal(transferTroops)) onTransfer(transferFromId, transferToId, transferTroops).then(result => { if (result) setTransferTroops(emptyTroops()); }); }}>
+        <header><Icon name="shield" /><div><span>ORGANIZAR TROPAS</span><h3>Transferir destacamento</h3></div></header>
+        <div class="cc-route-selectors"><label>Origem<select value={transferFromId} onChange={event => { setTransferFromId(event.currentTarget.value); setTransferTroops(emptyTroops()); }}>{bootstrap.armies.filter(army => army.total).map(army => <option value={army.regionId} key={army.regionId}>{army.regionName} · {army.total}</option>)}</select></label><i>→</i><label>Destino<select value={transferToId} onChange={event => setTransferToId(event.currentTarget.value)}>{owned.filter(region => region.id !== transferFromId).map(region => <option value={region.id} key={region.id}>{region.name}</option>)}</select></label></div>
+        <TroopInputs value={transferTroops} available={transferArmy || {}} onChange={setTransferTroops} />
+        <footer><span><b>{troopTotal(transferTroops)}</b> soldados serão reservados durante o deslocamento.</span><button disabled={busy || !transferToId || !troopTotal(transferTroops)}>Mover tropas</button></footer>
+      </form>
+
+      <form class="cc-troop-planner war" onSubmit={event => { event.preventDefault(); if (selectedTarget && troopTotal(attackTroops)) onWar(attackFromId, selectedTarget.regionId, attackTroops).then(result => { if (result) setAttackTroops(emptyTroops()); }); }}>
+        <header><Icon name="swords" /><div><span>PLANO DE INVASÃO</span><h3>Atacar uma província</h3></div></header>
+        <div class="cc-route-selectors"><label>Guarnição de origem<select value={attackFromId} onChange={event => { setAttackFromId(event.currentTarget.value); setAttackTroops(emptyTroops()); }}>{bootstrap.armies.filter(army => army.total).map(army => <option value={army.regionId} key={army.regionId}>{army.regionName} · {army.total}</option>)}</select></label><i>→</i><label>Província inimiga<select value={attackTargetId} onChange={event => setAttackTargetId(event.currentTarget.value)}><option value="">{attackTargets.length ? 'Escolha o objetivo' : 'Sem alvo ligado a esta guarnição'}</option>{attackTargets.map(target => <option value={target.regionId} key={target.regionId}>{target.regionName} · {target.realmName}</option>)}</select></label></div>
+        {selectedTarget ? <div class="cc-target-intel"><span>DEFESA CONHECIDA</span><strong>{selectedTarget.defender.total} soldados em {selectedTarget.regionName}</strong><small>{TROOP_FIELDS.map(item => `${item.label} ${selectedTarget.defender[item.key] || 0}`).join(' · ')}</small><small>Moral {selectedTarget.defender.morale}% · fortificações {selectedTarget.fortificationLevels}</small></div> : null}
+        <TroopInputs value={attackTroops} available={attackArmy || {}} onChange={setAttackTroops} />
+        <footer><span><b>{troopTotal(attackTroops)}</b> atacantes · força {attackStrength}. Outras marchas usam apenas as tropas restantes.</span><button class="cc-danger" disabled={busy || !selectedTarget || attackStrength < 50}>Ordenar ataque</button></footer>
+      </form>
+    </div>
+
+    {marches.length ? <section class="cc-active-marches"><h3>Marchas simultâneas</h3>{marches.map(action => {
+      const origin = bootstrap.regions.find(region => region.id === action.cost.originRegionId)?.name || 'origem perdida';
+      const target = bootstrap.regions.find(region => region.id === action.regionId)?.name || 'destino';
+      return <article key={action.id}><Icon name={action.type === 'army.attack' ? 'swords' : 'shield'} /><div><strong>{action.type === 'army.attack' ? `Ataque a ${target}` : `Reforço para ${target}`}</strong><span>{origin} → {target} · {troopTotal(action.cost.troops)} soldados</span></div><b>{remaining(action.completesAt, now)}</b></article>;
+    })}</section> : null}
+
+    <section class="cc-training-section"><div class="cc-command-heading"><div><span>RECRUTAMENTO LOCAL</span><h2>Treinar novos contingentes</h2><p>Os recrutas entram diretamente na guarnição da província escolhida.</p></div><label>Treinar em<select value={trainingRegionId} onChange={event => setTrainingRegionId(event.currentTarget.value)}>{owned.map(region => <option value={region.id} key={region.id}>{region.name}</option>)}</select></label></div>
+      <div class="cc-unit-catalog">{Object.entries(bootstrap.unitCatalog).map(([type, unit]) => {
+        const unlocked = requirementsMet(unit.requires, regionBuildings);
+        const requirement = Object.entries(unit.requires || {}).map(([required, level]) => `${bootstrap.buildingCatalog[required]?.name || required} ${level}`).join(' · ');
+        const count = type === 'spearmen' ? trainingArmy?.spearmen : trainingArmy?.[type];
+        const cost = Object.fromEntries(RESOURCE_ORDER.map(key => [key, Number(unit[key] || 0) * groups]));
+        return <article class={!unlocked ? 'locked' : ''} key={type}><div class="cc-unit-image"><img src={UNIT_IMAGES[type]} alt={unit.name} /></div><div class="cc-unit-body"><header><span>{unit.role}</span><b>{count || 0} nesta província</b></header><h3>{unit.name}</h3><p>{unit.description}</p><dl><div><dt>Ataque</dt><dd>{unit.attack}</dd></div><div><dt>Defesa</dt><dd>{unit.defense}</dd></div><div><dt>Velocidade</dt><dd>{unit.speed}</dd></div></dl><small>{unlocked ? `Treina ${unit.quantity * groups} · ${unit.hours * groups}h base` : `Bloqueado · exige ${requirement}`}</small><footer><Cost item={cost} /><button disabled={busy || !unlocked || strategicQueueCount(bootstrap.actions) >= 3} onClick={() => onRecruit(trainingRegionId, type, groups)}>Treinar</button></footer></div></article>;
+      })}</div>
+      <div class="cc-train-groups"><span>Tamanho do grupo</span>{[1, 3, 5].map(value => <button class={groups === value ? 'active' : ''} onClick={() => setGroups(value)} key={value}>{value} lote{value > 1 ? 's' : ''}</button>)}</div>
+    </section>
   </div>;
 }
 
@@ -299,7 +361,7 @@ function DiplomacyPanel({ bootstrap, busy, onTreaty, onGift, onRespondRequest })
   </div>;
 }
 
-function RealmSection({ bootstrap, now, busy, onGoMap, onBuild, onRecruit, onDefend, onWar, onTreaty, onGift, onRespondRequest, onMarriage, onMission, onSuppress, onRespondReligion, onVote, onReceive, onCancel }) {
+function RealmSection({ bootstrap, now, busy, onGoMap, onBuild, onRecruit, onTransfer, onDefend, onWar, onTreaty, onGift, onRespondRequest, onMarriage, onMission, onSuppress, onRespondReligion, onVote, onReceive, onCancel }) {
   const [tab, setTab] = useState('overview');
   const realm = bootstrap.realm;
   if (!realm) return <section class="cc-realm-board"><h1>Nenhuma coroa foi erguida</h1><button class="cc-primary" onClick={() => onGoMap()}>Escolher capital</button></section>;
@@ -314,7 +376,7 @@ function RealmSection({ bootstrap, now, busy, onGoMap, onBuild, onRecruit, onDef
       {tab === 'overview' ? <div class="cc-overview-layout"><div><div class="cc-command-heading"><div><span>SITUAÇÃO DO REINO</span><h2>Decisões que mudam o próximo dia</h2><p>Seu território produz, seus exércitos consomem e cada fila adia outra escolha.</p></div></div><EconomyPanel bootstrap={bootstrap} /><Orders actions={bootstrap.actions} regions={bootstrap.regions} now={now} busy={busy} onCancel={onCancel} /></div><aside><h3>Prioridades sugeridas</h3><button onClick={() => setTab('construction')}><Icon name="wood" /><span><strong>Ampliar produção</strong>Construa onde a província já é forte.</span></button><button onClick={() => setTab('army')}><Icon name="shield" /><span><strong>Especializar a hoste</strong>Desbloqueie arqueiros, cavalaria e cerco.</span></button><button onClick={() => onGoMap(frontier?.id || capital?.id)}><Icon name="map" /><span><strong>Agir no mapa</strong>{frontier ? 'Há fronteira neutra disponível.' : 'Inspecione sua capital.'}</span></button></aside></div> : null}
       {tab === 'provinces' ? <ProvinceList bootstrap={bootstrap} onGoMap={onGoMap} /> : null}
       {tab === 'construction' ? <ConstructionPanel bootstrap={bootstrap} busy={busy} onBuild={onBuild} /> : null}
-      {tab === 'army' ? <ArmyPanel bootstrap={bootstrap} busy={busy} onRecruit={onRecruit} onDefend={onDefend} onWar={onWar} /> : null}
+      {tab === 'army' ? <ArmyPanel bootstrap={bootstrap} now={now} busy={busy} onRecruit={onRecruit} onTransfer={onTransfer} onDefend={onDefend} onWar={onWar} /> : null}
       {tab === 'dynasty' ? <DynastyPanel bootstrap={bootstrap} busy={busy} onMarriage={onMarriage} /> : null}
       {tab === 'diplomacy' ? <DiplomacyPanel bootstrap={bootstrap} busy={busy} onTreaty={onTreaty} onGift={onGift} onRespondRequest={onRespondRequest} /> : null}
       {tab === 'religion' ? <div class="cc-government-panel"><div class="cc-command-heading"><div><span>CAPELA E DOUTRINA</span><h2>{court.religion.faith}</h2></div></div><div class="cc-meter-grid"><Meter label="Unidade religiosa" value={court.religion.unity} /><Meter label="Pressão herética" value={court.religion.heresyPressure} danger /></div><div class="cc-decision-list"><h3>Movimentos ligados à sua fé</h3>{relevantMovements.length ? relevantMovements.map(movement => <article key={movement.id}><div><strong>{movement.name}</strong><span>{movement.description}</span><small>{movement.parentFaith} · dia {movement.startsDay} · {movement.convertedRealms} coroa(s) aderiram</small></div><div>{movement.response ? <b>{movement.response === 'accept' ? 'Sua coroa aderiu' : 'Sua coroa resistiu'}</b> : <><button disabled={busy} onClick={() => onRespondReligion(movement.id, 'accept')}>Aceitar</button><button class="cc-danger" disabled={busy} onClick={() => onRespondReligion(movement.id, 'resist')}>Resistir</button></>}</div></article>) : <p class="cc-muted">Nenhuma heresia ou reforma ligada à sua tradição surgiu até agora.</p>}</div><div class="cc-decision-list"><h3>Províncias</h3>{bootstrap.regionReligions.map(faith => <article key={faith.regionId}><div><strong>{faith.regionName}</strong><span>{faith.majorityReligion}: {faith.majorityShare}% · {faith.heresyName}: {faith.heresyShare}%</span></div><div><button disabled={busy} onClick={() => onMission(faith.regionId)}>Missão</button><button class="cc-danger" disabled={busy || faith.heresyShare <= 0} onClick={() => onSuppress(faith.regionId)}>Conter heresia</button></div></article>)}</div></div> : null}
@@ -386,8 +448,9 @@ function Game({ serverId, onLeave }) {
     bootstrap, now, busy, onGoMap: goMap,
     onBuild: (regionId, type) => execute(() => crownsApi.queueBuilding(serverId, regionId, type)),
     onRecruit: (regionId, type, groups) => execute(() => crownsApi.recruitArmy(serverId, regionId, type, groups)),
+    onTransfer: (fromRegionId, toRegionId, troops) => execute(() => crownsApi.transferArmy(serverId, fromRegionId, toRegionId, troops)),
     onDefend: regionId => execute(() => crownsApi.defend(serverId, regionId)),
-    onWar: regionId => execute(() => crownsApi.declareWar(serverId, regionId)),
+    onWar: (fromRegionId, regionId, troops) => execute(() => crownsApi.declareWar(serverId, fromRegionId, regionId, troops)),
     onTreaty: (targetId, type) => execute(() => crownsApi.proposeTreaty(serverId, targetId, type)),
     onGift: (targetId, resourceType, amount) => execute(() => crownsApi.sendDiplomaticGift(serverId, targetId, resourceType, amount)),
     onRespondRequest: (requestId, accept) => execute(() => crownsApi.respondDiplomaticRequest(serverId, requestId, accept)),

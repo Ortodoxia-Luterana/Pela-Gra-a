@@ -209,7 +209,89 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     result = await jsonRequest('/api/crowns-and-councils/bootstrap');
     assert.equal(result.payload.realm.regionCount, 3);
 
+    const sourceBeforeTransfer = result.payload.armies.find(army => army.regionId === capital.id);
+    const transferredTroops = { spearmen: 120, archers: 10, cavalry: 0, siege: 0 };
     let orderCompleted = waitSocket(socket, 'action.completed');
+    result = await jsonRequest('/api/crowns-and-councils/armies/transfer', {
+      method: 'POST',
+      body: JSON.stringify({ fromRegionId: capital.id, toRegionId: adjacentId, troops: transferredTroops })
+    });
+    assert.equal(result.response.status, 202);
+    let troopState = await jsonRequest('/api/crowns-and-councils/bootstrap');
+    assert.equal(troopState.payload.armies.find(army => army.regionId === capital.id).spearmen, sourceBeforeTransfer.spearmen - 120);
+    assert.equal(troopState.payload.armies.find(army => army.regionId === capital.id).archers, sourceBeforeTransfer.archers - 10);
+    assert.equal(troopState.payload.actions.filter(action => action.type === 'army.transfer').length, 1);
+    await orderCompleted;
+    result = await jsonRequest('/api/crowns-and-councils/bootstrap');
+    const transferredGarrison = result.payload.armies.find(army => army.regionId === adjacentId);
+    assert.equal(transferredGarrison.spearmen, 120);
+    assert.equal(transferredGarrison.archers, 10);
+
+    const transferredTotal = transferredGarrison.total;
+    const moraleBeforeDefense = transferredGarrison.morale;
+    orderCompleted = waitSocket(socket, 'action.completed');
+    result = await jsonRequest('/api/crowns-and-councils/armies/defend', {
+      method: 'POST',
+      body: JSON.stringify({ regionId: adjacentId })
+    });
+    assert.equal(result.response.status, 202);
+    await orderCompleted;
+    result = await jsonRequest('/api/crowns-and-councils/bootstrap');
+    const defendedGarrison = result.payload.armies.find(army => army.regionId === adjacentId);
+    assert.equal(defendedGarrison.total, transferredTotal, 'preparar defesa não deve criar soldados gratuitos');
+    assert.ok(defendedGarrison.morale > moraleBeforeDefense);
+
+    const garrisonRegionIds = new Set(result.payload.armies.filter(army => army.spearmen >= 120).map(army => army.regionId));
+    const invasionPlans = result.payload.regions
+      .filter(region => !region.ownerRealmId && region.status === 'neutral')
+      .map(region => ({ region, fromRegionId: region.neighborIds.find(id => garrisonRegionIds.has(id)) }))
+      .filter(plan => plan.fromRegionId)
+      .slice(0, 2);
+    assert.equal(invasionPlans.length, 2, 'duas províncias inimigas devem tocar guarnições disponíveis');
+    const enemyRealms = result.payload.realm.court.diplomacy.knownRealms.slice(0, 2);
+    assert.equal(enemyRealms.length, 2);
+    const warDb = new DatabaseSync(path.join(tempRoot, 'crowns-test.sqlite'));
+    warDb.exec('PRAGMA busy_timeout = 5000');
+    const nowMs = Date.now();
+    warDb.prepare("UPDATE cc_seasons SET starts_at = ?, ends_at = ? WHERE id = 'cc-world-1'").run(new Date(nowMs - 5 * 86400000).toISOString(), new Date(nowMs + 55 * 86400000).toISOString());
+    enemyRealms.forEach(enemyRealm => {
+      warDb.prepare('UPDATE cc_realms SET treasury = 10000, provisions = 10000, last_ai_action_at = ? WHERE id = ?').run(new Date(nowMs + 60000).toISOString(), enemyRealm.id);
+    });
+    for (const [index, plan] of invasionPlans.entries()) {
+      const enemyRealm = enemyRealms[index];
+      warDb.prepare("UPDATE cc_season_regions SET owner_realm_id = ?, status = 'controlled', version = version + 1 WHERE season_id = 'cc-world-1' AND region_id = ?").run(enemyRealm.id, plan.region.id);
+      warDb.prepare("INSERT INTO cc_armies (id, season_id, realm_id, region_id, infantry, archers, cavalry, siege, morale, created_at, updated_at) VALUES (?, 'cc-world-1', ?, ?, 12, 0, 0, 0, 65, ?, ?)").run(`army_test_defender_${index}`, enemyRealm.id, plan.region.id, new Date(nowMs).toISOString(), new Date(nowMs).toISOString());
+    }
+    warDb.close();
+
+    result = await jsonRequest('/api/crowns-and-councils/bootstrap');
+    const beforeConcurrentAttack = new Map(result.payload.armies.map(army => [army.regionId, army.spearmen]));
+    for (const plan of invasionPlans) {
+      const declaration = await jsonRequest('/api/crowns-and-councils/war/declare', {
+        method: 'POST',
+        body: JSON.stringify({ fromRegionId: plan.fromRegionId, regionId: plan.region.id, troops: { spearmen: 60, archers: 0, cavalry: 0, siege: 0 } })
+      });
+      assert.equal(declaration.response.status, 202);
+    }
+    result = await jsonRequest('/api/crowns-and-councils/bootstrap');
+    assert.equal(result.payload.actions.filter(action => action.type === 'army.attack').length, 2, 'os dois ataques devem marchar simultaneamente');
+    const committedByOrigin = new Map();
+    invasionPlans.forEach(plan => committedByOrigin.set(plan.fromRegionId, (committedByOrigin.get(plan.fromRegionId) || 0) + 60));
+    committedByOrigin.forEach((committed, regionId) => {
+      assert.equal(result.payload.armies.find(army => army.regionId === regionId).spearmen, beforeConcurrentAttack.get(regionId) - committed);
+    });
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      await new Promise(resolve => setTimeout(resolve, 200));
+      result = await jsonRequest('/api/crowns-and-councils/bootstrap');
+      if (!result.payload.actions.some(action => action.type === 'army.attack')) break;
+    }
+    assert.equal(result.payload.actions.filter(action => action.type === 'army.attack').length, 0);
+    const resolvedWars = result.payload.wars.filter(war => invasionPlans.some(plan => plan.region.id === war.objectiveRegionId));
+    assert.equal(resolvedWars.length, 2);
+    assert.ok(resolvedWars.every(war => war.status === 'ended' && war.result.attackers?.spearmen === 60 && war.result.defenders?.spearmen === 12), JSON.stringify(resolvedWars));
+    assert.ok(invasionPlans.every(plan => result.payload.regions.find(region => region.id === plan.region.id).ownerRealmId === result.payload.realm.id));
+
+    orderCompleted = waitSocket(socket, 'action.completed');
     result = await jsonRequest('/api/crowns-and-councils/buildings/queue', { method: 'POST', body: JSON.stringify({ regionId: capital.id, buildingType: 'mercado' }) });
     assert.equal(result.response.status, 202);
     await orderCompleted;
@@ -251,13 +333,14 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     const revoltEvent = waitSocket(socket, 'world.patch', 5_000);
     const testDb = new DatabaseSync(path.join(tempRoot, 'crowns-test.sqlite'));
     testDb.exec('PRAGMA busy_timeout = 5000');
+    const regionsBeforeRevolt = result.payload.realm.regionCount;
     testDb.prepare('UPDATE cc_realms SET stability = 25 WHERE id = ?').run(result.payload.realm.id);
     testDb.close();
     const revoltPayload = await revoltEvent;
     assert.equal(revoltPayload.type, 'revolution.separatist');
     result = await jsonRequest('/api/crowns-and-councils/bootstrap');
     assert.equal(result.payload.world.aiRealmCount, 11);
-    assert.equal(result.payload.realm.regionCount, 2);
+    assert.equal(result.payload.realm.regionCount, regionsBeforeRevolt - 1);
     assert.ok(result.payload.journal.some(item => item.eventType === 'revolution.separatist'));
     const finalColorDb = new DatabaseSync(path.join(tempRoot, 'crowns-test.sqlite'));
     finalColorDb.exec('PRAGMA busy_timeout = 5000');

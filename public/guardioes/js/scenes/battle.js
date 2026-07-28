@@ -9,9 +9,9 @@
   const AUDIO = global.GuardioesAudio;
 
   const BASE_START_HP = 24;
-  const BASE_START_MONEY = 180;
-  const BASE_BUY_COST = 35;
-  const BUY_COST_INCREMENT = 3;
+  const BASE_START_MONEY = 120;
+  const BASE_BUY_COST = 45;
+  const BUY_COST_INCREMENT = 7;
   const ARRIVAL_THRESHOLD = 12;
   const TEXT_POOL_SIZE = 28;
   const PROJECTILE_POOL_SIZE = 60;
@@ -113,7 +113,7 @@
     startTutorial() {
       this.tutorialStep = 1;
       const y = this.scale.height - (this.isDesktopLayout() ? 166 : 174);
-      this.tutorialPanel = this.add.image(this.scale.width / 2, y, this.textures.exists('tex-ui-hud-frame') ? 'tex-ui-hud-frame' : 'tex-stone-panel')
+      this.tutorialPanel = this.add.image(this.scale.width / 2, y, this.textures.exists('tex-ui-hud-clean') ? 'tex-ui-hud-clean' : 'tex-stone-panel')
         .setDisplaySize(this.isDesktopLayout() ? 660 : 570, 68).setDepth(649);
       this.tutorialText = this.add.text(this.scale.width / 2, y, '', {
         fontFamily: 'Georgia, serif', fontSize: '17px', color: '#ffe9a8', fontStyle: 'bold',
@@ -125,6 +125,11 @@
 
     setTutorialHint(msg) {
       if (this.tutorialText) this.tutorialText.setText(msg);
+    }
+
+    setTutorialVisible(visible) {
+      if (this.tutorialPanel) this.tutorialPanel.setVisible(visible);
+      if (this.tutorialText) this.tutorialText.setVisible(visible);
     }
 
     advanceTutorial(fromStep) {
@@ -198,15 +203,15 @@
       if (!this.paused) this.physics.world.timeScale = 1 / speed;  // Arcade: >1 = mais lento
       this.time.timeScale = speed;                                  // timers de spawn
       this.tweens.timeScale = speed;                                 // efeitos acompanham
-      if (this.speedBtn) (this.speedBtn.list ? this.speedBtn.list[1] : this.speedBtn).setText(speed === 1 ? '1x' : '2x');
+      if (this.speedBtn) UI.setButtonLabel(this.speedBtn, speed === 1 ? '1x' : '2x');
     }
 
     toggleGameSpeed() { this.setGameSpeed(this.gameSpeed === 1 ? 2 : 1); }
 
     toggleAutoWave() {
       this.autoWave = !this.autoWave;
-      const label = this.autoBtn.list ? this.autoBtn.list[1] : this.autoBtn;
-      label.setText(this.autoWave ? 'Auto ON' : 'Auto OFF');
+      UI.setButtonLabel(this.autoBtn, this.autoWave ? 'Auto ON' : 'Auto OFF');
+      const label = this.autoBtn.list && this.autoBtn.list[1];
       label.setColor(this.autoWave ? '#8ff0ad' : '#d6c38f');
       if (this.autoWave && !this.waveActive && !this.runEnded) this.startNextWave();
     }
@@ -491,10 +496,10 @@
     }
 
     buildHudPanel(container, width, height, title) {
-      const texture = this.textures.exists('tex-ui-hud-frame') ? 'tex-ui-hud-frame' : 'tex-stone-panel';
-      const bg = this.add.image(0, 0, texture).setDisplaySize(width, height);
+      const bg = this.add.rectangle(0, 0, width, height, 0x111b20, 0.96)
+        .setStrokeStyle(2, 0x64706e, 0.85);
       const label = this.add.text(0, -24, title, {
-        fontFamily: 'Georgia, serif', fontSize: '14px', color: '#d9e2ef', fontStyle: 'bold'
+        fontFamily: UI.FONT_UI, fontSize: '12px', color: '#cbd3d2', fontStyle: 'bold'
       }).setOrigin(0.5);
       container.add([bg, label]);
     }
@@ -531,12 +536,13 @@
       const overlay = this.add.container(0, 0).setDepth(700);
       this.pauseOverlay = overlay;
       const dim = this.add.rectangle(0, 0, width, height, 0x000000, 0.6).setOrigin(0).setInteractive();
-      const box = UI.makePanel(this, width / 2, height / 2, 440, 300);
+      const box = UI.makePanel(this, width / 2, height / 2, 440, 280);
       const title = this.add.text(width / 2, height / 2 - 100, 'Pausado', {
         fontFamily: 'Georgia, serif', fontSize: '28px', color: '#3a2c1a', fontStyle: 'bold'
       }).setOrigin(0.5);
-      const note = this.add.text(width / 2, height / 2 - 60, 'Suas torres e progresso estão salvos.\nInimigos da onda atual reiniciam ao continuar depois.', {
-        fontFamily: 'Georgia, serif', fontSize: '13px', color: '#5a4a32', align: 'center'
+      const note = this.add.text(width / 2, height / 2 - 56, 'Progresso salvo.', {
+        fontFamily: UI.FONT_UI, fontSize: '14px', color: '#5a4a32', align: 'center',
+        wordWrap: { width: 340 }
       }).setOrigin(0.5);
       overlay.add([dim, box, title, note]);
 
@@ -576,7 +582,7 @@
       this.add.rectangle(width / 2, height - 74, width, 148, 0x07101b, 0.9).setDepth(398);
 
       this.heldPreview = this.add.container(84, height - 76).setDepth(401);
-      const heldBg = this.add.image(0, 0, this.textures.exists('tex-ui-hud-frame') ? 'tex-ui-hud-frame' : 'tex-stone-panel').setDisplaySize(146, 116);
+      const heldBg = this.add.image(0, 0, this.textures.exists('tex-ui-hud-clean') ? 'tex-ui-hud-clean' : 'tex-stone-panel').setDisplaySize(146, 116);
       const heldTitle = this.add.text(0, -46, 'ALIADO SORTEADO', {
         fontFamily: 'Georgia, serif', fontSize: '12px', color: '#f2e2b8', fontStyle: 'bold'
       }).setOrigin(0.5);
@@ -592,7 +598,7 @@
 
       this.buyBtn = UI.makeButton(this, width / 2 - 18, height - 70, this.buyButtonLabel(), () => this.generateTower(), { width: 336, height: 92, fontSize: 21 }).setDepth(401);
       this.waveBtn = UI.makeButton(this, width - 92, height - 70, 'INICIAR\nONDA', () => this.startNextWave(), { width: 160, height: 92, fontSize: 23 }).setDepth(401);
-      if (this.waveIndex > 0 && this.waveIndex < this.level.waves.length) this.waveBtn.list[1].setText(`INICIAR\n${this.waveIndex + 1}`);
+      if (this.waveIndex > 0 && this.waveIndex < this.level.waves.length) UI.setButtonLabel(this.waveBtn, `INICIAR\n${this.waveIndex + 1}`);
 
       this.previewMarker = this.add.image(0, 0, 'tex-valid-preview').setVisible(false).setDepth(84).setAlpha(0.6);
       this.previewGhost = this.add.image(0, 0, this.defenseTextureKey('archer', 1)).setVisible(false).setDepth(86).setAlpha(0.82);
@@ -606,7 +612,7 @@
       this.add.rectangle(width / 2, height - 72, width, 144, 0x07101b, 0.92).setDepth(398);
 
       this.heldPreview = this.add.container(170, height - 72).setDepth(401);
-      const heldBg = this.add.image(0, 0, this.textures.exists('tex-ui-hud-frame') ? 'tex-ui-hud-frame' : 'tex-stone-panel').setDisplaySize(300, 104);
+      const heldBg = this.add.image(0, 0, this.textures.exists('tex-ui-hud-clean') ? 'tex-ui-hud-clean' : 'tex-stone-panel').setDisplaySize(300, 104);
       const heldTitle = this.add.text(-44, -24, 'ALIADO', {
         fontFamily: 'Georgia, serif', fontSize: '15px', color: '#f2e2b8', fontStyle: 'bold'
       }).setOrigin(0.5);
@@ -622,7 +628,7 @@
 
       this.buyBtn = UI.makeButton(this, width / 2 - 170, height - 72, this.buyButtonLabel(), () => this.generateTower(), { width: 430, height: 92, fontSize: 24 }).setDepth(401);
       this.waveBtn = UI.makeButton(this, width - 220, height - 72, 'INICIAR\nONDA', () => this.startNextWave(), { width: 320, height: 92, fontSize: 29 }).setDepth(401);
-      if (this.waveIndex > 0 && this.waveIndex < this.level.waves.length) this.waveBtn.list[1].setText(`INICIAR\n${this.waveIndex + 1}`);
+      if (this.waveIndex > 0 && this.waveIndex < this.level.waves.length) UI.setButtonLabel(this.waveBtn, `INICIAR\n${this.waveIndex + 1}`);
 
       this.previewMarker = this.add.image(0, 0, 'tex-valid-preview').setVisible(false).setDepth(84).setAlpha(0.6);
       this.previewGhost = this.add.image(0, 0, this.defenseTextureKey('archer', 1)).setVisible(false).setDepth(86).setAlpha(0.82);
@@ -662,7 +668,7 @@
       this.heldIcon.setDisplaySize(heldIconSize, heldIconSize);
       this.heldLabel.setText(`${D.DEFENSES[pick].name}\nNv 1`).setColor('#f2e2b8').setVisible(true);
       this.cancelBtn.setVisible(true);
-      this.buyBtn.list[1].setText(this.buyButtonLabel());
+      UI.setButtonLabel(this.buyBtn, this.buyButtonLabel());
       AUDIO.buy();
       this.floatText(this.buyBtn.x, this.scale.height - 142, `${D.DEFENSES[pick].name}!`, this.rarityColorHex(D.DEFENSES[pick].rarity));
       this.advanceTutorial(1);
@@ -729,6 +735,18 @@
       return ENEMY_DISPLAY_SIZES[enemyId] || 74;
     }
 
+    combatDistance(value) {
+      return value * (this.isDesktopLayout() ? 1 : 1.22);
+    }
+
+    attackRange(defenseId) {
+      return this.combatDistance(this.towerStat(defenseId, 'range')) * (1 + (this.effects.rangeMult || 0));
+    }
+
+    effectRadius(defenseId, stat) {
+      return this.combatDistance(this.towerStat(defenseId, stat));
+    }
+
     hpBarSpec(enemyId) {
       const size = this.enemyDisplaySize(enemyId);
       return { width: Math.round(size * 0.58), yOffset: Math.round(size * 0.55) };
@@ -781,6 +799,7 @@
         if (dist > D.MAP.trapPathRadius) return false;
       } else {
         if (dist < D.MAP.towerPathRadius) return false;
+        if (def.range && dist > this.attackRange(defenseId) - 18) return false;
         if (this.towerTooClose(x, y, ignoreTower)) return false;
       }
       return true;
@@ -820,7 +839,9 @@
           .setTint(canCommit ? 0xffffff : 0xff7777)
           .setVisible(true);
       }
-      const radius = def.auraRadius ? this.towerStat(this.held.defenseId, 'auraRadius') : (def.range ? this.towerStat(this.held.defenseId, 'range') * (1 + (this.effects.rangeMult || 0)) : 0);
+      const radius = def.auraRadius
+        ? this.effectRadius(this.held.defenseId, 'auraRadius')
+        : (def.range ? this.attackRange(this.held.defenseId) : 0);
       if (radius) {
         this.rangeRing.setPosition(targetX, targetY).setDisplaySize(radius * 2, radius * 2).setVisible(true);
       } else {
@@ -944,7 +965,7 @@
 
       const snapped = this.snapPlacement(x, y, this.held.defenseId);
       if (!this.isValidPlacement(snapped.x, snapped.y, this.held.defenseId, this.held.sourceTower)) {
-        this.floatText(x, y - 30, 'Posicao invalida', '#e74c3c');
+        this.floatText(x, y - 30, 'Posição inválida', '#e74c3c');
         AUDIO.invalid();
         UI.screenShake(this, 0.003, 100);
         if (this.held.sourceTower) {
@@ -985,7 +1006,7 @@
         this.updateGuardBar(tower);
       }
       if (def.auraRadius) {
-        const r = this.towerStat(defenseId, 'auraRadius') * (1 + (level - 1) * 0.15);
+        const r = this.effectRadius(defenseId, 'auraRadius') * (1 + (level - 1) * 0.15);
         tower.auraRing = this.add.circle(x, y, r, def.color, 0.07).setStrokeStyle(2, def.color, 0.35).setDepth(20);
       }
       this.towers.push(tower);
@@ -1009,7 +1030,7 @@
     fuseTower(tower, consumedTower) {
       const maxLevel = D.MAX_FUSION_LEVEL + (this.effects.maxFusionBonus || 0);
       if (tower.level >= maxLevel) {
-        this.floatText(tower.x, tower.y - 40, 'Nivel maximo', '#e0a52a');
+        this.floatText(tower.x, tower.y - 40, 'Nível máximo', '#e0a52a');
         if (consumedTower) {
           this.restoreMovedTower();
           this.clearHeld(false);
@@ -1035,7 +1056,7 @@
       const normal = this.applyTowerDisplay(tower, 1.35, 0.65);
       this.tweens.add({ targets: tower.sprite, scaleX: normal.normalScaleX, scaleY: normal.normalScaleY, duration: 260, ease: 'Back.Out' });
       if (tower.auraRing) {
-        const r = this.towerStat(tower.defenseId, 'auraRadius') * (1 + (tower.level - 1) * 0.15);
+        const r = this.effectRadius(tower.defenseId, 'auraRadius') * (1 + (tower.level - 1) * 0.15);
         tower.auraRing.setRadius(r);
       }
       this.spawnFusionFx(tower.x, tower.y);
@@ -1061,11 +1082,14 @@
     // ---------- painel da torre (selecao, alvo, venda) ----------
     openTowerPanel(tower) {
       this.closeTowerPanel();
+      this.setTutorialVisible(false);
       this.selectedTower = tower;
       const { width, height } = this.scale;
       const def = D.DEFENSES[tower.defenseId];
 
-      const radius = def.auraRadius ? this.towerStat(tower.defenseId, 'auraRadius') * (1 + (tower.level - 1) * 0.15) : this.towerStat(tower.defenseId, 'range') * (1 + (this.effects.rangeMult || 0));
+      const radius = def.auraRadius
+        ? this.effectRadius(tower.defenseId, 'auraRadius') * (1 + (tower.level - 1) * 0.15)
+        : this.attackRange(tower.defenseId);
       if (radius) this.rangeRing.setPosition(tower.x, tower.y).setDisplaySize(radius * 2, radius * 2).setVisible(true);
 
       const panel = this.add.container(0, 0).setDepth(450);
@@ -1090,7 +1114,7 @@
         const targetBtn = UI.makeButton(this, width / 2 - (width - 30) / 2 + 100, py + 22, `Alvo: ${TARGETING_LABELS[tower.targeting]}`, () => {
           const idx = TARGETING_MODES.indexOf(tower.targeting);
           tower.targeting = TARGETING_MODES[(idx + 1) % TARGETING_MODES.length];
-          targetBtn.list[1].setText(`Alvo: ${TARGETING_LABELS[tower.targeting]}`);
+          UI.setButtonLabel(targetBtn, `Alvo: ${TARGETING_LABELS[tower.targeting]}`);
           this.persistRunSnapshot();
         }, { width: 170, height: 42, fontSize: 13 });
         panel.add(targetBtn);
@@ -1103,6 +1127,7 @@
       if (this.towerPanel) { this.towerPanel.destroy(); this.towerPanel = null; }
       this.selectedTower = null;
       if (!this.held) this.rangeRing.setVisible(false);
+      if (this.tutorialStep > 0) this.setTutorialVisible(true);
     }
 
     sellTower(tower, refund) {
@@ -1124,6 +1149,7 @@
     // ---------- ondas ----------
     startNextWave() {
       if (this.paused || this.runEnded || this.waveActive || this.waveIndex >= this.level.waves.length) return;
+      this.closeTowerPanel();
       this.waveActive = true;
       this.waveBtn.setAlpha(0.4);
       this.advanceTutorial(3);
@@ -1168,7 +1194,7 @@
       const enemy = {
         id: enemyId, def, hp, maxHp: hp, sprite, hpBack, hpBar,
         pathIndex: 1, slowUntil: 0, slowFactor: 1, walkAnim,
-        laneOffset: [0, -18, 18, -34, 34][this.enemySpawnSerial++ % 5]
+        laneOffset: [0, -7, 7, -12, 12][this.enemySpawnSerial++ % 5]
       };
       sprite.setData('ref', enemy);
       this.enemies.push(enemy);
@@ -1208,18 +1234,14 @@
         if (this.waveIndex >= this.level.waves.length) {
           this.onVictory();
         } else {
-          // Bonus cresce por onda (custo de compra tambem sobe com o tempo).
+          // Recompensa curta entre ondas. O custo acumulado nao e apagado.
           const bonus = Math.round((D.WAVE_CLEAR_BONUS + clearedWave * D.WAVE_CLEAR_BONUS_GROWTH) * (1 + (this.effects.bountyMult || 0)));
           this.money += bonus;
-          // Alivia metade do custo acumulado de compra entre ondas - sem isso o
-          // preco sobe pra sempre dentro da mesma partida e fica impossivel de
-          // gerar de novo depois de algumas ondas mesmo limpando tudo.
-          this.buyCount = Math.floor(this.buyCount * 0.5);
           this.buyCost = Math.round((BASE_BUY_COST + this.buyCount * BUY_COST_INCREMENT) * (1 + (this.effects.buyCostMult || 0)));
-          this.buyBtn.list[1].setText(this.buyButtonLabel());
+          UI.setButtonLabel(this.buyBtn, this.buyButtonLabel());
           this.floatText(this.scale.width / 2, 180, `Onda vencida! +${bonus}`, '#2ecc71');
           this.waveBtn.setAlpha(1);
-          this.waveBtn.list[1].setText(`INICIAR\n${this.waveIndex + 1}`);
+          UI.setButtonLabel(this.waveBtn, `INICIAR\n${this.waveIndex + 1}`);
           if (this.autoWave) this.time.delayedCall(1600, () => { if (!this.runEnded && !this.paused) this.startNextWave(); });
         }
         this.persistRunSnapshot();
@@ -1286,11 +1308,13 @@
     }
 
     enemyReachedEnd(e, index) {
-      this.archiveHp = Math.max(0, this.archiveHp - 1);
+      const damage = Math.max(1, e.def.siegeDamage || 1);
+      this.archiveHp = Math.max(0, this.archiveHp - damage);
       e.sprite.destroy(); e.hpBack.destroy(); e.hpBar.destroy();
       this.enemies.splice(index, 1);
       AUDIO.baseHit();
       UI.screenShake(this, 0.008, 200);
+      this.floatText(this.scale.width / 2, this.safeArea().top + 52, `-${damage} integridade`, '#e16b61');
       this.updateHud();
       if (this.archiveHp <= 0) this.onDefeat();
     }
@@ -1305,7 +1329,7 @@
         if (def.onPath) { this.updateTrapTower(tower, def, now); continue; }
         const rate = this.attackRate(tower);
         if (now - tower.lastFire < rate) continue;
-        const range = this.towerStat(tower.defenseId, 'range') * (1 + (this.effects.rangeMult || 0));
+        const range = this.attackRange(tower.defenseId);
         const target = this.findTarget(tower, range);
         if (!target) continue;
         if (def.melee) this.meleeStrike(tower, target, def);
@@ -1316,7 +1340,7 @@
 
     updateTrapTower(tower, def, now) {
       if (def.guard && tower.guardHp <= 0) return;
-      const nearby = this.enemiesInRadius(tower.x, tower.y, D.MAP.trapPathRadius);
+      const nearby = this.enemiesInRadius(tower.x, tower.y, this.combatDistance(D.MAP.trapPathRadius));
       const rate = this.attackRate(tower);
       nearby.forEach(e => {
         if (e.def.flying) return;   // voadoras passam por cima das armadilhas
@@ -1346,7 +1370,7 @@
     updateSupportTower(tower, def, now) {
       const healRate = this.towerStat(tower.defenseId, 'healRate') || def.healRate || 1000;
       if (!def.healGuardAmount || now - (tower.lastHeal || 0) < healRate) return;
-      const radius = this.towerStat(tower.defenseId, 'auraRadius') * (1 + (tower.level - 1) * 0.15);
+      const radius = this.effectRadius(tower.defenseId, 'auraRadius') * (1 + (tower.level - 1) * 0.15);
       const amount = Math.round(this.towerStat(tower.defenseId, 'healGuardAmount') * (1 + (tower.level - 1) * 0.45));
       let healedAny = false;
       this.towers.forEach(ally => {
@@ -1422,7 +1446,7 @@
       for (const t of this.towers) {
         const def = D.DEFENSES[t.defenseId];
         if (!def.auraRadius) continue;
-        const r = this.towerStat(t.defenseId, 'auraRadius') * (1 + (t.level - 1) * 0.15);
+        const r = this.effectRadius(t.defenseId, 'auraRadius') * (1 + (t.level - 1) * 0.15);
         if (Math.hypot(t.x - x, t.y - y) <= r) {
           bonus += this.towerStat(t.defenseId, 'auraDamageMult') * (1 + (t.level - 1) * 0.5);
         }
@@ -1435,7 +1459,7 @@
       for (const t of this.towers) {
         const def = D.DEFENSES[t.defenseId];
         if (!def.auraRadius || !def.auraRateMult) continue;
-        const r = this.towerStat(t.defenseId, 'auraRadius') * (1 + (t.level - 1) * 0.15);
+        const r = this.effectRadius(t.defenseId, 'auraRadius') * (1 + (t.level - 1) * 0.15);
         if (Math.hypot(t.x - x, t.y - y) <= r) {
           bonus += this.towerStat(t.defenseId, 'auraRateMult') * (1 + (t.level - 1) * 0.25);
         }
@@ -1509,7 +1533,7 @@
     }
 
     explodeAt(x, y, towerId, dmg, exclude) {
-      const radius = this.towerStat(towerId, 'aoeRadius');
+      const radius = this.effectRadius(towerId, 'aoeRadius');
       this.enemiesInRadius(x, y, radius).forEach(e => {
         if (e === exclude) return;
         this.damageEnemy(e, dmg * 0.6);

@@ -29,10 +29,10 @@
 
   const DEFENSES = {
     spearman: {
-      id: 'spearman', name: 'Soldado de Lanca', rarity: 'comum', role: 'Dano direto de curta distancia',
-      cost: 38, damage: 14, range: 112, rate: 680, melee: true,
+      id: 'spearman', name: 'Soldado de Lança', rarity: 'comum', role: 'Dano direto de curta distância',
+      cost: 38, damage: 13, range: 124, rate: 720, melee: true,
       onPath: false, color: 0x6b8f52, upgrades: ['damage', 'range', 'rate'],
-      desc: 'Ataca de perto fora do caminho. Barato, firme e bom para segurar o comeco.'
+      desc: 'Ataca de perto fora do caminho. Barato, firme e bom para segurar o começo.'
     },
     archer: {
       id: 'archer', name: 'Arqueiro', rarity: 'comum', role: 'Tiro rapido de alvo unico',
@@ -41,15 +41,15 @@
       desc: 'Atira com regularidade em um alvo. Simples, confiavel e comum.'
     },
     'burning-oil': {
-      id: 'burning-oil', name: 'Oleo em Chamas', rarity: 'comum', role: 'Dano de fogo no caminho',
+      id: 'burning-oil', name: 'Óleo em Chamas', rarity: 'comum', role: 'Dano de fogo no caminho',
       cost: 46, damage: 7, range: 0, rate: 680, slowFactor: 0.10, slowDuration: 420,
       burnDamage: 3, burnDuration: 1600, onPath: true, color: 0xc65b2b,
       upgrades: ['damage', 'burnDuration', 'rate'],
       desc: 'Fica no caminho. Causa dano constante e deixa o inimigo queimando por um tempo curto.'
     },
     barbarian: {
-      id: 'barbarian', name: 'Barbaro de Machado', rarity: 'rara', role: 'Golpe em area',
-      cost: 82, damage: 18, range: 116, rate: 980, aoeRadius: 76, melee: true,
+      id: 'barbarian', name: 'Bárbaro de Machado', rarity: 'rara', role: 'Golpe em área',
+      cost: 82, damage: 17, range: 132, rate: 1040, aoeRadius: 72, melee: true,
       onPath: false, color: 0x9a5a2a, upgrades: ['damage', 'aoeRadius', 'rate'],
       desc: 'Entra no combate de perto e acerta inimigos em volta do alvo.'
     },
@@ -74,7 +74,7 @@
       desc: 'Tambem luta no caminho, mas troca defesa por dano frontal.'
     },
     priest: {
-      id: 'priest', name: 'Sacerdote', rarity: 'epica', role: 'Cura e bencao',
+      id: 'priest', name: 'Sacerdote', rarity: 'epica', role: 'Cura e bênção',
       cost: 128, damage: 0, range: 0, rate: 0, auraRadius: 210, auraDamageMult: 0,
       auraRateMult: 0.22, healGuardAmount: 9, healRate: 900,
       onPath: false, color: 0xe8dcb8, upgrades: ['auraRadius', 'auraRateMult', 'healGuardAmount'],
@@ -91,30 +91,29 @@
 
   const DEFENSE_ORDER = ['spearman', 'archer', 'burning-oil', 'barbarian', 'slinger', 'shieldbearer', 'zealot', 'priest', 'fire-archer'];
 
-  // Bounties recalibrados: a economia antiga so dava para gerar 1 torre por
-  // onda mesmo limpando tudo. Subiu ~35-45% em cada inimigo.
+  // Cada invasor tem recompensa de combate e dano proprio ao objetivo.
   const ENEMIES = {
-    raider: { id: 'raider', name: 'Saqueador', hp: 28, speed: 72, bounty: 10, color: 0x8a3a3a, shape: 'raider' },
-    runner: { id: 'runner', name: 'Batedor', hp: 18, speed: 128, bounty: 8, color: 0xb07a2a, shape: 'runner' },
-    shield: { id: 'shield', name: 'Escudeiro', hp: 58, speed: 56, bounty: 15, armor: 2, color: 0x6a6a78, shape: 'shield' },
+    raider: { id: 'raider', name: 'Saqueador', hp: 32, speed: 72, bounty: 6, siegeDamage: 2, color: 0x8a3a3a, shape: 'raider' },
+    runner: { id: 'runner', name: 'Batedor', hp: 20, speed: 128, bounty: 5, siegeDamage: 1, color: 0xb07a2a, shape: 'runner' },
+    shield: { id: 'shield', name: 'Escudeiro', hp: 66, speed: 56, bounty: 9, siegeDamage: 3, armor: 2, color: 0x6a6a78, shape: 'shield' },
     // Voadora: passa POR CIMA das armadilhas (imune a dano/lentidao delas) - forca
     // o jogador a ter dano de projetil na build, nao so controle de chao.
-    flyer: { id: 'flyer', name: 'Harpia', hp: 40, speed: 90, bounty: 13, flying: true, color: 0x6a4a8a, shape: 'flyer' },
+    flyer: { id: 'flyer', name: 'Harpia', hp: 46, speed: 90, bounty: 8, siegeDamage: 2, flying: true, color: 0x6a4a8a, shape: 'flyer' },
     // Curandeiro: cura inimigos proximos enquanto vivo - vira alvo prioritario
     // (o modo de mira "Mais Forte" e a Balista perfurante brilham contra ele).
-    healer: { id: 'healer', name: 'Curandeiro', hp: 52, speed: 52, bounty: 18, healRadius: 130, healAmount: 8, color: 0x3a7a4a, shape: 'healer' },
-    ram: { id: 'ram', name: 'Aríete', hp: 145, speed: 38, bounty: 27, armor: 2, color: 0x5a4632, shape: 'ram' },
-    boss: { id: 'boss', name: 'Chefe Saqueador', hp: 420, speed: 32, bounty: 110, armor: 4, color: 0x3a1f1f, shape: 'boss', isBoss: true }
+    healer: { id: 'healer', name: 'Curandeiro', hp: 60, speed: 52, bounty: 11, siegeDamage: 2, healRadius: 130, healAmount: 9, color: 0x3a7a4a, shape: 'healer' },
+    ram: { id: 'ram', name: 'Aríete', hp: 175, speed: 38, bounty: 16, siegeDamage: 7, armor: 3, color: 0x5a4632, shape: 'ram' },
+    boss: { id: 'boss', name: 'Chefe Saqueador', hp: 520, speed: 32, bounty: 42, siegeDamage: 12, armor: 5, color: 0x3a1f1f, shape: 'boss', isBoss: true }
   };
 
   // Escala geometrica de HP por onda: onda N usa hp * HP_GROWTH^(N-1).
   // Mantem pressao de upgrade sem trivializar o comeco (ref: skill tower-defense).
-  const HP_GROWTH = 1.09;
+  const HP_GROWTH = 1.14;
   // Bonus de suprimentos ao limpar cada onda (alem do bounty por abate). Cresce por
   // onda porque o custo de gerar torre tambem sobe ao longo da partida - sem isso o
   // jogador ficava sem suprimentos para gerar mais de uma torre por onda cedo demais.
-  const WAVE_CLEAR_BONUS = 30;
-  const WAVE_CLEAR_BONUS_GROWTH = 18;
+  const WAVE_CLEAR_BONUS = 12;
+  const WAVE_CLEAR_BONUS_GROWTH = 8;
 
   // Centros da estrada pintada nos assets atuais. O caminho de celular usa a
   // arte vertical; o de desktop usa a arte 1920x1080 sem trocar os eixos.
@@ -142,7 +141,7 @@
     {
       id: 'portoes', name: 'Portões da Cidade', desc: 'Saqueadores testam as defesas da entrada. Bom lugar pra aprender.',
       hpMult: 1.0,
-      rewards: { coins: 120, xp: 60, fragments: 4 },
+      rewards: { coins: 70, xp: 60, fragments: 2 },
       path: PAINTED_ROAD_MOBILE,
       desktopPath: PAINTED_ROAD_DESKTOP,
       waves: [
@@ -155,8 +154,8 @@
     },
     {
       id: 'estrada', name: 'Estrada do Mosteiro', desc: 'Batedores velozes cortam a estrada. Lentidão vale ouro aqui.',
-      hpMult: 1.35,
-      rewards: { coins: 170, xp: 85, fragments: 5 },
+      hpMult: 1.5,
+      rewards: { coins: 95, xp: 85, fragments: 2 },
       path: PAINTED_ROAD_MOBILE,
       desktopPath: PAINTED_ROAD_DESKTOP,
       waves: [
@@ -169,8 +168,8 @@
     },
     {
       id: 'biblioteca', name: 'Biblioteca em Chamas', desc: 'Corredores longos e retos: arqueiros brilham, mas os aríetes chegam.',
-      hpMult: 1.75,
-      rewards: { coins: 230, xp: 115, fragments: 6 },
+      hpMult: 2.1,
+      rewards: { coins: 125, xp: 115, fragments: 3 },
       path: PAINTED_ROAD_MOBILE,
       desktopPath: PAINTED_ROAD_DESKTOP,
       waves: [
@@ -183,8 +182,8 @@
     },
     {
       id: 'muralhas', name: 'Muralhas Antigas', desc: 'Vaivém de patrulhas em massa. Área e economia decidem.',
-      hpMult: 2.2,
-      rewards: { coins: 300, xp: 150, fragments: 7 },
+      hpMult: 3.0,
+      rewards: { coins: 165, xp: 150, fragments: 3 },
       path: PAINTED_ROAD_MOBILE,
       desktopPath: PAINTED_ROAD_DESKTOP,
       waves: [
@@ -197,8 +196,8 @@
     },
     {
       id: 'arquivo', name: 'O Grande Arquivo', desc: 'A última defesa. Tudo que o inimigo tem, de uma vez.',
-      hpMult: 2.8,
-      rewards: { coins: 400, xp: 200, fragments: 9 },
+      hpMult: 4.0,
+      rewards: { coins: 220, xp: 200, fragments: 4 },
       path: PAINTED_ROAD_MOBILE,
       desktopPath: PAINTED_ROAD_DESKTOP,
       waves: [

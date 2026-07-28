@@ -40,7 +40,7 @@
       profile: {
         level: 1,
         xp: 0,
-        coins: 260,
+        coins: 120,
         selectedClass: 'merchant',
         classes
       },

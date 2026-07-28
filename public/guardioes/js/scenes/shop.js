@@ -5,9 +5,9 @@
   const D = global.GuardioesData;
 
   const PACKS = [
-    { id: 'fragmentos-comuns', name: 'Saco de Fragmentos', cost: 60, kind: 'fragments', rarity: 'comum', amount: 6 },
-    { id: 'fragmentos-raros', name: 'Bolsa de Fragmentos Raros', cost: 140, kind: 'fragments', rarity: 'rara', amount: 5 },
-    { id: 'defesa-nova', name: 'Pergaminho de Defesa', cost: 220, kind: 'unlock', amount: 1 }
+    { id: 'fragmentos-comuns', name: 'Saco de Fragmentos', cost: 100, kind: 'fragments', rarity: 'comum', amount: 6 },
+    { id: 'fragmentos-raros', name: 'Bolsa de Fragmentos Raros', cost: 240, kind: 'fragments', rarity: 'rara', amount: 5 },
+    { id: 'defesa-nova', name: 'Pergaminho de Defesa', cost: 420, kind: 'unlock', amount: 1 }
   ];
 
   class ShopScene extends Phaser.Scene {

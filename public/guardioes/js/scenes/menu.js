@@ -1,24 +1,15 @@
-/* Tower Defense - MenuScene: hub de campanha mobile:
-   barra de recursos no topo, cenario com predios clicaveis (alguns travados), guardiao parado,
-   navegador de fase com setas + botao Comecar, e uma barra de abas embaixo. */
+/* Tower Defense - menu principal com uma unica camada de navegacao. */
 (function (global) {
   'use strict';
   const UI = global.GuardioesUI;
   const D = global.GuardioesData;
 
-  const BUILDINGS = [
-    { id: 'build', feature: 'build', label: 'Forma\u00e7\u00e3o', scene: 'BuildSetup', x: 0.72, y: 0.30 },
-    { id: 'collection', feature: 'collection', label: 'Coleção', scene: 'Collection', x: 0.24, y: 0.42 },
-    { id: 'class', feature: 'class', label: 'Classe', scene: 'ClassTree', x: 0.76, y: 0.52 },
-    { id: 'shop', feature: 'shop', label: 'Loja', scene: 'Shop', x: 0.30, y: 0.62 }
-  ];
-
   const TABS = [
-    { id: 'home', label: 'In\u00edcio', icon: 'tex-tab-home' },
-    { id: 'build', label: 'Forma\u00e7\u00e3o', icon: 'tex-tab-build', scene: 'BuildSetup' },
-    { id: 'collection', label: 'Cole\u00e7\u00e3o', icon: 'tex-tab-collection', scene: 'Collection' },
-    { id: 'class', label: 'Classe', icon: 'tex-tab-class', scene: 'ClassTree' },
-    { id: 'shop', label: 'Loja', icon: 'tex-tab-shop', scene: 'Shop' }
+    { id: 'home', label: 'Início' },
+    { id: 'build', label: 'Formação', scene: 'BuildSetup' },
+    { id: 'collection', label: 'Coleção', scene: 'Collection' },
+    { id: 'class', label: 'Classe', scene: 'ClassTree' },
+    { id: 'shop', label: 'Loja', scene: 'Shop' }
   ];
 
   class MenuScene extends Phaser.Scene {
@@ -26,247 +17,228 @@
 
     create() {
       const { width, height } = this.scale;
-      const state = this.registry.get('state');
-      this.state = state;
-
+      this.state = this.registry.get('state');
       this.selectedLevelIndex = this.pickDefaultLevelIndex();
 
-      this.add.rectangle(0, 0, width, height, 0x1a1712).setOrigin(0);
-      this.buildVillageScene(width, height);
-      this.buildBuildings(width, height);
+      this.buildBackdrop(width, height);
       this.buildTopBar(width);
-      this.buildLevelBrowser(width, height);
+      this.buildTitle(width);
+      this.buildCampaignPicker(width, height);
       this.buildBottomTabs(width, height);
-      this.buildResumeChip(width, height);
-    }
-
-    pickDefaultLevelIndex() {
-      const state = this.state;
-      for (let i = 0; i < D.LEVELS.length; i++) {
-        const lvl = D.LEVELS[i];
-        const done = state.progress.levels[lvl.id] && state.progress.levels[lvl.id].completed;
-        if (!done) return i;
-      }
-      return D.LEVELS.length - 1;
-    }
-
-    highestUnlockedIndex() {
-      const state = this.state;
-      let idx = 0;
-      for (let i = 1; i < D.LEVELS.length; i++) {
-        const prevDone = state.progress.levels[D.LEVELS[i - 1].id] && state.progress.levels[D.LEVELS[i - 1].id].completed;
-        if (prevDone) idx = i; else break;
-      }
-      return idx;
-    }
-
-    // ---------- cenario ----------
-    buildVillageScene(width, height) {
-      const top = 64, bottom = height - 220;
-      const key = this.isDesktopLayout() && this.textures.exists('tex-menu-bg-desktop') ? 'tex-menu-bg-desktop' : 'tex-menu-bg';
-      if (this.textures.exists(key)) {
-        this.addCoverImage(key, width / 2, height / 2, width, height).setDepth(0);
-      } else {
-        this.add.rectangle(0, top, width, bottom - top, 0x241d16).setOrigin(0, 0);
-        this.drawSkyline(width, bottom);
-      }
     }
 
     isDesktopLayout() {
       return Boolean(global.GuardioesRuntime && global.GuardioesRuntime.isDesktop);
     }
 
-    addCoverImage(key, x, y, targetW, targetH) {
-      const img = this.add.image(x, y, key);
-      const tex = this.textures.get(key).getSourceImage();
-      const scale = Math.max(targetW / tex.width, targetH / tex.height);
-      img.setScale(scale);
-      return img;
-    }
-
-    drawSkyline(width, bottom) {
-      const g = this.add.graphics();
-      g.fillStyle(0x2e2618, 1);
-      const baseY = bottom * 0.92;
-      let x = 0;
-      while (x < width) {
-        const w = 40 + Math.random() * 60;
-        const h = 40 + Math.random() * 100;
-        g.fillRect(x, baseY - h, w, h + 200);
-        x += w + 6;
+    pickDefaultLevelIndex() {
+      for (let i = 0; i < D.LEVELS.length; i++) {
+        const progress = this.state.progress.levels[D.LEVELS[i].id];
+        if (!progress || !progress.completed) return i;
       }
+      return D.LEVELS.length - 1;
     }
 
-    // ---------- predios clicaveis ----------
-    buildBuildings(width, height) {
-      const top = 64, bottom = height - 220;
-      const usableH = bottom - top;
-      BUILDINGS.forEach(b => {
-        const x = width * b.x;
-        const y = top + usableH * b.y;
-        const unlocked = D.isFeatureUnlocked(this.state, b.feature);
-        const container = this.add.container(x, y);
-        const icon = this.add.image(0, 0, `tex-building-${b.id}`);
-        icon.setDisplaySize(this.isDesktopLayout() ? 150 : 112, this.isDesktopLayout() ? 150 : 112);
-        const label = this.add.text(0, this.isDesktopLayout() ? 72 : 54, b.label, {
-          fontFamily: 'Georgia, serif', fontSize: this.isDesktopLayout() ? '16px' : '13px', color: '#fff0c8', fontStyle: 'bold'
-        }).setOrigin(0.5).setShadow(0, 2, '#000', 3, true, true);
-        container.add([icon, label]);
-        if (!unlocked) {
-          icon.setTint(0x555555);
-          label.setColor('#8a8a8a');
-          const lock = this.add.text(18, -18, '🔒', { fontSize: '18px' }).setOrigin(0.5);
-          container.add(lock);
-        }
-        container.setSize(90, 90);
-        container.setInteractive({ useHandCursor: true });
-        container.on('pointerover', () => this.tweens.add({ targets: container, scale: 1.08, duration: 90 }));
-        container.on('pointerout', () => this.tweens.add({ targets: container, scale: 1, duration: 90 }));
-        container.on('pointerdown', () => {
-          global.GuardioesAudio.uiClick();
-          if (!unlocked) {
-            this.showLockedHint(b, x, y);
-            return;
-          }
-          this.goToScene(b.scene);
-        });
-      });
+    highestUnlockedIndex() {
+      let index = 0;
+      for (let i = 1; i < D.LEVELS.length; i++) {
+        const previous = this.state.progress.levels[D.LEVELS[i - 1].id];
+        if (previous && previous.completed) index = i;
+        else break;
+      }
+      return index;
     }
 
-    showLockedHint(building, x, y) {
-      const hints = {
-        shop: 'Vença a Fase 1 pra abrir a Loja',
-        class: 'Alcance o Nível 2 pra abrir a Classe'
-      };
-      UI.floatingText(this, x, y - 60, hints[building.feature] || 'Ainda bloqueado', '#e74c3c');
+    buildBackdrop(width, height) {
+      const key = this.isDesktopLayout() && this.textures.exists('tex-menu-bg-desktop')
+        ? 'tex-menu-bg-desktop'
+        : 'tex-menu-bg';
+      this.add.rectangle(0, 0, width, height, 0x17201d).setOrigin(0);
+      if (this.textures.exists(key)) {
+        const image = this.add.image(width / 2, height / 2, key);
+        const source = this.textures.get(key).getSourceImage();
+        image.setScale(Math.max(width / source.width, height / source.height));
+        image.setTint(0x747a70).setAlpha(0.42);
+      }
+      this.add.rectangle(0, 0, width, height, 0x0b1112, 0.46).setOrigin(0);
+      this.add.rectangle(width / 2, 118, width, 236, 0x0a0f10, 0.38).setOrigin(0.5);
+      this.add.rectangle(width / 2, height - 190, width, 380, 0x0a0f10, 0.34).setOrigin(0.5);
     }
 
-    // ---------- barra de recursos (topo) ----------
     buildTopBar(width) {
       const profile = this.state.profile;
-      this.add.rectangle(width / 2, 32, width, 64, 0x120e0a, 0.88).setOrigin(0.5).setDepth(300);
+      const desktop = this.isDesktopLayout();
+      const height = desktop ? 72 : 76;
+      this.add.rectangle(width / 2, height / 2, width, height, 0x0d1416, 0.96).setOrigin(0.5).setDepth(300);
+      this.add.rectangle(width / 2, height - 1, width, 2, 0x8d7a50, 0.65).setOrigin(0.5).setDepth(301);
 
-      const levelPill = this.add.container(70, 32).setDepth(301);
-      const levelBg = this.add.circle(0, 0, 22, 0x3a2a1c).setStrokeStyle(2, 0x8a6a3a);
-      const levelTxt = this.add.text(0, 0, String(profile.level), {
-        fontFamily: 'Georgia, serif', fontSize: '18px', color: '#f2e2b8', fontStyle: 'bold'
-      }).setOrigin(0.5);
-      levelPill.add([levelBg, levelTxt]);
+      this.add.text(desktop ? 42 : 24, height / 2, `Nível ${profile.level}  |  ${profile.xp} XP`, {
+        fontFamily: UI.FONT_UI,
+        fontSize: desktop ? '17px' : '20px',
+        color: '#e9dec3',
+        fontStyle: 'bold'
+      }).setOrigin(0, 0.5).setDepth(302);
 
-      this.add.text(105, 20, 'Nível', { fontFamily: 'Georgia, serif', fontSize: '10px', color: '#8a7a5a' }).setDepth(301);
-      this.add.text(105, 32, `${profile.xp} XP`, { fontFamily: 'Georgia, serif', fontSize: '13px', color: '#cbb98a' }).setDepth(301);
-
-      const coinIcon = this.add.circle(width - 130, 32, 12, 0xe0a52a).setStrokeStyle(2, 0x8a6a1a).setDepth(301);
-      this.add.text(width - 110, 32, `${profile.coins}`, {
-        fontFamily: 'Georgia, serif', fontSize: '17px', color: '#f2e2b8', fontStyle: 'bold'
-      }).setOrigin(0, 0.5).setDepth(301);
-
-      const muteBtn = UI.muteButton(this, width - 26, 32).setDepth(301);
+      const coinX = width - (desktop ? 108 : 92);
+      this.add.circle(coinX, height / 2, desktop ? 8 : 7, 0xd7aa3d).setDepth(302);
+      this.add.text(coinX + 15, height / 2, String(profile.coins), {
+        fontFamily: UI.FONT_UI,
+        fontSize: desktop ? '17px' : '20px',
+        color: '#f2e2b8',
+        fontStyle: 'bold'
+      }).setOrigin(0, 0.5).setDepth(302);
+      UI.muteButton(this, width - (desktop ? 34 : 30), height / 2).setDepth(302);
     }
 
-    // ---------- navegador de fase + botao Comecar ----------
-    buildLevelBrowser(width, height) {
-      const barH = this.isDesktopLayout() ? 104 : 92;
-      const y = height - barH - (this.isDesktopLayout() ? 142 : 154);
-      const level = D.LEVELS[this.selectedLevelIndex];
-      const highest = this.highestUnlockedIndex();
+    buildTitle(width) {
+      const desktop = this.isDesktopLayout();
+      this.add.text(width / 2, desktop ? 154 : 160, 'SOLA TORRE', {
+        fontFamily: UI.FONT_TITLE,
+        fontSize: desktop ? '54px' : '46px',
+        color: '#f3e8ce',
+        fontStyle: 'bold'
+      }).setOrigin(0.5).setDepth(20);
+      this.add.rectangle(width / 2, desktop ? 194 : 198, desktop ? 154 : 126, 2, 0xb9974d, 0.9).setDepth(20);
+    }
 
-      this.browserPanel = this.add.container(0, 0).setDepth(310);
-      this.renderLevelBrowser(width, y, level, highest);
+    buildCampaignPicker(width, height) {
+      const desktop = this.isDesktopLayout();
+      const navHeight = desktop ? 84 : 92;
+      const pickerY = height - navHeight - (desktop ? 176 : 208);
+      const pickerW = desktop ? Math.min(720, width - 280) : width - 96;
+      const hasRun = Boolean(this.state.run && this.state.run.active);
 
-      this.leftArrow = this.add.text(30, y, '◀', { fontSize: '30px', color: '#f2e2b8' })
-        .setOrigin(0.5).setDepth(311).setInteractive({ useHandCursor: true });
-      this.rightArrow = this.add.text(width - 30, y, '▶', { fontSize: '30px', color: '#f2e2b8' })
-        .setOrigin(0.5).setDepth(311).setInteractive({ useHandCursor: true });
-      this.leftArrow.on('pointerdown', () => this.changeLevel(-1));
-      this.rightArrow.on('pointerdown', () => this.changeLevel(1));
+      this.add.rectangle(width / 2, pickerY, pickerW, desktop ? 112 : 122, 0x11191b, 0.92)
+        .setStrokeStyle(2, 0x756846, 0.9)
+        .setDepth(40);
 
-      UI.makeButton(this, width / 2, height - barH - (this.isDesktopLayout() ? 54 : 62), 'Começar', () => {
+      this.levelCounter = this.add.text(width / 2, pickerY - 35, '', {
+        fontFamily: UI.FONT_UI,
+        fontSize: desktop ? '13px' : '18px',
+        color: '#b9ad8c',
+        fontStyle: 'bold'
+      }).setOrigin(0.5).setDepth(42);
+
+      this.levelName = this.add.text(width / 2, pickerY + 2, '', {
+        fontFamily: UI.FONT_TITLE,
+        fontSize: desktop ? '27px' : '29px',
+        color: '#f3e8ce',
+        fontStyle: 'bold',
+        align: 'center'
+      }).setOrigin(0.5).setDepth(42);
+      UI.fitText(this.levelName, pickerW - 110, 48, desktop ? 27 : 29, 17);
+
+      this.levelState = this.add.text(width / 2, pickerY + 38, '', {
+        fontFamily: UI.FONT_UI,
+        fontSize: desktop ? '12px' : '17px',
+        color: '#c8b775'
+      }).setOrigin(0.5).setDepth(42);
+
+      this.leftArrow = this.makeArrow(width / 2 - pickerW / 2 - (desktop ? 42 : 30), pickerY, '<', -1);
+      this.rightArrow = this.makeArrow(width / 2 + pickerW / 2 + (desktop ? 42 : 30), pickerY, '>', 1);
+
+      const primaryY = pickerY + (desktop ? 102 : 112);
+      const primaryLabel = hasRun ? 'CONTINUAR' : 'COMEÇAR';
+      UI.makeButton(this, width / 2, primaryY, primaryLabel, () => {
+        if (hasRun) {
+          const run = this.state.run;
+          this.scene.start('Battle', {
+            resume: true,
+            loadout: run.loadout,
+            levelIndex: run.levelIndex || 0
+          });
+          return;
+        }
         this.scene.start('BuildSetup', { levelIndex: this.selectedLevelIndex });
-      }, { width: this.isDesktopLayout() ? 350 : 300, height: this.isDesktopLayout() ? 72 : 70, fontSize: 26 }).setDepth(311);
+      }, {
+        width: desktop ? 330 : 292,
+        height: desktop ? 62 : 64,
+        fontSize: desktop ? 22 : 21
+      }).setDepth(43);
+
+      if (hasRun) {
+        const newRun = this.add.text(width / 2, primaryY + 47, 'Nova partida', {
+          fontFamily: UI.FONT_UI,
+          fontSize: desktop ? '14px' : '13px',
+          color: '#d8ccb0'
+        }).setOrigin(0.5).setDepth(43).setInteractive({ useHandCursor: true });
+        newRun.on('pointerdown', () => this.scene.start('BuildSetup', { levelIndex: this.selectedLevelIndex }));
+      }
+
+      this.refreshCampaignPicker();
     }
 
-    changeLevel(dir) {
-      const highest = this.highestUnlockedIndex();
-      const next = Phaser.Math.Clamp(this.selectedLevelIndex + dir, 0, highest);
+    makeArrow(x, y, label, direction) {
+      const button = this.add.text(x, y, label, {
+        fontFamily: UI.FONT_UI,
+        fontSize: '34px',
+        color: '#f0e3c4',
+        fontStyle: 'bold'
+      }).setOrigin(0.5).setDepth(43).setInteractive({ useHandCursor: true });
+      button.on('pointerdown', () => this.changeLevel(direction));
+      return button;
+    }
+
+    changeLevel(direction) {
+      const next = Phaser.Math.Clamp(
+        this.selectedLevelIndex + direction,
+        0,
+        this.highestUnlockedIndex()
+      );
       if (next === this.selectedLevelIndex) return;
       global.GuardioesAudio.uiClick();
       this.selectedLevelIndex = next;
-      const width = this.scale.width;
-      const barH = this.isDesktopLayout() ? 104 : 92;
-      const y = this.scale.height - barH - (this.isDesktopLayout() ? 142 : 154);
-      this.renderLevelBrowser(width, y, D.LEVELS[next], highest);
+      this.refreshCampaignPicker();
     }
 
-    levelPanelWidth(width) {
-      return this.isDesktopLayout() ? Math.min(980, width - 320) : width - 110;
+    refreshCampaignPicker() {
+      const level = D.LEVELS[this.selectedLevelIndex];
+      const highest = this.highestUnlockedIndex();
+      const progress = this.state.progress.levels[level.id];
+      this.levelCounter.setText(`MAPA ${this.selectedLevelIndex + 1} DE ${D.LEVELS.length}`);
+      this.levelName.setText(level.name);
+      UI.fitText(this.levelName, this.isDesktopLayout() ? 610 : this.scale.width - 206, 48, this.isDesktopLayout() ? 27 : 29, 17);
+      this.levelState.setText(progress && progress.completed ? 'Concluído' : 'Disponível');
+      this.leftArrow.setAlpha(this.selectedLevelIndex > 0 ? 1 : 0.28);
+      this.rightArrow.setAlpha(this.selectedLevelIndex < highest ? 1 : 0.28);
     }
 
-    renderLevelBrowser(width, y, level, highest) {
-      this.browserPanel.removeAll(true);
-      const bg = UI.makePanel(this, width / 2, y, this.levelPanelWidth(width), this.isDesktopLayout() ? 96 : 74);
-      const isTop = this.selectedLevelIndex === highest;
-      const name = this.add.text(width / 2, y - 12, `${this.selectedLevelIndex + 1}. ${level.name}`, {
-        fontFamily: 'Georgia, serif', fontSize: '17px', color: '#3a2c1a', fontStyle: 'bold'
-      }).setOrigin(0.5);
-      const tag = this.add.text(width / 2, y + 14, isTop ? 'Capítulo mais alto' : 'Concluída', {
-        fontFamily: 'Georgia, serif', fontSize: '11px', color: isTop ? '#7a3a1a' : '#2e7a3a'
-      }).setOrigin(0.5);
-      bg.setInteractive({ useHandCursor: true });
-      bg.on('pointerdown', () => { global.GuardioesAudio.uiClick(); this.scene.start('LevelSelect'); });
-      this.browserPanel.add([bg, name, tag]);
-      if (this.leftArrow) this.leftArrow.setAlpha(this.selectedLevelIndex > 0 ? 1 : 0.3);
-      if (this.rightArrow) this.rightArrow.setAlpha(this.selectedLevelIndex < highest ? 1 : 0.3);
-    }
-
-    // ---------- chip de continuar partida ----------
-    buildResumeChip(width, height) {
-      const state = this.state;
-      const hasRun = Boolean(state.run && state.run.active);
-      if (!hasRun) return;
-      const chip = UI.makeButton(this, width / 2, 100, '▶ Continuar Partida', () => {
-        this.scene.start('Battle', { resume: true, loadout: state.run.loadout, levelIndex: state.run.levelIndex || 0 });
-      }, { width: 260, height: 46, fontSize: 15 }).setDepth(320);
-    }
-
-    // ---------- barra de abas ----------
     buildBottomTabs(width, height) {
-      const barH = this.isDesktopLayout() ? 104 : 92;
-      const barY = height - barH / 2;
-      this.add.rectangle(width / 2, barY, width, barH, 0x120e0a, 0.94).setOrigin(0.5).setDepth(300);
-      this.add.rectangle(width / 2, height - barH + 2, width, 3, 0x8a6a3a, 0.75).setOrigin(0.5).setDepth(301);
-      const cols = TABS.length;
-      const colW = width / cols;
-      TABS.forEach((tab, i) => {
-        const x = colW * i + colW / 2;
+      const desktop = this.isDesktopLayout();
+      const barH = desktop ? 84 : 92;
+      const barTop = height - barH;
+      this.add.rectangle(width / 2, height - barH / 2, width, barH, 0x0d1416, 0.98).setDepth(300);
+      this.add.rectangle(width / 2, barTop, width, 2, 0x6f654c, 0.8).setDepth(301);
+
+      const colW = width / TABS.length;
+      TABS.forEach((tab, index) => {
+        const x = colW * index + colW / 2;
         const active = tab.id === 'home';
         const unlocked = !tab.scene || D.isFeatureUnlocked(this.state, tab.id);
-        const container = this.add.container(x, barY).setDepth(301);
-        const icon = this.add.image(0, -14, tab.icon);
-        const targetSize = this.isDesktopLayout() ? (active ? 78 : 68) : (active ? 60 : 54);
-        icon.setDisplaySize(targetSize, targetSize);
-        if (!active) icon.setAlpha(0.82);
-        if (!unlocked) icon.setTint(0x6f6a60).setAlpha(0.45);
-        container.add(icon);
-        container.add(this.add.text(0, this.isDesktopLayout() ? 34 : 25, tab.label, {
-          fontFamily: 'Georgia, serif',
-          fontSize: this.isDesktopLayout() ? '15px' : '10px',
-          color: active ? '#f2e2b8' : (unlocked ? '#b9a67a' : '#706654'),
-          fontStyle: active ? 'bold' : 'normal'
-        }).setOrigin(0.5));
-        if (tab.scene) {
-          container.setSize(colW, barH);
-          container.setInteractive({ useHandCursor: true });
-          container.on('pointerdown', () => {
-            if (!unlocked) {
-              global.GuardioesAudio.invalid();
-              UI.floatingText(this, x, barY - 50, 'Bloqueado', '#e74c3c');
-              return;
-            }
-            global.GuardioesAudio.uiClick();
-            this.goToScene(tab.scene);
-          });
+        const label = this.add.text(x, height - barH / 2, tab.label, {
+          fontFamily: UI.FONT_UI,
+          fontSize: desktop ? '15px' : '17px',
+          color: active ? '#f3e8ce' : (unlocked ? '#b8ae96' : '#67675f'),
+          fontStyle: active ? 'bold' : 'normal',
+          align: 'center'
+        }).setOrigin(0.5).setDepth(302);
+        UI.fitText(label, colW - 12, 36, desktop ? 15 : 17, 13);
+
+        if (active) {
+          this.add.rectangle(x, barTop + 3, Math.min(colW - 28, desktop ? 96 : 68), 3, 0xd2aa4d).setDepth(303);
         }
+        if (!tab.scene) return;
+
+        const hit = this.add.zone(x, height - barH / 2, colW, barH).setDepth(304).setInteractive({ useHandCursor: true });
+        hit.on('pointerdown', () => {
+          if (!unlocked) {
+            global.GuardioesAudio.invalid();
+            UI.floatingText(this, x, barTop - 22, 'Bloqueado', '#e16b61');
+            return;
+          }
+          global.GuardioesAudio.uiClick();
+          this.goToScene(tab.scene);
+        });
       });
     }
 

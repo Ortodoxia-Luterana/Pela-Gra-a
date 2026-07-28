@@ -5,7 +5,7 @@
   // Assets reais (se existirem em /assets/guardioes/assets/) substituem a arte procedural
   // automaticamente - basta soltar um PNG com o mesmo nome, sem mexer em codigo.
   const ASSET_BASE = '/assets/guardioes/assets/';
-  const ASSET_VERSION = 'sola-torre-studio-ui-and-road-2026-07-14-2';
+  const ASSET_VERSION = 'sola-torre-ui-balance-2026-07-27-1';
   const HUB_BUILDINGS = ['build', 'collection', 'class', 'shop'];
   const TAB_ASSET_IDS = ['home', 'build', 'collection', 'class', 'shop'];
   const DEFENSE_LEVEL_ASSET_IDS = global.GuardioesData.DEFENSE_ORDER;
@@ -17,9 +17,6 @@
     ['tex-menu-bg', 'menu-bg.jpg'],
     ['tex-menu-bg-desktop', 'menu-bg-desktop.jpg'],
     ['tex-guardian', 'guardian.png'],
-    ['tex-ui-button-primary', 'ui-button-primary.png'],
-    ['tex-ui-stage-plaque', 'ui-stage-plaque.png'],
-    ['tex-ui-hud-frame', 'ui-hud-frame.png'],
     ...HUB_BUILDINGS.map(id => [`tex-building-${id}`, `building-${id}.png`]),
     ...TAB_ASSET_IDS.map(id => [`tex-tab-${id}`, `tab-${id}.png`]),
     ...global.GuardioesData.LEVELS.map(l => [`tex-map-${l.id}`, `map-${l.id}.jpg`]),
@@ -74,8 +71,33 @@
 
     // --- paineis / UI: pergaminho, madeira, pedra ---
     buildPanelTextures() {
-      // Pergaminho (parchment) - painel principal de menus
+      // Superficies limpas: a area visivel e a area de texto sao a mesma.
       let gfx = this.g();
+      gfx.fillStyle(0x25312f, 1);
+      gfx.fillRoundedRect(0, 0, 320, 96, 10);
+      gfx.lineStyle(3, 0xb9974d, 0.95);
+      gfx.strokeRoundedRect(2, 2, 316, 92, 10);
+      gfx.generateTexture('tex-ui-button-clean', 320, 96);
+      gfx.destroy();
+
+      gfx = this.g();
+      gfx.fillStyle(0xeee6d4, 1);
+      gfx.fillRoundedRect(0, 0, 512, 256, 12);
+      gfx.lineStyle(3, 0x6c5a3a, 0.9);
+      gfx.strokeRoundedRect(2, 2, 508, 252, 12);
+      gfx.generateTexture('tex-ui-panel-clean', 512, 256);
+      gfx.destroy();
+
+      gfx = this.g();
+      gfx.fillStyle(0x111b20, 0.96);
+      gfx.fillRoundedRect(0, 0, 320, 160, 10);
+      gfx.lineStyle(2, 0x64706e, 0.85);
+      gfx.strokeRoundedRect(1, 1, 318, 158, 10);
+      gfx.generateTexture('tex-ui-hud-clean', 320, 160);
+      gfx.destroy();
+
+      // Pergaminho (parchment) - painel principal de menus
+      gfx = this.g();
       gfx.fillStyle(0xe8dcb8, 1);
       gfx.fillRoundedRect(0, 0, 512, 256, 18);
       gfx.lineStyle(6, 0x7a5a2e, 1);

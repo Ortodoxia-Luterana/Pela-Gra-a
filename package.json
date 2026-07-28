@@ -12,6 +12,7 @@
     "preview:cores-da-rosa": "node --no-warnings tools/preview-cores-da-rosa.cjs",
     "test:crowns": "node --no-warnings tests/crowns-and-councils.cjs",
     "test:crowns:preview": "node --no-warnings tests/crowns-preview.cjs",
+    "test:crowns:persistence": "node --no-warnings tests/crowns-persistence.cjs",
     "test:babel-realtime": "node --no-warnings tests/babel-realtime.cjs",
     "test:quiz-invites": "node --no-warnings tests/quiz-invites.cjs",
     "test:hub-game-catalog": "node --no-warnings tests/hub-game-catalog.cjs",

@@ -67,6 +67,7 @@ const CROWNS_GAME_DAY_MS = Math.max(250, Number(process.env.CROWNS_GAME_DAY_MS |
 const CROWNS_RESET_DELAY_MS = Math.max(10_000, Number(process.env.CROWNS_RESET_DELAY_MS || 24 * 60 * 60 * 1000));
 const CROWNS_REVOLT_CHECK_MS = Math.max(250, Number(process.env.CROWNS_REVOLT_CHECK_MS || 30 * 1000));
 const CROWNS_FORCE_REVOLTS = process.env.CROWNS_FORCE_REVOLTS === '1';
+const CROWNS_SAVE_EPOCH = '2026-07-28-provincial-realms-v1';
 const CROWNS_COUNCIL_TEMPLATES = [
   { key: 'niceia-i', day: 3, kind: 'historical', name: 'Primeiro Concílio de Niceia', theme: 'A confissão comum sobre a divindade de Cristo' },
   { key: 'constantinopla-i', day: 10, kind: 'historical', name: 'Primeiro Concílio de Constantinopla', theme: 'A fé no Espírito Santo e a unidade da Igreja' },
@@ -325,6 +326,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS cc_council_receptions (council_id TEXT NOT NULL, realm_id TEXT NOT NULL, reception_key TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY (council_id, realm_id));
   CREATE TABLE IF NOT EXISTS cc_religious_movements (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, movement_key TEXT NOT NULL, name TEXT NOT NULL, description TEXT NOT NULL, starts_day INTEGER NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, UNIQUE (season_id, movement_key));
   CREATE TABLE IF NOT EXISTS cc_religious_responses (movement_id TEXT NOT NULL, realm_id TEXT NOT NULL, response_key TEXT NOT NULL, created_at TEXT NOT NULL, PRIMARY KEY (movement_id, realm_id));
+  CREATE TABLE IF NOT EXISTS cc_save_epochs (epoch TEXT PRIMARY KEY, applied_at TEXT NOT NULL);
   CREATE INDEX IF NOT EXISTS cc_actions_due_idx ON cc_actions (status, completes_at);
   CREATE INDEX IF NOT EXISTS cc_season_regions_owner_idx ON cc_season_regions (season_id, owner_realm_id);
   CREATE INDEX IF NOT EXISTS cc_articles_published_idx ON cc_articles (season_id, published_at DESC);
@@ -401,6 +403,48 @@ try { db.exec('ALTER TABLE cc_season_regions ADD COLUMN tax_rate INTEGER NOT NUL
 try { db.exec('ALTER TABLE cc_season_regions ADD COLUMN loyalty INTEGER NOT NULL DEFAULT 70'); } catch {}
 try { db.exec('ALTER TABLE cc_season_regions ADD COLUMN unrest INTEGER NOT NULL DEFAULT 8'); } catch {}
 try { db.exec('ALTER TABLE cc_armies ADD COLUMN siege INTEGER NOT NULL DEFAULT 0'); } catch {}
+
+function applyCrownsSaveEpoch() {
+  const applied = db.prepare('SELECT epoch FROM cc_save_epochs WHERE epoch = ?').get(CROWNS_SAVE_EPOCH);
+  if (applied) return false;
+  const appliedAt = new Date().toISOString();
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    db.exec(`
+      DELETE FROM cc_council_votes;
+      DELETE FROM cc_council_receptions;
+      DELETE FROM cc_religious_responses;
+      DELETE FROM cc_actions;
+      DELETE FROM cc_articles;
+      DELETE FROM cc_events;
+      DELETE FROM cc_region_buildings;
+      DELETE FROM cc_armies;
+      DELETE FROM cc_fleets;
+      DELETE FROM cc_custom_faiths;
+      DELETE FROM cc_market_orders;
+      DELETE FROM cc_diplomatic_exchanges;
+      DELETE FROM cc_season_results;
+      DELETE FROM cc_treaties;
+      DELETE FROM cc_marriages;
+      DELETE FROM cc_wars;
+      DELETE FROM cc_region_religions;
+      DELETE FROM cc_councils;
+      DELETE FROM cc_religious_movements;
+      DELETE FROM cc_season_regions;
+      DELETE FROM cc_realms;
+      DELETE FROM cc_seasons;
+    `);
+    db.prepare('INSERT INTO cc_save_epochs (epoch, applied_at) VALUES (?, ?)').run(CROWNS_SAVE_EPOCH, appliedAt);
+    db.exec('COMMIT');
+    console.info(`[crowns] Campanhas antigas zeradas; novos saves persistem no marco ${CROWNS_SAVE_EPOCH}.`);
+    return true;
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+}
+
+applyCrownsSaveEpoch();
 
 function crownsGeneratedColor(seed, attempt = 0) {
   const digest = crypto.createHash('sha256').update(`${seed}:${attempt}`).digest();

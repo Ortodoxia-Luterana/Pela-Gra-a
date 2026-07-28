@@ -73,7 +73,20 @@ async function waitForServer() {
     assert.match(cookie, /cultivando_cdr_launch=/);
     const gameHtml = await game.text();
     assert.match(gameHtml, /Uno Luterano/);
+    assert.match(gameHtml, /luther-rose-painted\.png/);
     assert.doesNotMatch(gameHtml, /Cores da Rosa/);
+
+    const scriptPath = gameHtml.match(/src="([^"]+index-[^"]+\.js)"/)?.[1];
+    assert.ok(scriptPath, 'O bundle do Uno Luterano deve estar ligado ao HTML.');
+    const gameScript = await request(scriptPath);
+    assert.equal(gameScript.status, 200);
+    const gameScriptText = await gameScript.text();
+    assert.match(gameScriptText, /luther-rose-painted\.png/);
+    assert.doesNotMatch(gameScriptText, /<svg/);
+
+    const roseAsset = await request('/assets/cores-da-rosa/assets/ui/luther-rose-painted.png');
+    assert.equal(roseAsset.status, 200);
+    assert.equal(roseAsset.headers.get('content-type'), 'image/png');
 
     const gameAsset = await request('/assets/cores-da-rosa/assets/environment/game-room-v2.webp');
     assert.equal(gameAsset.status, 200);

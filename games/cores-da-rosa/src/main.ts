@@ -131,22 +131,8 @@ function escapeHtml(value: unknown): string {
   }[character] || character));
 }
 
-function roseSvg(className = 'rose-mark'): string {
-  return `
-    <svg class="${className}" viewBox="0 0 100 100" aria-hidden="true">
-      <circle cx="50" cy="50" r="47" fill="#d8ae47"/>
-      <circle cx="50" cy="50" r="42" fill="#2379a5"/>
-      <g fill="#fff8e7" stroke="#e5d8b9" stroke-width="1.3">
-        <ellipse cx="50" cy="25" rx="14" ry="23"/>
-        <ellipse cx="73.8" cy="42.3" rx="14" ry="23" transform="rotate(72 73.8 42.3)"/>
-        <ellipse cx="64.7" cy="70.2" rx="14" ry="23" transform="rotate(144 64.7 70.2)"/>
-        <ellipse cx="35.3" cy="70.2" rx="14" ry="23" transform="rotate(216 35.3 70.2)"/>
-        <ellipse cx="26.2" cy="42.3" rx="14" ry="23" transform="rotate(288 26.2 42.3)"/>
-      </g>
-      <path d="M50 72C43 63 30 56 30 43c0-9 6-15 14-15 4 0 7 2 10 5 3-3 6-5 10-5 8 0 14 6 14 15 0 13-14 21-28 29Z" fill="#b62e36" stroke="#722027" stroke-width="2"/>
-      <path d="M47 35h8v13h9v8h-9v18h-8V56h-9v-8h9Z" fill="#151317"/>
-    </svg>
-  `;
+function roseImage(className = 'rose-mark'): string {
+  return `<img class="rose-image ${className}" src="/assets/cores-da-rosa/assets/ui/luther-rose-painted.png?v=1" alt="" aria-hidden="true">`;
 }
 
 function toast(message: string, tone: 'normal' | 'error' | 'success' = 'normal'): void {
@@ -180,7 +166,7 @@ function gameHeader(mode: 'lobby' | 'table'): string {
   return `
     <header class="game-hud">
       <a class="hud-button hub-button" href="/" aria-label="Voltar ao Hub">← <span>Hub</span></a>
-      <div class="game-brand">${roseSvg('brand-rose')}<div><strong>Uno Luterano</strong><small>Jogo de cartas litúrgico</small></div></div>
+      <div class="game-brand">${roseImage('brand-rose')}<div><strong>Uno Luterano</strong><small>Jogo de cartas litúrgico</small></div></div>
       <div class="hud-actions">
         ${mode === 'table' ? '<button id="leave-room" class="hud-button" type="button">Sair</button>' : ''}
         <button id="players-button" class="hud-button" type="button" aria-label="Jogadores online">♟ <span>${(lobby?.online.length || 0) + 1}</span></button>
@@ -272,7 +258,7 @@ function renderLobby(): void {
       ${gameHeader('lobby')}
       <section class="lobby-tabletop">
         <div class="title-plaque">
-          ${roseSvg('plaque-rose')}
+          ${roseImage('plaque-rose')}
           <div><span>ESCOLHA SUA MESA</span><h1>O salão está aberto</h1><p>A partida começa quando todos os lugares estiverem ocupados.</p></div>
         </div>
         <div class="table-map">${tableTokens}</div>
@@ -338,7 +324,7 @@ function renderWaiting(): void {
 
 function cardCenter(card: Card): string {
   if (card.kind === 'numero') return `<strong class="number-value">${card.value}</strong>`;
-  if (card.kind === 'coringa') return `${roseSvg('card-rose')}<strong class="action-word">COR</strong>`;
+  if (card.kind === 'coringa') return `${roseImage('card-rose')}<strong class="action-word">COR</strong>`;
   if (card.kind === 'mais4') return `<strong class="draw-value">+4</strong><span class="four-colors"><i></i><i></i><i></i><i></i></span><small>ESCOLHA A COR</small>`;
   if (card.kind === 'mais2') return `<strong class="draw-value">+2</strong><span class="mini-cards"><i></i><i></i></span>`;
   if (card.kind === 'pular') return '<strong class="action-symbol">⊘</strong><small>PULAR</small>';
@@ -348,7 +334,7 @@ function cardCenter(card: Card): string {
 function cardMarkup(card: Card, options: { compact?: boolean; back?: boolean } = {}): string {
   if (options.back) return `
     <span class="card-face card-back ${options.compact ? 'compact' : ''}">
-      <span class="back-pattern"></span>${roseSvg('back-rose')}
+      <span class="back-pattern"></span>${roseImage('back-rose')}
     </span>
   `;
   const wild = card.kind === 'coringa' || card.kind === 'mais4';
@@ -456,7 +442,7 @@ function resultPanel(game: GameState): string {
   return `
     <div class="modal-layer">
       <section class="result-panel">
-        ${roseSvg('result-rose')}
+        ${roseImage('result-rose')}
         <small>RODADA ENCERRADA</small>
         <h2>${winner ? 'Você esvaziou a mão!' : `${escapeHtml(game.winnerName)} venceu`}</h2>
         <p>${winner ? `Você recebeu ${game.pointsAwarded} pontos.` : 'A mesa pode começar outra rodada.'}</p>

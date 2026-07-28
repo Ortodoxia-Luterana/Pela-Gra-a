@@ -78,6 +78,7 @@ a:focus-visible { outline: 3px solid #ffe393; outline-offset: 3px; }
 .game-brand > div { display: grid; }
 .game-brand strong { font: 700 19px Georgia, serif; letter-spacing: .015em; }
 .game-brand small { color: #d0bfa3; font-size: 9px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; }
+.rose-image { display: block; object-fit: contain; }
 .brand-rose { width: 43px; height: 43px; filter: drop-shadow(0 3px 6px rgba(0,0,0,.5)); }
 .hud-actions { justify-self: end; display: flex; gap: 7px; }
 
@@ -117,6 +118,7 @@ a:focus-visible { outline: 3px solid #ffe393; outline-offset: 3px; }
 .boot-card strong { font: 700 24px Georgia, serif; }
 .boot-card small { color: #d0bfa3; }
 .boot-card a { color: #ffde85; }
+.boot-rose { display: block; width: 86px; height: 86px; object-fit: contain; filter: drop-shadow(0 7px 10px rgba(0,0,0,.55)); }
 
 /* Lobby */
 .lobby-tabletop {

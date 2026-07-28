@@ -588,13 +588,17 @@ const getCcBuildingsForRegion = db.prepare('SELECT * FROM cc_region_buildings WH
 const upsertCcBuilding = db.prepare('INSERT INTO cc_region_buildings (season_id, region_id, building_type, level, updated_at) VALUES (?, ?, ?, 1, ?) ON CONFLICT(season_id, region_id, building_type) DO UPDATE SET level = min(5, cc_region_buildings.level + 1), updated_at = excluded.updated_at');
 const insertCcArmy = db.prepare('INSERT OR IGNORE INTO cc_armies (id, season_id, realm_id, region_id, infantry, archers, cavalry, morale, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
 const getCcArmiesForRealm = db.prepare('SELECT army.*, region.name AS region_name FROM cc_armies army JOIN cc_regions region ON region.id = army.region_id WHERE army.season_id = ? AND army.realm_id = ? ORDER BY army.created_at');
+const getCcArmyAtRegion = db.prepare('SELECT * FROM cc_armies WHERE season_id = ? AND realm_id = ? AND region_id = ? ORDER BY created_at LIMIT 1');
 const reinforceCcArmy = db.prepare('UPDATE cc_armies SET infantry = infantry + ?, archers = archers + ?, cavalry = cavalry + ?, updated_at = ? WHERE id = ? AND season_id = ?');
 const reinforceCcSpearmen = db.prepare('UPDATE cc_armies SET infantry = infantry + ?, updated_at = ? WHERE id = ? AND season_id = ?');
 const reinforceCcArchers = db.prepare('UPDATE cc_armies SET archers = archers + ?, updated_at = ? WHERE id = ? AND season_id = ?');
 const reinforceCcCavalry = db.prepare('UPDATE cc_armies SET cavalry = cavalry + ?, updated_at = ? WHERE id = ? AND season_id = ?');
 const reinforceCcSiege = db.prepare('UPDATE cc_armies SET siege = siege + ?, updated_at = ? WHERE id = ? AND season_id = ?');
 const getCcArmyById = db.prepare('SELECT * FROM cc_armies WHERE id = ? AND season_id = ?');
-const updateCcArmyAfterBattle = db.prepare('UPDATE cc_armies SET infantry = ?, archers = ?, cavalry = ?, morale = ?, region_id = ?, updated_at = ? WHERE id = ? AND season_id = ?');
+const insertCcGarrison = db.prepare('INSERT INTO cc_armies (id, season_id, realm_id, region_id, infantry, archers, cavalry, siege, morale, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+const reserveCcArmyTroops = db.prepare('UPDATE cc_armies SET infantry = infantry - ?, archers = archers - ?, cavalry = cavalry - ?, siege = siege - ?, updated_at = ? WHERE id = ? AND season_id = ? AND infantry >= ? AND archers >= ? AND cavalry >= ? AND siege >= ?');
+const updateCcArmyAfterBattle = db.prepare('UPDATE cc_armies SET infantry = ?, archers = ?, cavalry = ?, siege = ?, morale = ?, region_id = ?, updated_at = ? WHERE id = ? AND season_id = ?');
+const deleteCcArmy = db.prepare('DELETE FROM cc_armies WHERE id = ? AND season_id = ?');
 const insertCcTreaty = db.prepare('INSERT INTO cc_treaties (id, season_id, proposer_realm_id, target_realm_id, treaty_type, status, expires_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
 const getCcTreaties = db.prepare('SELECT t.*, a.name AS proposer_name, b.name AS target_name FROM cc_treaties t JOIN cc_realms a ON a.id = t.proposer_realm_id JOIN cc_realms b ON b.id = t.target_realm_id WHERE t.season_id = ? ORDER BY t.created_at DESC');
 const getCcActiveTreatyBetween = db.prepare("SELECT * FROM cc_treaties WHERE season_id = ? AND status = 'accepted' AND ((proposer_realm_id = ? AND target_realm_id = ?) OR (proposer_realm_id = ? AND target_realm_id = ?)) LIMIT 1");
@@ -2217,13 +2221,87 @@ function crownsExpeditionDuration(distanceKm, maritime) {
   return Math.min(120, maritime ? Math.max(20, minutes) : minutes) * 60 * 1000;
 }
 
+function crownsTroops(value = {}) {
+  return {
+    spearmen: Math.max(0, Math.trunc(Number(value.spearmen ?? value.infantry ?? 0))),
+    archers: Math.max(0, Math.trunc(Number(value.archers || 0))),
+    cavalry: Math.max(0, Math.trunc(Number(value.cavalry || 0))),
+    siege: Math.max(0, Math.trunc(Number(value.siege || 0)))
+  };
+}
+
+function crownsTroopTotal(value = {}) {
+  const troops = crownsTroops(value);
+  return troops.spearmen + troops.archers + troops.cavalry + troops.siege;
+}
+
+function crownsTroopPower(value = {}, mode = 'attack') {
+  const troops = crownsTroops(value);
+  return Object.entries(troops).reduce((sum, [unitType, total]) => {
+    return sum + total * Number(CROWNS_UNITS[unitType]?.[mode] || 1);
+  }, 0);
+}
+
+function crownsReserveGarrisonTroops(army, serverId, troops, now) {
+  const force = crownsTroops(troops);
+  const reserved = reserveCcArmyTroops.run(
+    force.spearmen, force.archers, force.cavalry, force.siege, now,
+    army.id, serverId,
+    force.spearmen, force.archers, force.cavalry, force.siege
+  );
+  if (Number(reserved.changes) !== 1) throw new Error('A guarniÃ§Ã£o nÃ£o possui todas as tropas escolhidas.');
+  return force;
+}
+
+function crownsMergeGarrison(serverId, realmId, regionId, troops, morale = 65, now = new Date().toISOString()) {
+  const force = crownsTroops(troops);
+  if (!crownsTroopTotal(force)) return null;
+  const current = getCcArmyAtRegion.get(serverId, realmId, regionId);
+  if (!current) {
+    const id = `army_${serverId}_${realmId}_${regionId}_${crypto.randomUUID().slice(0, 8)}`;
+    insertCcGarrison.run(id, serverId, realmId, regionId, force.spearmen, force.archers, force.cavalry, force.siege, Math.max(25, Math.min(100, Math.round(morale))), now, now);
+    return getCcArmyById.get(id, serverId);
+  }
+  const currentTroops = crownsTroops(current);
+  const currentTotal = crownsTroopTotal(currentTroops);
+  const incomingTotal = crownsTroopTotal(force);
+  const mergedMorale = Math.max(25, Math.min(100, Math.round((Number(current.morale || 65) * currentTotal + Number(morale || 65) * incomingTotal) / Math.max(1, currentTotal + incomingTotal))));
+  updateCcArmyAfterBattle.run(
+    currentTroops.spearmen + force.spearmen,
+    currentTroops.archers + force.archers,
+    currentTroops.cavalry + force.cavalry,
+    currentTroops.siege + force.siege,
+    mergedMorale,
+    regionId,
+    now,
+    current.id,
+    serverId
+  );
+  return getCcArmyById.get(current.id, serverId);
+}
+
+function crownsOwnedReturnRegion(serverId, realmId, preferredRegionId) {
+  const owned = getCcOwnedRegions.all(serverId, realmId).map(row => row.region_id);
+  if (owned.includes(preferredRegionId)) return preferredRegionId;
+  const realm = getCcRealmById.get(realmId, serverId);
+  return owned.includes(realm?.capital_region_id) ? realm.capital_region_id : owned[0] || null;
+}
+
 function preserveCrownsRealmAfterConquest(serverId, defeatedRealmId, lostRegionId, now) {
   const defeated = getCcRealmById.get(defeatedRealmId, serverId);
   const replacement = getCcSeasonRegions.all(serverId)
     .filter(region => region.owner_realm_id === defeatedRealmId && region.id !== lostRegionId)
     .sort((a, b) => Number(b.development || 1) - Number(a.development || 1) || String(a.name).localeCompare(String(b.name), 'pt-BR'))[0];
-  if (!replacement) return;
-  retreatCcArmiesFromRegion.run(replacement.id, now, serverId, defeatedRealmId, lostRegionId);
+  const displaced = getCcArmiesForRealm.all(serverId, defeatedRealmId).filter(army => army.region_id === lostRegionId);
+  if (!replacement) {
+    displaced.forEach(army => deleteCcArmy.run(army.id, serverId));
+    return null;
+  }
+  displaced.forEach(army => {
+    const troops = crownsTroops(army);
+    deleteCcArmy.run(army.id, serverId);
+    crownsMergeGarrison(serverId, defeatedRealmId, replacement.id, troops, Math.max(25, Number(army.morale || 65) - 12), now);
+  });
   if (defeated?.capital_region_id === lostRegionId) {
     relocateCcRealmCapital.run(replacement.id, now, defeatedRealmId, serverId, lostRegionId);
     insertCcEvent.run(crypto.randomUUID(), serverId, 'realm.capital_relocated', defeatedRealmId, replacement.id, JSON.stringify({
@@ -2231,6 +2309,7 @@ function preserveCrownsRealmAfterConquest(serverId, defeatedRealmId, lostRegionI
       summary: `${defeated.name} transferiu sua corte para ${replacement.name} depois da queda da antiga capital.`
     }), now);
   }
+  return replacement.id;
 }
 
 function crownsEconomySummary(serverId, realm) {
@@ -2357,7 +2436,11 @@ function publicCrownsJournalEvent(row) {
     'marriage.celebrated': { category: 'marriage', headline: `Casamento dinástico em ${realmName}`, summary: payload.summary || 'Duas casas uniram seus destinos diante da corte.' },
     'war.victory': { category: 'war', headline: `${realmName} vence a batalha por ${regionName}`, summary: `A hoste atacante rompeu as defesas com força estimada em ${payload.attackPower || 0}.` },
     'war.defeat': { category: 'war', headline: `${realmName} é repelido em ${regionName}`, summary: `Os defensores mantiveram a província após uma batalha de força ${payload.defensePower || 0}.` },
+    'war.march_aborted': { category: 'war', headline: `A marcha de ${realmName} é interrompida`, summary: payload.summary || 'A província mudou de mãos antes da chegada da hoste.' },
     'army.defended': { category: 'army', headline: `${realmName} fortifica ${regionName}`, summary: payload.summary || 'A hoste tomou posições defensivas.' },
+    'army.transfer.started': { category: 'army', headline: `${realmName} redistribui suas tropas`, summary: `${payload.total || 0} soldados deixaram sua guarnição de origem.` },
+    'army.transfer.completed': { category: 'army', headline: `Reforços chegam a ${regionName}`, summary: payload.summary || `${payload.total || 0} soldados reforçaram a província.` },
+    'army.transfer.aborted': { category: 'army', headline: `O reforço para ${regionName} retorna`, summary: payload.summary || 'O destino deixou de ser seguro.' },
     'religion.mission_completed': { category: 'religion', headline: `Missionários de ${realmName} chegam a ${regionName}`, summary: `A presença de ${payload.faith || 'sua fé'} cresceu gradualmente entre a população.` },
     'religion.heresy_suppressed': { category: 'religion', headline: `${realmName} contém uma heresia em ${regionName}`, summary: 'A dissidência recuou, embora a ação tenha causado tensão interna.' },
     'religion.movement_emerged': { category: 'religion', headline: `${payload.movementName || 'Uma nova doutrina'} começa a se espalhar`, summary: payload.summary || 'Pregadores e bispos dividem-se diante de uma nova interpretação da fé cristã.' },
@@ -2461,7 +2544,7 @@ function crownsBootstrap(user, requestedServerId) {
     return {
       id: action.id,
       type: action.type,
-      label: action.type === 'territory.claim' ? 'Expedição territorial' : action.type === 'army.recruit' ? `Treinamento: ${CROWNS_UNITS[cost.unitType]?.name || 'recrutas'}` : action.type === 'army.defend' ? 'Preparação defensiva' : action.type === 'army.attack' ? 'Marcha de invasão' : action.type === 'religion.mission' ? 'Missão religiosa' : action.type === 'religion.suppress' ? 'Combate à heresia' : CROWNS_BUILDINGS[buildingType]?.name || 'Ordem do conselho',
+      label: action.type === 'territory.claim' ? 'Expedição territorial' : action.type === 'army.recruit' ? `Treinamento: ${CROWNS_UNITS[cost.unitType]?.name || 'recrutas'}` : action.type === 'army.defend' ? 'Preparação defensiva' : action.type === 'army.transfer' ? 'Deslocamento de tropas' : action.type === 'army.attack' ? 'Marcha de invasão' : action.type === 'religion.mission' ? 'Missão religiosa' : action.type === 'religion.suppress' ? 'Combate à heresia' : CROWNS_BUILDINGS[buildingType]?.name || 'Ordem do conselho',
       regionId: action.region_id,
       status: action.status,
       completesAt: action.completes_at,
@@ -2473,7 +2556,7 @@ function crownsBootstrap(user, requestedServerId) {
   const armies = realm ? getCcArmiesForRealm.all(serverId, realm.id).map(item => ({ id: item.id, regionId: item.region_id, regionName: item.region_name, infantry: item.infantry, spearmen: item.infantry, archers: item.archers, cavalry: item.cavalry, siege: Number(item.siege || 0), morale: item.morale, total: item.infantry + item.archers + item.cavalry + Number(item.siege || 0) })) : [];
   const treaties = realm ? getCcTreaties.all(serverId).filter(item => item.proposer_realm_id === realm.id || item.target_realm_id === realm.id).map(item => ({ id: item.id, treatyType: item.treaty_type, status: item.status, proposerRealmId: item.proposer_realm_id, proposerName: item.proposer_name, targetRealmId: item.target_realm_id, targetName: item.target_name, expiresAt: item.expires_at })) : [];
   const marriages = realm ? getCcMarriages.all(serverId).filter(item => item.proposer_realm_id === realm.id || item.target_realm_id === realm.id).map(item => ({ id: item.id, status: item.status, proposerName: item.proposer_name, targetName: item.target_name, proposerSpouse: item.proposer_spouse, targetSpouse: item.target_spouse, childReligion: item.child_religion, inheritanceClause: item.inheritance_clause, dowry: item.dowry })) : [];
-  const wars = realm ? getCcWars.all(serverId).filter(item => item.attacker_realm_id === realm.id || item.defender_realm_id === realm.id).map(item => ({ id: item.id, status: item.status, attackerRealmId: item.attacker_realm_id, attackerName: item.attacker_name, defenderRealmId: item.defender_realm_id, defenderName: item.defender_name, objectiveRegionId: item.objective_region_id, objectiveName: item.objective_name, score: item.score, result: safeJsonParse(item.result_json, {}) })) : [];
+  const wars = realm ? getCcWars.all(serverId).filter(item => item.attacker_realm_id === realm.id || item.defender_realm_id === realm.id).map(item => ({ id: item.id, status: item.status, attackerRealmId: item.attacker_realm_id, attackerName: item.attacker_name, defenderRealmId: item.defender_realm_id, defenderName: item.defender_name, objectiveRegionId: item.objective_region_id, objectiveName: item.objective_name, score: item.score, result: safeJsonParse(item.result_json, {}), startedAt: item.started_at, endedAt: item.ended_at })) : [];
   const regionReligions = realm ? getCcRegionReligions.all(serverId).filter(item => ownedIds.has(item.region_id)).map(item => ({ regionId: item.region_id, regionName: item.region_name, majorityReligion: item.majority_religion, majorityShare: item.majority_share, heresyName: item.heresy_name, heresyShare: item.heresy_share })) : [];
   const councils = getCcCouncils.all(serverId).map(item => { const vote = realm && getCcCouncilVote.get(item.id, realm.id); const reception = realm && getCcCouncilReception.get(item.id, realm.id); return { id: item.id, name: item.name, theme: item.theme, kind: item.council_kind, status: item.status, startsAt: item.starts_at, endsAt: item.ends_at, result: item.result_key, vote: vote?.vote_key || null, reception: reception?.reception_key || null, totals: Object.fromEntries(getCcCouncilVotes.all(item.id).map(row => [row.vote_key, Number(row.total)])) }; });
   const religiousMovements = getCcReligiousMovements.all(serverId).map(item => {
@@ -2549,7 +2632,20 @@ function crownsBootstrap(user, requestedServerId) {
     regionReligions,
     councils,
     religiousMovements,
-    attackTargets: regions.filter(item => item.ownerRealmId && item.ownerRealmId !== realm?.id && item.isBorderRegion).map(item => ({ regionId: item.id, regionName: item.name, realmId: item.ownerRealmId, realmName: item.ownerName })),
+    attackTargets: regions.filter(item => item.ownerRealmId && item.ownerRealmId !== realm?.id && item.isBorderRegion).map(item => {
+      const fromRegionIds = item.neighborIds.filter(id => ownedIds.has(id));
+      const defender = getCcArmyAtRegion.get(serverId, item.ownerRealmId, item.id);
+      return {
+        regionId: item.id,
+        regionName: item.name,
+        countryName: item.countryName,
+        realmId: item.ownerRealmId,
+        realmName: item.ownerName,
+        fromRegionIds,
+        defender: defender ? { spearmen: defender.infantry, archers: defender.archers, cavalry: defender.cavalry, siege: Number(defender.siege || 0), morale: defender.morale, total: crownsTroopTotal(defender) } : { spearmen: 0, archers: 0, cavalry: 0, siege: 0, morale: 0, total: 0 },
+        fortificationLevels: getCcBuildingsForRegion.all(serverId, item.id).filter(building => ['fortaleza', 'muralha', 'torre_vigia'].includes(building.building_type)).reduce((sum, building) => sum + Number(building.level || 0), 0)
+      };
+    }),
     winners: getCcSeasonResults.all(serverId),
     journal: crownsJournal(serverId).slice(0, 20),
     serverNow: new Date().toISOString(),
@@ -2651,7 +2747,7 @@ function queueCrownsBuilding(user, payload, requestedServerId) {
   if (!definition) throw new Error('Tipo de construção desconhecido.');
   const region = getCcSeasonRegion.get(serverId, regionId);
   if (!region || region.owner_realm_id !== realm.id) throw new Error('A obra precisa ficar em uma região do seu reino.');
-  const pending = getCcPendingActionsForRealm.all(serverId, realm.id);
+  const pending = getCcPendingActionsForRealm.all(serverId, realm.id).filter(action => !['army.attack', 'army.transfer'].includes(action.type));
   if (pending.length >= 3) throw new Error('Seu conselho já conduz três ordens simultâneas.');
   if (pending.some(action => action.region_id === regionId && action.type === `building.${buildingType}`)) throw new Error('Esta melhoria já está em construção nessa região.');
   const regionBuildings = getCcBuildingsForRegion.all(serverId, regionId);
@@ -2704,16 +2800,16 @@ function queueCrownsRecruitment(user, payload, requestedServerId) {
     const actualLevel = Number(regionBuildings.find(item => item.building_type === requiredType)?.level || 0);
     if (actualLevel < requiredLevel) throw new Error(`${definition.name} exigem ${CROWNS_BUILDINGS[requiredType]?.name || requiredType} no nível ${requiredLevel}.`);
   }
-  const army = getCcArmiesForRealm.all(serverId, realm.id).find(item => item.region_id === regionId) || getCcArmiesForRealm.all(serverId, realm.id)[0];
-  if (!army) throw new Error('Nenhum exército está disponível para receber os recrutas.');
-  const pending = getCcPendingActionsForRealm.all(serverId, realm.id);
+  const army = getCcArmyAtRegion.get(serverId, realm.id, regionId);
+  const armyId = army?.id || `army_${serverId}_${realm.id}_${regionId}_${crypto.randomUUID().slice(0, 8)}`;
+  const pending = getCcPendingActionsForRealm.all(serverId, realm.id).filter(action => !['army.attack', 'army.transfer'].includes(action.type));
   if (pending.length >= 3) throw new Error('Seu conselho já conduz três ordens simultâneas.');
   const cost = {
     treasury: definition.treasury * groups,
     provisions: definition.provisions * groups,
     wood: definition.wood * groups,
     stone: definition.stone * groups,
-    armyId: army.id,
+    armyId,
     unitType,
     unitName: definition.name,
     units: definition.quantity * groups
@@ -2727,6 +2823,7 @@ function queueCrownsRecruitment(user, payload, requestedServerId) {
   try {
     const spent = spendCcStrategicResources.run(cost.treasury, cost.provisions, cost.wood, cost.stone, now.toISOString(), realm.id, serverId, cost.treasury, cost.provisions, cost.wood, cost.stone);
     if (Number(spent.changes) !== 1) throw new Error('Recursos insuficientes para levantar essa tropa.');
+    if (!army) insertCcGarrison.run(armyId, serverId, realm.id, regionId, 0, 0, 0, 0, 68, now.toISOString(), now.toISOString());
     insertCcAction.run(actionId, serverId, realm.id, user.id, 'army.recruit', regionId, completesAt, JSON.stringify(cost), now.toISOString());
     db.exec('COMMIT');
   } catch (error) {
@@ -2747,6 +2844,11 @@ function cancelCrownsAction(user, payload, requestedServerId) {
   try {
     cancelCcAction.run(now, action.id, realm.id);
     if (action.type === 'territory.claim') releaseCcClaim.run(serverId, action.id);
+    if (['army.attack', 'army.transfer'].includes(action.type) && cost.troops) {
+      const returnRegionId = crownsOwnedReturnRegion(serverId, realm.id, cost.originRegionId);
+      if (returnRegionId) crownsMergeGarrison(serverId, realm.id, returnRegionId, cost.troops, cost.morale, now);
+    }
+    if (action.type === 'army.attack' && cost.warId) finishCcWar.run(0, JSON.stringify({ cancelled: true }), now, cost.warId, serverId);
     refundCcStrategicResources.run(Number(cost.treasury || 0), Number(cost.provisions || 0), Number(cost.wood || 0), Number(cost.stone || 0), now, realm.id, serverId);
     insertCcEvent.run(crypto.randomUUID(), serverId, action.type === 'territory.claim' ? 'territory.claim.cancelled' : 'action.cancelled', realm.id, action.region_id, JSON.stringify({ actionId: action.id, type: action.type }), now);
     db.exec('COMMIT');
@@ -2977,12 +3079,13 @@ function proposeCrownsMarriage(user, payload, requestedServerId) {
 function queueCrownsDefense(user, payload, requestedServerId) {
   const serverId = crownsServerId(requestedServerId);
   const realm = getCcRealmByUser.get(serverId, user.id);
-  const army = realm && getCcArmiesForRealm.all(serverId, realm.id)[0];
+  const regionId = String(payload?.regionId || realm?.capital_region_id || '');
+  const army = realm && getCcArmyAtRegion.get(serverId, realm.id, regionId);
   if (!realm || !army) throw new Error('Nenhuma hoste está disponível para defender o reino.');
-  const regionId = String(payload?.regionId || realm.capital_region_id);
   const region = getCcSeasonRegion.get(serverId, regionId);
   if (!region || region.owner_realm_id !== realm.id) throw new Error('Só é possível fortificar uma região do seu reino.');
-  const cost = { treasury: 90, provisions: 120, armyId: army.id, infantry: 90 };
+  if (!crownsTroopTotal(army)) throw new Error('Transfira soldados para esta província antes de preparar sua defesa.');
+  const cost = { treasury: 90, provisions: 120, armyId: army.id };
   const now = new Date();
   const spent = spendCcResources.run(cost.treasury, cost.provisions, now.toISOString(), realm.id, serverId, cost.treasury, cost.provisions);
   if (!spent.changes) throw new Error('Faltam recursos para preparar a defesa.');
@@ -2991,29 +3094,93 @@ function queueCrownsDefense(user, payload, requestedServerId) {
   return getCcAction.get(id);
 }
 
+function queueCrownsArmyTransfer(user, payload, requestedServerId) {
+  const serverId = crownsServerId(requestedServerId);
+  const realm = getCcRealmByUser.get(serverId, user.id);
+  if (!realm) throw new Error('Funde um reino antes de organizar suas tropas.');
+  if (crownsSeasonClock(processCrownsSeasonLifecycle(serverId)).phase !== 'open') throw new Error('A temporada já terminou.');
+  const fromRegionId = String(payload?.fromRegionId || '').trim().slice(0, 32);
+  const toRegionId = String(payload?.toRegionId || '').trim().slice(0, 32);
+  if (!fromRegionId || !toRegionId || fromRegionId === toRegionId) throw new Error('Escolha duas províncias diferentes.');
+  const fromRegion = getCcSeasonRegion.get(serverId, fromRegionId);
+  const toRegion = getCcSeasonRegion.get(serverId, toRegionId);
+  if (fromRegion?.owner_realm_id !== realm.id || toRegion?.owner_realm_id !== realm.id) throw new Error('A transferência só pode ocorrer entre províncias do seu reino.');
+  const army = getCcArmyAtRegion.get(serverId, realm.id, fromRegionId);
+  const troops = crownsTroops(payload?.troops);
+  if (!army || !crownsTroopTotal(troops)) throw new Error('Escolha soldados disponíveis na província de origem.');
+  const now = new Date();
+  const cost = { treasury: 25, provisions: 30, originRegionId: fromRegionId, destinationRegionId: toRegionId, troops, morale: Number(army.morale || 65) };
+  const actionId = `action_${crypto.randomUUID()}`;
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    const spent = spendCcResources.run(cost.treasury, cost.provisions, now.toISOString(), realm.id, serverId, cost.treasury, cost.provisions);
+    if (!spent.changes) throw new Error('Faltam moedas ou trigo para deslocar esse destacamento.');
+    crownsReserveGarrisonTroops(army, serverId, troops, now.toISOString());
+    insertCcAction.run(actionId, serverId, realm.id, user.id, 'army.transfer', toRegionId, new Date(now.getTime() + crownsActionDuration(6)).toISOString(), JSON.stringify(cost), now.toISOString());
+    insertCcEvent.run(crypto.randomUUID(), serverId, 'army.transfer.started', realm.id, fromRegionId, JSON.stringify({ actionId, fromRegionId, toRegionId, troops, total: crownsTroopTotal(troops) }), now.toISOString());
+    db.exec('COMMIT');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+  emitCrownsEvent('world.patch', { seasonId: serverId, type: 'army.transfer.started', regionIds: [fromRegionId, toRegionId], version: Date.now() });
+  return getCcAction.get(actionId);
+}
+
 function declareCrownsWar(user, payload, requestedServerId) {
   const serverId = crownsServerId(requestedServerId);
   const season = processCrownsSeasonLifecycle(serverId);
   const realm = getCcRealmByUser.get(serverId, user.id);
   if (!realm) throw new Error('Funde um reino antes de declarar guerra.');
   if (crownsSeasonClock(season).day < 5) throw new Error('A proteção inicial dura até o dia 5.');
-  if (getCcActiveWarForRealm.get(serverId, realm.id, realm.id)) throw new Error('Seu reino já conduz uma guerra ativa.');
   const regionId = String(payload?.regionId || '');
   const region = getCcSeasonRegion.get(serverId, regionId);
   const target = region?.owner_realm_id && getCcRealmById.get(region.owner_realm_id, serverId);
   const owned = new Set(getCcOwnedRegions.all(serverId, realm.id).map(row => row.region_id));
-  if (!region || !target || target.id === realm.id || !safeJsonParse(region.neighbor_ids_json, []).some(id => owned.has(id))) throw new Error('Escolha uma província inimiga na sua fronteira.');
+  const possibleOrigins = safeJsonParse(region?.neighbor_ids_json, []).filter(id => owned.has(id));
+  const requestedOriginId = String(payload?.fromRegionId || '');
+  const fromRegionId = requestedOriginId || possibleOrigins.find(id => {
+    const candidate = getCcArmyAtRegion.get(serverId, realm.id, id);
+    return candidate && crownsTroopPower(candidate) >= 50;
+  });
+  if (!region || !target || target.id === realm.id || !fromRegionId || !possibleOrigins.includes(fromRegionId)) throw new Error('Escolha uma província inimiga ligada à guarnição de origem.');
   if (getCcActiveTreatyBetween.get(serverId, realm.id, target.id, target.id, realm.id)) throw new Error('Um tratado ativo impede esta declaração de guerra.');
-  const army = getCcArmiesForRealm.all(serverId, realm.id)[0];
-  if (!army || army.infantry + army.archers + army.cavalry + Number(army.siege || 0) * 6 < 350) throw new Error('Sua hoste ainda é pequena demais para uma invasão.');
+  const army = getCcArmyAtRegion.get(serverId, realm.id, fromRegionId);
+  const available = crownsTroops(army || {});
+  const troops = payload?.troops
+    ? crownsTroops(payload.troops)
+    : {
+      spearmen: Math.floor(available.spearmen * 0.6),
+      archers: Math.floor(available.archers * 0.6),
+      cavalry: Math.floor(available.cavalry * 0.6),
+      siege: Math.floor(available.siege * 0.6)
+    };
+  if (!army || crownsTroopPower(troops) < 50) throw new Error('Escolha ao menos um destacamento com força de ataque 50.');
   const now = new Date();
-  const cost = { treasury: 180, provisions: 220, armyId: army.id, defenderRealmId: target.id, warId: `war_${crypto.randomUUID()}` };
-  const spent = spendCcResources.run(cost.treasury, cost.provisions, now.toISOString(), realm.id, serverId, cost.treasury, cost.provisions);
-  if (!spent.changes) throw new Error('Faltam ouro ou provisões para abrir a campanha.');
-  insertCcWar.run(cost.warId, serverId, realm.id, target.id, regionId, now.toISOString());
+  const total = crownsTroopTotal(troops);
+  const cost = {
+    treasury: 80 + Math.ceil(total / 5),
+    provisions: 100 + Math.ceil(total / 2),
+    originRegionId: fromRegionId,
+    defenderRealmId: target.id,
+    warId: `war_${crypto.randomUUID()}`,
+    troops,
+    morale: Number(army.morale || 65)
+  };
   const actionId = `action_${crypto.randomUUID()}`;
-  insertCcAction.run(actionId, serverId, realm.id, user.id, 'army.attack', regionId, new Date(now.getTime() + crownsActionDuration(18)).toISOString(), JSON.stringify(cost), now.toISOString());
-  insertCcEvent.run(crypto.randomUUID(), serverId, 'war.declared', realm.id, regionId, JSON.stringify({ targetRealmId: target.id, summary: `${realm.name} declarou guerra a ${target.name} pelo domínio de ${region.name}. A marcha já começou.` }), now.toISOString());
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    const spent = spendCcResources.run(cost.treasury, cost.provisions, now.toISOString(), realm.id, serverId, cost.treasury, cost.provisions);
+    if (!spent.changes) throw new Error('Faltam moedas ou trigo para abrir esta campanha.');
+    crownsReserveGarrisonTroops(army, serverId, troops, now.toISOString());
+    insertCcWar.run(cost.warId, serverId, realm.id, target.id, regionId, now.toISOString());
+    insertCcAction.run(actionId, serverId, realm.id, user.id, 'army.attack', regionId, new Date(now.getTime() + crownsActionDuration(18)).toISOString(), JSON.stringify(cost), now.toISOString());
+    insertCcEvent.run(crypto.randomUUID(), serverId, 'war.declared', realm.id, regionId, JSON.stringify({ targetRealmId: target.id, originRegionId: fromRegionId, troops, total, summary: `${realm.name} enviou ${total} soldados contra a província de ${region.name}, defendida por ${target.name}.` }), now.toISOString());
+    db.exec('COMMIT');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
   emitCrownsEvent('journal.published', { seasonId: serverId, type: 'war.declared', version: Date.now() });
   return getCcAction.get(actionId);
 }
@@ -3200,9 +3367,21 @@ function processCrownsActions() {
       } else if (action.type === 'army.defend') {
         const army = getCcArmyById.get(cost.armyId, action.season_id);
         if (!army) throw new Error('Army unavailable');
-        updateCcArmyAfterBattle.run(army.infantry + Number(cost.infantry || 0), army.archers, army.cavalry, Math.min(100, army.morale + 12), action.region_id, now, army.id, action.season_id);
+        updateCcArmyAfterBattle.run(army.infantry, army.archers, army.cavalry, Number(army.siege || 0), Math.min(100, army.morale + 12), action.region_id, now, army.id, action.season_id);
         eventType = 'army.defended';
-        eventPayload = { summary: 'A hoste tomou posições, recebeu reforços e elevou sua moral.' };
+        eventPayload = { summary: `A guarnição de ${crownsTroopTotal(army)} soldados tomou posições e elevou sua moral.` };
+      } else if (action.type === 'army.transfer') {
+        const destination = getCcSeasonRegion.get(action.season_id, action.region_id);
+        const returnRegionId = crownsOwnedReturnRegion(action.season_id, action.realm_id, cost.originRegionId);
+        if (destination?.owner_realm_id === action.realm_id) {
+          crownsMergeGarrison(action.season_id, action.realm_id, action.region_id, cost.troops, cost.morale, now);
+          eventType = 'army.transfer.completed';
+          eventPayload = { originRegionId: cost.originRegionId, troops: cost.troops, total: crownsTroopTotal(cost.troops), summary: `${crownsTroopTotal(cost.troops)} soldados chegaram para reforçar a guarnição.` };
+        } else {
+          if (returnRegionId) crownsMergeGarrison(action.season_id, action.realm_id, returnRegionId, cost.troops, cost.morale, now);
+          eventType = 'army.transfer.aborted';
+          eventPayload = { originRegionId: cost.originRegionId, troops: cost.troops, summary: 'O destino deixou de pertencer ao reino e o destacamento retornou.' };
+        }
       } else if (action.type === 'religion.mission' || action.type === 'religion.suppress') {
         const realm = getCcRealmById.get(action.realm_id, action.season_id);
         const current = getCcRegionReligion.get(action.season_id, action.region_id) || { majority_share: 50, heresy_share: 16 };
@@ -3213,34 +3392,67 @@ function processCrownsActions() {
         eventPayload = { faith: realm.religion };
       } else if (action.type === 'army.attack') {
         const war = getCcWars.all(action.season_id).find(item => item.id === cost.warId && item.status === 'active');
-        const attacker = getCcArmyById.get(cost.armyId, action.season_id);
-        const defenders = getCcArmiesForRealm.all(action.season_id, cost.defenderRealmId);
-        const defender = defenders[0];
-        if (!war || !attacker) throw new Error('Campaign unavailable');
+        const objective = getCcSeasonRegion.get(action.season_id, action.region_id);
+        const attackingTroops = crownsTroops(cost.troops);
+        const returnRegionId = crownsOwnedReturnRegion(action.season_id, action.realm_id, cost.originRegionId);
+        if (!war) throw new Error('Campaign unavailable');
+        if (!objective || objective.owner_realm_id !== cost.defenderRealmId) {
+          if (returnRegionId) crownsMergeGarrison(action.season_id, action.realm_id, returnRegionId, attackingTroops, cost.morale, now);
+          finishCcWar.run(0, JSON.stringify({ aborted: true, reason: 'objective_changed', troops: attackingTroops }), now, war.id, action.season_id);
+          eventType = 'war.march_aborted';
+          eventPayload = { defenderRealmId: cost.defenderRealmId, troops: attackingTroops, summary: 'A província mudou de mãos antes da chegada e o destacamento retornou.' };
+        } else {
+        const defender = getCcArmyAtRegion.get(action.season_id, cost.defenderRealmId, action.region_id);
         const defenses = getCcBuildingsForRegion.all(action.season_id, action.region_id);
         const fort = defenses.filter(item => item.building_type === 'fortaleza').reduce((sum, item) => sum + item.level, 0);
         const walls = defenses.filter(item => item.building_type === 'muralha').reduce((sum, item) => sum + item.level, 0);
         const towers = defenses.filter(item => item.building_type === 'torre_vigia').reduce((sum, item) => sum + item.level, 0);
         const random = seededCrownsRandom(`${war.id}:${action.id}`);
-        const siegeBreach = Math.min(0.65, Number(attacker.siege || 0) * 0.025);
+        const siegeBreach = Math.min(0.65, attackingTroops.siege * 0.025);
         const fortification = Math.max(1, 1 + fort * 0.35 + walls * 0.16 + towers * 0.08 - siegeBreach);
-        const attackPower = (attacker.infantry + attacker.archers * 1.15 + attacker.cavalry * 1.4 + Number(attacker.siege || 0) * 2.8) * (attacker.morale / 100) * (0.88 + random() * 0.24);
-        const defensePower = ((defender?.infantry || 180) + (defender?.archers || 40) * 1.2 + (defender?.cavalry || 10) * 1.25 + Number(defender?.siege || 0) * 0.35) * ((defender?.morale || 62) / 100) * fortification * (0.9 + random() * 0.2);
+        const attackPower = crownsTroopPower(attackingTroops, 'attack') * (Number(cost.morale || 65) / 100) * (0.88 + random() * 0.24);
+        const defensePower = crownsTroopPower(defender || {}, 'defense') * ((defender?.morale || 55) / 100) * fortification * (0.9 + random() * 0.2);
         const victory = attackPower > defensePower;
         const attackerLoss = victory ? 0.22 : 0.43;
-        updateCcArmyAfterBattle.run(Math.max(40, Math.floor(attacker.infantry * (1 - attackerLoss))), Math.floor(attacker.archers * (1 - attackerLoss)), Math.floor(attacker.cavalry * (1 - attackerLoss)), Math.max(30, attacker.morale + (victory ? 8 : -18)), victory ? action.region_id : attacker.region_id, now, attacker.id, action.season_id);
+        const attackerSurvivors = {
+          spearmen: Math.floor(attackingTroops.spearmen * (1 - attackerLoss)),
+          archers: Math.floor(attackingTroops.archers * (1 - attackerLoss)),
+          cavalry: Math.floor(attackingTroops.cavalry * (1 - attackerLoss)),
+          siege: Math.floor(attackingTroops.siege * (1 - attackerLoss))
+        };
         if (defender) {
           const defenderLoss = victory ? 0.48 : 0.25;
-          updateCcArmyAfterBattle.run(Math.max(20, Math.floor(defender.infantry * (1 - defenderLoss))), Math.floor(defender.archers * (1 - defenderLoss)), Math.floor(defender.cavalry * (1 - defenderLoss)), Math.max(25, defender.morale + (victory ? -20 : 7)), defender.region_id, now, defender.id, action.season_id);
+          const defenderSurvivors = {
+            spearmen: Math.floor(defender.infantry * (1 - defenderLoss)),
+            archers: Math.floor(defender.archers * (1 - defenderLoss)),
+            cavalry: Math.floor(defender.cavalry * (1 - defenderLoss)),
+            siege: Math.floor(Number(defender.siege || 0) * (1 - defenderLoss))
+          };
+          updateCcArmyAfterBattle.run(defenderSurvivors.spearmen, defenderSurvivors.archers, defenderSurvivors.cavalry, defenderSurvivors.siege, Math.max(25, defender.morale + (victory ? -20 : 7)), defender.region_id, now, defender.id, action.season_id);
         }
         if (victory) {
           transferCcRegion.run(action.realm_id, action.season_id, action.region_id, cost.defenderRealmId);
           preserveCrownsRealmAfterConquest(action.season_id, cost.defenderRealmId, action.region_id, now);
+          crownsMergeGarrison(action.season_id, action.realm_id, action.region_id, attackerSurvivors, Math.min(100, Number(cost.morale || 65) + 8), now);
+        } else if (returnRegionId) {
+          crownsMergeGarrison(action.season_id, action.realm_id, returnRegionId, attackerSurvivors, Math.max(25, Number(cost.morale || 65) - 18), now);
         }
-        finishCcWar.run(victory ? 100 : -45, JSON.stringify({ victory, attackPower: Math.round(attackPower), defensePower: Math.round(defensePower) }), now, war.id, action.season_id);
+        const defenderTroops = crownsTroops(defender || {});
+        const result = {
+          victory,
+          originRegionId: cost.originRegionId,
+          attackPower: Math.round(attackPower),
+          defensePower: Math.round(defensePower),
+          attackers: attackingTroops,
+          defenders: defenderTroops,
+          attackerLosses: crownsTroopTotal(attackingTroops) - crownsTroopTotal(attackerSurvivors),
+          defenderLosses: defender ? Math.round(crownsTroopTotal(defenderTroops) * (victory ? 0.48 : 0.25)) : 0
+        };
+        finishCcWar.run(victory ? 100 : -45, JSON.stringify(result), now, war.id, action.season_id);
         db.prepare('UPDATE cc_realms SET prestige = max(0, prestige + ?), stability = max(10, stability + ?), updated_at = ? WHERE id = ? AND season_id = ?').run(victory ? 10 : -4, victory ? 3 : -4, now, action.realm_id, action.season_id);
         eventType = victory ? 'war.victory' : 'war.defeat';
-        eventPayload = { victory, defenderRealmId: cost.defenderRealmId, attackPower: Math.round(attackPower), defensePower: Math.round(defensePower) };
+        eventPayload = { ...result, defenderRealmId: cost.defenderRealmId };
+        }
       } else {
         throw new Error(`Unknown crowns action: ${action.type}`);
       }
@@ -3425,6 +3637,12 @@ async function handleApi(req, res, url, user) {
       if (req.method === 'POST' && url.pathname === '/api/crowns-and-councils/armies/recruit') {
         const payload = safeJsonParse(await readBody(req) || '{}', {});
         const action = queueCrownsRecruitment(user, payload, payload.serverId);
+        json(res, 202, { ok: true, action: { id: action.id, regionId: action.region_id, completesAt: action.completes_at } });
+        return;
+      }
+      if (req.method === 'POST' && url.pathname === '/api/crowns-and-councils/armies/transfer') {
+        const payload = safeJsonParse(await readBody(req) || '{}', {});
+        const action = queueCrownsArmyTransfer(user, payload, payload.serverId);
         json(res, 202, { ok: true, action: { id: action.id, regionId: action.region_id, completesAt: action.completes_at } });
         return;
       }

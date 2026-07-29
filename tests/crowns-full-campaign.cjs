@@ -100,8 +100,10 @@ async function declareWarWhenPossible(selectTarget, label) {
     const state = await waitUntil(item => !item.wars.some(war => war.status === 'active'), Math.max(12_000, gameDayMs * 5), `fronteira livre para ${label}`);
     const target = selectTarget(state);
     if (!target) return { state, target: null };
+    const fromRegionId = target.fromRegionIds.find(regionId => state.armies.some(army => army.regionId === regionId && army.total >= 50));
+    if (!fromRegionId) return { state, target: null };
     try {
-      await api('/war/declare', { serverId: 'cc-world-1', regionId: target.regionId });
+      await api('/war/declare', { serverId: 'cc-world-1', regionId: target.regionId, fromRegionId });
       return { state, target };
     } catch (error) {
       if (!error.message.includes('já conduz uma guerra ativa')) throw error;
@@ -145,9 +147,7 @@ let qaDb;
     assert.ok(state.realm.court.diplomacy.knownRealms.find(item => item.id === sameFaith.id).goodwill > 0);
     const treaty = await api('/diplomacy/propose', { serverId: 'cc-world-1', targetRealmId: sameFaith.id, treatyType: 'alliance' });
     assert.equal(treaty.treaty.status, 'accepted');
-    const marriage = await api('/marriage/propose', { serverId: 'cc-world-1', targetRealmId: sameFaith.id, dowry: 180, childReligion: state.realm.religion });
-    assert.equal(marriage.marriage.status, 'accepted');
-    console.log('QA: aliança e casamento dinástico aceitos.');
+    console.log('QA: presente diplomático e aliança aceitos.');
 
     state = await bootstrap();
     const expeditionTargets = state.regions.filter(region => region.isAdjacentToRealm && !region.ownerRealmId && region.status === 'neutral').slice(0, 2);
@@ -163,6 +163,7 @@ let qaDb;
     console.log(`QA: colonização concluída; ${state.realm.regionCount} regiões.`);
 
     await api('/buildings/queue', { serverId: 'cc-world-1', regionId: state.realm.capitalRegionId, buildingType: 'mercado' });
+    await api('/buildings/queue', { serverId: 'cc-world-1', regionId: state.realm.capitalRegionId, buildingType: 'templo' });
     await waitActions();
     await api('/armies/recruit', { serverId: 'cc-world-1', regionId: state.realm.capitalRegionId });
     await waitActions();
@@ -180,7 +181,7 @@ let qaDb;
 
     await api('/journal/articles', { serverId: 'cc-world-1', title: 'Proclamação da Campanha Total', body: 'A Casa Veritas anuncia suas alianças, sua missão religiosa e a defesa das fronteiras.' });
     state = await waitUntil(item => item.season.day >= 5, Math.max(12_000, gameDayMs * 7), 'dia 5');
-    const campaign = await declareWarWhenPossible(item => item.attackTargets.find(target => target.realmId !== sameFaith.id), 'campanha militar');
+    const campaign = await declareWarWhenPossible(item => item.attackTargets.find(target => target.realmId !== sameFaith.id && target.fromRegionIds.some(regionId => item.armies.some(army => army.regionId === regionId && army.total >= 50))), 'campanha militar');
     state = campaign.state;
     if (campaign.target) {
       await waitActions();
@@ -214,7 +215,7 @@ let qaDb;
       await api('/armies/recruit', { serverId: 'cc-world-1', regionId: state.armies[0].regionId, unitType: 'spearmen', groups: 3 });
       state = await waitActions();
     }
-    const separatistCampaign = await declareWarWhenPossible(item => item.attackTargets.find(target => item.regions.find(region => region.id === target.regionId)?.ownerRealmKind === 'separatist'), 'ataque aos separatistas');
+    const separatistCampaign = await declareWarWhenPossible(item => item.attackTargets.find(target => item.regions.find(region => region.id === target.regionId)?.ownerRealmKind === 'separatist' && target.fromRegionIds.some(regionId => item.armies.some(army => army.regionId === regionId && army.total >= 50))), 'ataque aos separatistas');
     assert.ok(separatistCampaign.target, 'os separatistas deveriam permanecer alcançáveis');
     state = separatistCampaign.state;
     await waitActions();
@@ -241,7 +242,8 @@ let qaDb;
     assert.ok(received.size >= 7, `recepções registradas: ${received.size}`);
     assert.equal(religiousDecisions.size, 4);
     const journal = (await api('/journal?serverId=cc-world-1')).items;
-    for (const eventType of ['diplomacy.gift.sent', 'diplomacy.request.created', 'diplomacy.request.accepted', 'alliance.formed', 'marriage.celebrated', 'territory.claim.completed', 'army.defended', 'religion.mission_completed', 'religion.heresy_suppressed', 'religion.movement_emerged', 'religion.movement_answered', 'religion.realm_converted', 'revolution.separatist', 'council.decided']) assert.ok(journal.some(item => item.eventType === eventType), `jornal sem ${eventType}`);
+    assert.ok(journal.some(item => item.eventType === 'territory.claim.completed'), 'jornal sem expedição concluída');
+    for (const eventType of ['diplomacy.gift.sent', 'diplomacy.request.created', 'alliance.formed', 'building.completed', 'army.defended', 'religion.mission_completed', 'religion.heresy_suppressed', 'religion.movement_emerged', 'revolution.separatist', 'council.decided']) assert.ok(!journal.some(item => item.eventType === eventType), `jornal publicou evento interno: ${eventType}`);
     assert.ok(journal.some(item => item.kind === 'article'));
     assert.ok(journal.some(item => ['war.victory', 'war.defeat'].includes(item.eventType)));
     console.log(`Crowns full campaign: PASS (${state.councils.length} concílios, ${voted.size} votos, ${received.size} recepções, ${state.winners.length} vencedores).`);

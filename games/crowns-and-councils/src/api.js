@@ -34,6 +34,8 @@ export const crownsApi = {
   proposeMarriage: (serverId, targetRealmId, payload = {}) => request('/marriage/propose', { method: 'POST', body: JSON.stringify({ serverId, targetRealmId, ...payload }) }),
   religionMission: (serverId, sourceRegionId, targetRegionId) => request('/religion/mission', { method: 'POST', body: JSON.stringify({ serverId, sourceRegionId, targetRegionId }) }),
   foundReligion: (serverId, payload) => request('/religion/found', { method: 'POST', body: JSON.stringify({ serverId, ...payload }) }),
+  convertReligion: (serverId, faithName) => request('/religion/convert', { method: 'POST', body: JSON.stringify({ serverId, faithName }) }),
+  respondReligiousCrisis: (serverId, crisisId, response) => request('/religion/crisis/respond', { method: 'POST', body: JSON.stringify({ serverId, crisisId, response }) }),
   suppressHeresy: (serverId, regionId) => request('/religion/suppress', { method: 'POST', body: JSON.stringify({ serverId, regionId }) }),
   respondReligion: (serverId, movementId, response) => request('/religion/respond', { method: 'POST', body: JSON.stringify({ serverId, movementId, response }) }),
   voteCouncil: (serverId, councilId, vote) => request('/council/vote', { method: 'POST', body: JSON.stringify({ serverId, councilId, vote }) }),

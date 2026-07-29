@@ -17,7 +17,6 @@ const REALM_TABS = [
   { id: 'construction', label: 'Construções' },
   { id: 'army', label: 'Exército' },
   { id: 'navy', label: 'Marinha' },
-  { id: 'dynasty', label: 'Dinastia' },
   { id: 'diplomacy', label: 'Diplomacia' },
   { id: 'religion', label: 'Religião' },
   { id: 'councils', label: 'Concílios' },
@@ -95,6 +94,15 @@ function remaining(value, now = Date.now()) {
   return `${hours}h ${minutes % 60}min`;
 }
 
+function countdown(value, now = Date.now()) {
+  if (!value) return '--:--:--';
+  const seconds = Math.max(0, Math.floor((new Date(value).getTime() - now) / 1000));
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const rest = seconds % 60;
+  return [hours, minutes, rest].map(part => String(part).padStart(2, '0')).join(':');
+}
+
 function ResourceIcon({ resource }) {
   const meta = RESOURCE_META[resource];
   return meta?.image ? <img class="cc-resource-image" src={meta.image} alt="" aria-hidden="true" /> : <Icon name={meta?.icon || resource} />;
@@ -114,7 +122,7 @@ function Lobby({ servers, loading, error, onRefresh, onEnter }) {
     </header>
     <section class="cc-lobby-intro">
       <div class="cc-lobby-copy">
-        <p class="cc-overline">ESTRATÉGIA · DINASTIA · FÉ</p>
+        <p class="cc-overline">ESTRATÉGIA · DIPLOMACIA · FÉ</p>
         <h1>O mapa não perdoa<br />um reino mal governado.</h1>
         <p>Escolha uma província, levante sua casa e dispute recursos, fronteiras e doutrina. Cada decisão ocupa tempo, consome estoques e muda a força da sua coroa.</p>
         <div class="cc-lobby-signals"><span><Icon name="shield" />10 reinos de IA por mundo</span><span><Icon name="hourglass" />2 expedições simultâneas</span><span><Icon name="cross" />Concílios e heresias vivas</span></div>
@@ -125,7 +133,7 @@ function Lobby({ servers, loading, error, onRefresh, onEnter }) {
         <ol>
           <li><b>1</b><span><strong>Garanta recursos</strong>Províncias produzem trigo, madeira, pedra ou moedas.</span></li>
           <li><b>2</b><span><strong>Especialize cidades</strong>Obras liberam tropas, defesa, comércio e novos níveis.</span></li>
-          <li><b>3</b><span><strong>Mova o mundo</strong>Guerras, casamentos, revoltas e votos deixam marcas.</span></li>
+          <li><b>3</b><span><strong>Mova o mundo</strong>Guerras, conversões, revoltas e votos deixam marcas.</span></li>
         </ol>
       </aside>
     </section>
@@ -172,7 +180,7 @@ function RealmModal({ selected, regions, colors, religions, busy, error, onSelec
     const neutral = regions.filter(region => !region.ownerRealmId && region.status === 'neutral');
     const query = capitalQuery.trim().toLocaleLowerCase('pt-BR');
     const matches = query
-      ? neutral.filter(region => `${region.name} ${region.countryName} ${region.resourceName}`.toLocaleLowerCase('pt-BR').includes(query))
+      ? neutral.filter(region => `${region.name} ${region.resourceName}`.toLocaleLowerCase('pt-BR').includes(query))
       : neutral;
     const limited = matches.slice(0, 100);
     if (selected && !limited.some(region => region.id === selected.id)) limited.unshift(selected);
@@ -184,8 +192,8 @@ function RealmModal({ selected, regions, colors, religions, busy, error, onSelec
     <div class="cc-modal-intro"><span class="cc-brand-sigil"><Icon name="crown" /></span><div><p class="cc-overline">FUNDAÇÃO DA CASA</p><h1>Erga seu estandarte</h1></div></div>
     <p>Escolha uma capital rica no recurso que orientará seus primeiros dias. As dez coroas de IA já ocupam posições diferentes neste mundo.</p>
     <div class="cc-capital-fields">
-      <label>Buscar província ou país<input value={capitalQuery} onInput={event => setCapitalQuery(event.currentTarget.value)} placeholder="Ex.: Jerusalém, Inglaterra, madeira" /></label>
-      <label>Capital inicial<select value={selected?.id || ''} onChange={event => onSelect(event.currentTarget.value || null)} required><option value="">{capitalQuery ? `${availableRegions.length} resultado(s)` : 'Selecione uma província neutra'}</option>{availableRegions.map(region => <option key={region.id} value={region.id}>{region.name} — {region.countryName} · {region.resourceName}</option>)}</select></label>
+      <label>Buscar província ou recurso<input value={capitalQuery} onInput={event => setCapitalQuery(event.currentTarget.value)} placeholder="Ex.: Jerusalém, madeira" /></label>
+      <label>Capital inicial<select value={selected?.id || ''} onChange={event => onSelect(event.currentTarget.value || null)} required><option value="">{capitalQuery ? `${availableRegions.length} resultado(s)` : 'Selecione uma província neutra'}</option>{availableRegions.map(region => <option key={region.id} value={region.id}>{region.name} · {region.resourceName}</option>)}</select></label>
     </div>
     {selected ? <div class="cc-capital-preview"><ResourceIcon resource={selected.resourceType} /><div><span>Vocação da província</span><strong>{selected.resourceName} · +{selected.resourceYield}/dia</strong></div></div> : null}
     <div class="cc-field-row"><label>Nome do reino<input value={name} onInput={event => setName(event.currentTarget.value)} maxLength="40" placeholder="Reino de Albor" required /></label><label>Casa governante<input value={houseName} onInput={event => setHouseName(event.currentTarget.value)} maxLength="40" placeholder="Casa de Valença" required /></label></div>
@@ -203,7 +211,7 @@ function RegionPanel({ region, realm, action, nextClaim, expedition, onClaim, on
   const defense = regionBuildings.reduce((sum, item) => sum + (item.type === 'fortaleza' ? item.level * 35 : item.type === 'muralha' ? item.level * 16 : item.type === 'torre_vigia' ? item.level * 8 : 0), 0);
   const domainLabel = owned ? 'DOMÍNIO DA COROA' : region.ownerRealmId ? (region.ownerIsAi ? 'REINO CONTROLADO PELA IA' : 'REINO ESTRANGEIRO') : region.status === 'claiming' ? 'EXPEDIÇÃO A CAMINHO' : 'PROVÍNCIA NEUTRA';
   return <aside class="cc-region-panel">
-    <header><div><p class="cc-overline">{domainLabel}</p><h2>{region.name}</h2><span>{region.countryName} · {region.levelLabel}</span>{region.ownerName && !owned ? <strong>{region.ownerName}</strong> : null}</div><i style={{ '--realm-color': owned ? realm.color : region.ownerColor || '#7c776b' }} /></header>
+    <header><div><p class="cc-overline">{domainLabel}</p><h2>{region.name}</h2><span>{owned ? 'Província da sua coroa' : region.ownerName || 'Território sem coroa'} · {region.resourceName}</span>{region.ownerName && !owned ? <strong>{region.ownerName}</strong> : null}</div><i style={{ '--realm-color': owned ? realm.color : region.ownerColor || '#7c776b' }} /></header>
     <div class="cc-province-yield"><ResourceIcon resource={region.resourceType} /><div><span>Produção dominante</span><strong>{region.resourceName}</strong><small>+{region.resourceYield}/dia antes de melhorias</small></div></div>
     <dl><div><dt>Desenvolvimento</dt><dd>Nível {region.development}</dd></div><div><dt>Defesa construída</dt><dd>{defense ? `+${defense}%` : 'Sem bônus'}</dd></div><div><dt>Conexões</dt><dd>{region.neighborIds.length}</dd></div><div><dt>Rotas marítimas</dt><dd>{region.routeNeighborIds?.length || 0}</dd></div></dl>
     {region.reservedByName ? <div class="cc-order-strip"><Icon name="hourglass" /><span><b>Reservada por {region.reservedByName}</b>Chegada em {remaining(region.reservedUntil, now)}</span></div> : null}
@@ -383,7 +391,7 @@ function NavyPanel({ bootstrap, now, busy, onFleetBuild, onNavalRaid }) {
   </div>;
 }
 
-function ReligionPanel({ bootstrap, busy, onMission, onSuppress, onFoundFaith, onRespondReligion }) {
+function ReligionPanel({ bootstrap, busy, onMission, onSuppress, onFoundFaith, onRespondReligion, onConvertFaith, onRespondCrisis }) {
   const court = bootstrap.realm.court;
   const relevantMovements = bootstrap.religiousMovements.filter(movement => movement.relevant);
   const temples = bootstrap.provinceEconomies.filter(province => province.templeLevel > 0);
@@ -393,10 +401,13 @@ function ReligionPanel({ bootstrap, busy, onMission, onSuppress, onFoundFaith, o
   const [foundingRegionId, setFoundingRegionId] = useState(foundingTemples[0]?.regionId || '');
   const [faithName, setFaithName] = useState('');
   const [dogmas, setDogmas] = useState([]);
+  const [conversionFaith, setConversionFaith] = useState('');
   const source = temples.find(item => item.regionId === sourceId);
   const pilgrimage = bootstrap.customFaith?.dogmas?.includes('peregrinacao');
   const sourceRange = source ? ([0, 1, 2, 4, 6, 99][Math.min(5, source.templeLevel)] + (pilgrimage && source.templeLevel < 5 ? 1 : 0)) : 0;
   const sourceRegion = bootstrap.regions.find(item => item.id === sourceId);
+  const rescueTemple = [...temples].sort((a, b) => b.templeLevel - a.templeLevel)[0];
+  const conversionOptions = bootstrap.availableFaiths.filter(faith => faith.name !== bootstrap.realm.religion);
   const targets = bootstrap.missionTargets.map(target => {
     const region = bootstrap.regions.find(item => item.id === target.regionId);
     const km = sourceRegion?.centroid && region?.centroid ? Math.round(Math.hypot(region.centroid[0] - sourceRegion.centroid[0], region.centroid[1] - sourceRegion.centroid[1]) / 1000) : 0;
@@ -413,27 +424,20 @@ function ReligionPanel({ bootstrap, busy, onMission, onSuppress, onFoundFaith, o
       <div><span>SÍNODO FUNDADOR</span><h3>Criar uma religião própria</h3><p>Exige Templo 3, 600 moedas, 220 trigo e 240 pedra. A fundação será anunciada no Jornal.</p></div>
       {!foundingTemples.length ? <p class="cc-panel-warning">Eleve um templo ao nível 3 para liberar esta decisão.</p> : <><label>Templo fundador<select value={foundingRegionId} onChange={event => setFoundingRegionId(event.currentTarget.value)}>{foundingTemples.map(item => <option value={item.regionId}>{item.regionName} · nível {item.templeLevel}</option>)}</select></label><label>Nome da nova fé<input value={faithName} onInput={event => setFaithName(event.currentTarget.value)} maxLength="44" placeholder="Ex.: Comunhão de Alexandria" /></label><div class="cc-dogma-grid">{Object.entries(bootstrap.dogmaCatalog).map(([key, dogma]) => <button type="button" class={dogmas.includes(key) ? 'active' : ''} onClick={() => toggleDogma(key)}><strong>{dogma.name}</strong><small>{dogma.effect}</small></button>)}</div><button class="cc-primary" disabled={busy || faithName.trim().length < 4 || dogmas.length !== 2}>Fundar religião com dois dogmas</button></>}
     </form> : <div class="cc-faith-banner"><span>FÉ ORGANIZADA POR SUA COROA</span><strong>{bootstrap.customFaith.name}</strong><p>{bootstrap.customFaith.dogmas.map(key => bootstrap.dogmaCatalog[key]?.name).join(' · ')}</p></div>}
+    <section class="cc-faith-registry">
+      <header><div><span>RELIGIÕES CONHECIDAS</span><h3>Confissões presentes neste mundo</h3></div><p>A conversão oficial custa 300 moedas e 120 de trigo, reduz estabilidade e começa com unidade religiosa baixa.</p></header>
+      <div>{bootstrap.availableFaiths.map(faith => <article class={faith.name === bootstrap.realm.religion ? 'active' : ''} key={faith.id}>
+        <Icon name="cross" /><div><strong>{faith.name}</strong><span>{faith.isCustom ? `Fundada por ${faith.founderRealmName}` : 'Tradição estabelecida'} · {faith.realmCount} coroa(s) · {faith.provinceCount} província(s)</span>{faith.dogmas?.length ? <small>{faith.dogmas.map(key => bootstrap.dogmaCatalog[key]?.name).join(' · ')}</small> : null}</div>{faith.name === bootstrap.realm.religion ? <b>Fé oficial</b> : null}
+      </article>)}</div>
+      {conversionOptions.length ? <form onSubmit={event => { event.preventDefault(); if (conversionFaith) onConvertFaith(conversionFaith); }}><label>Converter a coroa<select value={conversionFaith} onChange={event => setConversionFaith(event.currentTarget.value)}><option value="">Escolha uma religião</option>{conversionOptions.map(faith => <option value={faith.name} key={faith.id}>{faith.name}</option>)}</select></label><button class="cc-danger" disabled={busy || !conversionFaith}>Proclamar conversão</button></form> : null}
+    </section>
     <form class="cc-mission-planner" onSubmit={event => { event.preventDefault(); if (sourceId && targetId) onMission(sourceId, targetId); }}>
       <header><Icon name="cross" /><div><span>MISSÃO RELIGIOSA</span><h3>Enviar missionários</h3></div></header>
       {!temples.length ? <p class="cc-panel-warning">Construa um templo para formar missionários.</p> : <><div class="cc-route-selectors"><label>Templo de origem<select value={sourceId} onChange={event => setSourceId(event.currentTarget.value)}>{temples.map(item => <option value={item.regionId}>{item.regionName} · nível {item.templeLevel}</option>)}</select></label><i>→</i><label>Província de destino<select value={targetId} onChange={event => setTargetId(event.currentTarget.value)}>{targets.map(item => <option value={item.regionId}>{item.regionName} · {item.ownerName || 'neutra'} · {item.quadrants} quad.</option>)}</select></label></div><footer><span>Alcance deste templo: <b>{sourceRange >= 99 ? 'todo o mapa' : `${sourceRange} quadrante(s)`}</b>. Templos inimigos reduzem a chance de conversão.</span><button disabled={busy || !targetId || bootstrap.missionary.active >= bootstrap.missionary.capacity}>Enviar missionários</button></footer></>}
     </form>
+    {bootstrap.religiousCrises.length ? <section class="cc-religious-crises"><header><span>CRISES NAS PROVÍNCIAS</span><h3>Conversão, resistência ou ruptura</h3><p>Uma fé estrangeira ganhou força. Você pode tentar recuperá-la por missão, aceitar a conversão local, impor a reconversão ou reconhecer a separação.</p></header>{bootstrap.religiousCrises.map(crisis => <article key={crisis.id}><div><strong>{crisis.regionName}</strong><span>{crisis.incomingFaith} alcançou força {crisis.severity}%{crisis.missionaryRealmName ? ` com apoio de ${crisis.missionaryRealmName}` : ''}.</span><small>Fé anterior: {crisis.previousFaith}</small></div><div><button disabled={busy || !rescueTemple} onClick={() => onMission(rescueTemple?.regionId, crisis.regionId)}>Enviar contramissão</button><button disabled={busy} onClick={() => onRespondCrisis(crisis.id, 'accept')}>Aceitar conversão</button><button class="cc-danger" disabled={busy} onClick={() => onRespondCrisis(crisis.id, 'force')}>Reconversão forçada</button><button class="cc-danger" disabled={busy} onClick={() => onRespondCrisis(crisis.id, 'separate')}>Reconhecer separação</button></div></article>)}</section> : null}
     <div class="cc-decision-list"><h3>Movimentos ligados à sua fé</h3>{relevantMovements.length ? relevantMovements.map(movement => <article key={movement.id}><div><strong>{movement.name}</strong><span>{movement.description}</span><small>{movement.parentFaith} · dia {movement.startsDay} · {movement.convertedRealms} coroa(s) aderiram</small></div><div>{movement.response ? <b>{movement.response === 'accept' ? 'Sua coroa aderiu' : 'Sua coroa resistiu'}</b> : <><button disabled={busy} onClick={() => onRespondReligion(movement.id, 'accept')}>Aceitar</button><button class="cc-danger" disabled={busy} onClick={() => onRespondReligion(movement.id, 'resist')}>Resistir</button></>}</div></article>) : <p class="cc-muted">Nenhuma heresia ou reforma ligada à sua tradição surgiu até agora.</p>}</div>
-    <div class="cc-decision-list"><h3>Fé por província</h3>{bootstrap.regionReligions.map(faith => <article key={faith.regionId}><div><strong>{faith.regionName}</strong><span>{faith.majorityReligion}: {faith.majorityShare}% · {faith.heresyName}: {faith.heresyShare}%</span></div><div><button class="cc-danger" disabled={busy || faith.heresyShare <= 0} onClick={() => onSuppress(faith.regionId)}>Conter heresia</button></div></article>)}</div>
-  </div>;
-}
-
-function DynastyPanel({ bootstrap, busy, onMarriage }) {
-  const court = bootstrap.realm.court;
-  return <div class="cc-government-panel">
-    <div class="cc-command-heading"><div><span>LIVRO DAS CASAS</span><h2>{court.dynasty.houseName}</h2><p>As linhagens abaixo pertencem às coroas que realmente governam esta partida.</p></div></div>
-    <div class="cc-court-list"><article><span>Governante</span><strong>{court.dynasty.rulerName}</strong></article><article><span>Herdeiro</span><strong>{court.dynasty.heirName}</strong></article></div>
-    <Meter label="Legitimidade dinástica" value={court.dynasty.legitimacy} />
-    <div class="cc-house-register"><h3>Casas reinantes</h3>{court.diplomacy.knownRealms.map(other => <article key={other.id}>
-      <i style={{ background: other.color }} />
-      <div><strong>{other.houseName}</strong><span>{other.rulerName} · {other.name}</span><small>{other.capitalName} · {other.religion}</small></div>
-      <button disabled={busy} onClick={() => onMarriage(other.id)}>Propor casamento</button>
-    </article>)}</div>
-    {bootstrap.marriages.length ? <div class="cc-marriage-chronicle"><h3>Crônica matrimonial</h3>{bootstrap.marriages.map(item => <p class="cc-panel-note" key={item.id}>{item.proposerSpouse} + {item.targetSpouse} · dote {item.dowry} moedas · {item.status === 'accepted' ? 'aceito' : 'pendente'}</p>)}</div> : null}
+    <div class="cc-decision-list"><h3>Fé por província</h3>{bootstrap.regionReligions.map(faith => <article key={faith.regionId}><div><strong>{faith.regionName}</strong><span>Maioria: {faith.majorityReligion} ({faith.majorityShare}%) · Dissidência: {faith.heresyName} ({faith.heresyShare}%)</span></div><div><button class="cc-danger" disabled={busy || faith.heresyShare <= 0} onClick={() => onSuppress(faith.regionId)}>Conter dissidência</button></div></article>)}</div>
   </div>;
 }
 
@@ -441,9 +445,11 @@ function DiplomacyPanel({ bootstrap, busy, onTreaty, onGift, onRespondRequest })
   const court = bootstrap.realm.court;
   const [resourceType, setResourceType] = useState('grain');
   const [amount, setAmount] = useState(100);
+  const [selectedRealmId, setSelectedRealmId] = useState(null);
   const resources = ['grain', 'wood', 'stone', 'treasury'];
+  const selectedRealm = court.diplomacy.knownRealms.find(realm => realm.id === selectedRealmId);
   return <div class="cc-government-panel">
-    <div class="cc-command-heading"><div><span>CHANCELARIA</span><h2>Relações entre as coroas</h2><p>Presentes criam boa vontade e aumentam a chance de a IA aceitar tratados e casamentos.</p></div></div>
+    <div class="cc-command-heading"><div><span>CHANCELARIA</span><h2>Relações entre as coroas</h2><p>Abra a ficha de cada nação para conhecer quem governa, sua capital, sua casa e sua fé. Presentes aumentam a chance de tratados serem aceitos.</p></div></div>
     {bootstrap.diplomaticRequests?.length ? <div class="cc-diplomatic-requests"><h3>Mensagens recebidas</h3>{bootstrap.diplomaticRequests.map(request => <article key={request.id}>
       <div><span>PEDIDO DA {request.senderHouse}</span><strong>{request.senderName} solicita ajuda</strong><small><ResourceIcon resource={request.resourceType} /> {request.amount} {RESOURCE_META[request.resourceType]?.label}</small></div>
       <div><button disabled={busy} onClick={() => onRespondRequest(request.id, true)}>Atender pedido</button><button class="cc-danger" disabled={busy} onClick={() => onRespondRequest(request.id, false)}>Recusar</button></div>
@@ -451,13 +457,19 @@ function DiplomacyPanel({ bootstrap, busy, onTreaty, onGift, onRespondRequest })
     <div class="cc-gift-toolbar"><span>PRESENTE DIPLOMÁTICO</span><label>Recurso<select value={resourceType} onChange={event => setResourceType(event.currentTarget.value)}>{resources.map(resource => <option value={resource} key={resource}>{RESOURCE_META[resource].label}</option>)}</select></label><label>Quantidade<select value={amount} onChange={event => setAmount(Number(event.currentTarget.value))}>{[50, 100, 150, 250, 400].map(value => <option value={value} key={value}>{value}</option>)}</select></label><small>Escolha o presente e envie pela ficha da coroa.</small></div>
     <div class="cc-diplomacy-list">{court.diplomacy.knownRealms.map(other => <article key={other.id}>
       <i style={{ background: other.color }} />
-      <div><strong>{other.name}</strong><b>{other.houseName} · {other.rulerName}</b><span>{other.capitalName} · {other.regionCount} província(s) · {other.religion}</span></div>
+      <div><button class="cc-realm-link" onClick={() => setSelectedRealmId(other.id)}>{other.name}</button><b>{other.houseName} · {other.rulerName}</b><span>{other.capitalName} · {other.regionCount} província(s) · {other.religion}</span></div>
       <div><em>{other.isAi ? `IA · ${other.relation}` : other.relation}{other.goodwill ? ` · boa vontade ${other.goodwill > 0 ? '+' : ''}${other.goodwill}` : ''}</em><button disabled={busy} onClick={() => onGift(other.id, resourceType, amount)}>Enviar presente</button><button disabled={busy} onClick={() => onTreaty(other.id, 'alliance')}>Aliança</button><button disabled={busy} onClick={() => onTreaty(other.id, 'non_aggression')}>Não agressão</button></div>
     </article>)}</div>
+    {selectedRealm ? <aside class="cc-foreign-profile">
+      <button class="cc-profile-close" onClick={() => setSelectedRealmId(null)}>×</button>
+      <header><i style={{ background: selectedRealm.color }} />{selectedRealm.playerAvatar ? <img src={selectedRealm.playerAvatar} alt="" /> : <span class="cc-profile-sigil"><Icon name="crown" /></span>}<div><small>NAÇÃO ESTRANGEIRA</small><h2>{selectedRealm.name}</h2><p>{selectedRealm.isAi ? 'Coroa controlada pela inteligência artificial' : `Jogador do Game Hub: ${selectedRealm.playerName || 'nome não informado'}`}</p></div></header>
+      <dl><div><dt>Capital</dt><dd>{selectedRealm.capitalName}</dd></div><div><dt>Casa</dt><dd>{selectedRealm.houseName}</dd></div><div><dt>Governante</dt><dd>{selectedRealm.rulerName}</dd></div><div><dt>Religião</dt><dd>{selectedRealm.religion}</dd></div><div><dt>Províncias</dt><dd>{selectedRealm.regionCount}</dd></div><div><dt>Prestígio</dt><dd>{selectedRealm.prestige}</dd></div><div><dt>Relação</dt><dd>{selectedRealm.relation}</dd></div><div><dt>Boa vontade</dt><dd>{selectedRealm.goodwill > 0 ? '+' : ''}{selectedRealm.goodwill}</dd></div></dl>
+      <footer><button disabled={busy} onClick={() => onGift(selectedRealm.id, resourceType, amount)}>Enviar presente</button><button disabled={busy} onClick={() => onTreaty(selectedRealm.id, 'alliance')}>Propor aliança</button><button disabled={busy} onClick={() => onTreaty(selectedRealm.id, 'non_aggression')}>Pacto de não agressão</button></footer>
+    </aside> : null}
   </div>;
 }
 
-function RealmSection({ bootstrap, now, busy, onGoMap, onTax, onBuild, onRecruit, onTransfer, onDefend, onWar, onFleetBuild, onNavalRaid, onTreaty, onGift, onRespondRequest, onMarriage, onMission, onFoundFaith, onSuppress, onRespondReligion, onVote, onReceive, onCancel }) {
+function RealmSection({ bootstrap, now, busy, onGoMap, onTax, onBuild, onRecruit, onTransfer, onDefend, onWar, onFleetBuild, onNavalRaid, onTreaty, onGift, onRespondRequest, onMission, onFoundFaith, onSuppress, onRespondReligion, onConvertFaith, onRespondCrisis, onVote, onReceive, onCancel }) {
   const [tab, setTab] = useState('overview');
   const realm = bootstrap.realm;
   if (!realm) return <section class="cc-realm-board"><h1>Nenhuma coroa foi erguida</h1><button class="cc-primary" onClick={() => onGoMap()}>Escolher capital</button></section>;
@@ -473,9 +485,8 @@ function RealmSection({ bootstrap, now, busy, onGoMap, onTax, onBuild, onRecruit
       {tab === 'construction' ? <ConstructionPanel bootstrap={bootstrap} busy={busy} onBuild={onBuild} /> : null}
       {tab === 'army' ? <ArmyPanel bootstrap={bootstrap} now={now} busy={busy} onRecruit={onRecruit} onTransfer={onTransfer} onDefend={onDefend} onWar={onWar} /> : null}
       {tab === 'navy' ? <NavyPanel bootstrap={bootstrap} now={now} busy={busy} onFleetBuild={onFleetBuild} onNavalRaid={onNavalRaid} /> : null}
-      {tab === 'dynasty' ? <DynastyPanel bootstrap={bootstrap} busy={busy} onMarriage={onMarriage} /> : null}
       {tab === 'diplomacy' ? <DiplomacyPanel bootstrap={bootstrap} busy={busy} onTreaty={onTreaty} onGift={onGift} onRespondRequest={onRespondRequest} /> : null}
-      {tab === 'religion' ? <ReligionPanel bootstrap={bootstrap} busy={busy} onMission={onMission} onFoundFaith={onFoundFaith} onSuppress={onSuppress} onRespondReligion={onRespondReligion} /> : null}
+      {tab === 'religion' ? <ReligionPanel bootstrap={bootstrap} busy={busy} onMission={onMission} onFoundFaith={onFoundFaith} onSuppress={onSuppress} onRespondReligion={onRespondReligion} onConvertFaith={onConvertFaith} onRespondCrisis={onRespondCrisis} /> : null}
       {tab === 'councils' ? <div class="cc-government-panel"><div class="cc-command-heading"><div><span>ASSEMBLEIAS DA FÉ</span><h2>Concílios históricos e regionais</h2></div></div><div class="cc-decision-list">{bootstrap.councils.length ? bootstrap.councils.map(council => <article key={council.id}><div><strong>{council.name}</strong><span>{council.theme}</span><small>Aprovar {council.totals.accept || 0} · Rejeitar {council.totals.reject || 0}</small></div>{council.status === 'voting' ? <div><button disabled={busy || council.vote} onClick={() => onVote(council.id, 'accept')}>Aprovar</button><button disabled={busy || council.vote} onClick={() => onVote(council.id, 'reject')}>Rejeitar</button></div> : <div><button disabled={busy || council.reception} onClick={() => onReceive(council.id, 'receive')}>Receber</button><button class="cc-danger" disabled={busy || council.reception} onClick={() => onReceive(council.id, 'resist')}>Resistir</button></div>}</article>) : <p class="cc-muted">O primeiro concílio será convocado no dia 3.</p>}</div></div> : null}
       {tab === 'internal' ? <div class="cc-government-panel"><div class="cc-command-heading"><div><span>CONSELHO INTERNO</span><h2>Coesão do reino</h2></div></div><div class="cc-meter-grid"><Meter label="Estabilidade" value={court.internal.stability} /><Meter label="Apoio popular" value={court.internal.popularSupport} /><Meter label="Risco separatista" value={court.internal.separatistRisk} danger /></div><div class={`cc-revolt-warning ${court.internal.canRevolt ? 'armed' : ''}`}><strong>{court.internal.canRevolt ? 'Revoluções estão habilitadas neste domínio' : 'O domínio ainda é pequeno para uma revolução'}</strong><p>{court.internal.explanation}</p></div></div> : null}
     </div>
@@ -507,7 +518,7 @@ function JournalSection({ items, realm, busy, onPublish }) {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   async function submit(event) { event.preventDefault(); const published = await onPublish({ title, body }); if (published) { setTitle(''); setBody(''); } }
-  return <section class="cc-journal"><header><div><span>GAZETA DOS REINOS</span><h1>Notícias que registram a campanha</h1><p>Guerras, obras, comércio, alianças, revoluções e textos dos jogadores.</p></div><time>{new Intl.DateTimeFormat('pt-BR', { dateStyle: 'full' }).format(new Date())}</time></header><div class="cc-journal-layout"><div class="cc-news-feed">{items.map(item => <article key={item.id} class={`cc-news-item ${item.kind} ${item.category}`}><div><span>{CATEGORY_LABELS[item.category] || item.category}</span><time>{formatTime(item.createdAt)}</time></div><h2>{item.headline}</h2><p>{item.summary}</p>{item.authorName ? <footer>Por {item.authorName}{item.realmName ? ` · ${item.realmName}` : ''}</footer> : null}</article>)}</div><form class="cc-article-form" onSubmit={submit}><span>ENVIAR À TIPOGRAFIA</span><h2>Publicar artigo</h2><label>Título<input value={title} onInput={event => setTitle(event.currentTarget.value)} maxLength="90" required disabled={!realm} /></label><label>Artigo<textarea value={body} onInput={event => setBody(event.currentTarget.value)} maxLength="1600" rows="8" required disabled={!realm} /></label><button class="cc-primary" disabled={!realm || busy}>{busy ? 'Imprimindo...' : 'Publicar no Jornal'}</button></form></div></section>;
+  return <section class="cc-journal"><header><div><span>GAZETA DOS REINOS</span><h1>O que merece atravessar as fronteiras</h1><p>Apenas expedições, guerras e artigos enviados pelos jogadores entram nesta edição.</p></div><time>{new Intl.DateTimeFormat('pt-BR', { dateStyle: 'full' }).format(new Date())}</time></header><div class="cc-journal-layout"><div class="cc-news-feed">{items.length ? items.map(item => <article key={item.id} class={`cc-news-item ${item.kind} ${item.category}`}><div><span>{CATEGORY_LABELS[item.category] || item.category}</span><time>{formatTime(item.createdAt)}</time></div><h2>{item.headline}</h2><p>{item.summary}</p>{item.authorName ? <footer>Por {item.authorName}{item.realmName ? ` · ${item.realmName}` : ''}</footer> : null}</article>) : <p class="cc-empty-news">Nenhuma expedição, guerra ou artigo foi publicado até agora.</p>}</div><form class="cc-article-form" onSubmit={submit}><span>ENVIAR À TIPOGRAFIA</span><h2>Publicar artigo</h2><label>Título<input value={title} onInput={event => setTitle(event.currentTarget.value)} maxLength="90" required disabled={!realm} /></label><label>Artigo<textarea value={body} onInput={event => setBody(event.currentTarget.value)} maxLength="1600" rows="8" required disabled={!realm} /></label><button class="cc-primary" disabled={!realm || busy}>{busy ? 'Imprimindo...' : 'Publicar no Jornal'}</button></form></div></section>;
 }
 
 function Winners({ season, winners, onServers }) {
@@ -553,9 +564,10 @@ function Game({ serverId, onLeave }) {
     onTreaty: (targetId, type) => execute(() => crownsApi.proposeTreaty(serverId, targetId, type)),
     onGift: (targetId, resourceType, amount) => execute(() => crownsApi.sendDiplomaticGift(serverId, targetId, resourceType, amount)),
     onRespondRequest: (requestId, accept) => execute(() => crownsApi.respondDiplomaticRequest(serverId, requestId, accept)),
-    onMarriage: targetId => execute(() => crownsApi.proposeMarriage(serverId, targetId, { dowry: 160, childReligion: bootstrap.realm.religion })),
     onMission: (sourceRegionId, targetRegionId) => execute(() => crownsApi.religionMission(serverId, sourceRegionId, targetRegionId)),
     onFoundFaith: payload => execute(() => crownsApi.foundReligion(serverId, payload)),
+    onConvertFaith: faithName => execute(() => crownsApi.convertReligion(serverId, faithName)),
+    onRespondCrisis: (crisisId, response) => execute(() => crownsApi.respondReligiousCrisis(serverId, crisisId, response)),
     onSuppress: regionId => execute(() => crownsApi.suppressHeresy(serverId, regionId)),
     onRespondReligion: (movementId, response) => execute(() => crownsApi.respondReligion(serverId, movementId, response)),
     onVote: (councilId, vote) => execute(() => crownsApi.voteCouncil(serverId, councilId, vote)),
@@ -563,9 +575,9 @@ function Game({ serverId, onLeave }) {
     onCancel: actionId => execute(() => crownsApi.cancelAction(serverId, actionId))
   };
   return <main class="cc-shell">
-    <header class="cc-topbar"><button class="cc-server-brand" onClick={onLeave}><span class="cc-brand-sigil"><Icon name="crown" /></span><i><small>Servidor {serverId.replace('cc-world-', '')}</small><strong>{bootstrap.realm?.name || 'Crowns and Councils'}</strong></i></button><div class="cc-season"><small>{bootstrap.season.name.replace(/^Servidor \d+ — /, '')}</small><strong>{bootstrap.season.phase === 'waiting' ? 'Aguardando sua coroa' : `Dia ${bootstrap.season.day}/${bootstrap.season.totalDays}`}</strong><span>{bootstrap.season.statusLabel}</span></div><ResourceBar realm={bootstrap.realm} /><div class={`cc-online ${online ? 'connected' : ''}`}><i />{online ? 'Online' : 'Reconectando'}</div></header>
+    <header class="cc-topbar"><button class="cc-server-brand" onClick={onLeave}><span class="cc-brand-sigil"><Icon name="crown" /></span><i><small>Servidor {serverId.replace('cc-world-', '')}</small><strong>{bootstrap.realm?.name || 'Crowns and Councils'}</strong></i></button><div class="cc-season"><small>{bootstrap.season.name.replace(/^Servidor \d+ — /, '')}</small><strong>{bootstrap.season.phase === 'waiting' ? 'Aguardando sua coroa' : `Dia ${bootstrap.season.day}/${bootstrap.season.totalDays}`}</strong><span>{bootstrap.season.phase === 'open' && bootstrap.season.nextDayAt ? `Próximo dia em ${countdown(bootstrap.season.nextDayAt, now)}` : bootstrap.season.statusLabel}</span></div><ResourceBar realm={bootstrap.realm} /><div class={`cc-online ${online ? 'connected' : ''}`}><i />{online ? 'Online' : 'Reconectando'}</div></header>
     <section class="cc-stage"><MapView bootstrap={bootstrap} selectedId={selectedId} onSelect={setSelectedId} onReady={(controller, err) => { setMapController(controller); if (err) setError(err.message); }} />
-      <div class="cc-map-title"><span>TEATRO POLÍTICO</span><strong>{bootstrap.realm?.name || `${bootstrap.world.aiRealmCount} coroas em atividade`}</strong><small>{bootstrap.expedition.active}/{bootstrap.expedition.capacity} expedições em marcha</small></div>
+      <div class="cc-map-title"><strong>{bootstrap.realm?.name || `${bootstrap.world.aiRealmCount} coroas em atividade`}</strong><small>{bootstrap.expedition.active}/{bootstrap.expedition.capacity} expedições em marcha</small></div>
       <div class="cc-zoom"><button onClick={() => mapController?.zoomIn()}>+</button><button onClick={() => mapController?.zoomOut()}>−</button><button onClick={() => mapController?.fit()}>⌂</button><button onClick={() => mapController?.fitWorld()}>◎</button></div>
       {activeSection === 'map' ? <RegionPanel region={selected} realm={bootstrap.realm} action={selectedAction} nextClaim={nextClaim} expedition={bootstrap.expedition} buildings={bootstrap.buildings} busy={busy} now={now} onShowNext={() => setSelectedId(nextClaim.id)} onClaim={() => execute(() => crownsApi.claimTerritory(serverId, selected.id))} /> : null}
       {activeSection !== 'map' ? <div class="cc-section-overlay"><button class="cc-close-section" onClick={() => goMap()}>×</button>{activeSection === 'realm' ? <RealmSection {...common} /> : activeSection === 'market' ? <MarketSection bootstrap={bootstrap} busy={busy} onCreate={payload => execute(() => crownsApi.createMarketOrder(serverId, payload))} onAccept={id => execute(() => crownsApi.acceptMarketOrder(serverId, id))} onCancel={id => execute(() => crownsApi.cancelMarketOrder(serverId, id))} /> : <JournalSection items={journal} realm={bootstrap.realm} busy={busy} onPublish={payload => execute(() => crownsApi.publishArticle(serverId, payload))} />}</div> : null}

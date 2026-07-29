@@ -149,6 +149,8 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     assert.equal(result.payload.realm.court.diplomacy.knownRealms.length, 10);
     assert.equal(result.payload.realm.court.internal.canRevolt, false);
     assert.equal(result.payload.season.phase, 'open');
+    assert.ok(result.payload.season.nextDayAt);
+    assert.ok(result.payload.season.nextDayRemainingMs > 0);
     assert.ok(!result.payload.customization.availableColors.includes(selectedColor));
     const conflictColorDb = new DatabaseSync(path.join(tempRoot, 'crowns-test.sqlite'));
     conflictColorDb.exec('PRAGMA busy_timeout = 5000');
@@ -156,8 +158,12 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     assert.throws(() => conflictColorDb.prepare('UPDATE cc_realms SET color = ? WHERE id = ?').run(selectedColor.toUpperCase(), anotherRealm.id), /UNIQUE constraint failed/);
     conflictColorDb.close();
     assert.equal(result.payload.realm.religion, 'Islamismo');
+    assert.ok(result.payload.availableFaiths.some(faith => faith.name === 'Islamismo' && faith.isCustom === false));
+    assert.ok(result.payload.availableFaiths.some(faith => faith.name === 'Cristianismo'));
+    assert.deepEqual(result.payload.religiousCrises, []);
     assert.ok(new Set(result.payload.realm.court.diplomacy.knownRealms.map(realm => realm.religion)).size >= 2);
     assert.ok(result.payload.realm.court.diplomacy.knownRealms.every(realm => realm.houseName && realm.rulerName));
+    assert.ok(result.payload.realm.court.diplomacy.knownRealms.every(realm => realm.playerName === null && realm.playerAvatar === null));
     assert.equal(result.payload.regionReligions[0].heresyShare, 0);
     assert.equal(result.payload.religiousMovements.length, 0);
     assert.equal(result.payload.buildings.length, 2);
@@ -341,7 +347,7 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     result = await jsonRequest('/api/crowns-and-councils/bootstrap');
     assert.equal(result.payload.world.aiRealmCount, 11);
     assert.equal(result.payload.realm.regionCount, regionsBeforeRevolt - 1);
-    assert.ok(result.payload.journal.some(item => item.eventType === 'revolution.separatist'));
+    assert.ok(!result.payload.journal.some(item => item.eventType === 'revolution.separatist'));
     const finalColorDb = new DatabaseSync(path.join(tempRoot, 'crowns-test.sqlite'));
     finalColorDb.exec('PRAGMA busy_timeout = 5000');
     const finalColorAudit = finalColorDb.prepare("SELECT COUNT(*) AS total, COUNT(DISTINCT lower(color)) AS distinct_colors FROM cc_realms WHERE season_id = 'cc-world-1'").get();
@@ -358,9 +364,42 @@ function waitSocket(socket, event, timeoutMs = 5_000) {
     assert.equal((await published).article.id, result.payload.article.id);
 
     result = await jsonRequest('/api/crowns-and-councils/journal');
-    assert.ok(result.payload.items.some(item => item.eventType === 'realm.created'));
+    assert.ok(!result.payload.items.some(item => item.eventType === 'realm.created'));
+    assert.ok(!result.payload.items.some(item => item.eventType === 'building.completed'));
+    assert.ok(!result.payload.items.some(item => item.eventType === 'revolution.separatist'));
     assert.ok(result.payload.items.some(item => item.eventType === 'territory.claim.completed'));
     assert.ok(result.payload.items.some(item => item.kind === 'article' && item.headline === 'Carta aos reinos vizinhos'));
+
+    let religionDb = new DatabaseSync(path.join(tempRoot, 'crowns-test.sqlite'));
+    religionDb.exec('PRAGMA busy_timeout = 5000');
+    religionDb.prepare("UPDATE cc_realms SET treasury = max(treasury, 1000), provisions = max(provisions, 1000) WHERE season_id = 'cc-world-1' AND is_ai = 0").run();
+    religionDb.close();
+    result = await jsonRequest('/api/crowns-and-councils/religion/convert', {
+      method: 'POST',
+      body: JSON.stringify({ faithName: 'Paganismo romano' })
+    });
+    assert.equal(result.response.status, 200);
+    assert.equal(result.payload.conversion.faith, 'Paganismo romano');
+    result = await jsonRequest('/api/crowns-and-councils/bootstrap');
+    assert.equal(result.payload.realm.religion, 'Paganismo romano');
+    assert.equal(result.payload.regionReligions.find(region => region.regionId === result.payload.realm.capitalRegionId).majorityReligion, 'Paganismo romano');
+
+    const crisisRegion = result.payload.regions.find(region => region.ownerRealmId === result.payload.realm.id && region.id !== result.payload.realm.capitalRegionId);
+    assert.ok(crisisRegion);
+    religionDb = new DatabaseSync(path.join(tempRoot, 'crowns-test.sqlite'));
+    religionDb.exec('PRAGMA busy_timeout = 5000');
+    religionDb.prepare("INSERT INTO cc_religious_crises (id, season_id, realm_id, region_id, incoming_faith, previous_faith, severity, status, created_at) VALUES ('faith_crisis_test', 'cc-world-1', ?, ?, 'Cristianismo', 'Paganismo romano', 64, 'pending', ?)").run(result.payload.realm.id, crisisRegion.id, new Date().toISOString());
+    religionDb.close();
+    result = await jsonRequest('/api/crowns-and-councils/bootstrap');
+    assert.ok(result.payload.religiousCrises.some(crisis => crisis.id === 'faith_crisis_test'));
+    result = await jsonRequest('/api/crowns-and-councils/religion/crisis/respond', {
+      method: 'POST',
+      body: JSON.stringify({ crisisId: 'faith_crisis_test', response: 'accept' })
+    });
+    assert.equal(result.response.status, 200);
+    result = await jsonRequest('/api/crowns-and-councils/bootstrap');
+    assert.ok(!result.payload.religiousCrises.some(crisis => crisis.id === 'faith_crisis_test'));
+    assert.equal(result.payload.regionReligions.find(region => region.regionId === crisisRegion.id).majorityReligion, 'Cristianismo');
 
     result = await jsonRequest('/api/games');
     assert.ok(result.payload.games.some(game => game.id === 'crowns-and-councils' && game.playUrl === '/crowns-and-councils'));

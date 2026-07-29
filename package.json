@@ -11,6 +11,7 @@
     "preview:crowns": "node --no-warnings tools/preview-crowns.cjs",
     "preview:cores-da-rosa": "node --no-warnings tools/preview-cores-da-rosa.cjs",
     "test:crowns": "node --no-warnings tests/crowns-and-councils.cjs",
+    "test:crowns:ai-calendar": "node --no-warnings tests/crowns-ai-calendar.cjs",
     "test:crowns:preview": "node --no-warnings tests/crowns-preview.cjs",
     "test:crowns:persistence": "node --no-warnings tests/crowns-persistence.cjs",
     "test:babel-realtime": "node --no-warnings tests/babel-realtime.cjs",

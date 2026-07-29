@@ -65,6 +65,7 @@ const CROWNS_DEFAULT_SERVER_ID = CROWNS_SERVER_IDS[0];
 const CROWNS_SEASON_DAYS = 60;
 const CROWNS_TIME_ZONE = 'America/Sao_Paulo';
 const CROWNS_GAME_DAY_MS = Math.max(250, Number(process.env.CROWNS_GAME_DAY_MS || 24 * 60 * 60 * 1000));
+const CROWNS_AI_TICK_MS = Math.max(100, Number(process.env.CROWNS_AI_TICK_MS || Math.min(30_000, Math.max(2_000, Math.floor(CROWNS_GAME_DAY_MS / 4)))));
 const CROWNS_RESET_DELAY_MS = Math.max(10_000, Number(process.env.CROWNS_RESET_DELAY_MS || 24 * 60 * 60 * 1000));
 const CROWNS_REVOLT_CHECK_MS = Math.max(250, Number(process.env.CROWNS_REVOLT_CHECK_MS || 30 * 1000));
 const CROWNS_FORCE_REVOLTS = process.env.CROWNS_FORCE_REVOLTS === '1';
@@ -157,7 +158,7 @@ const CROWNS_AI_REALMS = [
   { key: 'andalus', name: 'Reino de Al-Andalus', house: 'Casa de Córdova', ruler: 'Isidoro de Córdova', heir: 'Leandro', countries: ['ES'], terms: ['Andalucía', 'Andaluzia'], color: '#cf7732' },
   { key: 'escandinavia', name: 'Reino da Escandinávia', house: 'Casa de Uppsala', ruler: 'Erik do Norte', heir: 'Haroldo', countries: ['SE', 'NO', 'DK'], terms: ['Stockholm', 'Oslo', 'Hovedstaden'], color: '#4b9b89' }
 ];
-const GAME_VERSION = 'v3.41.0';
+const GAME_VERSION = 'v3.44.1';
 const GAME_ID = 'pela-graca-1904';
 const HEROI_GAME_ID = 'heroi-ortodoxo';
 const CRONICAS_GAME_ID = 'cronicas-do-levante';
@@ -2188,6 +2189,15 @@ function crownsSeasonClock(season) {
     resetAt: new Date(resetAt).toISOString(),
     mode: config.mode || 'persistente'
   };
+}
+
+function crownsAiDecisionDue(season, realm, now = Date.now()) {
+  const config = safeJsonParse(season?.config_json, {});
+  const lastDecision = new Date(realm.last_ai_action_at || realm.created_at).getTime();
+  if (!Number.isFinite(lastDecision)) return true;
+  const calendarMode = (config.mode || 'persistente') === 'persistente' && !CROWNS_LOCAL_PREVIEW;
+  if (calendarMode) return crownsLocalDaySerial(now) > crownsLocalDaySerial(lastDecision);
+  return now - lastDecision >= Number(config.gameDayMs || CROWNS_GAME_DAY_MS);
 }
 
 function activateCrownsSeason(serverId) {
@@ -4320,8 +4330,7 @@ function processCrownsAiPlans(requestedServerId) {
   processCrownsEconomy(serverId);
   const now = Date.now();
   for (const realm of getCcRealms.all(serverId).filter(item => item.is_ai)) {
-    const lastDecision = new Date(realm.last_ai_action_at || realm.created_at).getTime();
-    if (now - lastDecision < CROWNS_GAME_DAY_MS) continue;
+    if (!crownsAiDecisionDue(season, realm, now)) continue;
     if (getCcPendingActionsForRealm.all(serverId, realm.id).length) continue;
     const ownedIds = new Set(getCcOwnedRegions.all(serverId, realm.id).map(row => row.region_id));
     const frontier = getCcSeasonRegions.all(serverId).filter(region => {
@@ -5744,7 +5753,7 @@ function initRealtimeMultiplayer(httpServer) {
   crownsActionTimer.unref?.();
   const crownsRevoltTimer = setInterval(() => CROWNS_SERVER_IDS.forEach(processCrownsSeparatistRevolts), CROWNS_REVOLT_CHECK_MS);
   crownsRevoltTimer.unref?.();
-  const crownsAiTimer = setInterval(() => CROWNS_SERVER_IDS.forEach(processCrownsAiPlans), Math.min(30_000, Math.max(2_000, Math.floor(CROWNS_GAME_DAY_MS / 4))));
+  const crownsAiTimer = setInterval(() => CROWNS_SERVER_IDS.forEach(processCrownsAiPlans), CROWNS_AI_TICK_MS);
   crownsAiTimer.unref?.();
   const crownsCouncilTimer = setInterval(() => CROWNS_SERVER_IDS.forEach(processCrownsCouncils), Math.min(30_000, Math.max(1_000, Math.floor(CROWNS_GAME_DAY_MS / 3))));
   crownsCouncilTimer.unref?.();

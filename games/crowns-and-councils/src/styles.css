@@ -338,6 +338,7 @@ button:disabled { cursor: not-allowed; opacity: .45; transform: none !important;
 .cc-war-targets span { color: color-mix(in oklch, var(--ink) 62%, transparent); font-size: 10px; }
 
 /* Court panels */
+.cc-government-panel { position: relative; }
 .cc-court-list { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 14px; }
 .cc-court-list article { padding: 16px; background: var(--paper); }
 .cc-court-list span, .cc-court-list strong { display: block; }
@@ -367,6 +368,21 @@ button:disabled { cursor: not-allowed; opacity: .45; transform: none !important;
 .cc-diplomacy-list span { color: color-mix(in oklch, var(--ink) 65%, transparent); font-size: 9px; }
 .cc-diplomacy-list article > div:last-child { text-align: right; }
 .cc-diplomacy-list em { display: block; margin-bottom: 4px; color: var(--moss); font-size: 9px; font-style: normal; font-weight: 800; }
+.cc-diplomacy-list .cc-realm-link { margin: 0; padding: 0; border: 0; background: transparent; color: var(--ink); font-family: Cinzel, serif; font-size: 13px; text-align: left; text-decoration: underline; text-decoration-color: var(--bronze); text-underline-offset: 3px; cursor: pointer; }
+.cc-foreign-profile { position: absolute; z-index: 5; top: 0; right: 0; width: min(460px, 92%); max-height: min(610px, calc(100vh - 190px)); overflow-y: auto; padding: 22px; background: var(--bone); border-top: 4px solid var(--bronze); box-shadow: 0 20px 60px #0008; }
+.cc-foreign-profile > header { display: grid; grid-template-columns: 10px 54px 1fr; align-items: center; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid var(--line-paper); }
+.cc-foreign-profile > header > i { width: 10px; height: 62px; }
+.cc-foreign-profile > header img, .cc-profile-sigil { display: grid; width: 54px; height: 54px; place-items: center; object-fit: cover; background: var(--ink-2); color: var(--gold); border-radius: 50%; }
+.cc-foreign-profile h2 { margin: 2px 0; font-family: Cinzel, serif; font-size: 21px; }
+.cc-foreign-profile header small { color: var(--bronze); font-weight: 800; letter-spacing: .1em; }
+.cc-foreign-profile header p { margin: 3px 0 0; color: color-mix(in oklch, var(--ink) 65%, transparent); font-size: 10px; }
+.cc-profile-close { position: absolute; top: 8px; right: 8px; display: grid; width: 31px; height: 31px; place-items: center; border: 0; background: var(--oxblood); color: white; font-size: 20px; cursor: pointer; }
+.cc-foreign-profile dl { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; margin: 16px 0; background: var(--line-paper); }
+.cc-foreign-profile dl div { padding: 11px; background: var(--paper); }
+.cc-foreign-profile dt { color: color-mix(in oklch, var(--ink) 60%, transparent); font-size: 8px; font-weight: 800; text-transform: uppercase; }
+.cc-foreign-profile dd { margin: 4px 0 0; font-family: Cinzel, serif; font-size: 11px; }
+.cc-foreign-profile footer { display: flex; flex-wrap: wrap; gap: 7px; }
+.cc-foreign-profile footer button { margin: 0; padding: 9px 11px; border: 0; background: var(--ink-2); color: var(--text); font-size: 9px; font-weight: 800; cursor: pointer; }
 .cc-house-register, .cc-marriage-chronicle, .cc-diplomatic-requests { margin-top: 17px; }
 .cc-house-register h3, .cc-marriage-chronicle h3, .cc-diplomatic-requests h3 { margin: 0 0 8px; font-family: Cinzel, serif; }
 .cc-house-register { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
@@ -535,6 +551,28 @@ button:disabled { cursor: not-allowed; opacity: .45; transform: none !important;
 .cc-faith-banner { padding: 15px; border-left: 5px solid var(--gold); background: var(--ink-2); color: var(--text); }
 .cc-faith-banner strong { display: block; margin-top: 3px; font-family: Cinzel, serif; font-size: 20px; }
 .cc-faith-banner p { margin: 4px 0 0; color: var(--muted); }
+.cc-faith-registry, .cc-religious-crises { display: grid; gap: 10px; margin-top: 15px; padding: 15px; border: 1px solid var(--line-paper); background: var(--paper); }
+.cc-faith-registry > header, .cc-religious-crises > header { display: flex; align-items: end; justify-content: space-between; gap: 18px; }
+.cc-faith-registry h3, .cc-religious-crises h3 { margin: 2px 0 0; font-family: Cinzel, serif; }
+.cc-faith-registry header span, .cc-religious-crises header span { color: var(--bronze); font-size: 8px; font-weight: 800; letter-spacing: .1em; }
+.cc-faith-registry header p, .cc-religious-crises header p { max-width: 540px; margin: 0; color: color-mix(in oklch, var(--ink) 62%, transparent); font-size: 9px; }
+.cc-faith-registry > div { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+.cc-faith-registry article { display: grid; grid-template-columns: 25px 1fr auto; align-items: center; gap: 8px; padding: 10px; background: var(--bone); border-left: 3px solid transparent; }
+.cc-faith-registry article.active { border-left-color: var(--gold); background: color-mix(in oklch, var(--gold) 10%, var(--bone)); }
+.cc-faith-registry article .cc-icon { color: var(--bronze); }
+.cc-faith-registry article strong, .cc-faith-registry article span, .cc-faith-registry article small { display: block; }
+.cc-faith-registry article span, .cc-faith-registry article small { color: color-mix(in oklch, var(--ink) 62%, transparent); font-size: 9px; }
+.cc-faith-registry article > b { color: var(--moss); font-size: 8px; text-transform: uppercase; }
+.cc-faith-registry > form { display: flex; align-items: end; justify-content: flex-end; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line-paper); }
+.cc-faith-registry form label { display: grid; min-width: 260px; gap: 3px; color: color-mix(in oklch, var(--ink) 62%, transparent); font-size: 8px; font-weight: 800; text-transform: uppercase; }
+.cc-faith-registry form select { padding: 8px; border: 1px solid var(--line-paper); background: var(--bone); color: var(--ink); }
+.cc-religious-crises { border-left: 5px solid var(--danger); background: color-mix(in oklch, var(--danger) 5%, var(--paper)); }
+.cc-religious-crises > article { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px; background: var(--bone); }
+.cc-religious-crises article strong, .cc-religious-crises article span, .cc-religious-crises article small { display: block; }
+.cc-religious-crises article span, .cc-religious-crises article small { color: color-mix(in oklch, var(--ink) 64%, transparent); font-size: 9px; }
+.cc-religious-crises article > div:last-child { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 5px; }
+.cc-religious-crises button { padding: 7px 9px; border: 1px solid var(--line-paper); background: var(--paper); color: var(--ink); font-size: 8px; font-weight: 800; cursor: pointer; }
+.cc-empty-news { padding: 20px; background: var(--paper); color: color-mix(in oklch, var(--ink) 62%, transparent); font-family: Cinzel, serif; }
 
 @media (max-width: 1100px) {
   .cc-topbar { grid-template-columns: minmax(150px, .65fr) minmax(140px, .55fr) minmax(480px, 1.8fr); }
@@ -560,7 +598,7 @@ button:disabled { cursor: not-allowed; opacity: .45; transform: none !important;
   .cc-server-brand .cc-brand-sigil { display: none; }
   .cc-server-brand strong { font-size: 11px; }
   .cc-season { padding: 5px 8px; }
-  .cc-season span { display: none; }
+  .cc-season span { display: block; font-size: 8px; white-space: nowrap; }
   .cc-resources > span { grid-template-columns: 17px 1fr; }
   .cc-resources .prestige { display: none; }
   .cc-resources { grid-template-columns: repeat(4, 1fr); }
@@ -649,6 +687,11 @@ button:disabled { cursor: not-allowed; opacity: .45; transform: none !important;
   .cc-active-marches article > b { grid-column: 2; }
   .cc-gift-toolbar { grid-template-columns: 1fr 1fr; }
   .cc-gift-toolbar > span { grid-column: 1 / -1; }
+  .cc-faith-registry > div { grid-template-columns: 1fr; }
+  .cc-faith-registry > header, .cc-religious-crises > header, .cc-religious-crises > article { align-items: stretch; flex-direction: column; }
+  .cc-faith-registry > form { align-items: stretch; flex-direction: column; }
+  .cc-faith-registry form label { min-width: 0; }
+  .cc-foreign-profile { position: fixed; top: 66px; right: 8px; left: 8px; width: auto; max-height: calc(100vh - 140px); }
   .cc-diplomatic-requests article { align-items: stretch; flex-direction: column; }
   .cc-command-heading { flex-direction: column; }
   .cc-command-heading label, .cc-command-heading select { width: 100%; min-width: 0; }
